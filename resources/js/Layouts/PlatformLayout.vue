@@ -25,12 +25,12 @@ const platformNavItems = [
 
         <AppToast />
 
-        <div class="flex h-screen bg-gray-950 overflow-hidden">
+        <div class="flex h-screen bg-muted overflow-hidden">
             <!-- Sidebar -->
-            <aside class="flex w-60 flex-col bg-gray-900 border-r border-white/5">
+            <aside class="flex w-60 flex-col bg-white border-r border-border shadow-card">
                 <!-- Logo -->
-                <div class="flex h-14 shrink-0 items-center gap-2 px-5 border-b border-white/5">
-                    <span class="font-heading text-base font-bold text-white tracking-tight">NeuraBar</span>
+                <div class="flex h-14 shrink-0 items-center gap-2 px-5 border-b border-border">
+                    <span class="font-heading text-base font-bold text-ocean-deep tracking-tight">NeuraBar</span>
                     <span class="rounded-full bg-warm-gold/20 px-2 py-0.5 text-xs font-medium text-warm-gold">Admin</span>
                 </div>
 
@@ -41,10 +41,10 @@ const platformNavItems = [
                         :key="item.label"
                         :href="route(item.routeName)"
                         :class="[
-                            'flex items-center rounded px-3 py-2 text-sm font-body font-medium transition-colors',
+                            'flex items-center rounded-md px-3 py-2 text-sm font-body font-medium transition-colors',
                             route().current(item.activePattern)
-                                ? 'bg-white/10 text-white'
-                                : 'text-white/50 hover:bg-white/5 hover:text-white',
+                                ? 'bg-primary-light text-primary'
+                                : 'text-muted-foreground hover:bg-muted hover:text-ocean-deep',
                         ]"
                     >
                         {{ item.label }}
@@ -52,13 +52,13 @@ const platformNavItems = [
                 </nav>
 
                 <!-- User footer -->
-                <div class="shrink-0 border-t border-white/5 p-4">
+                <div class="shrink-0 border-t border-border p-4">
                     <div class="flex items-center justify-between">
-                        <span class="text-sm font-body text-white/50 truncate">
+                        <span class="text-sm font-body text-muted-foreground truncate">
                             {{ $page.props.auth.user?.name ?? 'Platform User' }}
                         </span>
                         <button
-                            class="rounded px-2 py-1 text-xs font-body text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                            class="rounded px-2 py-1 text-xs font-body text-muted-foreground hover:text-ocean-deep hover:bg-muted transition-colors"
                             @click="logout"
                         >
                             Logout
@@ -69,10 +69,10 @@ const platformNavItems = [
 
             <!-- Main -->
             <div class="flex flex-1 flex-col overflow-hidden">
-                <header class="flex h-14 shrink-0 items-center justify-between px-6 bg-gray-900 border-b border-white/5">
+                <header class="flex h-14 shrink-0 items-center justify-between px-6 bg-white border-b border-border shadow-card">
                     <slot name="header" />
                 </header>
-                <main class="flex-1 overflow-y-auto p-6 text-white">
+                <main class="flex-1 overflow-y-auto p-6 text-foreground">
                     <slot />
                 </main>
             </div>

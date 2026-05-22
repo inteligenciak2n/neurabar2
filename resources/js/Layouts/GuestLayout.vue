@@ -16,7 +16,7 @@ defineProps({
 
         <div class="min-h-screen bg-muted flex flex-col">
             <!-- Header -->
-            <header class="bg-white border-b border-muted shadow-card">
+            <header class="bg-white border-b border-border shadow-card">
                 <div class="mx-auto max-w-lg px-4 py-4 flex items-center gap-3">
                     <ApplicationMark class="h-8 w-auto text-primary" />
                     <span class="font-heading text-lg font-bold text-ocean-deep">NeuraBar</span>
