@@ -14,13 +14,13 @@ defineProps({
 const sidebarOpen = ref(false);
 
 const navItems = [
-    { label: 'Dashboard',   icon: 'home',        routeName: 'dashboard' },
-    { label: 'Attendances', icon: 'table',        routeName: 'dashboard' },
-    { label: 'Order Taker', icon: 'clipboard',    routeName: 'dashboard' },
-    { label: 'Kitchen',     icon: 'fire',         routeName: 'dashboard' },
-    { label: 'Payment',     icon: 'cash',         routeName: 'dashboard' },
-    { label: 'Menu',        icon: 'menu-book',    routeName: 'dashboard' },
-    { label: 'Settings',    icon: 'settings',     routeName: 'dashboard' },
+    { label: 'Dashboard',   icon: 'home',        routeName: 'dashboard',         activePattern: 'dashboard' },
+    { label: 'Attendances', icon: 'table',        routeName: 'attendances.index', activePattern: 'attendances.*' },
+    { label: 'Order Taker', icon: 'clipboard',    routeName: 'orders.index',      activePattern: 'orders.*' },
+    { label: 'Kitchen',     icon: 'fire',         routeName: 'kitchen.index',     activePattern: 'kitchen.*' },
+    { label: 'Payment',     icon: 'cash',         routeName: 'payment.index',     activePattern: 'payment.*' },
+    { label: 'Menu',        icon: 'menu-book',    routeName: 'menu.index',        activePattern: 'menu.*' },
+    { label: 'Settings',    icon: 'settings',     routeName: 'settings.index',    activePattern: 'settings.*' },
 ];
 
 const iconPaths = {
@@ -89,7 +89,7 @@ const logout = () => {
                         :href="route(item.routeName)"
                         :class="[
                             'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-body font-medium transition-colors',
-                            route().current(item.routeName)
+                            route().current(item.activePattern)
                                 ? 'bg-white/15 text-white'
                                 : 'text-white/70 hover:bg-white/10 hover:text-white',
                         ]"

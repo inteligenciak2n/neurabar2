@@ -56,10 +56,10 @@ class TestVenueSeeder extends Seeder
         );
 
         User::firstOrCreate(
-            ['email' => 'owner@test.com'],
+            ['email' => 'rdgo.serafim@gmail.com'],
             [
                 'name' => 'Owner Test',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('@belha22'),
                 'role' => UserRole::Owner,
                 'venue_id' => $venue->id,
                 'active' => true,

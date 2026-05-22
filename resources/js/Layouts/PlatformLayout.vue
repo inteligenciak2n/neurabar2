@@ -12,10 +12,10 @@ const logout = () => {
 };
 
 const platformNavItems = [
-    { label: 'Dashboard',     routeName: 'dashboard' },
-    { label: 'Corporations',  routeName: 'dashboard' },
-    { label: 'Plans',         routeName: 'dashboard' },
-    { label: 'Users',         routeName: 'dashboard' },
+    { label: 'Dashboard',    routeName: 'platform.dashboard',          activePattern: 'platform.dashboard' },
+    { label: 'Corporations', routeName: 'platform.corporations.index',  activePattern: 'platform.corporations.*' },
+    { label: 'Plans',        routeName: 'platform.plans.index',         activePattern: 'platform.plans.*' },
+    { label: 'Users',        routeName: 'platform.users.index',         activePattern: 'platform.users.*' },
 ];
 </script>
 
@@ -42,7 +42,7 @@ const platformNavItems = [
                         :href="route(item.routeName)"
                         :class="[
                             'flex items-center rounded px-3 py-2 text-sm font-body font-medium transition-colors',
-                            route().current(item.routeName)
+                            route().current(item.activePattern)
                                 ? 'bg-white/10 text-white'
                                 : 'text-white/50 hover:bg-white/5 hover:text-white',
                         ]"
