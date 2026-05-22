@@ -3,9 +3,13 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\UserRole;
+use App\Models\Tenant\Corporation;
+use App\Models\Tenant\Venue;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -20,9 +24,9 @@ class User extends Authenticatable
     use HasFactory;
 
     use HasProfilePhoto;
+    use HasUuids;
     use Notifiable;
     use TwoFactorAuthenticatable;
-    use HasUuids;
 
     /**
      * The attributes that are mass assignable.
@@ -33,6 +37,11 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
+        'venue_id',
+        'corporation_id',
+        'pin',
+        'active',
     ];
 
     /**
@@ -45,6 +54,7 @@ class User extends Authenticatable
         'remember_token',
         'two_factor_recovery_codes',
         'two_factor_secret',
+        'pin',
     ];
 
     /**
@@ -56,16 +66,23 @@ class User extends Authenticatable
         'profile_photo_url',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'active' => 'boolean',
+            'role' => UserRole::class,
         ];
+    }
+
+    public function venue(): BelongsTo
+    {
+        return $this->belongsTo(Venue::class);
+    }
+
+    public function corporation(): BelongsTo
+    {
+        return $this->belongsTo(Corporation::class);
     }
 }
