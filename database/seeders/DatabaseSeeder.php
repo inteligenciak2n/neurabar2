@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Actions\Fortify\CreateNewUser;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -15,11 +15,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $action = new CreateNewUser;
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $action->create([
+            'name' => 'Rodrigo Serafim',
+            'email' => 'rdgo.serafim@gmail.com',
+            'password' => '@belha22', // Substitua pela senha desejada
+            'password_confirmation' => '@belha22', // Confirmação da senha
+            'terms' => true,
         ]);
     }
 }
