@@ -41,11 +41,13 @@ const testSocket = () => {
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <PrimaryButton @click="testSocket">Testar Socket</PrimaryButton>
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
                     <Welcome />
                 </div>
             </div>
         </div>
+
+        <!-- manter este componente por enquanto para o primeiro teste de deploy  -->
+        <span v-if="false" class="opacity-50 cursor-pointer float-end" @click="testSocket">Testar Socket</span>
     </AppLayout>
 </template>
