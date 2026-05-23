@@ -1,0 +1,163 @@
+<script setup>
+import AppLayout from '@/Layouts/AppLayout.vue';
+import AppCard from '@/Components/AppCard.vue';
+import AppButton from '@/Components/AppButton.vue';
+import AppConfirmModal from '@/Components/AppConfirmModal.vue';
+import AppEmptyState from '@/Components/AppEmptyState.vue';
+import { useForm, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
+
+defineProps({
+    locations: Array,
+});
+
+const LOCATION_TYPES = ['table', 'bar', 'area', 'delivery', 'takeaway'];
+
+const showForm = ref(false);
+const editingLocation = ref(null);
+const locationToDelete = ref(null);
+
+const form = useForm({
+    name: '',
+    type: 'table',
+    active: true,
+});
+
+const openCreate = () => {
+    editingLocation.value = null;
+    form.reset();
+    form.type = 'table';
+    form.active = true;
+    showForm.value = true;
+};
+
+const openEdit = (location) => {
+    editingLocation.value = location;
+    form.name = location.name;
+    form.type = location.type;
+    form.active = location.active;
+    showForm.value = true;
+};
+
+const closeForm = () => {
+    showForm.value = false;
+    editingLocation.value = null;
+    form.reset();
+};
+
+const submit = () => {
+    if (editingLocation.value) {
+        form.put(route('settings.service-locations.update', editingLocation.value.id), {
+            onSuccess: closeForm,
+        });
+    } else {
+        form.post(route('settings.service-locations.store'), {
+            onSuccess: closeForm,
+        });
+    }
+};
+
+const confirmDelete = (location) => {
+    locationToDelete.value = location;
+};
+
+const deleteLocation = () => {
+    router.delete(route('settings.service-locations.destroy', locationToDelete.value.id), {
+        onSuccess: () => { locationToDelete.value = null; },
+    });
+};
+</script>
+
+<template>
+    <AppLayout title="Service Locations">
+        <template #header>
+            <div class="flex items-center justify-between">
+                <h1 class="font-heading text-2xl font-bold text-ocean-deep">Service Locations</h1>
+                <AppButton @click="openCreate">Add Location</AppButton>
+            </div>
+        </template>
+
+        <AppCard>
+            <AppEmptyState
+                v-if="!locations.length && !showForm"
+                title="No service locations yet"
+                description="Add locations such as tables, bars, or areas."
+            />
+
+            <div v-if="locations.length" class="divide-y divide-muted">
+                <div
+                    v-for="location in locations"
+                    :key="location.id"
+                    class="flex items-center justify-between py-3"
+                >
+                    <div class="flex items-center gap-3">
+                        <span class="font-body text-sm font-medium text-ocean-deep">{{ location.name }}</span>
+                        <span class="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground capitalize">
+                            {{ location.type }}
+                        </span>
+                        <span
+                            :class="location.active ? 'bg-accent/10 text-accent' : 'bg-muted text-muted-foreground'"
+                            class="rounded-full px-2 py-0.5 text-xs font-semibold"
+                        >
+                            {{ location.active ? 'Active' : 'Inactive' }}
+                        </span>
+                    </div>
+                    <div class="flex gap-2">
+                        <AppButton size="sm" variant="secondary" @click="openEdit(location)">Edit</AppButton>
+                        <AppButton size="sm" variant="destructive" @click="confirmDelete(location)">Delete</AppButton>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="showForm" class="mt-4 rounded-lg border border-border p-4">
+                <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep">
+                    {{ editingLocation ? 'Edit Location' : 'New Location' }}
+                </h3>
+                <form @submit.prevent="submit" class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">Name <span class="text-destructive">*</span></label>
+                        <input
+                            v-model="form.name"
+                            type="text"
+                            class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                        <p v-if="form.errors.name" class="mt-1 text-xs text-destructive">{{ form.errors.name }}</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">Type <span class="text-destructive">*</span></label>
+                        <select
+                            v-model="form.type"
+                            class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                            <option v-for="type in LOCATION_TYPES" :key="type" :value="type" class="capitalize">
+                                {{ type }}
+                            </option>
+                        </select>
+                        <p v-if="form.errors.type" class="mt-1 text-xs text-destructive">{{ form.errors.type }}</p>
+                    </div>
+
+                    <label class="flex cursor-pointer items-center gap-3">
+                        <input v-model="form.active" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
+                        <span class="text-sm text-ocean-deep">Active</span>
+                    </label>
+
+                    <div class="flex gap-2 pt-1">
+                        <AppButton type="submit" :loading="form.processing">Save</AppButton>
+                        <AppButton type="button" variant="ghost" @click="closeForm">Cancel</AppButton>
+                    </div>
+                </form>
+            </div>
+        </AppCard>
+
+        <AppConfirmModal
+            :show="!!locationToDelete"
+            title="Delete Service Location"
+            message="Are you sure you want to delete this location?"
+            confirm-label="Delete"
+            variant="destructive"
+            @confirm="deleteLocation"
+            @cancel="locationToDelete = null"
+        />
+    </AppLayout>
+</template>

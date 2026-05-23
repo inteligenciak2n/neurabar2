@@ -85,4 +85,34 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Corporation::class);
     }
+
+    public function activeVenue(): ?Venue
+    {
+        if (! $this->role?->isOperational()) {
+            return null;
+        }
+
+        if (in_array($this->role, [UserRole::CorporationAdmin, UserRole::Owner], true)) {
+            $activeVenueId = session('active_venue_id');
+
+            if ($activeVenueId) {
+                $venue = Venue::find($activeVenueId);
+
+                if ($venue && $venue->corporation_id === $this->corporation_id) {
+                    return $venue;
+                }
+            }
+
+            if ($this->corporation_id) {
+                return Venue::where('corporation_id', $this->corporation_id)
+                    ->where('active', true)
+                    ->first();
+            }
+
+            // Fallback: venue directly assigned (e.g. owner without a corporation)
+            return $this->venue;
+        }
+
+        return $this->venue;
+    }
 }

@@ -20,9 +20,12 @@ abstract class TestCase extends BaseTestCase
         $user = User::factory()->create([
             'role' => $role,
             'venue_id' => $venue->id,
+            'corporation_id' => $venue->corporation_id,
         ]);
 
         $this->actingAs($user);
+
+        app()->instance('tenant', $venue);
 
         return $user;
     }
