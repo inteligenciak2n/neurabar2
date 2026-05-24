@@ -2,6 +2,7 @@
 
 namespace App\Models\Orders;
 
+use App\Models\Menu\Combo;
 use App\Models\Menu\Product;
 use App\Models\Menu\ProductVariation;
 use App\Models\Settings\PreparationStatus;
@@ -21,6 +22,7 @@ class OrderItem extends Model
         'order_id',
         'product_id',
         'variation_id',
+        'combo_id',
         'quantity',
         'unit_price',
         'notes',
@@ -35,6 +37,11 @@ class OrderItem extends Model
             'unit_price' => 'decimal:2',
             'ready_at' => 'datetime',
         ];
+    }
+
+    public function combo(): BelongsTo
+    {
+        return $this->belongsTo(Combo::class);
     }
 
     public function order(): BelongsTo

@@ -78,4 +78,16 @@ class TrackOrderTest extends TestCase
 
         $this->assertArrayNotHasKey('unit_price', $items[0] ?? []);
     }
+
+    public function test_service_request_order_is_not_trackable(): void
+    {
+        $venue = Venue::factory()->create();
+        $attendance = Attendance::factory()->create([
+            'venue_id' => $venue->id,
+            'channel' => 'service_request',
+        ]);
+        $order = Order::factory()->create(['attendance_id' => $attendance->id]);
+
+        $this->get(route('orders.track', $order->id))->assertNotFound();
+    }
 }

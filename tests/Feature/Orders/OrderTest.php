@@ -233,4 +233,36 @@ class OrderTest extends TestCase
             ],
         ])->assertSessionHasErrors('items.0.modifiers.0.modifier_option_id');
     }
+
+    public function test_required_modifier_group_missing_returns_422(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Attendant, $venue);
+
+        $menu = Menu::factory()->create(['venue_id' => $venue->id]);
+        $category = Category::factory()->create(['menu_id' => $menu->id]);
+        $product = Product::factory()->create(['category_id' => $category->id, 'active' => true, 'price' => 20.00]);
+
+        $requiredGroup = ModifierGroup::factory()->create([
+            'venue_id' => $venue->id,
+            'required' => true,
+        ]);
+        ModifierOption::factory()->create(['modifier_group_id' => $requiredGroup->id, 'active' => true]);
+
+        // Associate the modifier group with the product via the pivot
+        $product->modifierGroups()->attach($requiredGroup->id);
+
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
+
+        $this->post(route('attendances.orders.store', $attendance->id), [
+            'items' => [
+                [
+                    'product_id' => $product->id,
+                    'quantity' => 1,
+                    'unit_price' => 20.00,
+                    'modifiers' => [],
+                ],
+            ],
+        ])->assertSessionHasErrors('items.0.modifiers');
+    }
 }

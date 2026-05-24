@@ -56,9 +56,9 @@ class KdsController
         return back();
     }
 
-    public function monitor(): Response
+    public function monitor(Request $request): Response
     {
-        $venueId = request()->query('venue');
+        $venueId = $request->query('venue');
 
         $openItems = [];
 

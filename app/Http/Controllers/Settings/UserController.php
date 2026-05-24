@@ -44,6 +44,12 @@ class UserController extends Controller
 
     public function update(UpdateUserRequest $request, User $user, UpdateUserAction $action): RedirectResponse
     {
+        $venue = app('tenant');
+        abort_unless(
+            $user->venue_id === $venue->id || ($venue->corporation_id && $user->corporation_id === $venue->corporation_id),
+            403
+        );
+
         $action->execute($user, $request);
 
         return back()->with('success', 'User updated.');
@@ -51,6 +57,12 @@ class UserController extends Controller
 
     public function destroy(User $user, DeleteUserAction $action): RedirectResponse
     {
+        $venue = app('tenant');
+        abort_unless(
+            $user->venue_id === $venue->id || ($venue->corporation_id && $user->corporation_id === $venue->corporation_id),
+            403
+        );
+
         $action->execute($user);
 
         return back()->with('success', 'User deleted.');

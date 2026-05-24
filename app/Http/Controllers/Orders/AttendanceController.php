@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Orders;
 
-use App\Actions\Orders\CloseAttendanceAction;
 use App\Actions\Orders\OpenAttendanceAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Orders\StoreAttendanceRequest;
+use App\Http\Requests\Orders\UpdateAttendanceRequest;
 use App\Models\Orders\Attendance;
 use App\Models\Settings\ServiceLocation;
 use Inertia\Inertia;
@@ -50,17 +50,10 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function update(StoreAttendanceRequest $request, Attendance $attendance)
+    public function update(UpdateAttendanceRequest $request, Attendance $attendance)
     {
-        $attendance->update($request->only(['notes', 'party_size', 'customer_identifier']));
+        $attendance->update($request->validated());
 
         return redirect()->route('attendances.show', $attendance->id);
-    }
-
-    public function close(Attendance $attendance, CloseAttendanceAction $action)
-    {
-        $action->execute($attendance);
-
-        return redirect()->route('attendances.index');
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Orders;
 
 use App\Models\Menu\Category;
+use App\Models\Menu\Combo;
 use App\Models\Menu\Menu;
 use App\Models\Menu\ModifierGroup;
 use App\Models\Menu\ModifierOption;
@@ -10,7 +11,9 @@ use App\Models\Menu\Product;
 use App\Models\Menu\ProductVariation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreOrderRequest extends FormRequest
 {
@@ -22,6 +25,12 @@ class StoreOrderRequest extends FormRequest
 
     /** @var Collection<string, string>|null */
     private ?Collection $tenantModifierOptionIds = null;
+
+    /** @var Collection<string, mixed>|null */
+    private ?Collection $activeComboIds = null;
+
+    /** @var Collection<string, Collection<int, string>>|null */
+    private ?Collection $productRequiredModifierGroupIds = null;
 
     public function authorize(): bool
     {
@@ -56,6 +65,22 @@ class StoreOrderRequest extends FormRequest
         $this->tenantModifierOptionIds = ModifierOption::whereIn('modifier_group_id', $venueModifierGroupIds)
             ->where('active', true)
             ->pluck('id');
+
+        $this->activeComboIds = Combo::withoutGlobalScopes()
+            ->where('venue_id', $venue->id)
+            ->where('active', true)
+            ->pluck('id');
+
+        // Map product_id -> [required modifier_group_ids] via pivot
+        $this->productRequiredModifierGroupIds = \Illuminate\Support\Facades\DB::table('product_modifier_group')
+            ->join('modifier_groups', 'modifier_groups.id', '=', 'product_modifier_group.modifier_group_id')
+            ->where('modifier_groups.venue_id', $venue->id)
+            ->where('modifier_groups.required', true)
+            ->whereIn('product_modifier_group.product_id', $this->activeProducts->pluck('id'))
+            ->select('product_modifier_group.product_id', 'modifier_groups.id as group_id')
+            ->get()
+            ->groupBy('product_id')
+            ->map(fn ($rows) => $rows->pluck('group_id'));
     }
 
     public function prepareForValidation(): void
@@ -100,7 +125,7 @@ class StoreOrderRequest extends FormRequest
         $tenantModifierOptionIds = $this->tenantModifierOptionIds;
 
         return [
-            'items' => ['required', 'array', 'min:1'],
+            'items' => ['present', 'array'],
             'items.*.product_id' => ['required', 'uuid', Rule::in($activeProductIds)],
             'items.*.variation_id' => ['nullable', 'uuid', Rule::in($variationPriceMap->keys()->all())],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
@@ -133,6 +158,46 @@ class StoreOrderRequest extends FormRequest
             'items.*.notes' => ['nullable', 'string', 'max:500'],
             'items.*.modifiers' => ['nullable', 'array'],
             'items.*.modifiers.*.modifier_option_id' => ['required', 'uuid', Rule::in($tenantModifierOptionIds)],
+            'combos' => ['nullable', 'array'],
+            'combos.*.combo_id' => ['required', 'uuid', Rule::in($this->activeComboIds)],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $this->resolveMenuData();
+
+        $validator->after(function (Validator $v): void {
+            $items = $this->input('items', []);
+            $combos = $this->input('combos', []);
+
+            if (empty($items) && empty($combos)) {
+                $v->errors()->add('items', 'At least one item or combo is required.');
+            }
+
+            foreach ($items as $index => $itemData) {
+                $productId = $itemData['product_id'] ?? null;
+
+                if (! $productId || ! $this->productRequiredModifierGroupIds?->has($productId)) {
+                    continue;
+                }
+
+                $requiredGroupIds = $this->productRequiredModifierGroupIds->get($productId);
+                $providedOptionIds = collect($itemData['modifiers'] ?? [])->pluck('modifier_option_id');
+
+                $providedGroupIds = ModifierOption::whereIn('id', $providedOptionIds)
+                    ->pluck('modifier_group_id');
+
+                foreach ($requiredGroupIds as $groupId) {
+                    if (! $providedGroupIds->contains($groupId)) {
+                        $group = ModifierGroup::find($groupId);
+                        $v->errors()->add(
+                            "items.{$index}.modifiers",
+                            'A selection from the required modifier group "'.($group?->name ?? $groupId).'" is missing.'
+                        );
+                    }
+                }
+            }
+        });
     }
 }

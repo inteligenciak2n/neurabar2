@@ -4,7 +4,6 @@ namespace Tests\Feature\Orders;
 
 use App\Enums\UserRole;
 use App\Models\Orders\Attendance;
-use App\Models\Payment\Payment;
 use App\Models\Tenant\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -44,31 +43,6 @@ class AttendanceTest extends TestCase
             'channel' => 'table',
             'customer_identifier' => 'Table 7',
         ])->assertRedirect(route('attendances.index'));
-    }
-
-    public function test_close_without_payment_returns_422(): void
-    {
-        $venue = Venue::factory()->create();
-        $this->loginAs(UserRole::Attendant, $venue);
-
-        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
-
-        $this->post(route('attendances.close', $attendance->id))
-            ->assertSessionHasErrors('payment');
-    }
-
-    public function test_close_with_payment_succeeds(): void
-    {
-        $venue = Venue::factory()->create();
-        $this->loginAs(UserRole::Attendant, $venue);
-
-        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
-        Payment::factory()->create(['attendance_id' => $attendance->id]);
-
-        $this->post(route('attendances.close', $attendance->id))
-            ->assertRedirect(route('attendances.index'));
-
-        $this->assertDatabaseHas('attendances', ['id' => $attendance->id, 'status' => 'closed']);
     }
 
     public function test_index_returns_only_tenant_attendances(): void

@@ -3,9 +3,8 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
 import AppBadge from '@/Components/AppBadge.vue';
-import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import AppEmptyState from '@/Components/AppEmptyState.vue';
-import { useForm, router, Link } from '@inertiajs/vue3';
+import { useForm, Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 const props = defineProps({
@@ -14,7 +13,6 @@ const props = defineProps({
 });
 
 const showForm = ref(false);
-const attendanceToClose = ref(null);
 
 const form = useForm({
     channel: 'counter',
@@ -52,16 +50,6 @@ const submit = () => {
             showForm.value = false;
             form.reset();
         },
-    });
-};
-
-const confirmClose = (attendance) => {
-    attendanceToClose.value = attendance;
-};
-
-const closeAttendance = () => {
-    router.post(route('attendances.close', attendanceToClose.value.id), {}, {
-        onSuccess: () => { attendanceToClose.value = null; },
     });
 };
 </script>
@@ -179,19 +167,8 @@ const closeAttendance = () => {
                     <Link :href="route('attendances.show', attendance.id)" class="inline-flex">
                         <AppButton size="sm" variant="ghost">View</AppButton>
                     </Link>
-                    <AppButton size="sm" variant="destructive" @click="confirmClose(attendance)">Close</AppButton>
                 </div>
             </AppCard>
         </div>
-
-        <AppConfirmModal
-            :show="!!attendanceToClose"
-            title="Close Attendance"
-            message="Are you sure? Make sure payment has been registered before closing."
-            confirm-label="Close"
-            variant="destructive"
-            @confirm="closeAttendance"
-            @cancel="attendanceToClose = null"
-        />
     </AppLayout>
 </template>

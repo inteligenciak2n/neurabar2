@@ -4,6 +4,7 @@ namespace App\Actions\Orders;
 
 use App\Events\Orders\OrderPlaced;
 use App\Http\Requests\Orders\StoreOrderRequest;
+use App\Models\Menu\Combo;
 use App\Models\Menu\ModifierOption;
 use App\Models\Menu\ProductVariation;
 use App\Models\Orders\Attendance;
@@ -55,6 +56,26 @@ class PlaceOrderAction
                     $item->modifiers()->create([
                         'modifier_option_id' => $modifierData['modifier_option_id'],
                         'extra_price_snapshot' => $modifierOption->extra_price,
+                    ]);
+                }
+            }
+
+            foreach ($request->validated()['combos'] ?? [] as $comboData) {
+                $combo = Combo::with('items.product', 'items.variation')->findOrFail($comboData['combo_id']);
+
+                foreach ($combo->items as $comboItem) {
+                    $unitPrice = $comboItem->variation
+                        ? $comboItem->variation->price
+                        : $comboItem->product->price;
+
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_id' => $comboItem->product_id,
+                        'variation_id' => $comboItem->variation_id ?? null,
+                        'combo_id' => $combo->id,
+                        'quantity' => $comboItem->quantity ?? 1,
+                        'unit_price' => $unitPrice,
+                        'notes' => null,
                     ]);
                 }
             }

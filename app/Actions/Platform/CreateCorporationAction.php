@@ -8,6 +8,7 @@ use App\Jobs\Platform\SendWelcomeEmailJob;
 use App\Models\Tenant\Corporation;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class CreateCorporationAction
@@ -37,7 +38,7 @@ class CreateCorporationAction
             $owner = User::create([
                 'name' => $data['owner_name'],
                 'email' => $data['owner_email'],
-                'password' => bcrypt($temporaryPassword),
+                'password' => Hash::make($temporaryPassword),
                 'role' => UserRole::Owner,
                 'corporation_id' => $corporation->id,
                 'venue_id' => $venue->id,

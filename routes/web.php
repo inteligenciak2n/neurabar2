@@ -51,7 +51,7 @@ Route::middleware('throttle:60,1')->group(function () {
 });
 
 Route::post('/call-waiter/{slug}', [CallWaiterController::class, 'store'])
-    ->middleware('throttle:1,1')
+    ->middleware('throttle:call-waiter')
     ->name('call-waiter.store');
 
 // Venue selector — auth required, no tenant context yet
@@ -110,7 +110,6 @@ Route::middleware([
         Route::post('/', [AttendanceController::class, 'store'])->name('store');
         Route::get('/{attendance}', [AttendanceController::class, 'show'])->name('show');
         Route::put('/{attendance}', [AttendanceController::class, 'update'])->name('update');
-        Route::post('/{attendance}/close', [AttendanceController::class, 'close'])->name('close');
         Route::post('/{attendance}/orders', [OrderController::class, 'store'])->name('orders.store');
     });
 

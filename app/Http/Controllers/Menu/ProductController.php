@@ -70,6 +70,8 @@ class ProductController extends Controller
 
     public function destroy(Product $product): RedirectResponse
     {
+        abort_if($product->category->menu->venue_id !== app('tenant')->id, 403);
+
         $product->delete();
 
         return back()->with('success', 'Product deleted.');
@@ -77,6 +79,8 @@ class ProductController extends Controller
 
     public function toggleActive(Product $product, ToggleProductActiveAction $action): RedirectResponse
     {
+        abort_if($product->category->menu->venue_id !== app('tenant')->id, 403);
+
         $action->execute($product);
 
         return back()->with('success', 'Product status updated.');

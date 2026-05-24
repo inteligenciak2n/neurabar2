@@ -15,13 +15,13 @@ class CorporationDashboardController extends Controller
     {
         $venue = app('tenant');
         $venues = Venue::where('corporation_id', $venue->corporation_id)
-            ->with(['attendances' => fn ($q) => $q->whereDate('created_at', today())])
+            ->withCount(['attendances' => fn ($q) => $q->whereDate('created_at', today())])
             ->get()
             ->map(fn ($v) => [
                 'id' => $v->id,
                 'name' => $v->name,
                 'active' => $v->active,
-                'today_attendances' => $v->attendances->count(),
+                'today_attendances' => $v->attendances_count,
             ]);
 
         return Inertia::render('Corporation/Dashboard', [
