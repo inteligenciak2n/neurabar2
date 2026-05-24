@@ -173,8 +173,11 @@ const closeAttendance = () => {
                     <Link :href="route('orders.take', attendance.id)" class="inline-flex">
                         <AppButton size="sm">Take Order</AppButton>
                     </Link>
+                    <Link :href="route('payment.show', attendance.id)" class="inline-flex">
+                        <AppButton size="sm" variant="secondary">Payment</AppButton>
+                    </Link>
                     <Link :href="route('attendances.show', attendance.id)" class="inline-flex">
-                        <AppButton size="sm" variant="secondary">View</AppButton>
+                        <AppButton size="sm" variant="ghost">View</AppButton>
                     </Link>
                     <AppButton size="sm" variant="destructive" @click="confirmClose(attendance)">Close</AppButton>
                 </div>

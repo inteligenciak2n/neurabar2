@@ -16,9 +16,7 @@ const mobileMenuOpen = ref(false);
 const navItems = [
     { label: 'Dashboard',   routeName: 'dashboard',         activePattern: 'dashboard' },
     { label: 'Attendances', routeName: 'attendances.index', activePattern: 'attendances.*' },
-    { label: 'Order Taker', routeName: 'orders.index',      activePattern: 'orders.*' },
-    { label: 'Kitchen',     routeName: 'kitchen.index',     activePattern: 'kitchen.*' },
-    { label: 'Payment',     routeName: 'payment.index',     activePattern: 'payment.*' },
+    { label: 'Kitchen',     routeName: 'kitchen.kds',       activePattern: 'kitchen.*' },
     { label: 'Menu',        routeName: 'menu.index',        activePattern: 'menu.*' },
     { label: 'Settings',    routeName: 'settings.index',    activePattern: 'settings.*' },
 ];

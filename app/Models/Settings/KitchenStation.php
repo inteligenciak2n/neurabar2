@@ -4,6 +4,7 @@ namespace App\Models\Settings;
 
 use App\Concerns\BelongsToVenue;
 use App\Models\Menu\Product;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -33,5 +34,10 @@ class KitchenStation extends Model
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('active', true);
     }
 }

@@ -1,0 +1,214 @@
+<script setup>
+import AppLayout from '@/Layouts/AppLayout.vue';
+import AppCard from '@/Components/AppCard.vue';
+import AppButton from '@/Components/AppButton.vue';
+import AppBadge from '@/Components/AppBadge.vue';
+import AppConfirmModal from '@/Components/AppConfirmModal.vue';
+import { useForm, Link } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+
+const props = defineProps({
+    attendance: Object,
+    totals: Object,
+    perPerson: Number,
+    paymentMethods: Array,
+});
+
+const showConfirm = ref(false);
+
+const methodLabels = {
+    cash: 'Cash',
+    credit_card: 'Credit Card',
+    debit_card: 'Debit Card',
+    pix: 'Pix',
+    other: 'Other',
+};
+
+const form = useForm({
+    party_size: props.attendance.party_size ?? '',
+    methods: [{ type: 'cash', amount: '', notes: '' }],
+});
+
+function addMethod() {
+    form.methods.push({ type: 'cash', amount: '', notes: '' });
+}
+
+function removeMethod(index) {
+    form.methods.splice(index, 1);
+}
+
+const methodsSum = computed(() =>
+    form.methods.reduce((sum, m) => sum + parseFloat(m.amount || 0), 0)
+);
+
+const sumMatchesTotal = computed(() =>
+    Math.abs(methodsSum.value - parseFloat(props.totals.grand_total)) <= 0.01
+);
+
+function confirmPayment() {
+    showConfirm.value = true;
+}
+
+function submitPayment() {
+    form.post(route('payment.store', props.attendance.id), {
+        onSuccess: () => { showConfirm.value = false; },
+        onError: () => { showConfirm.value = false; },
+    });
+}
+
+function formatCurrency(value) {
+    return 'R$ ' + parseFloat(value ?? 0).toFixed(2);
+}
+</script>
+
+<template>
+    <AppLayout title="Payment">
+        <template #header>
+            <div class="flex items-center gap-4">
+                <Link :href="route('attendances.index')" class="text-sm font-medium text-primary hover:underline">
+                    ← Attendances
+                </Link>
+                <h2 class="font-heading text-xl font-semibold text-ocean-deep">
+                    Payment — {{ attendance.customer_identifier ?? attendance.channel }}
+                </h2>
+            </div>
+        </template>
+
+        <div class="py-6 px-4 sm:px-6 max-w-3xl mx-auto space-y-6">
+            <!-- Items summary -->
+            <AppCard title="Order Summary">
+                <div v-for="order in attendance.orders" :key="order.id" class="mb-4">
+                    <p class="font-heading text-sm font-semibold text-ocean-deep mb-2">Order #{{ order.order_number }}</p>
+                    <div class="divide-y divide-muted">
+                        <div
+                            v-for="item in order.items"
+                            :key="item.id"
+                            class="flex items-center justify-between py-2 text-sm"
+                        >
+                            <span class="text-ocean-deep">{{ item.quantity }}× {{ item.product?.name ?? 'Item' }}</span>
+                            <span class="text-muted-foreground">{{ formatCurrency(item.unit_price * item.quantity) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </AppCard>
+
+            <!-- Totals + Party Size -->
+            <AppCard title="Totals">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-ocean-deep mb-1">Party Size</label>
+                    <input
+                        v-model="form.party_size"
+                        type="number"
+                        min="0"
+                        class="w-32 rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <p class="mt-1 text-xs text-muted-foreground">Affects cover charge calculation.</p>
+                </div>
+
+                <div class="space-y-2 border-t border-border pt-4">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-muted-foreground">Items total</span>
+                        <span>{{ formatCurrency(totals.items_total) }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-muted-foreground">Cover charge</span>
+                        <span>{{ formatCurrency(totals.cover_charge_total) }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-muted-foreground">Service fee</span>
+                        <span>{{ formatCurrency(totals.service_fee_total) }}</span>
+                    </div>
+                    <div class="flex justify-between font-heading font-semibold text-base border-t border-border pt-2">
+                        <span class="text-ocean-deep">Grand Total</span>
+                        <span class="text-primary">{{ formatCurrency(totals.grand_total) }}</span>
+                    </div>
+                    <div v-if="perPerson" class="flex justify-between text-sm text-muted-foreground">
+                        <span>Per person</span>
+                        <span>{{ formatCurrency(perPerson) }}</span>
+                    </div>
+                </div>
+            </AppCard>
+
+            <!-- Payment Methods -->
+            <AppCard title="Payment Methods">
+                <div class="space-y-3">
+                    <div
+                        v-for="(method, index) in form.methods"
+                        :key="index"
+                        class="flex gap-2 items-start"
+                    >
+                        <select
+                            v-model="method.type"
+                            class="rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                            <option v-for="m in paymentMethods" :key="m" :value="m">{{ methodLabels[m] ?? m }}</option>
+                        </select>
+                        <input
+                            v-model="method.amount"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                            class="w-32 rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                        <input
+                            v-model="method.notes"
+                            type="text"
+                            placeholder="Notes (optional)"
+                            class="flex-1 rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                        <button
+                            v-if="form.methods.length > 1"
+                            type="button"
+                            class="text-destructive text-sm hover:underline"
+                            @click="removeMethod(index)"
+                        >
+                            Remove
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-3 flex items-center justify-between">
+                    <AppButton variant="ghost" size="sm" @click="addMethod">+ Add method</AppButton>
+                    <div class="text-sm">
+                        <span class="text-muted-foreground">Sum: </span>
+                        <span
+                            :class="sumMatchesTotal ? 'text-green-700 font-semibold' : 'text-destructive font-semibold'"
+                        >
+                            {{ formatCurrency(methodsSum) }}
+                        </span>
+                    </div>
+                </div>
+
+                <p v-if="form.methods.length && !sumMatchesTotal" class="mt-2 text-xs text-destructive">
+                    The sum of payment methods must equal the grand total.
+                </p>
+
+                <p v-if="form.errors.methods" class="mt-2 text-xs text-destructive">{{ form.errors.methods }}</p>
+            </AppCard>
+
+            <!-- Submit -->
+            <div class="flex justify-end gap-3">
+                <Link :href="route('attendances.index')">
+                    <AppButton variant="ghost">Cancel</AppButton>
+                </Link>
+                <AppButton
+                    :disabled="!sumMatchesTotal || form.processing"
+                    @click="confirmPayment"
+                >
+                    Confirm Payment
+                </AppButton>
+            </div>
+        </div>
+
+        <AppConfirmModal
+            :show="showConfirm"
+            title="Confirm Payment"
+            :message="`Register payment of ${formatCurrency(totals.grand_total)} and close this attendance?`"
+            confirm-label="Confirm"
+            :loading="form.processing"
+            @confirm="submitPayment"
+            @cancel="showConfirm = false"
+        />
+    </AppLayout>
+</template>

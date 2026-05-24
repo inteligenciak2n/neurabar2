@@ -1,11 +1,15 @@
 <?php
 
 use App\Http\Controllers\Auth\VenueSelectorController;
+use App\Http\Controllers\Guest\CallWaiterController;
 use App\Http\Controllers\Guest\PublicMenuController;
+use App\Http\Controllers\Kitchen\KdsController;
 use App\Http\Controllers\Menu\CategoryController;
 use App\Http\Controllers\Menu\ProductController;
 use App\Http\Controllers\Orders\AttendanceController;
 use App\Http\Controllers\Orders\OrderController;
+use App\Http\Controllers\Payment\PaymentController;
+use App\Http\Controllers\Settings\DashboardController;
 use App\Http\Controllers\Settings\KitchenStationController;
 use App\Http\Controllers\Settings\PreparationStatusController;
 use App\Http\Controllers\Settings\ServiceLocationController;
@@ -28,7 +32,13 @@ Route::get('/', function () {
 // Public guest routes — no auth required
 Route::middleware('throttle:60,1')->group(function () {
     Route::get('/menu/{slug}', [PublicMenuController::class, 'show'])->name('menu.public');
+    Route::get('/call-waiter/{slug}', [CallWaiterController::class, 'show'])->name('call-waiter.show');
+    Route::get('/kitchen/monitor', [KdsController::class, 'monitor'])->name('kitchen.monitor');
 });
+
+Route::post('/call-waiter/{slug}', [CallWaiterController::class, 'store'])
+    ->middleware('throttle:1,1')
+    ->name('call-waiter.store');
 
 // Venue selector — auth required, no tenant context yet
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])
@@ -42,7 +52,7 @@ Route::middleware([
     'verified',
     'tenant',
 ])->group(function () {
-    Route::get('/dashboard', fn () => Inertia::render('Dashboard'))->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Menu — edit routes restricted to managers; products page accessible by all
     Route::prefix('menu')->name('menu.')->middleware(['role:corporation_admin,owner,general_manager'])->group(function () {
@@ -72,8 +82,17 @@ Route::middleware([
     // Order Taker
     Route::get('/orders/take/{attendance}', [OrderController::class, 'create'])->name('orders.take');
 
-    Route::get('/kitchen', fn () => Inertia::render('Kitchen/Index'))->name('kitchen.index');
-    Route::get('/payment', fn () => Inertia::render('Payment/Index'))->name('payment.index');
+    // Kitchen KDS
+    Route::prefix('kitchen')->name('kitchen.')->group(function () {
+        Route::get('/kds', [KdsController::class, 'index'])->name('kds');
+        Route::put('/items/{item}/status', [KdsController::class, 'updateItemStatus'])->name('items.status');
+    });
+
+    // Payment
+    Route::prefix('payment')->name('payment.')->group(function () {
+        Route::get('/{attendance}', [PaymentController::class, 'show'])->name('show');
+        Route::post('/{attendance}', [PaymentController::class, 'store'])->name('store');
+    });
 
     // Settings — owner or general manager only
     Route::prefix('settings')->name('settings.')->middleware(['role:owner,general_manager'])->group(function () {
