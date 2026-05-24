@@ -31,8 +31,9 @@ class RegisterPaymentAction
             ]);
         }
 
-        $totals = $this->paymentService->calculateTotal($attendance);
         $validated = $request->validated();
+        $partySize = isset($validated['party_size']) ? (int) $validated['party_size'] : (int) $attendance->party_size;
+        $totals = $this->paymentService->calculateTotal($attendance, $partySize);
         $methodsTotal = collect($validated['methods'])->sum(fn ($m) => (float) $m['amount']);
 
         if (abs($methodsTotal - $totals['grand_total']) > 0.01) {
@@ -41,8 +42,7 @@ class RegisterPaymentAction
             ]);
         }
 
-        $payment = DB::transaction(function () use ($attendance, $totals, $validated): Payment {
-            $partySize = isset($validated['party_size']) ? (int) $validated['party_size'] : (int) $attendance->party_size;
+        $payment = DB::transaction(function () use ($attendance, $totals, $validated, $partySize): Payment {
 
             $payment = Payment::create([
                 'attendance_id' => $attendance->id,

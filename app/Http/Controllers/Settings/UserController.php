@@ -19,9 +19,13 @@ class UserController extends Controller
     {
         $venue = app('tenant');
 
-        $users = User::where('venue_id', $venue->id)
-            ->orWhere('corporation_id', $venue->corporation_id)
-            ->orderBy('name')
+        $query = User::where('venue_id', $venue->id);
+
+        if ($venue->corporation_id !== null) {
+            $query->orWhere('corporation_id', $venue->corporation_id);
+        }
+
+        $users = $query->orderBy('name')
             ->get(['id', 'name', 'email', 'role', 'active', 'venue_id', 'corporation_id']);
 
         return Inertia::render('Settings/Users', [

@@ -12,7 +12,7 @@ class PaymentService
      *
      * @return array{items_total: float, cover_charge_total: float, service_fee_total: float, grand_total: float}
      */
-    public function calculateTotal(Attendance $attendance): array
+    public function calculateTotal(Attendance $attendance, ?int $partySize = null): array
     {
         $attendance->loadMissing('orders.items.modifiers');
 
@@ -29,7 +29,7 @@ class PaymentService
             ->where('venue_id', $attendance->venue_id)
             ->firstOrFail();
 
-        $partySize = max((int) $attendance->party_size, 0);
+        $partySize = max($partySize ?? (int) $attendance->party_size, 0);
         $coverChargeTotal = $partySize > 0 ? (float) $settings->cover_charge * $partySize : 0.0;
 
         $subtotal = $itemsTotal + $coverChargeTotal;

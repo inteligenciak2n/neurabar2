@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Settings;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateVenueRequest extends FormRequest
 {
@@ -30,7 +31,7 @@ class UpdateVenueRequest extends FormRequest
             'require_table' => ['boolean'],
             'require_tab' => ['boolean'],
             'require_location' => ['boolean'],
-            'call_waiter_slug' => ['nullable', 'string', 'max:100'],
+            'call_waiter_slug' => ['nullable', 'string', 'max:100', Rule::unique('venues', 'call_waiter_slug')->ignore(app('tenant')->id)],
             'logo_url' => ['nullable', 'url', 'max:1000'],
         ];
     }

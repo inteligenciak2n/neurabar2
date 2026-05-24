@@ -21,13 +21,9 @@ class UpdateItemStatusAction
             ]);
         }
 
-        $status = PreparationStatus::findOrFail($preparationStatusId);
+        PreparationStatus::findOrFail($preparationStatusId);
 
-        $readyAt = $item->ready_at;
-
-        if ($status->name === 'Ready' || $this->isLastPendingItem($item)) {
-            $readyAt = $readyAt ?? now();
-        }
+        $readyAt = $this->isLastPendingItem($item) ? ($item->ready_at ?? now()) : $item->ready_at;
 
         $item->update([
             'preparation_status_id' => $preparationStatusId,
@@ -35,10 +31,6 @@ class UpdateItemStatusAction
         ]);
 
         $item->refresh()->load('order.attendance');
-
-        if ($this->allItemsReady($item)) {
-            $item->update(['ready_at' => $item->ready_at ?? now()]);
-        }
 
         event(new ItemStatusUpdated($item));
 
@@ -49,13 +41,6 @@ class UpdateItemStatusAction
     {
         return OrderItem::where('order_id', $item->order_id)
             ->where('id', '!=', $item->id)
-            ->whereNull('ready_at')
-            ->doesntExist();
-    }
-
-    private function allItemsReady(OrderItem $item): bool
-    {
-        return OrderItem::where('order_id', $item->order_id)
             ->whereNull('ready_at')
             ->doesntExist();
     }

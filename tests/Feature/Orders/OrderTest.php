@@ -6,6 +6,8 @@ use App\Enums\UserRole;
 use App\Events\Orders\OrderPlaced;
 use App\Models\Menu\Category;
 use App\Models\Menu\Menu;
+use App\Models\Menu\ModifierGroup;
+use App\Models\Menu\ModifierOption;
 use App\Models\Menu\Product;
 use App\Models\Orders\Attendance;
 use App\Models\Tenant\Venue;
@@ -141,5 +143,94 @@ class OrderTest extends TestCase
         $this->post(route('attendances.orders.store', $attendance->id), [
             'items' => [],
         ])->assertSessionHasErrors('items');
+    }
+
+    public function test_tampered_unit_price_returns_validation_error(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Attendant, $venue);
+
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
+        $menu = Menu::factory()->create(['venue_id' => $venue->id]);
+        $category = Category::factory()->create(['menu_id' => $menu->id]);
+        $product = Product::factory()->create(['category_id' => $category->id, 'price' => 50.00, 'active' => true]);
+
+        $this->post(route('attendances.orders.store', $attendance->id), [
+            'items' => [
+                ['product_id' => $product->id, 'quantity' => 1, 'unit_price' => 0.01],
+            ],
+        ])->assertSessionHasErrors('items.0.unit_price');
+    }
+
+    public function test_modifier_extra_price_snapshot_is_saved_on_order(): void
+    {
+        Event::fake([OrderPlaced::class]);
+
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Attendant, $venue);
+
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
+        $menu = Menu::factory()->create(['venue_id' => $venue->id]);
+        $category = Category::factory()->create(['menu_id' => $menu->id]);
+        $product = Product::factory()->create(['category_id' => $category->id, 'price' => 20.00, 'active' => true]);
+
+        $modifierGroup = ModifierGroup::factory()->create(['venue_id' => $venue->id]);
+        $modifierOption = ModifierOption::factory()->create([
+            'modifier_group_id' => $modifierGroup->id,
+            'extra_price' => 5.00,
+            'active' => true,
+        ]);
+
+        $this->post(route('attendances.orders.store', $attendance->id), [
+            'items' => [
+                [
+                    'product_id' => $product->id,
+                    'quantity' => 1,
+                    'unit_price' => 20.00,
+                    'modifiers' => [
+                        ['modifier_option_id' => $modifierOption->id],
+                    ],
+                ],
+            ],
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('order_item_modifiers', [
+            'modifier_option_id' => $modifierOption->id,
+            'extra_price_snapshot' => 5.00,
+        ]);
+    }
+
+    public function test_cross_tenant_modifier_option_is_rejected(): void
+    {
+        Event::fake([OrderPlaced::class]);
+
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Attendant, $venue);
+
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
+        $menu = Menu::factory()->create(['venue_id' => $venue->id]);
+        $category = Category::factory()->create(['menu_id' => $menu->id]);
+        $product = Product::factory()->create(['category_id' => $category->id, 'price' => 20.00, 'active' => true]);
+
+        $otherVenue = Venue::factory()->create();
+        $otherGroup = ModifierGroup::factory()->create(['venue_id' => $otherVenue->id]);
+        $otherOption = ModifierOption::factory()->create([
+            'modifier_group_id' => $otherGroup->id,
+            'extra_price' => 5.00,
+            'active' => true,
+        ]);
+
+        $this->post(route('attendances.orders.store', $attendance->id), [
+            'items' => [
+                [
+                    'product_id' => $product->id,
+                    'quantity' => 1,
+                    'unit_price' => 20.00,
+                    'modifiers' => [
+                        ['modifier_option_id' => $otherOption->id],
+                    ],
+                ],
+            ],
+        ])->assertSessionHasErrors('items.0.modifiers.0.modifier_option_id');
     }
 }

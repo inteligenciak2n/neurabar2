@@ -4,6 +4,7 @@ namespace App\Actions\Orders;
 
 use App\Events\Orders\OrderPlaced;
 use App\Http\Requests\Orders\StoreOrderRequest;
+use App\Models\Menu\ModifierOption;
 use App\Models\Orders\Attendance;
 use App\Models\Orders\Order;
 use App\Models\Orders\OrderItem;
@@ -40,8 +41,11 @@ class PlaceOrderAction
                 ]);
 
                 foreach ($itemData['modifiers'] ?? [] as $modifierData) {
+                    $modifierOption = ModifierOption::findOrFail($modifierData['modifier_option_id']);
+
                     $item->modifiers()->create([
                         'modifier_option_id' => $modifierData['modifier_option_id'],
+                        'extra_price_snapshot' => $modifierOption->extra_price,
                     ]);
                 }
             }

@@ -28,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(OrderPlaced::class, BroadcastNewOrderByStation::class);
 
         Gate::define('manage-menu', fn (User $user) => in_array($user->role, [
+            UserRole::CorporationAdmin,
             UserRole::Owner,
             UserRole::GeneralManager,
         ], true));

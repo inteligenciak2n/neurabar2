@@ -70,4 +70,42 @@ class VenueTest extends TestCase
         $this->put(route('settings.venue.update'), ['name' => ''])
             ->assertSessionHasErrors('name');
     }
+
+    public function test_duplicate_call_waiter_slug_returns_validation_error(): void
+    {
+        Venue::factory()->create(['call_waiter_slug' => 'taken-slug']);
+
+        $venue = Venue::factory()->create(['active' => true]);
+        $user = User::factory()->create([
+            'role' => UserRole::Owner,
+            'venue_id' => $venue->id,
+            'active' => true,
+        ]);
+
+        $this->actingAs($user);
+        app()->instance('tenant', $venue);
+
+        $this->put(route('settings.venue.update'), [
+            'name' => 'My Venue',
+            'call_waiter_slug' => 'taken-slug',
+        ])->assertSessionHasErrors('call_waiter_slug');
+    }
+
+    public function test_same_venue_can_keep_its_own_slug(): void
+    {
+        $venue = Venue::factory()->create(['call_waiter_slug' => 'my-slug', 'active' => true]);
+        $user = User::factory()->create([
+            'role' => UserRole::Owner,
+            'venue_id' => $venue->id,
+            'active' => true,
+        ]);
+
+        $this->actingAs($user);
+        app()->instance('tenant', $venue);
+
+        $this->put(route('settings.venue.update'), [
+            'name' => 'My Venue',
+            'call_waiter_slug' => 'my-slug',
+        ])->assertRedirect();
+    }
 }

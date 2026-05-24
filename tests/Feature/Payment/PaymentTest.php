@@ -185,4 +185,23 @@ class PaymentTest extends TestCase
                     ->has('paymentMethods')
             );
     }
+
+    public function test_party_size_from_request_overrides_attendance_party_size(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Owner, $venue);
+
+        // Attendance has party_size = 1, but payment is submitted with party_size = 3
+        $attendance = $this->createAttendanceWithItems($venue, 100.00, 1);
+
+        // With party_size 3: items=100, cover=30 (10*3), subtotal=130, fee=13, grand=143
+        $this->post(route('payment.store', $attendance->id), [
+            'party_size' => 3,
+            'methods' => [
+                ['type' => 'cash', 'amount' => 143.00],
+            ],
+        ])->assertRedirect(route('attendances.index'));
+
+        $this->assertDatabaseHas('payments', ['attendance_id' => $attendance->id, 'party_size' => 3, 'grand_total' => 143.00]);
+    }
 }
