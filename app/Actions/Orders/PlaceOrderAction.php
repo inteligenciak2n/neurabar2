@@ -5,6 +5,7 @@ namespace App\Actions\Orders;
 use App\Events\Orders\OrderPlaced;
 use App\Http\Requests\Orders\StoreOrderRequest;
 use App\Models\Menu\ModifierOption;
+use App\Models\Menu\ProductVariation;
 use App\Models\Orders\Attendance;
 use App\Models\Orders\Order;
 use App\Models\Orders\OrderItem;
@@ -32,11 +33,19 @@ class PlaceOrderAction
             ]);
 
             foreach ($request->validated()['items'] as $itemData) {
+                $unitPrice = $itemData['unit_price'];
+
+                if (! empty($itemData['variation_id'])) {
+                    $variation = ProductVariation::findOrFail($itemData['variation_id']);
+                    $unitPrice = $variation->price;
+                }
+
                 $item = OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $itemData['product_id'],
+                    'variation_id' => $itemData['variation_id'] ?? null,
                     'quantity' => $itemData['quantity'],
-                    'unit_price' => $itemData['unit_price'],
+                    'unit_price' => $unitPrice,
                     'notes' => $itemData['notes'] ?? null,
                 ]);
 

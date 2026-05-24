@@ -1,14 +1,27 @@
 <?php
 
 use App\Http\Controllers\Auth\VenueSelectorController;
+use App\Http\Controllers\Corporation\CorporationDashboardController;
+use App\Http\Controllers\Corporation\VenueController as CorporationVenueController;
 use App\Http\Controllers\Guest\CallWaiterController;
 use App\Http\Controllers\Guest\PublicMenuController;
+use App\Http\Controllers\Guest\TrackOrderController;
 use App\Http\Controllers\Kitchen\KdsController;
 use App\Http\Controllers\Menu\CategoryController;
+use App\Http\Controllers\Menu\ComboController;
+use App\Http\Controllers\Menu\ModifierGroupController;
+use App\Http\Controllers\Menu\ModifierOptionController;
 use App\Http\Controllers\Menu\ProductController;
+use App\Http\Controllers\Menu\ProductVariationController;
 use App\Http\Controllers\Orders\AttendanceController;
 use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\Payment\PaymentController;
+use App\Http\Controllers\Platform\CorporationController as PlatformCorporationController;
+use App\Http\Controllers\Platform\DashboardController as PlatformDashboardController;
+use App\Http\Controllers\Platform\LoginController as PlatformLoginController;
+use App\Http\Controllers\Platform\PlanAssignmentController;
+use App\Http\Controllers\Platform\PlanCatalogController;
+use App\Http\Controllers\Platform\PlatformUserController;
 use App\Http\Controllers\Settings\DashboardController;
 use App\Http\Controllers\Settings\KitchenStationController;
 use App\Http\Controllers\Settings\PreparationStatusController;
@@ -31,9 +44,10 @@ Route::get('/', function () {
 
 // Public guest routes — no auth required
 Route::middleware('throttle:60,1')->group(function () {
-    Route::get('/menu/{slug}', [PublicMenuController::class, 'show'])->name('menu.public');
+    Route::get('/qr/{slug}', [PublicMenuController::class, 'show'])->name('menu.public');
     Route::get('/call-waiter/{slug}', [CallWaiterController::class, 'show'])->name('call-waiter.show');
     Route::get('/kitchen/monitor', [KdsController::class, 'monitor'])->name('kitchen.monitor');
+    Route::get('/order/{order}/track', [TrackOrderController::class, 'show'])->name('orders.track');
 });
 
 Route::post('/call-waiter/{slug}', [CallWaiterController::class, 'store'])
@@ -67,6 +81,27 @@ Route::middleware([
         Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
         Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
         Route::post('/products/{product}/toggle', [ProductController::class, 'toggleActive'])->name('products.toggle');
+        Route::put('/products/{product}/modifier-groups', [ProductController::class, 'syncModifierGroups'])->name('products.modifier-groups.sync');
+
+        // Product variations (nested under products)
+        Route::post('/products/{product}/variations', [ProductVariationController::class, 'store'])->name('products.variations.store');
+        Route::put('/products/{product}/variations/{variation}', [ProductVariationController::class, 'update'])->name('products.variations.update');
+        Route::delete('/products/{product}/variations/{variation}', [ProductVariationController::class, 'destroy'])->name('products.variations.destroy');
+
+        // Modifier groups and options
+        Route::get('/modifier-groups', [ModifierGroupController::class, 'index'])->name('modifier-groups.index');
+        Route::post('/modifier-groups', [ModifierGroupController::class, 'store'])->name('modifier-groups.store');
+        Route::put('/modifier-groups/{modifierGroup}', [ModifierGroupController::class, 'update'])->name('modifier-groups.update');
+        Route::delete('/modifier-groups/{modifierGroup}', [ModifierGroupController::class, 'destroy'])->name('modifier-groups.destroy');
+        Route::post('/modifier-groups/{modifierGroup}/options', [ModifierOptionController::class, 'store'])->name('modifier-groups.options.store');
+        Route::put('/modifier-groups/{modifierGroup}/options/{option}', [ModifierOptionController::class, 'update'])->name('modifier-groups.options.update');
+        Route::delete('/modifier-groups/{modifierGroup}/options/{option}', [ModifierOptionController::class, 'destroy'])->name('modifier-groups.options.destroy');
+
+        // Combos
+        Route::get('/combos', [ComboController::class, 'index'])->name('combos.index');
+        Route::post('/combos', [ComboController::class, 'store'])->name('combos.store');
+        Route::put('/combos/{combo}', [ComboController::class, 'update'])->name('combos.update');
+        Route::delete('/combos/{combo}', [ComboController::class, 'destroy'])->name('combos.destroy');
     });
 
     // Attendances
@@ -123,5 +158,54 @@ Route::middleware([
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    });
+});
+
+// Corporation panel — auth + tenant + corporation roles
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified',
+    'tenant',
+    'role:corporation_admin,owner,general_manager',
+])->prefix('corporation')->name('corporation.')->group(function () {
+    Route::get('/dashboard', [CorporationDashboardController::class, 'index'])->name('dashboard');
+    Route::post('/venues/{id}/switch', [CorporationDashboardController::class, 'switchVenue'])->name('venues.switch');
+    Route::get('/venues', [CorporationVenueController::class, 'index'])->name('venues.index');
+    Route::get('/venues/create', [CorporationVenueController::class, 'create'])->name('venues.create');
+    Route::post('/venues', [CorporationVenueController::class, 'store'])->name('venues.store');
+    Route::get('/venues/{venue}/edit', [CorporationVenueController::class, 'edit'])->name('venues.edit');
+    Route::put('/venues/{venue}', [CorporationVenueController::class, 'update'])->name('venues.update');
+});
+
+// Platform backoffice — separate guard
+$platformPath = config('platform.path', '_platform');
+
+Route::prefix($platformPath)->name('platform.')->group(function () {
+    Route::get('/login', [PlatformLoginController::class, 'index'])->name('login');
+    Route::post('/login', [PlatformLoginController::class, 'store'])->name('login.store');
+    Route::post('/logout', [PlatformLoginController::class, 'destroy'])->name('logout');
+
+    Route::middleware(['auth:platform'])->group(function () {
+        Route::get('/', [PlatformDashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/corporations', [PlatformCorporationController::class, 'index'])->name('corporations.index');
+        Route::get('/corporations/create', [PlatformCorporationController::class, 'create'])->name('corporations.create');
+        Route::post('/corporations', [PlatformCorporationController::class, 'store'])->name('corporations.store');
+        Route::get('/corporations/{corporation}/edit', [PlatformCorporationController::class, 'edit'])->name('corporations.edit');
+        Route::put('/corporations/{corporation}', [PlatformCorporationController::class, 'update'])->name('corporations.update');
+        Route::put('/corporations/{corporation}/plan', [PlanAssignmentController::class, 'update'])->name('corporations.plan');
+
+        Route::get('/plans', [PlanCatalogController::class, 'index'])->name('plans.index');
+        Route::post('/plans', [PlanCatalogController::class, 'store'])->name('plans.store');
+        Route::put('/plans/{plan}', [PlanCatalogController::class, 'update'])->name('plans.update');
+        Route::delete('/plans/{plan}', [PlanCatalogController::class, 'destroy'])->name('plans.destroy');
+
+        Route::middleware(['platform_role:super_admin'])->group(function () {
+            Route::get('/users', [PlatformUserController::class, 'index'])->name('users.index');
+            Route::post('/users', [PlatformUserController::class, 'store'])->name('users.store');
+            Route::put('/users/{platformUser}', [PlatformUserController::class, 'update'])->name('users.update');
+            Route::delete('/users/{platformUser}', [PlatformUserController::class, 'destroy'])->name('users.destroy');
+        });
     });
 });

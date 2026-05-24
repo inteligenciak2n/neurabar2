@@ -17,7 +17,7 @@ class BroadcastNewOrderByStation
             ->groupBy(fn ($item) => $item->product->kitchen_station_id);
 
         foreach ($itemsByStation as $stationId => $stationItems) {
-            if ($stationId === null) {
+            if (empty($stationId)) {
                 continue;
             }
 

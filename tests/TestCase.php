@@ -37,7 +37,7 @@ abstract class TestCase extends BaseTestCase
     {
         $platformUser = PlatformUser::factory()->create(['role' => $role]);
 
-        $this->actingAs($platformUser, 'sanctum');
+        $this->actingAs($platformUser, 'platform');
 
         return $platformUser;
     }

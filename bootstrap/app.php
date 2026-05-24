@@ -1,12 +1,14 @@
 <?php
 
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RequirePlatformRole;
 use App\Http\Middleware\RequireRole;
 use App\Http\Middleware\SetVenueContext;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -22,9 +24,18 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
         $middleware->statefulApi();
+        $middleware->redirectGuestsTo(function (Request $request) {
+            if (str_starts_with($request->path(), config('platform.path', '_platform'))) {
+                return route('platform.login');
+            }
+
+            return route('login');
+        });
+
         $middleware->alias([
             'tenant' => SetVenueContext::class,
             'role' => RequireRole::class,
+            'platform_role' => RequirePlatformRole::class,
         ]);
 
         //
