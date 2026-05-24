@@ -4,6 +4,7 @@ namespace Database\Factories\Payment;
 
 use App\Models\Orders\Attendance;
 use App\Models\Payment\Payment;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -30,6 +31,7 @@ class PaymentFactory extends Factory
             'service_fee_total' => $fee,
             'grand_total' => $total,
             'party_size' => fake()->numberBetween(1, 8),
+            'created_by' => User::factory(),
         ];
     }
 
