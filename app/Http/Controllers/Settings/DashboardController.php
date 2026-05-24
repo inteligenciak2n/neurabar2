@@ -6,6 +6,7 @@ use App\Models\Orders\Attendance;
 use App\Models\Orders\OrderItem;
 use App\Models\Payment\Payment;
 use App\Models\Settings\KitchenStation;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,7 +18,7 @@ class DashboardController
 
         $openAttendancesCount = Attendance::open()->count();
 
-        $itemsInPreparation = OrderItem::whereNull('ready_at')
+        $itemsInPreparation = OrderItem::inPreparation()
             ->whereHas(
                 'order.attendance',
                 fn ($q) => $q->where('venue_id', $venueId)->where('status', 'open')
@@ -34,19 +35,23 @@ class DashboardController
             ->take(20)
             ->get();
 
+        $pendingByStation = OrderItem::inPreparation()
+            ->whereHas(
+                'order.attendance',
+                fn ($q) => $q->where('venue_id', $venueId)->where('status', 'open')
+            )
+            ->whereHas('product')
+            ->select(DB::raw('count(*) as pending_count'), 'products.kitchen_station_id')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->groupBy('products.kitchen_station_id')
+            ->pluck('pending_count', 'kitchen_station_id');
+
         $stationsSummary = KitchenStation::active()
             ->get()
-            ->map(function (KitchenStation $station) use ($venueId) {
-                $pendingCount = OrderItem::whereNull('ready_at')
-                    ->whereHas('product', fn ($q) => $q->where('kitchen_station_id', $station->id))
-                    ->whereHas(
-                        'order.attendance',
-                        fn ($q) => $q->where('venue_id', $venueId)->where('status', 'open')
-                    )
-                    ->count();
-
-                return array_merge($station->toArray(), ['pending_items_count' => $pendingCount]);
-            });
+            ->map(fn (KitchenStation $station) => array_merge(
+                $station->toArray(),
+                ['pending_items_count' => (int) ($pendingByStation[$station->id] ?? 0)]
+            ));
 
         return Inertia::render('Dashboard', [
             'open_attendances_count' => $openAttendancesCount,

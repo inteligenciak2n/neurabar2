@@ -6,7 +6,6 @@ use App\Actions\Kitchen\UpdateItemStatusAction;
 use App\Models\Orders\OrderItem;
 use App\Models\Settings\KitchenStation;
 use App\Models\Settings\PreparationStatus;
-use App\Models\Tenant\Venue;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -59,10 +58,6 @@ class KdsController
 
     public function monitor(): Response
     {
-        $venues = Venue::all();
-
-        // Monitor is public — load items with show_to_customer statuses across all venues
-        // In MLP, we show items for a venue resolved from route or query param
         $venueId = request()->query('venue');
 
         $openItems = [];

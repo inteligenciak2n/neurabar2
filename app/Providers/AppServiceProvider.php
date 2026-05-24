@@ -46,6 +46,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('access-corporation', fn (User $user) => in_array($user->role, [
             UserRole::CorporationAdmin,
             UserRole::Owner,
+            UserRole::GeneralManager,
         ], true));
 
         Gate::define('register-payment', fn (User $user) => in_array($user->role, [

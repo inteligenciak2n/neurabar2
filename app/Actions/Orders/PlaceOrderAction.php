@@ -62,7 +62,7 @@ class PlaceOrderAction
             return $order;
         });
 
-        event(new OrderPlaced($order));
+        event(new OrderPlaced($order->load('attendance')));
 
         return $order;
     }

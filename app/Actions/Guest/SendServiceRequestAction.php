@@ -25,7 +25,7 @@ class SendServiceRequestAction
         $validated = $request->validated();
 
         if ($venue->call_waiter_passphrase !== null && $venue->call_waiter_passphrase !== '') {
-            if (($validated['passphrase'] ?? '') !== $venue->call_waiter_passphrase) {
+            if (! hash_equals($venue->call_waiter_passphrase, $validated['passphrase'] ?? '')) {
                 throw ValidationException::withMessages([
                     'passphrase' => 'Invalid passphrase.',
                 ]);

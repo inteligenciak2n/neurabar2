@@ -30,6 +30,12 @@ class LoginController extends Controller
             return back()->withErrors(['email' => 'These credentials do not match our records.']);
         }
 
+        if (! auth('platform')->user()->active) {
+            auth('platform')->logout();
+
+            return back()->withErrors(['email' => 'This account has been deactivated.']);
+        }
+
         $request->session()->regenerate();
 
         return redirect()->intended(route('platform.dashboard'));

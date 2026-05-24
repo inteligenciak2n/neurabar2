@@ -9,11 +9,9 @@ class MetricsService
 {
     public function calculateMRR(): float
     {
-        return Cache::remember('platform.metrics.mrr', 300, function () {
-            return (float) Corporation::where('active', true)
-                ->where(fn ($q) => $q->whereNull('plan_end_date')->orWhere('plan_end_date', '>=', today()))
-                ->sum('subscription_value');
-        });
+        return (float) Corporation::where('active', true)
+            ->where(fn ($q) => $q->whereNull('plan_end_date')->orWhere('plan_end_date', '>=', today()))
+            ->sum('subscription_value');
     }
 
     /** @return array<string, mixed> */

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Tenant\Venue;
 use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
@@ -11,11 +12,31 @@ Broadcast::channel('user.{id}', function ($user, $id) {
 });
 
 Broadcast::channel('venue.{id}.kitchen', function ($user, string $id) {
-    return $user->venue_id === $id
-        || session('active_venue_id') === $id;
+    if ($user->venue_id === $id) {
+        return true;
+    }
+
+    if ($user->corporation_id) {
+        return Venue::where('id', $id)
+            ->where('corporation_id', $user->corporation_id)
+            ->where('active', true)
+            ->exists();
+    }
+
+    return false;
 });
 
 Broadcast::channel('venue.{venueId}.station.{stationId}', function ($user, string $venueId) {
-    return $user->venue_id === $venueId
-        || session('active_venue_id') === $venueId;
+    if ($user->venue_id === $venueId) {
+        return true;
+    }
+
+    if ($user->corporation_id) {
+        return Venue::where('id', $venueId)
+            ->where('corporation_id', $user->corporation_id)
+            ->where('active', true)
+            ->exists();
+    }
+
+    return false;
 });
