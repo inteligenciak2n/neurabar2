@@ -8,6 +8,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import InputSelect from '@/Components/InputSelect.vue';
 
 const props = defineProps({
     user: Object,
@@ -17,6 +18,7 @@ const form = useForm({
     _method: 'PUT',
     name: props.user.name,
     email: props.user.email,
+    lang: props.user.lang,
     photo: null,
 });
 
@@ -174,6 +176,18 @@ const clearPhotoFileInput = () => {
                         A new verification link has been sent to your email address.
                     </div>
                 </div>
+            </div>
+
+             <!-- Language -->
+            <div class="col-span-6 sm:col-span-4">
+                <InputLabel for="lang" value="Language" />
+                <InputSelect
+                    id="lang"
+                    v-model="form.lang"
+                    :options="$page.props.language.locales"
+                    class="mt-1 block w-full"
+                />
+                <InputError :message="form.errors.lang" class="mt-2" />
             </div>
         </template>
 

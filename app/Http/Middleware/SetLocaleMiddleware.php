@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\Languages\TranslationService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,7 +18,7 @@ class SetLocaleMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $availableLocales = array_keys(\App\Services\Languages\TranslationService::getAvailableLanguages()); // Defina os idiomas disponíveis
+        $availableLocales = TranslationService::getLanguageKeys(); // Defina os idiomas disponíveis
 
             // Verifica se o idioma já está na sessão
         if (Session::has('locale')) {

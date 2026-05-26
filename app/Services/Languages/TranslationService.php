@@ -37,10 +37,16 @@ class TranslationService
     static public function getAvailableLanguages()
     {
         return [
-            'en' => 'English',
-            'es' => 'Español',
-            'pt' => 'Português',
+            ['value' =>'en', 'label' => 'English'],
+            ['value' =>'es', 'label' => 'Español'],
+            ['value' =>'pt', 'label' => 'Português'],
         ];
+    }
+
+    static public function getLanguageKeys() : array
+    {
+        $languages = self::getAvailableLanguages();
+        return array_column($languages, 'value');
     }
 
     public function setTranslations(Request $request, string $route)
@@ -150,7 +156,7 @@ class TranslationService
 
     public function setCustomLocale(string $locale)
     {
-        if( !array_key_exists($locale, self::getAvailableLanguages()) ){
+        if( !in_array($locale, self::getLanguageKeys()) ){
             $locale = 'pt';
         }
         Session::put('locale', $locale);

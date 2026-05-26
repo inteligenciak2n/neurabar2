@@ -131,6 +131,7 @@ class UpdateTranslations extends Command
             $newTextsEs = $this->getNewTextsForTranslation($ptData, $esFile);
             
             $translations = [];
+            $allNewTexts = [];
             
             // Se há textos novos para traduzir
             if (!empty($newTextsEn) || !empty($newTextsEs)) {
