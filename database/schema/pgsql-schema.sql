@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict CASkU8Hac7gyJ6RNesAEdZKwHguNXH8Y46fDLbO7iQf0jgArJduHPFcCu8Z0Nwm
+\restrict JhEfm6AWgpsNfdPjV2dyacIg1GquijhJmN9CPuls2n6r9zfnrudZxCtii5jpKBl
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Ubuntu 18.4-1.pgdg24.04+1)
@@ -336,7 +336,8 @@ CREATE TABLE public.order_items (
     preparation_status_id uuid,
     ready_at timestamp(0) without time zone,
     created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
+    updated_at timestamp(0) without time zone,
+    combo_id uuid
 );
 
 
@@ -1226,6 +1227,14 @@ ALTER TABLE ONLY public.order_item_modifiers
 
 
 --
+-- Name: order_items order_items_combo_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_items
+    ADD CONSTRAINT order_items_combo_id_foreign FOREIGN KEY (combo_id) REFERENCES public.combos(id) ON DELETE SET NULL;
+
+
+--
 -- Name: order_items order_items_order_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1397,13 +1406,13 @@ ALTER TABLE ONLY public.venues
 -- PostgreSQL database dump complete
 --
 
-\unrestrict CASkU8Hac7gyJ6RNesAEdZKwHguNXH8Y46fDLbO7iQf0jgArJduHPFcCu8Z0Nwm
+\unrestrict JhEfm6AWgpsNfdPjV2dyacIg1GquijhJmN9CPuls2n6r9zfnrudZxCtii5jpKBl
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict 9JFv21wtnQjFITOeptidaYRETjz5WGM5EguPsbdcAVFHImehJWXVqWVuaMwbkYR
+\restrict 7oC4x6yNJARCY54V08AFbzKSK4Si8OHH6gGgGKYHoNqKzkXNjo200a3CbswXc2t
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Ubuntu 18.4-1.pgdg24.04+1)
@@ -1456,6 +1465,7 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 29	2026_05_22_184323_create_payment_items_table	1
 30	2026_05_22_184324_create_platform_users_table	1
 31	2026_05_22_184325_add_foreign_keys_to_users_table	1
+32	2026_05_24_204213_add_combo_id_to_order_items_table	2
 \.
 
 
@@ -1463,12 +1473,12 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 31, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 32, true);
 
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 9JFv21wtnQjFITOeptidaYRETjz5WGM5EguPsbdcAVFHImehJWXVqWVuaMwbkYR
+\unrestrict 7oC4x6yNJARCY54V08AFbzKSK4Si8OHH6gGgGKYHoNqKzkXNjo200a3CbswXc2t
 

@@ -38,7 +38,7 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            'auth' => [
+            'defs' => [
                 'venue' => function () use ($request): ?array {
                     $user = $request->user();
 

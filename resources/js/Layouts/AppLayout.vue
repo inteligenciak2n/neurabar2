@@ -45,12 +45,12 @@ const logout = () => {
                     </Link>
 
                     <div
-                        v-if="$page.props.auth.venue"
+                        v-if="$page.props.defs.venue"
                         class="hidden items-center gap-1.5 rounded-md border border-border bg-muted px-3 py-1.5 sm:flex"
                     >
                         <span class="text-xs font-body text-muted-foreground">Venue:</span>
                         <span class="text-xs font-heading font-semibold text-ocean-deep truncate max-w-[140px]">
-                            {{ $page.props.auth.venue.name }}
+                            {{ $page.props.defs.venue.name }}
                         </span>
                     </div>
                 </div>

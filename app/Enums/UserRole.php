@@ -35,6 +35,11 @@ enum UserRole: string
         ];
     }
 
+    public function isOwnerOrAbove(): bool
+    {
+        return in_array($this, [self::Owner, self::CorporationAdmin], true);
+    }
+
     public function isPlatform(): bool
     {
         return in_array($this, self::platformRoles(), true);

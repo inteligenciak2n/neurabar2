@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -10,7 +11,7 @@ class SetVenueContext
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $user = auth()->user();
+        $user = User::findOrFail($request->user()->id);
 
         if (! $user) {
             return $next($request);
@@ -23,6 +24,7 @@ class SetVenueContext
         $venue = $user->activeVenue();
 
         if (! $venue) {
+            dd('teste', $user->activeVenue());
             abort(403, 'Venue context unavailable.');
         }
 
