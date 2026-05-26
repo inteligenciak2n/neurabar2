@@ -34,17 +34,17 @@ const submit = () => {
 </script>
 
 <template>
-    <SettingsLayout title="Venue Settings">
+    <SettingsLayout :title="__('Venue Settings')">
         <template #header>
-            <h1 class="font-heading text-2xl font-bold text-ocean-deep">Venue Settings</h1>
+            <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Venue Settings') }}</h1>
         </template>
 
         <form @submit.prevent="submit">
             <div class="space-y-6">
-                <AppCard title="Basic Information">
+                <AppCard :title="__('Basic Information')">
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">Name <span class="text-destructive">*</span></label>
+                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Name') }} <span class="text-destructive">*</span></label>
                             <input
                                 v-model="form.name"
                                 type="text"
@@ -54,7 +54,7 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">Tax ID</label>
+                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Tax ID') }}</label>
                             <input
                                 v-model="form.tax_id"
                                 type="text"
@@ -63,7 +63,7 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">Phone</label>
+                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Phone') }}</label>
                             <input
                                 v-model="form.phone"
                                 type="text"
@@ -72,7 +72,7 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">WhatsApp Agent</label>
+                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('WhatsApp Agent') }}</label>
                             <input
                                 v-model="form.whatsapp_agent"
                                 type="text"
@@ -81,7 +81,7 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">Timezone</label>
+                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Timezone') }}</label>
                             <input
                                 v-model="form.timezone"
                                 type="text"
@@ -91,7 +91,7 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">Logo URL</label>
+                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Logo URL') }}</label>
                             <input
                                 v-model="form.logo_url"
                                 type="url"
@@ -101,10 +101,10 @@ const submit = () => {
                     </div>
                 </AppCard>
 
-                <AppCard title="Address">
+                <AppCard :title="__('Address')">
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div class="sm:col-span-2">
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">Street</label>
+                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Street') }}</label>
                             <input
                                 v-model="form.street"
                                 type="text"
@@ -113,7 +113,7 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">Number</label>
+                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Number') }}</label>
                             <input
                                 v-model="form.number"
                                 type="text"
@@ -122,7 +122,7 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">Complement</label>
+                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Complement') }}</label>
                             <input
                                 v-model="form.complement"
                                 type="text"
@@ -131,7 +131,7 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">Neighborhood</label>
+                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Neighborhood') }}</label>
                             <input
                                 v-model="form.neighborhood"
                                 type="text"
@@ -140,7 +140,7 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">City</label>
+                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('City') }}</label>
                             <input
                                 v-model="form.city"
                                 type="text"
@@ -149,7 +149,7 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">State</label>
+                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('State') }}</label>
                             <input
                                 v-model="form.state"
                                 type="text"
@@ -158,7 +158,7 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">ZIP Code</label>
+                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('ZIP Code') }}</label>
                             <input
                                 v-model="form.zip_code"
                                 type="text"
@@ -168,39 +168,39 @@ const submit = () => {
                     </div>
                 </AppCard>
 
-                <AppCard title="Operational Requirements">
+                <AppCard :title="__('Operational Requirements')">
                     <div class="space-y-3">
                         <label class="flex cursor-pointer items-center gap-3">
                             <input v-model="form.require_table" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
-                            <span class="text-sm text-ocean-deep">Require table number on orders</span>
+                            <span class="text-sm text-ocean-deep">{{ __('Require table number on orders') }}</span>
                         </label>
 
                         <label class="flex cursor-pointer items-center gap-3">
                             <input v-model="form.require_tab" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
-                            <span class="text-sm text-ocean-deep">Require tab (customer name) on orders</span>
+                            <span class="text-sm text-ocean-deep">{{ __('Require tab (customer name) on orders') }}</span>
                         </label>
 
                         <label class="flex cursor-pointer items-center gap-3">
                             <input v-model="form.require_location" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
-                            <span class="text-sm text-ocean-deep">Require service location on orders</span>
+                            <span class="text-sm text-ocean-deep">{{ __('Require service location on orders') }}</span>
                         </label>
                     </div>
                 </AppCard>
 
-                <AppCard title="Call Waiter">
+                <AppCard :title="__('Call Waiter')">
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">Slug</label>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Slug') }}</label>
                         <input
                             v-model="form.call_waiter_slug"
                             type="text"
                             class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         />
-                        <p class="mt-1 text-xs text-muted-foreground">Used in the public guest QR code URL.</p>
+                        <p class="mt-1 text-xs text-muted-foreground">{{ __('Used in the public guest QR code URL.') }}</p>
                     </div>
                 </AppCard>
 
                 <div class="flex justify-end">
-                    <AppButton type="submit" :loading="form.processing">Save Changes</AppButton>
+                    <AppButton type="submit" :loading="form.processing">{{ __('Save Changes') }}</AppButton>
                 </div>
             </div>
         </form>

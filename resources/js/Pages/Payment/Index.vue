@@ -62,30 +62,30 @@ function formatCurrency(value) {
 </script>
 
 <template>
-    <AppLayout title="Payment">
+    <AppLayout :title="__('Payment')">
         <template #header>
             <div class="flex items-center gap-4">
                 <Link :href="route('attendances.index')" class="text-sm font-medium text-primary hover:underline">
-                    ← Attendances
+                    ← {{ __('Attendances') }}
                 </Link>
                 <h2 class="font-heading text-xl font-semibold text-ocean-deep">
-                    Payment — {{ attendance.customer_identifier ?? attendance.channel }}
+                    {{ __('Payment') }} — {{ attendance.customer_identifier ?? attendance.channel }}
                 </h2>
             </div>
         </template>
 
         <div class="py-6 px-4 sm:px-6 max-w-3xl mx-auto space-y-6">
             <!-- Items summary -->
-            <AppCard title="Order Summary">
+            <AppCard :title="__('Order Summary')">
                 <div v-for="order in attendance.orders" :key="order.id" class="mb-4">
-                    <p class="font-heading text-sm font-semibold text-ocean-deep mb-2">Order #{{ order.order_number }}</p>
+                    <p class="font-heading text-sm font-semibold text-ocean-deep mb-2">{{ __('Order') }} #{{ order.order_number }}</p>
                     <div class="divide-y divide-muted">
                         <div
                             v-for="item in order.items"
                             :key="item.id"
                             class="flex items-center justify-between py-2 text-sm"
                         >
-                            <span class="text-ocean-deep">{{ item.quantity }}× {{ item.product?.name ?? 'Item' }}</span>
+                            <span class="text-ocean-deep">{{ item.quantity }}× {{ item.product?.name ?? __('Item') }}</span>
                             <span class="text-muted-foreground">{{ formatCurrency(item.unit_price * item.quantity) }}</span>
                         </div>
                     </div>
@@ -93,44 +93,44 @@ function formatCurrency(value) {
             </AppCard>
 
             <!-- Totals + Party Size -->
-            <AppCard title="Totals">
+            <AppCard :title="__('Totals')">
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-ocean-deep mb-1">Party Size</label>
+                    <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Party Size') }}</label>
                     <input
                         v-model="form.party_size"
                         type="number"
                         min="0"
                         class="w-32 rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
-                    <p class="mt-1 text-xs text-muted-foreground">Affects cover charge calculation.</p>
+                    <p class="mt-1 text-xs text-muted-foreground">{{ __('Affects cover charge calculation.') }}</p>
                 </div>
 
                 <div class="space-y-2 border-t border-border pt-4">
                     <div class="flex justify-between text-sm">
-                        <span class="text-muted-foreground">Items total</span>
+                        <span class="text-muted-foreground">{{ __('Items total') }}</span>
                         <span>{{ formatCurrency(totals.items_total) }}</span>
                     </div>
                     <div class="flex justify-between text-sm">
-                        <span class="text-muted-foreground">Cover charge</span>
+                        <span class="text-muted-foreground">{{ __('Cover charge') }}</span>
                         <span>{{ formatCurrency(totals.cover_charge_total) }}</span>
                     </div>
                     <div class="flex justify-between text-sm">
-                        <span class="text-muted-foreground">Service fee</span>
+                        <span class="text-muted-foreground">{{ __('Service fee') }}</span>
                         <span>{{ formatCurrency(totals.service_fee_total) }}</span>
                     </div>
                     <div class="flex justify-between font-heading font-semibold text-base border-t border-border pt-2">
-                        <span class="text-ocean-deep">Grand Total</span>
+                        <span class="text-ocean-deep">{{ __('Grand Total') }}</span>
                         <span class="text-primary">{{ formatCurrency(totals.grand_total) }}</span>
                     </div>
                     <div v-if="perPerson" class="flex justify-between text-sm text-muted-foreground">
-                        <span>Per person</span>
+                        <span>{{ __('Per person') }}</span>
                         <span>{{ formatCurrency(perPerson) }}</span>
                     </div>
                 </div>
             </AppCard>
 
             <!-- Payment Methods -->
-            <AppCard title="Payment Methods">
+            <AppCard :title="__('Payment Methods')">
                 <div class="space-y-3">
                     <div
                         v-for="(method, index) in form.methods"
@@ -163,15 +163,15 @@ function formatCurrency(value) {
                             class="text-destructive text-sm hover:underline"
                             @click="removeMethod(index)"
                         >
-                            Remove
+                            {{ __('Remove') }}
                         </button>
                     </div>
                 </div>
 
                 <div class="mt-3 flex items-center justify-between">
-                    <AppButton variant="ghost" size="sm" @click="addMethod">+ Add method</AppButton>
+                    <AppButton variant="ghost" size="sm" @click="addMethod">+ {{ __('Add method') }}</AppButton>
                     <div class="text-sm">
-                        <span class="text-muted-foreground">Sum: </span>
+                        <span class="text-muted-foreground">{{ __('Sum') }}: </span>
                         <span
                             :class="sumMatchesTotal ? 'text-green-700 font-semibold' : 'text-destructive font-semibold'"
                         >
@@ -181,7 +181,7 @@ function formatCurrency(value) {
                 </div>
 
                 <p v-if="form.methods.length && !sumMatchesTotal" class="mt-2 text-xs text-destructive">
-                    The sum of payment methods must equal the grand total.
+                    {{ __('The sum of payment methods must equal the grand total.') }}
                 </p>
 
                 <p v-if="form.errors.methods" class="mt-2 text-xs text-destructive">{{ form.errors.methods }}</p>
@@ -190,22 +190,22 @@ function formatCurrency(value) {
             <!-- Submit -->
             <div class="flex justify-end gap-3">
                 <Link :href="route('attendances.index')">
-                    <AppButton variant="ghost">Cancel</AppButton>
+                    <AppButton variant="ghost">{{ __('Cancel') }}</AppButton>
                 </Link>
                 <AppButton
                     :disabled="!sumMatchesTotal || form.processing"
                     @click="confirmPayment"
                 >
-                    Confirm Payment
+                    {{ __('Confirm Payment') }}
                 </AppButton>
             </div>
         </div>
 
         <AppConfirmModal
             :show="showConfirm"
-            title="Confirm Payment"
-            :message="`Register payment of ${formatCurrency(totals.grand_total)} and close this attendance?`"
-            confirm-label="Confirm"
+            :title="__('Confirm Payment')"
+            :message="`{{ __('Register payment of') }} ${formatCurrency(totals.grand_total)} {{ __('and close this attendance?') }}`"
+            :confirm-label="__('Confirm')"
             :loading="form.processing"
             @confirm="submitPayment"
             @cancel="showConfirm = false"

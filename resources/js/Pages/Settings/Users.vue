@@ -103,19 +103,19 @@ const deleteUser = () => {
 </script>
 
 <template>
-    <SettingsLayout title="Users">
+    <SettingsLayout :title="__('Users')">
         <template #header>
             <div class="flex items-center justify-between">
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep">Users</h1>
-                <AppButton @click="openCreate">Add User</AppButton>
+                <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Users') }}</h1>
+                <AppButton @click="openCreate">{{ __('Add User') }}</AppButton>
             </div>
         </template>
 
         <AppCard>
             <AppEmptyState
                 v-if="!users.length && !showForm"
-                title="No users yet"
-                description="Add team members to this venue."
+                :title="__('No users yet')"
+                :description="__('Add team members to this venue.')"
             />
 
             <div v-if="users.length" class="divide-y divide-muted">
@@ -134,24 +134,24 @@ const deleteUser = () => {
                             :class="user.active ? 'bg-accent/10 text-accent' : 'bg-muted text-muted-foreground'"
                             class="rounded-full px-2 py-0.5 text-xs font-semibold"
                         >
-                            {{ user.active ? 'Active' : 'Inactive' }}
+                            {{ user.active ? __('Active') : __('Inactive') }}
                         </span>
                     </div>
                     <div class="flex gap-2">
-                        <AppButton size="sm" variant="secondary" @click="openEdit(user)">Edit</AppButton>
-                        <AppButton size="sm" variant="destructive" @click="confirmDelete(user)">Delete</AppButton>
+                        <AppButton size="sm" variant="secondary" @click="openEdit(user)">{{ __('Edit') }}</AppButton>
+                        <AppButton size="sm" variant="destructive" @click="confirmDelete(user)">{{ __('Delete') }}</AppButton>
                     </div>
                 </div>
             </div>
 
             <div v-if="showForm" class="mt-4 rounded-lg border border-border p-4">
                 <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep">
-                    {{ editingUser ? 'Edit User' : 'New User' }}
+                    {{ editingUser ? __('Edit User') : __('New User') }}
                 </h3>
                 <form @submit.prevent="submit" class="space-y-3">
                     <div class="grid gap-3 sm:grid-cols-2">
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">Name <span class="text-destructive">*</span></label>
+                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Name') }} <span class="text-destructive">*</span></label>
                             <input
                                 v-model="form.name"
                                 type="text"
@@ -161,7 +161,7 @@ const deleteUser = () => {
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">Email <span class="text-destructive">*</span></label>
+                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Email') }} <span class="text-destructive">*</span></label>
                             <input
                                 v-model="form.email"
                                 type="email"
@@ -172,8 +172,8 @@ const deleteUser = () => {
 
                         <div>
                             <label class="block text-sm font-medium text-ocean-deep mb-1">
-                                Password <span v-if="!editingUser" class="text-destructive">*</span>
-                                <span v-else class="text-muted-foreground">(leave blank to keep current)</span>
+                                {{ __('Password') }} <span v-if="!editingUser" class="text-destructive">*</span>
+                                <span v-else class="text-muted-foreground">({{ __('leave blank to keep current') }})</span>
                             </label>
                             <input
                                 v-model="form.password"
@@ -185,7 +185,7 @@ const deleteUser = () => {
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">Role <span class="text-destructive">*</span></label>
+                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Role') }} <span class="text-destructive">*</span></label>
                             <select
                                 v-model="form.role"
                                 class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
@@ -198,7 +198,7 @@ const deleteUser = () => {
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">PIN</label>
+                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('PIN') }}</label>
                             <input
                                 v-model="form.pin"
                                 type="text"
@@ -210,12 +210,12 @@ const deleteUser = () => {
 
                     <label class="flex cursor-pointer items-center gap-3">
                         <input v-model="form.active" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
-                        <span class="text-sm text-ocean-deep">Active</span>
+                        <span class="text-sm text-ocean-deep">{{ __('Active') }}</span>
                     </label>
 
                     <div class="flex gap-2 pt-1">
-                        <AppButton type="submit" :loading="form.processing">Save</AppButton>
-                        <AppButton type="button" variant="ghost" @click="closeForm">Cancel</AppButton>
+                        <AppButton type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>
+                        <AppButton type="button" variant="ghost" @click="closeForm">{{ __('Cancel') }}</AppButton>
                     </div>
                 </form>
             </div>
@@ -223,9 +223,9 @@ const deleteUser = () => {
 
         <AppConfirmModal
             :show="!!userToDelete"
-            title="Delete User"
-            :message="`Are you sure you want to delete ${userToDelete?.name}?`"
-            confirm-label="Delete"
+            :title="__('Delete User')"
+            :message="`{{ __('Are you sure you want to delete') }} ${userToDelete?.name}?`"
+            :confirm-label="__('Delete')"
             variant="destructive"
             @confirm="deleteUser"
             @cancel="userToDelete = null"

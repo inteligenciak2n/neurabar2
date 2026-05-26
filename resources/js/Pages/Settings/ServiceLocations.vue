@@ -69,19 +69,19 @@ const deleteLocation = () => {
 </script>
 
 <template>
-    <SettingsLayout title="Service Locations">
+    <SettingsLayout :title="__('Service Locations')">
         <template #header>
             <div class="flex items-center justify-between">
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep">Service Locations</h1>
-                <AppButton @click="openCreate">Add Location</AppButton>
+                <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Service Locations') }}</h1>
+                <AppButton @click="openCreate">{{ __('Add Location') }}</AppButton>
             </div>
         </template>
 
         <AppCard>
             <AppEmptyState
                 v-if="!locations.length && !showForm"
-                title="No service locations yet"
-                description="Add locations such as tables, bars, or areas."
+                :title="__('No service locations yet')"
+                :description="__('Add locations such as tables, bars, or areas.')"
             />
 
             <div v-if="locations.length" class="divide-y divide-muted">
@@ -99,23 +99,23 @@ const deleteLocation = () => {
                             :class="location.active ? 'bg-accent/10 text-accent' : 'bg-muted text-muted-foreground'"
                             class="rounded-full px-2 py-0.5 text-xs font-semibold"
                         >
-                            {{ location.active ? 'Active' : 'Inactive' }}
+                            {{ location.active ? __('Active') : __('Inactive') }}
                         </span>
                     </div>
                     <div class="flex gap-2">
-                        <AppButton size="sm" variant="secondary" @click="openEdit(location)">Edit</AppButton>
-                        <AppButton size="sm" variant="destructive" @click="confirmDelete(location)">Delete</AppButton>
+                        <AppButton size="sm" variant="secondary" @click="openEdit(location)">{{ __('Edit') }}</AppButton>
+                        <AppButton size="sm" variant="destructive" @click="confirmDelete(location)">{{ __('Delete') }}</AppButton>
                     </div>
                 </div>
             </div>
 
             <div v-if="showForm" class="mt-4 rounded-lg border border-border p-4">
                 <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep">
-                    {{ editingLocation ? 'Edit Location' : 'New Location' }}
+                    {{ editingLocation ? __('Edit Location') : __('New Location') }}
                 </h3>
                 <form @submit.prevent="submit" class="space-y-3">
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">Name <span class="text-destructive">*</span></label>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Name') }} <span class="text-destructive">*</span></label>
                         <input
                             v-model="form.name"
                             type="text"
@@ -125,13 +125,13 @@ const deleteLocation = () => {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">Type <span class="text-destructive">*</span></label>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Type') }} <span class="text-destructive">*</span></label>
                         <select
                             v-model="form.type"
                             class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         >
                             <option v-for="type in LOCATION_TYPES" :key="type" :value="type" class="capitalize">
-                                {{ type }}
+                                {{ __(type) }}
                             </option>
                         </select>
                         <p v-if="form.errors.type" class="mt-1 text-xs text-destructive">{{ form.errors.type }}</p>
@@ -139,12 +139,12 @@ const deleteLocation = () => {
 
                     <label class="flex cursor-pointer items-center gap-3">
                         <input v-model="form.active" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
-                        <span class="text-sm text-ocean-deep">Active</span>
+                        <span class="text-sm text-ocean-deep">{{ __('Active') }}</span>
                     </label>
 
                     <div class="flex gap-2 pt-1">
-                        <AppButton type="submit" :loading="form.processing">Save</AppButton>
-                        <AppButton type="button" variant="ghost" @click="closeForm">Cancel</AppButton>
+                        <AppButton type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>
+                        <AppButton type="button" variant="ghost" @click="closeForm">{{ __('Cancel') }}</AppButton>
                     </div>
                 </form>
             </div>
@@ -152,9 +152,9 @@ const deleteLocation = () => {
 
         <AppConfirmModal
             :show="!!locationToDelete"
-            title="Delete Service Location"
-            message="Are you sure you want to delete this location?"
-            confirm-label="Delete"
+            :title="__('Delete Service Location')"
+            :message="__('Are you sure you want to delete this location?')"
+            :confirm-label="__('Delete')"
             variant="destructive"
             @confirm="deleteLocation"
             @cancel="locationToDelete = null"

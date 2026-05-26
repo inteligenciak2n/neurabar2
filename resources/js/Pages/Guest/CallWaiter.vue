@@ -47,7 +47,7 @@ async function submit() {
 </script>
 
 <template>
-    <GuestLayout :title="`Call Waiter — ${venueName}`">
+    <GuestLayout :title="`${__('Call Waiter')} — ${venueName}`">
         <!-- Header image -->
         <div v-if="headerUrl" class="mb-6 -mt-8 rounded-xl overflow-hidden">
             <img :src="headerUrl" :alt="venueName" class="w-full h-40 object-cover" />
@@ -62,10 +62,10 @@ async function submit() {
                     </svg>
                 </div>
                 <div>
-                    <h2 class="font-heading text-xl font-bold text-ocean-deep">Request sent!</h2>
-                    <p class="mt-1 text-sm text-muted-foreground">The waiter has been notified and will be with you shortly.</p>
+                    <h2 class="font-heading text-xl font-bold text-ocean-deep">{{ __('Request sent!') }}</h2>
+                    <p class="mt-1 text-sm text-muted-foreground">{{ __('The waiter has been notified and will be with you shortly.') }}</p>
                 </div>
-                <p class="text-xs text-muted-foreground">Protocol: <span class="font-mono font-medium">{{ protocol }}</span></p>
+                <p class="text-xs text-muted-foreground">{{ __('Protocol') }}: <span class="font-mono font-medium">{{ protocol }}</span></p>
             </div>
         </AppCard>
 
@@ -74,7 +74,7 @@ async function submit() {
             <form @submit.prevent="submit" class="flex flex-col gap-4">
                 <div>
                     <label class="block text-sm font-medium text-ocean-deep mb-1">
-                        Your table / name <span class="text-muted-foreground text-xs">(optional)</span>
+                        {{ __('Your table / name') }} <span class="text-muted-foreground text-xs">({{ __('optional') }})</span>
                     </label>
                     <input
                         v-model="form.customer_identifier"
@@ -86,12 +86,12 @@ async function submit() {
 
                 <div>
                     <label class="block text-sm font-medium text-ocean-deep mb-1">
-                        Message <span class="text-destructive">*</span>
+                        {{ __('Message') }} <span class="text-destructive">*</span>
                     </label>
                     <textarea
                         v-model="form.message"
                         rows="3"
-                        placeholder="How can we help? e.g. 'Need more napkins' or 'Ready to order'"
+                        placeholder="{{ __('How can we help? e.g. \'Need more napkins\' or \'Ready to order\'') }}"
                         class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                         maxlength="500"
                     />
@@ -100,12 +100,12 @@ async function submit() {
 
                 <div v-if="passphraseRequired">
                     <label class="block text-sm font-medium text-ocean-deep mb-1">
-                        Passphrase <span class="text-destructive">*</span>
+                        {{ __('Passphrase') }} <span class="text-destructive">*</span>
                     </label>
                     <input
                         v-model="form.passphrase"
                         type="text"
-                        placeholder="Enter the venue passphrase"
+                        placeholder="{{ __('Enter the venue passphrase') }}"
                         class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     <p v-if="form.errors.passphrase" class="mt-1 text-xs text-destructive">{{ form.errors.passphrase }}</p>
@@ -114,7 +114,7 @@ async function submit() {
                 <p v-if="serverError" class="text-xs text-destructive">{{ serverError }}</p>
 
                 <AppButton type="submit" class="w-full" size="lg">
-                    Call Waiter
+                    {{ __('Call Waiter') }}
                 </AppButton>
             </form>
         </AppCard>

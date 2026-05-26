@@ -66,19 +66,19 @@ const deleteStation = () => {
 </script>
 
 <template>
-    <SettingsLayout title="Kitchen Stations">
+    <SettingsLayout :title="__('Kitchen Stations')">
         <template #header>
             <div class="flex items-center justify-between">
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep">Kitchen Stations</h1>
-                <AppButton @click="openCreate">Add Station</AppButton>
+                <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Kitchen Stations') }}</h1>
+                <AppButton @click="openCreate">{{ __('Add Station') }}</AppButton>
             </div>
         </template>
 
         <AppCard>
             <AppEmptyState
                 v-if="!stations.length && !showForm"
-                title="No kitchen stations yet"
-                description="Add stations to organize your kitchen workflow."
+                :title="__('No kitchen stations yet')"
+                :description="__('Add stations to organize your kitchen workflow.')"
             />
 
             <div v-if="stations.length" class="divide-y divide-muted">
@@ -93,23 +93,23 @@ const deleteStation = () => {
                             :class="station.active ? 'bg-accent/10 text-accent' : 'bg-muted text-muted-foreground'"
                             class="rounded-full px-2 py-0.5 text-xs font-semibold"
                         >
-                            {{ station.active ? 'Active' : 'Inactive' }}
+                            {{ station.active ? __('Active') : __('Inactive') }}
                         </span>
                     </div>
                     <div class="flex gap-2">
-                        <AppButton size="sm" variant="secondary" @click="openEdit(station)">Edit</AppButton>
-                        <AppButton size="sm" variant="destructive" @click="confirmDelete(station)">Delete</AppButton>
+                        <AppButton size="sm" variant="secondary" @click="openEdit(station)">{{ __('Edit') }}</AppButton>
+                        <AppButton size="sm" variant="destructive" @click="confirmDelete(station)">{{ __('Delete') }}</AppButton>
                     </div>
                 </div>
             </div>
 
             <div v-if="showForm" class="mt-4 rounded-lg border border-border p-4">
                 <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep">
-                    {{ editingStation ? 'Edit Station' : 'New Station' }}
+                    {{ editingStation ? __('Edit Station') : __('New Station') }}
                 </h3>
                 <form @submit.prevent="submit" class="space-y-3">
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">Name <span class="text-destructive">*</span></label>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Name') }} <span class="text-destructive">*</span></label>
                         <input
                             v-model="form.name"
                             type="text"
@@ -119,7 +119,7 @@ const deleteStation = () => {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">Sort Order</label>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Sort Order') }}</label>
                         <input
                             v-model="form.sort_order"
                             type="number"
@@ -130,12 +130,12 @@ const deleteStation = () => {
 
                     <label class="flex cursor-pointer items-center gap-3">
                         <input v-model="form.active" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
-                        <span class="text-sm text-ocean-deep">Active</span>
+                        <span class="text-sm text-ocean-deep">{{ __('Active') }}</span>
                     </label>
 
                     <div class="flex gap-2 pt-1">
-                        <AppButton type="submit" :loading="form.processing">Save</AppButton>
-                        <AppButton type="button" variant="ghost" @click="closeForm">Cancel</AppButton>
+                        <AppButton type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>
+                        <AppButton type="button" variant="ghost" @click="closeForm">{{ __('Cancel') }}</AppButton>
                     </div>
                 </form>
             </div>
@@ -143,9 +143,9 @@ const deleteStation = () => {
 
         <AppConfirmModal
             :show="!!stationToDelete"
-            title="Delete Kitchen Station"
-            message="Are you sure you want to delete this station? This action cannot be undone."
-            confirm-label="Delete"
+            :title="__('Delete Kitchen Station')"
+            :message="__('Are you sure you want to delete this station? This action cannot be undone.')"
+            :confirm-label="__('Delete')"
             variant="destructive"
             @confirm="deleteStation"
             @cancel="stationToDelete = null"

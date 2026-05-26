@@ -62,9 +62,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <AppLayout title="Dashboard">
+    <AppLayout :title="__('Dashboard')">
         <template #header>
-            <h2 class="font-heading text-xl font-semibold text-ocean-deep">Dashboard</h2>
+            <h2 class="font-heading text-xl font-semibold text-ocean-deep">{{ __('Dashboard') }}</h2>
         </template>
 
         <div class="py-6 px-4 sm:px-6 max-w-7xl mx-auto space-y-6">
@@ -75,11 +75,11 @@ onUnmounted(() => {
                     <p class="font-heading text-3xl font-bold text-primary mt-1">{{ open_attendances_count }}</p>
                 </AppCard>
                 <AppCard>
-                    <p class="text-sm font-body text-muted-foreground">Items in Preparation</p>
+                    <p class="text-sm font-body text-muted-foreground">{{ __('Items in Preparation') }}</p>
                     <p class="font-heading text-3xl font-bold text-warm-gold mt-1">{{ items_in_preparation }}</p>
                 </AppCard>
                 <AppCard>
-                    <p class="text-sm font-body text-muted-foreground">Today's Revenue</p>
+                    <p class="text-sm font-body text-muted-foreground">{{ __("Today's Revenue") }}</p>
                     <p class="font-heading text-3xl font-bold text-accent mt-1">
                         R$ {{ todays_revenue.toFixed(2) }}
                     </p>
@@ -89,24 +89,24 @@ onUnmounted(() => {
             <!-- Quick actions + Stations -->
             <div class="grid gap-4 lg:grid-cols-3">
                 <!-- Quick actions -->
-                <AppCard title="Quick Actions">
+                <AppCard :title="__('Quick Actions')">
                     <div class="flex flex-col gap-2">
                         <Link :href="route('attendances.index')">
-                            <AppButton variant="primary" class="w-full">New Attendance</AppButton>
+                            <AppButton variant="primary" class="w-full">{{ __('New Attendance') }}</AppButton>
                         </Link>
                         <Link :href="route('kitchen.kds')">
-                            <AppButton variant="secondary" class="w-full">Open KDS</AppButton>
+                            <AppButton variant="secondary" class="w-full">{{ __('Open KDS') }}</AppButton>
                         </Link>
                         <Link :href="route('menu.index')">
-                            <AppButton variant="ghost" class="w-full">Manage Menu</AppButton>
+                            <AppButton variant="ghost" class="w-full">{{ __('Manage Menu') }}</AppButton>
                         </Link>
                     </div>
                 </AppCard>
 
                 <!-- Stations summary -->
-                <AppCard title="Stations" class="lg:col-span-2">
+                <AppCard :title="__('Stations')" class="lg:col-span-2">
                     <div v-if="!stations_summary.length" class="text-sm text-muted-foreground">
-                        No kitchen stations configured.
+                        {{ __('No kitchen stations configured.') }}
                     </div>
                     <div v-else class="grid grid-cols-2 gap-3 sm:grid-cols-3">
                         <div
@@ -118,19 +118,19 @@ onUnmounted(() => {
                             <p class="font-heading text-2xl font-bold" :class="station.pending_items_count > 0 ? 'text-warm-gold' : 'text-muted-foreground'">
                                 {{ station.pending_items_count }}
                             </p>
-                            <p class="text-xs text-muted-foreground">pending</p>
+                            <p class="text-xs text-muted-foreground">{{ __('pending') }}</p>
                         </div>
                     </div>
                 </AppCard>
             </div>
 
             <!-- Open attendances table -->
-            <AppCard title="Open Attendances">
+            <AppCard :title="__('Open Attendances')">
                 <AppEmptyState
                     v-if="!attendances_list.length"
-                    title="No open attendances"
-                    description="Open a new attendance to start taking orders."
-                    action-label="New Attendance"
+                    :title="__('No open attendances')"
+                    :description="__('Open a new attendance to start taking orders.')"
+                    :action-label="__('New Attendance')"
                     @action="router.visit(route('attendances.index'))"
                 />
 
@@ -138,11 +138,11 @@ onUnmounted(() => {
                     <table class="w-full text-sm font-body">
                         <thead>
                             <tr class="border-b border-border text-left text-muted-foreground">
-                                <th class="pb-2 pr-4 font-medium">Identifier</th>
-                                <th class="pb-2 pr-4 font-medium">Channel</th>
-                                <th class="pb-2 pr-4 font-medium">Open for</th>
-                                <th class="pb-2 pr-4 font-medium">Partial total</th>
-                                <th class="pb-2 font-medium">Actions</th>
+                                <th class="pb-2 pr-4 font-medium">{{ __('Identifier') }}</th>
+                                <th class="pb-2 pr-4 font-medium">{{ __('Channel') }}</th>
+                                <th class="pb-2 pr-4 font-medium">{{ __('Open for') }}</th>
+                                <th class="pb-2 pr-4 font-medium">{{ __('Partial total') }}</th>
+                                <th class="pb-2 font-medium">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-muted">
@@ -158,10 +158,10 @@ onUnmounted(() => {
                                 <td class="py-2">
                                     <div class="flex gap-2">
                                         <Link :href="route('orders.take', attendance.id)">
-                                            <AppButton size="sm" variant="ghost">Order</AppButton>
+                                            <AppButton size="sm" variant="ghost">{{ __('Order') }}</AppButton>
                                         </Link>
                                         <Link :href="route('payment.show', attendance.id)">
-                                            <AppButton size="sm" variant="ghost">Pay</AppButton>
+                                            <AppButton size="sm" variant="ghost">{{ __('Pay') }}</AppButton>
                                         </Link>
                                     </div>
                                 </td>

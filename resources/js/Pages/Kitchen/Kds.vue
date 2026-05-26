@@ -84,11 +84,11 @@ const allStations = computed(() => {
 </script>
 
 <template>
-    <AppLayout title="Kitchen KDS">
+    <AppLayout :title="__('Kitchen KDS')">
         <template #header>
             <div class="flex items-center justify-between">
-                <h2 class="font-heading text-xl font-semibold text-ocean-deep">Kitchen KDS</h2>
-                <AppButton variant="ghost" size="sm" @click="reload">Refresh</AppButton>
+                <h2 class="font-heading text-xl font-semibold text-ocean-deep">{{ __('Kitchen KDS') }}</h2>
+                <AppButton variant="ghost" size="sm" @click="reload">{{ __('Refresh') }}</AppButton>
             </div>
         </template>
 
@@ -96,8 +96,8 @@ const allStations = computed(() => {
             <!-- Empty state -->
             <AppEmptyState
                 v-if="allStations.length === 0"
-                title="No kitchen stations"
-                description="Configure kitchen stations in Settings to start using the KDS."
+                :title="__('No kitchen stations')"
+                :description="__('Configure kitchen stations in Settings to start using the KDS.')"
             />
 
             <!-- Columns by station -->
@@ -117,7 +117,7 @@ const allStations = computed(() => {
                         v-if="getItemsForStation(station.id).length === 0"
                         class="rounded-lg border-2 border-dashed border-border p-6 text-center text-sm text-muted-foreground"
                     >
-                        No pending items
+                        {{ __('No pending items') }}
                     </div>
 
                     <!-- Order item cards -->
@@ -130,10 +130,10 @@ const allStations = computed(() => {
                         <div class="flex items-start justify-between gap-2">
                             <div>
                                 <p class="font-heading font-semibold text-sm text-ocean-deep">
-                                    {{ item.order?.attendance?.customer_identifier ?? 'Guest' }}
+                                    {{ item.order?.attendance?.customer_identifier ?? __('Guest') }}
                                 </p>
                                 <p class="text-xs text-muted-foreground">
-                                    Order #{{ item.order?.order_number }}
+                                    {{ __('Order') }} #{{ item.order?.order_number }}
                                 </p>
                             </div>
                             <span
@@ -147,7 +147,7 @@ const allStations = computed(() => {
                         <!-- Product -->
                         <div>
                             <p class="font-body font-medium text-sm text-ocean-deep">
-                                {{ item.quantity }}× {{ item.product?.name ?? 'Custom request' }}
+                                {{ item.quantity }}× {{ item.product?.name ?? __('Custom request') }}
                             </p>
                             <p v-if="item.notes" class="mt-1 text-xs text-muted-foreground italic">
                                 {{ item.notes }}

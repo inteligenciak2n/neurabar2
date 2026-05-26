@@ -76,15 +76,15 @@ const moveDown = (categories, index) => {
 </script>
 
 <template>
-    <AppLayout title="Menu">
+    <AppLayout :title="__('Menu')">
         <template #header>
             <div class="flex items-center justify-between">
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep">Menu</h1>
+                <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Menu') }}</h1>
                 <div class="flex items-center gap-3">
                     <Link :href="route('menu.products.index')" class="text-sm font-medium text-primary hover:underline">
-                        Manage Products
+                        {{ __('Manage Products') }}
                     </Link>
-                    <AppButton @click="openCreate">Add Category</AppButton>
+                    <AppButton @click="openCreate">{{ __('Add Category') }}</AppButton>
                 </div>
             </div>
         </template>
@@ -92,9 +92,9 @@ const moveDown = (categories, index) => {
         <AppCard>
             <AppEmptyState
                 v-if="!categories.length && !showForm"
-                title="No categories yet"
-                description="Add a category to start building your menu."
-                action-label="Add Category"
+                :title="__('No categories yet')"
+                :description="__('Add a category to start building your menu.')"
+                :action-label="__('Add Category')"
                 @action="openCreate"
             />
 
@@ -107,13 +107,13 @@ const moveDown = (categories, index) => {
                     <div class="flex items-center justify-between">
                         <div>
                             <span class="font-body text-sm font-semibold text-ocean-deep">{{ category.name }}</span>
-                            <span class="ml-2 text-xs text-muted-foreground">{{ category.products?.length ?? 0 }} products</span>
+                            <span class="ml-2 text-xs text-muted-foreground">{{ category.products?.length ?? 0 }} {{ __('products') }}</span>
                         </div>
                         <div class="flex gap-2">
                             <AppButton size="sm" variant="ghost" :disabled="index === 0" @click="moveUp(categories, index)">↑</AppButton>
                             <AppButton size="sm" variant="ghost" :disabled="index === categories.length - 1" @click="moveDown(categories, index)">↓</AppButton>
-                            <AppButton size="sm" variant="secondary" @click="openEdit(category)">Edit</AppButton>
-                            <AppButton size="sm" variant="destructive" @click="confirmDelete(category)">Delete</AppButton>
+                            <AppButton size="sm" variant="secondary" @click="openEdit(category)">{{ __('Edit') }}</AppButton>
+                            <AppButton size="sm" variant="destructive" @click="confirmDelete(category)">{{ __('Delete') }}</AppButton>
                         </div>
                     </div>
 
@@ -129,7 +129,7 @@ const moveDown = (categories, index) => {
                             v-if="category.products.length > 5"
                             class="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
                         >
-                            +{{ category.products.length - 5 }} more
+                            +{{ category.products.length - 5 }} {{ __('more') }}
                         </span>
                     </div>
                 </div>
@@ -137,12 +137,12 @@ const moveDown = (categories, index) => {
 
             <div v-if="showForm" class="mt-4 rounded-lg border border-border p-4">
                 <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep">
-                    {{ editingCategory ? 'Edit Category' : 'New Category' }}
+                    {{ editingCategory ? __('Edit Category') : __('New Category') }}
                 </h3>
                 <form class="space-y-3" @submit.prevent="submit">
                     <div>
                         <label class="mb-1 block text-sm font-medium text-ocean-deep">
-                            Name <span class="text-destructive">*</span>
+                            {{ __('Name') }} <span class="text-destructive">*</span>
                         </label>
                         <input
                             v-model="form.name"
@@ -152,8 +152,8 @@ const moveDown = (categories, index) => {
                         <p v-if="form.errors.name" class="mt-1 text-xs text-destructive">{{ form.errors.name }}</p>
                     </div>
                     <div class="flex gap-2 pt-1">
-                        <AppButton type="submit" :loading="form.processing">Save</AppButton>
-                        <AppButton type="button" variant="ghost" @click="closeForm">Cancel</AppButton>
+                        <AppButton type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>
+                        <AppButton type="button" variant="ghost" @click="closeForm">{{ __('Cancel') }}</AppButton>
                     </div>
                 </form>
             </div>
@@ -161,9 +161,9 @@ const moveDown = (categories, index) => {
 
         <AppConfirmModal
             :show="!!categoryToDelete"
-            title="Delete Category"
-            message="Are you sure you want to delete this category? All products in it will also be deleted."
-            confirm-label="Delete"
+            :title="__('Delete Category')"
+            :message="__('Are you sure you want to delete this category? All products in it will also be deleted.')"
+            :confirm-label="__('Delete')"
             variant="destructive"
             @confirm="deleteCategory"
             @cancel="categoryToDelete = null"

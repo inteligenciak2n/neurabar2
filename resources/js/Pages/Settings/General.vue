@@ -20,16 +20,16 @@ const submit = () => {
 </script>
 
 <template>
-    <SettingsLayout title="General Settings">
+    <SettingsLayout :title="__('General Settings')">
         <template #header>
-            <h1 class="font-heading text-2xl font-bold text-ocean-deep">General Settings</h1>
+            <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('General Settings') }}</h1>
         </template>
 
         <form @submit.prevent="submit">
-            <AppCard title="Financial & Capacity">
+            <AppCard :title="__('Financial & Capacity')">
                 <div class="grid gap-4 sm:grid-cols-3">
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">Cover Charge (R$)</label>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Cover Charge (R$)') }}</label>
                         <input
                             v-model="form.cover_charge"
                             type="number"
@@ -41,7 +41,7 @@ const submit = () => {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">Service Fee (%)</label>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Service Fee (%)') }}</label>
                         <input
                             v-model="form.service_fee_percent"
                             type="number"
@@ -54,7 +54,7 @@ const submit = () => {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">Table Count</label>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Table Count') }}</label>
                         <input
                             v-model="form.table_count"
                             type="number"
@@ -66,7 +66,7 @@ const submit = () => {
                 </div>
 
                 <div class="mt-6 flex justify-end">
-                    <AppButton type="submit" :loading="form.processing">Save Changes</AppButton>
+                    <AppButton type="submit" :loading="form.processing">{{ __('Save Changes') }}</AppButton>
                 </div>
             </AppCard>
         </form>

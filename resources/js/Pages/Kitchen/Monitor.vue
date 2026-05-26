@@ -23,12 +23,12 @@ onMounted(() => {
 <template>
     <div class="min-h-screen bg-gray-950 text-white p-6">
         <div class="mb-8 flex items-center justify-between">
-            <h1 class="font-heading text-2xl font-bold text-white">Kitchen Monitor</h1>
-            <span class="text-sm text-gray-400">Updated: {{ lastUpdated }}</span>
+            <h1 class="font-heading text-2xl font-bold text-white">{{ __('Kitchen Monitor') }}</h1>
+            <span class="text-sm text-gray-400">{{ __('Updated') }}: {{ lastUpdated }}</span>
         </div>
 
         <div v-if="openItems.length === 0" class="flex items-center justify-center h-64">
-            <p class="text-xl text-gray-500 font-heading">No items in preparation</p>
+            <p class="text-xl text-gray-500 font-heading">{{ __('No items in preparation') }}</p>
         </div>
 
         <div v-else class="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -50,10 +50,10 @@ onMounted(() => {
                     </span>
                 </div>
                 <p class="font-body font-medium text-white">
-                    {{ item.product?.name ?? 'Item' }}
+                    {{ item.product?.name ?? __('Item') }}
                 </p>
                 <p v-if="item.order?.attendance?.customer_identifier" class="text-sm text-gray-400">
-                    Table: {{ item.order.attendance.customer_identifier }}
+                    {{ __('Table') }}: {{ item.order.attendance.customer_identifier }}
                 </p>
             </div>
         </div>

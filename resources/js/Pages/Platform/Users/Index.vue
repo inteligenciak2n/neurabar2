@@ -62,43 +62,43 @@ const destroy = (user) => {
 </script>
 
 <template>
-    <PlatformLayout title="Platform Users">
+    <PlatformLayout :title="__('Platform Users')">
         <template #header>
-            <h1 class="font-heading text-xl font-bold text-ocean-deep">Platform Users</h1>
+            <h1 class="font-heading text-xl font-bold text-ocean-deep">{{ __('Platform Users') }}</h1>
         </template>
 
         <div class="space-y-4">
             <div class="flex justify-end">
                 <button @click="showCreate = !showCreate" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 transition-colors">
-                    New User
+                    {{ __('New User') }}
                 </button>
             </div>
 
             <form v-if="showCreate" @submit.prevent="submitCreate" class="bg-white rounded-xl shadow-card p-6 space-y-4">
-                <h2 class="font-heading font-semibold text-ocean-deep mb-2">New Platform User</h2>
+                <h2 class="font-heading font-semibold text-ocean-deep mb-2">{{ __('New Platform User') }}</h2>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">Name</label>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Name') }}</label>
                         <input v-model="createForm.name" type="text" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">Email</label>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Email') }}</label>
                         <input v-model="createForm.email" type="email" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">Password</label>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Password') }}</label>
                         <input v-model="createForm.password" type="password" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">Role</label>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Role') }}</label>
                         <select v-model="createForm.role" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                             <option v-for="r in roles" :key="r.value" :value="r.value">{{ r.label }}</option>
                         </select>
                     </div>
                 </div>
                 <div class="flex justify-end gap-2">
-                    <button type="button" @click="showCreate = false" class="rounded-md border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-muted transition-colors">Cancel</button>
-                    <button type="submit" :disabled="createForm.processing" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-60 transition-colors">Create</button>
+                    <button type="button" @click="showCreate = false" class="rounded-md border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-muted transition-colors">{{ __('Cancel') }}</button>
+                    <button type="submit" :disabled="createForm.processing" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-60 transition-colors">{{ __('Create') }}</button>
                 </div>
             </form>
 
@@ -106,10 +106,10 @@ const destroy = (user) => {
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-border bg-muted/50">
-                            <th class="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
-                            <th class="px-4 py-3 text-left font-medium text-muted-foreground">Email</th>
-                            <th class="px-4 py-3 text-left font-medium text-muted-foreground">Role</th>
-                            <th class="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
+                            <th class="px-4 py-3 text-left font-medium text-muted-foreground">{{ __('Name') }}</th>
+                            <th class="px-4 py-3 text-left font-medium text-muted-foreground">{{ __('Email') }}</th>
+                            <th class="px-4 py-3 text-left font-medium text-muted-foreground">{{ __('Role') }}</th>
+                            <th class="px-4 py-3 text-left font-medium text-muted-foreground">{{ __('Status') }}</th>
                             <th class="px-4 py-3" />
                         </tr>
                     </thead>
@@ -120,12 +120,12 @@ const destroy = (user) => {
                             <td class="px-4 py-3 capitalize">{{ user.role }}</td>
                             <td class="px-4 py-3">
                                 <span :class="user.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="rounded-full px-2 py-0.5 text-xs font-medium">
-                                    {{ user.active ? 'Active' : 'Inactive' }}
+                                    {{ user.active ? __('Active') : __('Inactive') }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right">
-                                <button @click="startEdit(user)" class="text-primary hover:underline text-xs mr-3">Edit</button>
-                                <button @click="destroy(user)" class="text-destructive hover:underline text-xs">Delete</button>
+                                <button @click="startEdit(user)" class="text-primary hover:underline text-xs mr-3">{{ __('Edit') }}</button>
+                                <button @click="destroy(user)" class="text-destructive hover:underline text-xs">{{ __('Delete') }}</button>
                             </td>
                         </tr>
                     </tbody>

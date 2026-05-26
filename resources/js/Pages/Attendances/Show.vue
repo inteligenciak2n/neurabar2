@@ -19,10 +19,10 @@ const statusColor = (status) => ({
 </script>
 
 <template>
-    <AppLayout :title="`Attendance — ${attendance.customer_identifier ?? attendance.channel}`">
+    <AppLayout :title="`${__('Attendance')} — ${attendance.customer_identifier ?? attendance.channel}`">
         <template #header>
             <div class="flex items-center gap-4">
-                <Link :href="route('attendances.index')" class="text-sm font-medium text-primary hover:underline">← Attendances</Link>
+                <Link :href="route('attendances.index')" class="text-sm font-medium text-primary hover:underline">← {{ __('Attendances') }}</Link>
                 <h1 class="font-heading text-2xl font-bold text-ocean-deep">
                     {{ attendance.customer_identifier ?? attendance.channel }}
                 </h1>
@@ -32,23 +32,23 @@ const statusColor = (status) => ({
 
         <div class="mb-4 flex items-center justify-between">
             <p class="text-sm text-muted-foreground">
-                Opened by {{ attendance.created_by?.name }} · {{ attendance.party_size ? attendance.party_size + ' guests' : '' }}
+                {{ __('Opened by') }} {{ attendance.created_by?.name }} · {{ attendance.party_size ? attendance.party_size + ' ' + __('guests') : '' }}
             </p>
             <Link :href="route('orders.take', attendance.id)">
-                <AppButton>Take Order</AppButton>
+                <AppButton>{{ __('Take Order') }}</AppButton>
             </Link>
         </div>
 
         <AppEmptyState
             v-if="!attendance.orders?.length"
-            title="No orders yet"
-            description="Take the first order for this attendance."
+            :title="__('No orders yet')"
+            :description="__('Take the first order for this attendance.')"
         />
 
         <div v-else class="space-y-4">
             <AppCard v-for="order in attendance.orders" :key="order.id">
                 <div class="mb-2 flex items-center justify-between">
-                    <span class="font-heading text-sm font-semibold text-ocean-deep">Order #{{ order.order_number }}</span>
+                    <span class="font-heading text-sm font-semibold text-ocean-deep">{{ __('Order') }} #{{ order.order_number }}</span>
                     <AppBadge :label="order.status" :color="statusColor(order.status)" />
                 </div>
 
@@ -59,7 +59,7 @@ const statusColor = (status) => ({
                             <p v-if="item.notes" class="text-xs text-muted-foreground">{{ item.notes }}</p>
                             <AppBadge
                                 v-if="item.preparation_status"
-                                :label="item.preparation_status?.status ?? 'pending'"
+                                :label="item.preparation_status?.status ? __(item.preparation_status?.status) : __('pending')"
                                 :color="statusColor(item.preparation_status?.status)"
                                 class="mt-1"
                             />

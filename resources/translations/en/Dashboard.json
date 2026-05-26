@@ -1,3 +1,14 @@
 {
-    "Open Attendances": "Open Attendances"
+    "Open Attendances": "Open Attendances",
+    "Dashboard": "Dashboard",
+    "Quick Actions": "Quick Actions",
+    "Stations": "Stations",
+    "Items in Preparation": "Items in Preparation",
+    "Today's Revenue": "Today's Revenue",
+    "Open KDS": "Open KDS",
+    "New Attendance": "New Attendance",
+    "pending": "pending",
+    "Open a new attendance to start taking orders.": "Open a new attendance to start taking orders.",
+    "Manage Menu": "Manage Menu",
+    "No open attendances": "No open attendances"
 }

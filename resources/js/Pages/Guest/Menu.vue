@@ -29,8 +29,8 @@ const selectedCategory = () => props.categories.find((c) => c.id === selectedCat
 
         <AppEmptyState
             v-if="!categories.length"
-            title="Menu not available"
-            description="This venue has no menu items yet."
+            :title=" __('Menu not available')"
+            :description=" __('This venue has no menu items yet.')"
         />
 
         <template v-else>

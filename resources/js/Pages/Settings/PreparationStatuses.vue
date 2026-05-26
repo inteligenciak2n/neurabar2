@@ -68,19 +68,19 @@ const deleteStatus = () => {
 </script>
 
 <template>
-    <SettingsLayout title="Preparation Statuses">
+    <SettingsLayout :title="__('Preparation Statuses')">
         <template #header>
             <div class="flex items-center justify-between">
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep">Preparation Statuses</h1>
-                <AppButton @click="openCreate">Add Status</AppButton>
+                <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Preparation Statuses') }}</h1>
+                <AppButton @click="openCreate">{{ __('Add Status') }}</AppButton>
             </div>
         </template>
 
         <AppCard>
             <AppEmptyState
                 v-if="!statuses.length && !showForm"
-                title="No preparation statuses yet"
-                description="Add statuses to track kitchen order progress."
+                :title="__('No preparation statuses yet')"
+                :description="__('Add statuses to track kitchen order progress.')"
             />
 
             <div v-if="statuses.length" class="divide-y divide-muted">
@@ -99,23 +99,23 @@ const deleteStatus = () => {
                             v-if="status.show_to_customer"
                             class="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent"
                         >
-                            Visible to customer
+                            {{ __('Visible to customer') }}
                         </span>
                     </div>
                     <div class="flex gap-2">
-                        <AppButton size="sm" variant="secondary" @click="openEdit(status)">Edit</AppButton>
-                        <AppButton size="sm" variant="destructive" @click="confirmDelete(status)">Delete</AppButton>
+                        <AppButton size="sm" variant="secondary" @click="openEdit(status)">{{ __('Edit') }}</AppButton>
+                        <AppButton size="sm" variant="destructive" @click="confirmDelete(status)">{{ __('Delete') }}</AppButton>
                     </div>
                 </div>
             </div>
 
             <div v-if="showForm" class="mt-4 rounded-lg border border-border p-4">
                 <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep">
-                    {{ editingStatus ? 'Edit Status' : 'New Status' }}
+                    {{ editingStatus ? __('Edit Status') : __('New Status') }}
                 </h3>
                 <form @submit.prevent="submit" class="space-y-3">
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">Name <span class="text-destructive">*</span></label>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Name') }} <span class="text-destructive">*</span></label>
                         <input
                             v-model="form.name"
                             type="text"
@@ -125,7 +125,7 @@ const deleteStatus = () => {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">Color</label>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Color') }}</label>
                         <div class="flex items-center gap-3">
                             <input
                                 v-model="form.color"
@@ -138,7 +138,7 @@ const deleteStatus = () => {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">Sort Order</label>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Sort Order') }}</label>
                         <input
                             v-model="form.sort_order"
                             type="number"
@@ -149,12 +149,12 @@ const deleteStatus = () => {
 
                     <label class="flex cursor-pointer items-center gap-3">
                         <input v-model="form.show_to_customer" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
-                        <span class="text-sm text-ocean-deep">Visible to customer</span>
+                        <span class="text-sm text-ocean-deep">{{ __('Visible to customer') }}</span>
                     </label>
 
                     <div class="flex gap-2 pt-1">
-                        <AppButton type="submit" :loading="form.processing">Save</AppButton>
-                        <AppButton type="button" variant="ghost" @click="closeForm">Cancel</AppButton>
+                        <AppButton type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>
+                        <AppButton type="button" variant="ghost" @click="closeForm">{{ __('Cancel') }}</AppButton>
                     </div>
                 </form>
             </div>
@@ -162,9 +162,9 @@ const deleteStatus = () => {
 
         <AppConfirmModal
             :show="!!statusToDelete"
-            title="Delete Preparation Status"
-            message="Are you sure you want to delete this status?"
-            confirm-label="Delete"
+            :title="__('Delete Preparation Status')"
+            :message="__('Are you sure you want to delete this status?')"
+            :confirm-label="__('Delete')"
             variant="destructive"
             @confirm="deleteStatus"
             @cancel="statusToDelete = null"

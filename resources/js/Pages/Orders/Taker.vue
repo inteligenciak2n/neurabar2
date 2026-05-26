@@ -222,13 +222,13 @@ const placeOrder = () => {
 </script>
 
 <template>
-    <AppLayout :title="`Order Taker — ${attendance.customer_identifier ?? attendance.channel}`">
+    <AppLayout :title="`${__('Order Taker')} — ${attendance.customer_identifier ?? attendance.channel}`">
         <template #header>
             <div class="flex items-center gap-4">
                 <Link :href="route('attendances.show', attendance.id)" class="text-sm font-medium text-primary hover:underline">
                     ← {{ attendance.customer_identifier ?? attendance.channel }}
                 </Link>
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep">Take Order</h1>
+                <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Take Order') }}</h1>
             </div>
         </template>
 
@@ -241,13 +241,13 @@ const placeOrder = () => {
                         class="rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
                         :class="activeTab === 'menu' ? 'bg-primary text-white' : 'bg-white text-ocean-deep shadow-card hover:bg-ocean-light'"
                         @click="activeTab = 'menu'"
-                    >Menu</button>
+                    >{{ __('Menu') }}</button>
                     <button
                         v-if="combos?.length"
                         class="rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
                         :class="activeTab === 'combos' ? 'bg-primary text-white' : 'bg-white text-ocean-deep shadow-card hover:bg-ocean-light'"
                         @click="activeTab = 'combos'"
-                    >Combos</button>
+                    >{{ __('Combos') }}</button>
                 </div>
 
                 <!-- Menu tab -->
@@ -266,8 +266,8 @@ const placeOrder = () => {
                     </div>
 
                     <div class="flex-1 overflow-y-auto">
-                        <AppEmptyState v-if="!categories.length" title="No menu available" description="There are no active products in the menu." />
-                        <AppEmptyState v-else-if="!selectedCategory?.products?.length" title="No products in this category" description="Select another category." />
+                        <AppEmptyState v-if="!categories.length" :title="__('No menu available')" :description="__('There are no active products in the menu.')" />
+                        <AppEmptyState v-else-if="!selectedCategory?.products?.length" :title="__('No products in this category')" :description="__('Select another category.')" />
                         <div v-else class="grid grid-cols-2 gap-3 sm:grid-cols-3">
                             <button
                                 v-for="product in selectedCategory.products"
@@ -277,8 +277,8 @@ const placeOrder = () => {
                             >
                                 <p class="font-body text-sm font-semibold text-ocean-deep">{{ product.name }}</p>
                                 <p class="mt-1 font-heading text-sm font-bold text-primary">R$ {{ Number(product.price).toFixed(2) }}</p>
-                                <span v-if="product.variations?.length" class="mt-1 inline-block rounded bg-ocean-light px-1.5 py-0.5 text-xs text-ocean-deep">Variations</span>
-                                <span v-if="product.modifier_groups?.length" class="mt-1 inline-block rounded bg-ocean-light px-1.5 py-0.5 text-xs text-ocean-deep">Modifiers</span>
+                                <span v-if="product.variations?.length" class="mt-1 inline-block rounded bg-ocean-light px-1.5 py-0.5 text-xs text-ocean-deep">{{ __('Variations') }}</span>
+                                <span v-if="product.modifier_groups?.length" class="mt-1 inline-block rounded bg-ocean-light px-1.5 py-0.5 text-xs text-ocean-deep">{{ __('Modifiers') }}</span>
                             </button>
                         </div>
                     </div>
@@ -287,7 +287,7 @@ const placeOrder = () => {
                 <!-- Combos tab -->
                 <template v-if="activeTab === 'combos'">
                     <div class="flex-1 overflow-y-auto">
-                        <AppEmptyState v-if="!combos?.length" title="No combos available" description="No active combos configured." />
+                        <AppEmptyState v-if="!combos?.length" :title="__('No combos available')" :description="__('No active combos configured.')" />
                         <div v-else class="space-y-3">
                             <div
                                 v-for="combo in combos"
@@ -304,7 +304,7 @@ const placeOrder = () => {
                                             </li>
                                         </ul>
                                     </div>
-                                    <AppButton size="sm" @click="addComboToCart(combo)">Add</AppButton>
+                                    <AppButton size="sm" @click="addComboToCart(combo)">{{ __('Add') }}</AppButton>
                                 </div>
                             </div>
                         </div>
@@ -315,11 +315,11 @@ const placeOrder = () => {
             <!-- Right: Cart -->
             <div class="flex w-72 flex-shrink-0 flex-col rounded-lg bg-white shadow-card">
                 <div class="border-b border-border p-4">
-                    <h2 class="font-heading text-sm font-bold text-ocean-deep">Cart</h2>
+                    <h2 class="font-heading text-sm font-bold text-ocean-deep">{{ __('Cart') }}</h2>
                 </div>
 
                 <div class="flex-1 overflow-y-auto p-4">
-                    <AppEmptyState v-if="!cart.length" title="Cart is empty" description="Tap a product to add it." />
+                    <AppEmptyState v-if="!cart.length" :title="__('Cart is empty')" :description="__('Tap a product to add it.')" />
 
                     <div v-else class="space-y-3">
                         <template v-for="group in groupedCart" :key="group.isCombo ? group.comboId : group.item.key">
@@ -327,7 +327,7 @@ const placeOrder = () => {
                             <div v-if="group.isCombo" class="rounded-md border border-primary/30 bg-primary/5 p-2">
                                 <div class="mb-1 flex items-center justify-between">
                                     <span class="text-xs font-semibold text-primary">🍱 {{ group.comboName }}</span>
-                                    <button class="text-xs text-destructive hover:underline" @click="removeFromCart(group.items[0].key)">Remove</button>
+                                    <button class="text-xs text-destructive hover:underline" @click="removeFromCart(group.items[0].key)">{{ __('Remove') }}</button>
                                 </div>
                                 <ul class="space-y-0.5">
                                     <li v-for="ci in group.items" :key="ci.key" class="text-xs text-ocean-deep">
@@ -343,7 +343,7 @@ const placeOrder = () => {
                                         {{ group.item.product.name }}
                                         <span v-if="group.item.variation" class="text-xs text-muted-foreground"> ({{ group.item.variation.name }})</span>
                                     </p>
-                                    <button class="text-xs text-destructive hover:underline" @click="removeFromCart(group.item.key)">Remove</button>
+                                    <button class="text-xs text-destructive hover:underline" @click="removeFromCart(group.item.key)">{{ __('Remove') }}</button>
                                 </div>
                                 <div v-if="group.item.modifiers?.length" class="mt-0.5 flex flex-wrap gap-1">
                                     <span v-for="m in group.item.modifiers" :key="m.modifier_option_id" class="rounded bg-ocean-light px-1.5 py-0.5 text-xs text-ocean-deep">
@@ -367,7 +367,7 @@ const placeOrder = () => {
                                 <input
                                     v-model="group.item.notes"
                                     type="text"
-                                    placeholder="Notes (optional)"
+                                    :placeholder="__('Notes (optional)')"
                                     class="mt-1 w-full rounded border border-border px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                                 />
                             </div>
@@ -377,7 +377,7 @@ const placeOrder = () => {
 
                 <div class="border-t border-border p-4">
                     <div class="mb-3 flex justify-between text-sm font-semibold text-ocean-deep">
-                        <span>Total</span>
+                        <span>{{ __('Total') }}</span>
                         <span>R$ {{ cartTotal }}</span>
                     </div>
                     <AppButton
@@ -386,7 +386,7 @@ const placeOrder = () => {
                         :loading="form.processing"
                         @click="showConfirm = true"
                     >
-                        Place Order ({{ cart.length }} items)
+                        {{ __('Place Order') }} ({{ cart.length }} {{ __('items') }})
                     </AppButton>
                 </div>
             </div>
@@ -401,7 +401,7 @@ const placeOrder = () => {
                 <div class="max-h-[60vh] overflow-y-auto px-6 py-4 space-y-4">
                     <!-- Variations -->
                     <div v-if="modalProduct.variations?.length">
-                        <p class="mb-2 text-sm font-semibold text-ocean-deep">Choose variation <span class="text-destructive">*</span></p>
+                        <p class="mb-2 text-sm font-semibold text-ocean-deep">{{ __('Choose variation') }} <span class="text-destructive">*</span></p>
                         <div class="space-y-1">
                             <label
                                 v-for="v in modalProduct.variations"
@@ -423,7 +423,7 @@ const placeOrder = () => {
                         <p class="mb-2 text-sm font-semibold text-ocean-deep">
                             {{ group.name }}
                             <span v-if="group.required" class="text-destructive">*</span>
-                            <span v-else class="text-xs font-normal text-muted-foreground"> (optional)</span>
+                            <span v-else class="text-xs font-normal text-muted-foreground"> ({{ __('optional') }})</span>
                         </p>
                         <div class="space-y-1">
                             <label
@@ -451,27 +451,27 @@ const placeOrder = () => {
 
                     <!-- Notes -->
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-ocean-deep">Notes (optional)</label>
+                        <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Notes (optional)') }}</label>
                         <input
                             v-model="modalNotes"
                             type="text"
-                            placeholder="e.g. no onions"
+                            :placeholder="__('e.g. no onions')"
                             class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 border-t border-border px-6 py-4">
-                    <AppButton variant="secondary" @click="productModal = false">Cancel</AppButton>
-                    <AppButton :disabled="requiredGroupsMissing.length > 0" @click="confirmAddToCart">Add to Cart</AppButton>
+                    <AppButton variant="secondary" @click="productModal = false">{{ __('Cancel') }}</AppButton>
+                    <AppButton :disabled="requiredGroupsMissing.length > 0" @click="confirmAddToCart">{{ __('Add to Cart') }}</AppButton>
                 </div>
             </div>
         </div>
 
         <AppConfirmModal
             :show="showConfirm"
-            title="Place Order"
-            :message="`Send ${cart.length} item(s) to the kitchen?`"
-            confirm-label="Place Order"
+            :title="__('Place Order')"
+            :message="`{{ __('Send') }} ${cart.length} {{ __('item(s) to the kitchen?') }}`"
+            :confirm-label="__('Place Order')"
             @confirm="placeOrder"
             @cancel="showConfirm = false"
         />

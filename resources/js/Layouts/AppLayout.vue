@@ -6,6 +6,10 @@ import Banner from '@/Components/Banner.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import AppToast from '@/Components/AppToast.vue';
+import CustomHead from '@/Components/CustomHead.vue';
+import { useTranslate } from '@/Composables/useTranslate'
+
+const __ = useTranslate();
 
 defineProps({
     title: String,
@@ -14,11 +18,11 @@ defineProps({
 const mobileMenuOpen = ref(false);
 
 const navItems = [
-    { label: 'Dashboard',   routeName: 'dashboard',         activePattern: 'dashboard' },
-    { label: 'Attendances', routeName: 'attendances.index', activePattern: 'attendances.*' },
-    { label: 'Kitchen',     routeName: 'kitchen.kds',       activePattern: 'kitchen.*' },
-    { label: 'Menu',        routeName: 'menu.index',        activePattern: 'menu.*' },
-    { label: 'Settings',    routeName: 'settings.index',    activePattern: 'settings.*' },
+    { label: __('Dashboard'),   routeName: 'dashboard',         activePattern: 'dashboard' },
+    { label: __('Attendances'), routeName: 'attendances.index', activePattern: 'attendances.*' },
+    { label: __('Kitchen'),     routeName: 'kitchen.kds',       activePattern: 'kitchen.*' },
+    { label: __('Menu'),        routeName: 'menu.index',        activePattern: 'menu.*' },
+    { label: __('Settings'),    routeName: 'settings.index',    activePattern: 'settings.*' },
 ];
 
 const logout = () => {
@@ -28,7 +32,7 @@ const logout = () => {
 
 <template>
     <div>
-        <Head :title="title" />
+        <CustomHead :title="title" />
 
         <Banner />
 
@@ -48,7 +52,7 @@ const logout = () => {
                         v-if="$page.props.defs.venue"
                         class="hidden items-center gap-1.5 rounded-md border border-border bg-muted px-3 py-1.5 sm:flex"
                     >
-                        <span class="text-xs font-body text-muted-foreground">Venue:</span>
+                        <span class="text-xs font-body text-muted-foreground">{{ __('Venue:') }}</span>
                         <span class="text-xs font-heading font-semibold text-ocean-deep truncate max-w-[140px]">
                             {{ $page.props.defs.venue.name }}
                         </span>
@@ -91,14 +95,14 @@ const logout = () => {
                         </template>
 
                         <template #content>
-                            <div class="block px-4 py-2 text-xs text-muted-foreground">Manage Account</div>
-                            <DropdownLink :href="route('profile.show')">Profile</DropdownLink>
+                            <div class="block px-4 py-2 text-xs text-muted-foreground">{{ __('Manage Account') }}</div>
+                            <DropdownLink :href="route('profile.show')">{{ __('Profile') }}</DropdownLink>
                             <DropdownLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')">
-                                API Tokens
+                                {{ __('API Tokens') }}
                             </DropdownLink>
                             <div class="border-t border-border" />
                             <form @submit.prevent="logout">
-                                <DropdownLink as="button">Log Out</DropdownLink>
+                                <DropdownLink as="button">{{ __('Log Out') }}</DropdownLink>
                             </form>
                         </template>
                     </Dropdown>
