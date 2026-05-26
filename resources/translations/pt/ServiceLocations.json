@@ -1,0 +1,18 @@
+{
+    "Add Location": "Adicionar localização",
+    "Delete Service Location": "Excluir localização do serviço",
+    "No service locations yet": "Ainda não há locais de serviço",
+    "Add locations such as tables, bars, or areas.": "Adicione locais como mesas, barras ou áreas.",
+    "Are you sure you want to delete this location?": "Tem certeza de que deseja excluir esse local?",
+    "Delete": "Excluir",
+    "Type": "Tipo",
+    "New Location": "Nova localização",
+    "area": "área",
+    "delivery": "prestação",
+    "Name": "Nome",
+    "takeaway": "comida para viagem",
+    "Cancel": "Cancelar",
+    "Active": "Ativo",
+    "table": "mesa",
+    "Save": "Salvar"
+}

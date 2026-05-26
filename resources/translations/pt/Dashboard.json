@@ -1,3 +1,14 @@
 {
-    "Open Attendances": "Atendimentos Abertos"
+    "Open Attendances": "Presenças abertas",
+    "Dashboard": "Painel de controle",
+    "Quick Actions": "Ações rápidas",
+    "Stations": "Estações",
+    "Items in Preparation": "Itens em preparação",
+    "Today's Revenue": "Receita atual",
+    "Open KDS": "Abra o KDS",
+    "New Attendance": "Novo comparecimento",
+    "pending": "pendente",
+    "Open a new attendance to start taking orders.": "Abra um novo atendimento para começar a receber pedidos.",
+    "Manage Menu": "Gerenciar menu",
+    "No open attendances": "Sem presenças abertas"
 }
