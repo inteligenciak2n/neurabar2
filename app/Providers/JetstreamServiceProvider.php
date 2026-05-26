@@ -6,6 +6,10 @@ use App\Actions\Jetstream\DeleteUser;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Jetstream\Jetstream;
+use App\Models\User;
+use Laravel\Fortify\Fortify;
+use Illuminate\Support\Facades\Auth;
+
 
 class JetstreamServiceProvider extends ServiceProvider
 {
@@ -27,6 +31,18 @@ class JetstreamServiceProvider extends ServiceProvider
         Jetstream::deleteUsersUsing(DeleteUser::class);
 
         Vite::prefetch(concurrency: 3);
+
+        Fortify::authenticateUsing(function ($request) {
+            $credentials = $request->only(Fortify::username(), 'password');
+
+            $user = Auth::getProvider()->retrieveByCredentials($credentials);
+
+            if ($user && Auth::getProvider()->validateCredentials($user, $credentials)) {
+                $user = User::find($user->id);
+                $user->setSessionLanguage();
+                return $user;
+            }
+        });
     }
 
     /**

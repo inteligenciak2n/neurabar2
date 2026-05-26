@@ -42,6 +42,7 @@ class User extends Authenticatable
         'corporation_id',
         'pin',
         'active',
+        'lang',
     ];
 
     /**
@@ -88,31 +89,39 @@ class User extends Authenticatable
 
     public function activeVenue() //: ?Venue
     {
-        // if (! $this->role?->isOperational()) {
-        //     return null;
-        // }
+        if (! $this->role?->isOperational()) {
+            return null;
+        }
 
-        // if (in_array($this->role, [UserRole::CorporationAdmin, UserRole::Owner], true)) {
-        //     $activeVenueId = session('active_venue_id');
+        if (in_array($this->role, [UserRole::CorporationAdmin, UserRole::Owner], true)) {
+            $activeVenueId = session('active_venue_id');
 
-        //     if ($activeVenueId) {
-        //         $venue = Venue::find($activeVenueId);
+            if ($activeVenueId) {
+                $venue = Venue::find($activeVenueId);
 
-        //         if ($venue && $venue->corporation_id === $this->corporation_id) {
-        //             return $venue;
-        //         }
-        //     }
+                if ($venue && $venue->corporation_id === $this->corporation_id) {
+                    return $venue;
+                }
+            }
 
-        //     if ($this->corporation_id) {
-        //         return Venue::where('corporation_id', $this->corporation_id)
-        //             ->where('active', true)
-        //             ->first();
-        //     }
+            if ($this->corporation_id) {
+                return Venue::where('corporation_id', $this->corporation_id)
+                    ->where('active', true)
+                    ->first();
+            }
 
-        //     // Fallback: venue directly assigned (e.g. owner without a corporation)
-        //     return $this->venue;
-        // }
+            // Fallback: venue directly assigned (e.g. owner without a corporation)
+            return $this->venue;
+        }
 
         return $this->venue;
+    }
+
+    public function setSessionLanguage(): void
+    {
+        if ($this->lang && $this->lang !== app()->getLocale()) {
+            session(['locale' => $this->lang]);
+            app()->setLocale( $this->lang );
+        }
     }
 }

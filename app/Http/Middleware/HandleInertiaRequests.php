@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Services\Languages\TranslationService;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -51,6 +52,7 @@ class HandleInertiaRequests extends Middleware
                     return $venue?->only(['id', 'name', 'timezone']);
                 },
             ],
+            'language' => TranslationService::getLanguagesDefinitions($request),
         ];
     }
 }

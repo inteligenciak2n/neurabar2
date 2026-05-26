@@ -71,7 +71,7 @@ onUnmounted(() => {
             <!-- Metrics row -->
             <div class="grid gap-4 sm:grid-cols-3">
                 <AppCard>
-                    <p class="text-sm font-body text-muted-foreground">Open Attendances</p>
+                    <p class="text-sm font-body text-muted-foreground">{{ __('Open Attendances') }}</p>
                     <p class="font-heading text-3xl font-bold text-primary mt-1">{{ open_attendances_count }}</p>
                 </AppCard>
                 <AppCard>
