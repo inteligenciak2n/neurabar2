@@ -1,5 +1,5 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
+import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
@@ -68,7 +68,7 @@ const deleteStatus = () => {
 </script>
 
 <template>
-    <AppLayout title="Preparation Statuses">
+    <SettingsLayout title="Preparation Statuses">
         <template #header>
             <div class="flex items-center justify-between">
                 <h1 class="font-heading text-2xl font-bold text-ocean-deep">Preparation Statuses</h1>
@@ -169,5 +169,5 @@ const deleteStatus = () => {
             @confirm="deleteStatus"
             @cancel="statusToDelete = null"
         />
-    </AppLayout>
+    </SettingsLayout>
 </template>

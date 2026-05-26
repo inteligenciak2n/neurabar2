@@ -1,5 +1,5 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
+import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
 import { useForm } from '@inertiajs/vue3';
@@ -20,7 +20,7 @@ const submit = () => {
 </script>
 
 <template>
-    <AppLayout title="General Settings">
+    <SettingsLayout title="General Settings">
         <template #header>
             <h1 class="font-heading text-2xl font-bold text-ocean-deep">General Settings</h1>
         </template>
@@ -70,5 +70,5 @@ const submit = () => {
                 </div>
             </AppCard>
         </form>
-    </AppLayout>
+    </SettingsLayout>
 </template>

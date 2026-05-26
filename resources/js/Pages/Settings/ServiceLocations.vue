@@ -1,5 +1,5 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
+import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
@@ -69,7 +69,7 @@ const deleteLocation = () => {
 </script>
 
 <template>
-    <AppLayout title="Service Locations">
+    <SettingsLayout title="Service Locations">
         <template #header>
             <div class="flex items-center justify-between">
                 <h1 class="font-heading text-2xl font-bold text-ocean-deep">Service Locations</h1>
@@ -159,5 +159,5 @@ const deleteLocation = () => {
             @confirm="deleteLocation"
             @cancel="locationToDelete = null"
         />
-    </AppLayout>
+    </SettingsLayout>
 </template>

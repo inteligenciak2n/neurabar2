@@ -1,5 +1,5 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
+import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
 import AppBadge from '@/Components/AppBadge.vue';
@@ -103,7 +103,7 @@ const deleteUser = () => {
 </script>
 
 <template>
-    <AppLayout title="Users">
+    <SettingsLayout title="Users">
         <template #header>
             <div class="flex items-center justify-between">
                 <h1 class="font-heading text-2xl font-bold text-ocean-deep">Users</h1>
@@ -230,5 +230,5 @@ const deleteUser = () => {
             @confirm="deleteUser"
             @cancel="userToDelete = null"
         />
-    </AppLayout>
+    </SettingsLayout>
 </template>
