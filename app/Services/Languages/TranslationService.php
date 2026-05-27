@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Session;
 class TranslationService
 {
     protected string $storage_path;
+    const DEFAULT_LOCALE = 'en';
 
     public function __construct()
     {
@@ -51,38 +52,50 @@ class TranslationService
 
     public function setTranslations(Request $request, string $route)
     {
-        $locale = $this->getCustomLocale();
-
+        $locale = SELF::DEFAULT_LOCALE;
         $file_path = $this->storage_path . "/{$locale}/{$route}.json";
+        $dir = dirname($file_path);
 
-        if( !file_exists( dirname($file_path) ) ){
-            try{
-                mkdir( dirname($file_path), 0755, true);
-            } catch (\Exception $e) {
-                // Handle the exception
-                Log::info("Failed mkdir: ", [$file_path, $route, $locale]);
-                throw new \Exception("Failed to create directory: " . $e->getMessage());
-            }
-            
-            
+        // Cria diretório se não existir (ignora se já existe)
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
         }
 
-        if( !file_exists($file_path) ){
-
-            $data[$request->value] = $request->value;
-            file_put_contents( $file_path, json_encode($data, JSON_PRETTY_PRINT) );
-
-            return;
+        $fp = fopen($file_path, 'c+');
+        if ($fp === false) {
+            throw new \Exception("Não foi possível abrir/criar o arquivo: {$file_path}");
         }
 
-        $data = file_get_contents( $file_path );
-        if($data){
-            $data = json_decode($data, true);
-            if($data){
-
-                $data[$request->value] = $request->value;
-                file_put_contents( $file_path, json_encode($data, JSON_PRETTY_PRINT) );
+        try {
+            if (!flock($fp, LOCK_EX)) {
+                throw new \Exception("Falha ao obter trava exclusiva para: {$file_path}");
             }
+
+            // Lê o conteúdo atual
+            $current_data = stream_get_contents($fp);
+            $data = $current_data ? json_decode($current_data, true) : [];
+
+            if ($current_data && json_last_error() !== JSON_ERROR_NONE) {
+                throw new \Exception("JSON inválido no arquivo: " . json_last_error_msg());
+            }
+
+            $key = $request->value;
+            $value = $request->value;
+            $data[$key] = $value;
+
+            // Prepara para escrever de volta
+            ftruncate($fp, 0);
+            rewind($fp);
+
+            $new_content = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            if (fwrite($fp, $new_content) === false) {
+                throw new \Exception("Falha ao escrever no arquivo");
+            }
+            fflush($fp);
+
+            flock($fp, LOCK_UN);
+        } finally {
+            fclose($fp); // Garantia de fechamento mesmo com exceção
         }
     }
 
@@ -106,7 +119,7 @@ class TranslationService
         return [];
     }
 
-    public function getTranslateData(string $route, string $locale = 'pt')
+    public function getTranslateData(string $route, string $locale = self::DEFAULT_LOCALE)
     {
         $file_path = $this->storage_path . "/{$locale}/{$route}.json";
 
@@ -121,7 +134,7 @@ class TranslationService
         return [];
     }
 
-    public function getAllTranslations( $locale = 'pt' )
+    public function getAllTranslations( $locale = self::DEFAULT_LOCALE )
     {
         $files = glob( $this->storage_path . "/{$locale}/*.json" );
         $all_data = [];

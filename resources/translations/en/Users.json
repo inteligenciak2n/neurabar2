@@ -2,6 +2,16 @@
     "Users": "Users",
     "Delete": "Delete",
     "Active": "Active",
-    "Add User": "Add User"
-}ser"
+    "Add User": "Add User",
+    "Delete User": "Delete User",
+    "Edit": "Edit",
+    "Name": "Name",
+    "Edit User": "Edit User",
+    "Role": "Role",
+    "Password": "Password",
+    "Email": "Email",
+    "PIN": "PIN",
+    "leave blank to keep current": "leave blank to keep current",
+    "Save": "Save",
+    "Cancel": "Cancel"
 }
