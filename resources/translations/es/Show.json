@@ -1,3 +1,10 @@
 {
-    "Profile": "Perfil"
+    "Profile": "Perfil",
+    "Attendance": "Asistencia",
+    "Attendances": "Asistencias",
+    "Take Order": "Toma el pedido",
+    "Opened by": "Inaugurado por",
+    "Order": "Pedido",
+    "pending": "pendiente",
+    "guests": "huéspedes"
 }

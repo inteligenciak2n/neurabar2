@@ -5,5 +5,11 @@
     "Delete Kitchen Station": "Excluir estação de cozinha",
     "Delete": "Excluir",
     "Are you sure you want to delete this station? This action cannot be undone.": "Tem certeza de que deseja excluir esta estação? Essa ação não pode ser desfeita.",
-    "Edit": "Editar"
+    "Edit": "Editar",
+    "Cancel": "Cancelar",
+    "Sort Order": "Ordem de classificação",
+    "Name": "Nome",
+    "Edit Station": "Editar estação",
+    "Save": "Salvar",
+    "New Station": "Nova estação"
 }

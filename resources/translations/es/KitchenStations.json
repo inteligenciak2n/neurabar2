@@ -5,5 +5,11 @@
     "Delete Kitchen Station": "Eliminar Kitchen Station",
     "Delete": "Borrar",
     "Are you sure you want to delete this station? This action cannot be undone.": "¿Estás seguro de que quieres eliminar esta emisora? Esta acción no se puede deshacer.",
-    "Edit": "Editar"
+    "Edit": "Editar",
+    "Cancel": "Cancelar",
+    "Sort Order": "Orden de clasificación",
+    "Name": "Nombre",
+    "Edit Station": "Editar estación",
+    "Save": "Guardar",
+    "New Station": "Nueva estación"
 }

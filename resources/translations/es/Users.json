@@ -1,0 +1,17 @@
+{
+    "Users": "Usuarios",
+    "Delete": "Borrar",
+    "Active": "Activo",
+    "Add User": "Agregar usuario",
+    "Delete User": "Eliminar usuario",
+    "Edit": "Editar",
+    "Name": "Nombre",
+    "Edit User": "Editar usuario",
+    "Role": "Rol",
+    "Password": "Contraseña",
+    "Email": "Correo electrónico",
+    "PIN": "ALFILER",
+    "leave blank to keep current": "déjelo en blanco para mantenerse al día",
+    "Save": "Guardar",
+    "Cancel": "Cancelar"
+}

@@ -37,5 +37,10 @@
     "New Category": "Nova categoria",
     "Name": "Nome",
     "Attendances": "Atendimentos",
-    "Table": "Mesa"
+    "Table": "Mesa",
+    "Total:": "Total:",
+    "Identifier:": "Identificador:",
+    "Open": "Aberto",
+    "Edit": "Editar",
+    "products": "produtos"
 }

@@ -7,6 +7,9 @@
     "Are you sure you want to delete this station? This action cannot be undone.": "Are you sure you want to delete this station? This action cannot be undone.",
     "Edit": "Edit",
     "Cancel": "Cancel",
-    "Sort Order": "Sort Order"
-}n"
+    "Sort Order": "Sort Order",
+    "Name": "Name",
+    "Edit Station": "Edit Station",
+    "Save": "Save",
+    "New Station": "New Station"
 }
