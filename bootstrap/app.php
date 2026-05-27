@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->statefulApi();
         $middleware->redirectGuestsTo(function (Request $request) {
+            
             if (str_starts_with($request->path(), config('platform.path', '_platform'))) {
                 return route('platform.login');
             }
