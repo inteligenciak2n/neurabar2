@@ -2,6 +2,7 @@
 
 namespace App\Models\Orders;
 
+use App\Enums\OrderStatus;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -27,6 +28,7 @@ class Order extends Model
     {
         return [
             'order_number' => 'integer',
+            'status' => OrderStatus::class,
         ];
     }
 
@@ -45,7 +47,7 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
-    public function scopeByStatus(Builder $query, string $status): Builder
+    public function scopeByStatus(Builder $query, OrderStatus $status): Builder
     {
         return $query->where('status', $status);
     }

@@ -2,6 +2,8 @@
 
 namespace App\Actions\Orders;
 
+use App\Enums\AttendanceStatus;
+use App\Enums\OrderStatus;
 use App\Events\Orders\OrderPlaced;
 use App\Http\Requests\Orders\StoreOrderRequest;
 use App\Models\Menu\Combo;
@@ -17,7 +19,7 @@ class PlaceOrderAction
 {
     public function execute(Attendance $attendance, StoreOrderRequest $request): Order
     {
-        if ($attendance->status !== 'open') {
+        if ($attendance->status !== AttendanceStatus::Open) {
             throw ValidationException::withMessages([
                 'attendance' => 'Cannot place order on a closed attendance.',
             ]);
@@ -29,8 +31,8 @@ class PlaceOrderAction
             $order = Order::create([
                 'attendance_id' => $attendance->id,
                 'order_number' => $orderNumber,
-                'status' => 'open',
-                'created_by' => auth()->id(),
+                'status' => OrderStatus::Open,
+                'created_by' => $request->user()->id,
             ]);
 
             foreach ($request->validated()['items'] as $itemData) {

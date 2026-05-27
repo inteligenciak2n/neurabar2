@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Enums\AttendanceStatus;
 use App\Models\Orders\Attendance;
 use App\Models\Orders\OrderItem;
 use App\Models\Payment\Payment;
@@ -21,7 +22,7 @@ class DashboardController
         $itemsInPreparation = OrderItem::inPreparation()
             ->whereHas(
                 'order.attendance',
-                fn ($q) => $q->where('venue_id', $venueId)->where('status', 'open')
+                fn ($q) => $q->where('venue_id', $venueId)->where('status', AttendanceStatus::Open)
             )
             ->count();
 
@@ -38,7 +39,7 @@ class DashboardController
         $pendingByStation = OrderItem::inPreparation()
             ->whereHas(
                 'order.attendance',
-                fn ($q) => $q->where('venue_id', $venueId)->where('status', 'open')
+                fn ($q) => $q->where('venue_id', $venueId)->where('status', AttendanceStatus::Open)
             )
             ->whereHas('product')
             ->select(DB::raw('count(*) as pending_count'), 'products.kitchen_station_id')

@@ -3,6 +3,7 @@
 namespace App\Models\Orders;
 
 use App\Concerns\BelongsToVenue;
+use App\Enums\AttendanceStatus;
 use App\Models\Payment\Payment;
 use App\Models\Settings\ServiceLocation;
 use App\Models\User;
@@ -37,6 +38,7 @@ class Attendance extends Model
         return [
             'party_size' => 'integer',
             'closed_at' => 'datetime',
+            'status' => AttendanceStatus::class,
         ];
     }
 
@@ -62,11 +64,11 @@ class Attendance extends Model
 
     public function scopeOpen(Builder $query): Builder
     {
-        return $query->where('status', 'open');
+        return $query->where('status', AttendanceStatus::Open);
     }
 
     public function scopeClosed(Builder $query): Builder
     {
-        return $query->where('status', 'closed');
+        return $query->where('status', AttendanceStatus::Closed);
     }
 }

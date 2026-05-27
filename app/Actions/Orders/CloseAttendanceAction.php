@@ -2,6 +2,7 @@
 
 namespace App\Actions\Orders;
 
+use App\Enums\AttendanceStatus;
 use App\Models\Orders\Attendance;
 use Illuminate\Validation\ValidationException;
 
@@ -9,7 +10,7 @@ class CloseAttendanceAction
 {
     public function execute(Attendance $attendance): Attendance
     {
-        if ($attendance->status !== 'open') {
+        if ($attendance->status !== AttendanceStatus::Open) {
             throw ValidationException::withMessages([
                 'attendance' => 'Only open attendances can be closed.',
             ]);
@@ -22,7 +23,7 @@ class CloseAttendanceAction
         }
 
         $attendance->update([
-            'status' => 'closed',
+            'status' => AttendanceStatus::Closed,
             'closed_at' => now(),
         ]);
 

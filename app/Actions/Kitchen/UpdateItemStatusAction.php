@@ -2,6 +2,7 @@
 
 namespace App\Actions\Kitchen;
 
+use App\Enums\OrderStatus;
 use App\Events\Kitchen\ItemStatusUpdated;
 use App\Models\Orders\OrderItem;
 use App\Models\Settings\PreparationStatus;
@@ -33,9 +34,9 @@ class UpdateItemStatusAction
         $order = $item->order;
 
         if ($readyAt !== null) {
-            $order->update(['status' => 'ready']);
-        } elseif ($order->status === 'open') {
-            $order->update(['status' => 'in_preparation']);
+            $order->update(['status' => OrderStatus::Ready]);
+        } elseif ($order->status === OrderStatus::Open) {
+            $order->update(['status' => OrderStatus::InPreparation]);
         }
 
         $item->refresh()->load('order.attendance', 'preparationStatus');

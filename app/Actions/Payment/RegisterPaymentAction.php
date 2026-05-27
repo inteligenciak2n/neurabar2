@@ -3,6 +3,7 @@
 namespace App\Actions\Payment;
 
 use App\Actions\Orders\CloseAttendanceAction;
+use App\Enums\AttendanceStatus;
 use App\Http\Requests\Payment\StorePaymentRequest;
 use App\Models\Orders\Attendance;
 use App\Models\Payment\Payment;
@@ -19,7 +20,7 @@ class RegisterPaymentAction
 
     public function execute(Attendance $attendance, StorePaymentRequest $request): Payment
     {
-        if ($attendance->status !== 'open') {
+        if ($attendance->status !== AttendanceStatus::Open) {
             throw ValidationException::withMessages([
                 'attendance' => 'Cannot register payment for a closed attendance.',
             ]);
@@ -42,7 +43,7 @@ class RegisterPaymentAction
             ]);
         }
 
-        $payment = DB::transaction(function () use ($attendance, $totals, $validated, $partySize): Payment {
+        $payment = DB::transaction(function () use ($attendance, $totals, $validated, $partySize, $request): Payment {
 
             $payment = Payment::create([
                 'attendance_id' => $attendance->id,
@@ -51,7 +52,7 @@ class RegisterPaymentAction
                 'service_fee_total' => $totals['service_fee_total'],
                 'grand_total' => $totals['grand_total'],
                 'party_size' => $partySize,
-                'created_by' => auth()->id(),
+                'created_by' => $request->user()->id,
             ]);
 
             foreach ($validated['methods'] as $methodData) {

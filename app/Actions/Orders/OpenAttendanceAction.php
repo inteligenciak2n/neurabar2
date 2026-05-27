@@ -2,6 +2,7 @@
 
 namespace App\Actions\Orders;
 
+use App\Enums\AttendanceStatus;
 use App\Http\Requests\Orders\StoreAttendanceRequest;
 use App\Models\Orders\Attendance;
 use App\Models\Tenant\Venue;
@@ -30,8 +31,8 @@ class OpenAttendanceAction
             'service_location_id' => $data['service_location_id'] ?? null,
             'party_size' => $data['party_size'] ?? null,
             'notes' => $data['notes'] ?? null,
-            'status' => 'open',
-            'created_by' => auth()->id(),
+            'status' => AttendanceStatus::Open,
+            'created_by' => $request->user()->id,
         ]);
     }
 }

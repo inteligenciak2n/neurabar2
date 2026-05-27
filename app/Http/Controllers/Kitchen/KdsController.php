@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Kitchen;
 
 use App\Actions\Kitchen\UpdateItemStatusAction;
+use App\Enums\AttendanceStatus;
 use App\Models\Orders\OrderItem;
 use App\Models\Settings\KitchenStation;
 use App\Models\Settings\PreparationStatus;
@@ -31,7 +32,7 @@ class KdsController
             'order.attendance.serviceLocation',
         ])
             ->whereNull('ready_at')
-            ->whereHas('order.attendance', fn ($q) => $q->where('venue_id', $venueId)->where('status', 'open'))
+            ->whereHas('order.attendance', fn ($q) => $q->where('venue_id', $venueId)->where('status', AttendanceStatus::Open))
             ->orderBy('created_at')
             ->get()
             ->groupBy(fn ($item) => $item->product?->kitchen_station_id ?? 'unassigned');
@@ -70,7 +71,7 @@ class KdsController
             ])
                 ->whereNull('ready_at')
                 ->whereHas('preparationStatus', fn ($q) => $q->where('show_to_customer', true))
-                ->whereHas('order.attendance', fn ($q) => $q->where('venue_id', $venueId)->where('status', 'open'))
+                ->whereHas('order.attendance', fn ($q) => $q->where('venue_id', $venueId)->where('status', AttendanceStatus::Open))
                 ->orderBy('created_at')
                 ->get();
         }

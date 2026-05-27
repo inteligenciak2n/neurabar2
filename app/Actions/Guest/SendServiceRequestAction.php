@@ -2,6 +2,8 @@
 
 namespace App\Actions\Guest;
 
+use App\Enums\AttendanceStatus;
+use App\Enums\OrderStatus;
 use App\Events\Orders\OrderPlaced;
 use App\Http\Requests\Guest\StoreServiceRequestRequest;
 use App\Models\Orders\Attendance;
@@ -47,13 +49,13 @@ class SendServiceRequestAction
                 'service_location_id' => $serviceLocation->id,
                 'customer_identifier' => $validated['customer_identifier'] ?? null,
                 'channel' => 'service_request',
-                'status' => 'open',
+                'status' => AttendanceStatus::Open,
             ]);
 
             $order = Order::create([
                 'attendance_id' => $attendance->id,
                 'order_number' => 1,
-                'status' => 'open',
+                'status' => OrderStatus::Open,
                 'created_by' => null,
             ]);
 
