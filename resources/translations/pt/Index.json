@@ -27,13 +27,15 @@
     "Channel": "Canal",
     "Service Request": "Solicitação de serviço",
     "e.g. Table 5 or John": "por exemplo, Mesa 5 ou John",
-    "Counter": "Contador",
+    "Counter": "Balcão",
     "Identifier (table\/name)": "Identificador (Mesa\/nome)",
-    "Party Size": "Tamanho da festa",
+    "Party Size": "Número de pessoas",
     "Enter any additional notes": "Insira alguma nota adicional",
     "Cancel": "Cancelar",
-    "Open Attendance": "Atendimento aberto",
+    "Open Attendance": "Iniciar Atendimento",
     "Notes": "Notas",
     "New Category": "Nova categoria",
-    "Name": "Nome"
+    "Name": "Nome",
+    "Attendances": "Atendimentos",
+    "Table": "Mesa"
 }

@@ -1,3 +1,8 @@
 {
-    "Profile": "Profile"
+    "Profile": "Profile",
+    "Attendance": "Attendance",
+    "Attendances": "Attendances",
+    "Take Order": "Take Order",
+    "Opened by": "Opened by",
+    "Order": "Order"
 }

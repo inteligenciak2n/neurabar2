@@ -470,7 +470,7 @@ const placeOrder = () => {
         <AppConfirmModal
             :show="showConfirm"
             :title="__('Place Order')"
-            :message="`{{ __('Send') }} ${cart.length} {{ __('item(s) to the kitchen?') }}`"
+            :message="`${ __('Send') } ${cart.length} ${ __('item(s) to the kitchen?') }`"
             :confirm-label="__('Place Order')"
             @confirm="placeOrder"
             @cancel="showConfirm = false"

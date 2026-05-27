@@ -32,8 +32,10 @@
     "Party Size": "Tamaño de fiesta",
     "Enter any additional notes": "Introduzca cualquier nota adicional",
     "Cancel": "Cancelar",
-    "Open Attendance": "Asistencia abierta",
+    "Open Attendance": "Iniciar Asistencia",
     "Notes": "Notas",
     "New Category": "Nueva categoría",
-    "Name": "Nombre"
+    "Name": "Nombre",
+    "Attendances": "Asistencias",
+    "Table": "Tabla"
 }

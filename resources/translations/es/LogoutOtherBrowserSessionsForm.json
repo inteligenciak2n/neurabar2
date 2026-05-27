@@ -1,3 +1,9 @@
 {
-    "This device": "Este dispositivo"
+    "This device": "Este dispositivo",
+    "If necessary, you may log out of all of your other browser sessions across all of your devices. Some of your recent sessions are listed below; however, this list may not be exhaustive. If you feel your account has been compromised, you should also update your password.": "Si es necesario, puede cerrar sesión en todas las demás sesiones del navegador en todos sus dispositivos. Algunas de sus sesiones recientes se enumeran a continuación; sin embargo, es posible que esta lista no sea exhaustiva. Si crees que tu cuenta se ha visto comprometida, también debes actualizar tu contraseña.",
+    "Last active": "Último activo",
+    "Log Out Other Browser Sessions": "Cerrar sesión en otras sesiones del navegador",
+    "Done.": "Hecho.",
+    "Browser Sessions": "Sesiones de navegador",
+    "Manage and log out your active sessions on other browsers and devices.": "Gestiona y cierra sesión en tus sesiones activas en otros navegadores y dispositivos."
 }

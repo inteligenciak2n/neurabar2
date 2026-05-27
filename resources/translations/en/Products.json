@@ -1,3 +1,24 @@
 {
-    "Products": "Products"
+    "Products": "Products",
+    "Delete": "Delete",
+    "All": "All",
+    "Delete Product": "Delete Product",
+    "Menu": "Menu",
+    "Are you sure you want to delete this product?": "Are you sure you want to delete this product?",
+    "Add Product": "Add Product",
+    "No products yet": "No products yet",
+    "Add a product to start building your menu.": "Add a product to start building your menu.",
+    "Name": "Name",
+    "New Product": "New Product",
+    "Category": "Category",
+    "Select a category": "Select a category",
+    "Price": "Price",
+    "None": "None",
+    "Kitchen Station": "Kitchen Station",
+    "Active": "Active",
+    "Cancel": "Cancel",
+    "Description": "Description",
+    "Save": "Save",
+    "Edit": "Edit",
+    "Deactivate": "Deactivate"
 }

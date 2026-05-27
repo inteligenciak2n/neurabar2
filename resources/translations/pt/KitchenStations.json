@@ -1,5 +1,9 @@
 {
     "Kitchen Stations": "Estações de cozinha",
     "Active": "Ativo",
-    "Add Station": "Adicionar estação"
+    "Add Station": "Adicionar estação",
+    "Delete Kitchen Station": "Excluir estação de cozinha",
+    "Delete": "Excluir",
+    "Are you sure you want to delete this station? This action cannot be undone.": "Tem certeza de que deseja excluir esta estação? Essa ação não pode ser desfeita.",
+    "Edit": "Editar"
 }
