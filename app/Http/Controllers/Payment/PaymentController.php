@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Payment;
 use App\Actions\Payment\RegisterPaymentAction;
 use App\Http\Requests\Payment\StorePaymentRequest;
 use App\Models\Orders\Attendance;
+use App\Models\Settings\VenueSettings;
 use App\Services\Payment\PaymentService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -23,11 +24,17 @@ class PaymentController
             ? $this->paymentService->splitTotal((float) $totals['grand_total'], (int) $attendance->party_size)
             : null;
 
+        $settings = VenueSettings::withoutGlobalScopes()
+            ->where('venue_id', $attendance->venue_id)
+            ->firstOrFail();
+
         return Inertia::render('Payment/Index', [
             'attendance' => $attendance,
             'totals' => $totals,
             'perPerson' => $perPerson,
             'paymentMethods' => ['cash', 'credit_card', 'debit_card', 'pix', 'other'],
+            'coverChargePerPerson' => (float) $settings->cover_charge,
+            'serviceFeePercent' => (float) $settings->service_fee_percent,
         ]);
     }
 

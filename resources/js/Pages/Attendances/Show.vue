@@ -81,9 +81,14 @@ onUnmounted(() => {
             <p class="text-sm text-muted-foreground">
                 {{ __('Opened by') }} {{ attendance.created_by?.name }} · {{ attendance.party_size ? attendance.party_size + ' ' + __('guests') : '' }}
             </p>
-            <Link :href="route('orders.take', attendance.id)">
-                <AppButton>{{ __('Take Order') }}</AppButton>
-            </Link>
+            <div class="flex gap-2">
+                <Link :href="route('orders.take', attendance.id)">
+                    <AppButton>{{ __('Take Order') }}</AppButton>
+                </Link>
+                <Link :href="route('payment.show', attendance.id)">
+                    <AppButton variant="secondary">{{ __('Payment') }}</AppButton>
+                </Link>
+            </div>
         </div>
 
         <AppEmptyState

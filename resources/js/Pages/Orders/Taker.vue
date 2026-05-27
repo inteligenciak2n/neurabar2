@@ -78,7 +78,11 @@ const confirmAddToCart = () => {
     const product = modalProduct.value;
     const variationId = modalVariationId.value;
     const variation = product.variations?.find((v) => v.id === variationId) ?? null;
-    const flatModifiers = Object.values(modalModifiers.value).flat().map((id) => ({ modifier_option_id: id }));
+    const allOptions = (product.modifier_groups ?? []).flatMap((g) => g.options ?? []);
+    const flatModifiers = Object.values(modalModifiers.value).flat().map((id) => {
+        const option = allOptions.find((o) => o.id === id);
+        return { modifier_option_id: id, name: option?.name ?? '' };
+    });
 
     // For combo items, always add as separate line (tagged with comboId)
     if (modalComboId.value) {
@@ -347,7 +351,7 @@ const placeOrder = () => {
                                 </div>
                                 <div v-if="group.item.modifiers?.length" class="mt-0.5 flex flex-wrap gap-1">
                                     <span v-for="m in group.item.modifiers" :key="m.modifier_option_id" class="rounded bg-ocean-light px-1.5 py-0.5 text-xs text-ocean-deep">
-                                        {{ m.modifier_option_id }}
+                                        {{ m.name }}
                                     </span>
                                 </div>
                                 <div class="mt-1 flex items-center gap-2">

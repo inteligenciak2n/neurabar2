@@ -186,6 +186,22 @@ class PaymentTest extends TestCase
             );
     }
 
+    public function test_payment_show_page_returns_cover_charge_and_service_fee_props(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Owner, $venue);
+
+        $attendance = $this->createAttendanceWithItems($venue, 50.00, 2);
+
+        $this->get(route('payment.show', $attendance->id))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page->component('Payment/Index')
+                    ->where('coverChargePerPerson', 10)
+                    ->where('serviceFeePercent', 10)
+            );
+    }
+
     public function test_party_size_from_request_overrides_attendance_party_size(): void
     {
         $venue = Venue::factory()->create();

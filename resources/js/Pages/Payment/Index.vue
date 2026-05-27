@@ -12,6 +12,8 @@ const props = defineProps({
     totals: Object,
     perPerson: Number,
     paymentMethods: Array,
+    coverChargePerPerson: Number,
+    serviceFeePercent: Number,
 });
 
 const showConfirm = ref(false);
@@ -37,12 +39,38 @@ function removeMethod(index) {
     form.methods.splice(index, 1);
 }
 
+const itemsTotal = computed(() => parseFloat(props.totals.items_total ?? 0));
+
+const coverChargeTotal = computed(() => {
+    const size = parseInt(form.party_size) || 0;
+    return size > 0 ? props.coverChargePerPerson * size : 0;
+});
+
+const serviceFeeTotal = computed(() => {
+    const subtotal = itemsTotal.value + coverChargeTotal.value;
+    return Math.round(subtotal * (props.serviceFeePercent / 100) * 100) / 100;
+});
+
+const grandTotal = computed(() => {
+    return Math.round((itemsTotal.value + coverChargeTotal.value + serviceFeeTotal.value) * 100) / 100;
+});
+
+const perPersonAmount = computed(() => {
+    const size = parseInt(form.party_size) || 0;
+    if (size <= 0) return null;
+    return Math.round((grandTotal.value / size) * 100) / 100;
+});
+
 const methodsSum = computed(() =>
     form.methods.reduce((sum, m) => sum + parseFloat(m.amount || 0), 0)
 );
 
 const sumMatchesTotal = computed(() =>
-    Math.abs(methodsSum.value - parseFloat(props.totals.grand_total)) <= 0.01
+    Math.abs(methodsSum.value - grandTotal.value) <= 0.01
+);
+
+const confirmMessage = computed(() =>
+    __('Register payment of') + ' ' + formatCurrency(grandTotal.value) + ' ' + __('and close this attendance?')
 );
 
 function confirmPayment() {
@@ -108,23 +136,23 @@ function formatCurrency(value) {
                 <div class="space-y-2 border-t border-border pt-4">
                     <div class="flex justify-between text-sm">
                         <span class="text-muted-foreground">{{ __('Items total') }}</span>
-                        <span>{{ formatCurrency(totals.items_total) }}</span>
+                        <span>{{ formatCurrency(itemsTotal) }}</span>
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-muted-foreground">{{ __('Cover charge') }}</span>
-                        <span>{{ formatCurrency(totals.cover_charge_total) }}</span>
+                        <span>{{ formatCurrency(coverChargeTotal) }}</span>
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-muted-foreground">{{ __('Service fee') }}</span>
-                        <span>{{ formatCurrency(totals.service_fee_total) }}</span>
+                        <span>{{ formatCurrency(serviceFeeTotal) }}</span>
                     </div>
                     <div class="flex justify-between font-heading font-semibold text-base border-t border-border pt-2">
                         <span class="text-ocean-deep">{{ __('Grand Total') }}</span>
-                        <span class="text-primary">{{ formatCurrency(totals.grand_total) }}</span>
+                        <span class="text-primary">{{ formatCurrency(grandTotal) }}</span>
                     </div>
-                    <div v-if="perPerson" class="flex justify-between text-sm text-muted-foreground">
+                    <div v-if="perPersonAmount" class="flex justify-between text-sm text-muted-foreground">
                         <span>{{ __('Per person') }}</span>
-                        <span>{{ formatCurrency(perPerson) }}</span>
+                        <span>{{ formatCurrency(perPersonAmount) }}</span>
                     </div>
                 </div>
             </AppCard>
@@ -181,7 +209,7 @@ function formatCurrency(value) {
                 </div>
 
                 <p v-if="form.methods.length && !sumMatchesTotal" class="mt-2 text-xs text-destructive">
-                    {{ __('The sum of payment methods must equal the grand total.') }}
+                    {{ __('The sum of payment methods must equal the grand total.') }} ({{ formatCurrency(grandTotal) }})
                 </p>
 
                 <p v-if="form.errors.methods" class="mt-2 text-xs text-destructive">{{ form.errors.methods }}</p>
@@ -204,7 +232,7 @@ function formatCurrency(value) {
         <AppConfirmModal
             :show="showConfirm"
             :title="__('Confirm Payment')"
-            :message="`{{ __('Register payment of') }} ${formatCurrency(totals.grand_total)} {{ __('and close this attendance?') }}`"
+            :message="confirmMessage"
             :confirm-label="__('Confirm')"
             :loading="form.processing"
             @confirm="submitPayment"
