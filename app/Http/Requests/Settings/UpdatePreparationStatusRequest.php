@@ -19,6 +19,7 @@ class UpdatePreparationStatusRequest extends FormRequest
             'color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'show_to_customer' => ['boolean'],
+            'is_final' => ['boolean'],
         ];
     }
 }

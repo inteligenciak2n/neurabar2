@@ -1,4 +1,26 @@
 {
     "Venue Settings": "Venue Settings",
-    "Address": "Address"
+    "Address": "Address",
+    "Basic Information": "Basic Information",
+    "Call Waiter": "Call Waiter",
+    "Tax ID": "Tax ID",
+    "Operational Requirements": "Operational Requirements",
+    "Phone": "Phone",
+    "WhatsApp Agent": "WhatsApp Agent",
+    "Logo URL": "Logo URL",
+    "Name": "Name",
+    "Street": "Street",
+    "Timezone": "Timezone",
+    "Complement": "Complement",
+    "Neighborhood": "Neighborhood",
+    "Number": "Number",
+    "Require table number on orders": "Require table number on orders",
+    "State": "State",
+    "Slug": "Slug",
+    "City": "City",
+    "Require tab (customer name) on orders": "Require tab (customer name) on orders",
+    "ZIP Code": "ZIP Code",
+    "Used in the public guest QR code URL.": "Used in the public guest QR code URL.",
+    "Save Changes": "Save Changes",
+    "Require service location on orders": "Require service location on orders"
 }

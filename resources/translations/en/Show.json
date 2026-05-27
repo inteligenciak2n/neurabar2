@@ -4,5 +4,7 @@
     "Attendances": "Attendances",
     "Take Order": "Take Order",
     "Opened by": "Opened by",
-    "Order": "Order"
+    "Order": "Order",
+    "pending": "pending",
+    "guests": "guests"
 }

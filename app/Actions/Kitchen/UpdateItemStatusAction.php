@@ -21,9 +21,9 @@ class UpdateItemStatusAction
             ]);
         }
 
-        PreparationStatus::findOrFail($preparationStatusId);
+        $status = PreparationStatus::findOrFail($preparationStatusId);
 
-        $readyAt = $this->isLastPendingItem($item) ? now() : null;
+        $readyAt = ($status->is_final && $this->isLastPendingItem($item)) ? now() : null;
 
         $item->update([
             'preparation_status_id' => $preparationStatusId,

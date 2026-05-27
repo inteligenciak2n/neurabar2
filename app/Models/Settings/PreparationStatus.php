@@ -19,6 +19,7 @@ class PreparationStatus extends Model
         'color',
         'sort_order',
         'show_to_customer',
+        'is_final',
     ];
 
     protected function casts(): array
@@ -26,6 +27,7 @@ class PreparationStatus extends Model
         return [
             'sort_order' => 'integer',
             'show_to_customer' => 'boolean',
+            'is_final' => 'boolean',
         ];
     }
 }

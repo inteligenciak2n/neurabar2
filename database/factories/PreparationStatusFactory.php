@@ -24,6 +24,7 @@ class PreparationStatusFactory extends Factory
             'color' => fake()->hexColor(),
             'sort_order' => fake()->numberBetween(1, 10),
             'show_to_customer' => false,
+            'is_final' => false,
         ];
     }
 }

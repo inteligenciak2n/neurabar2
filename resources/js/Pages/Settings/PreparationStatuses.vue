@@ -20,6 +20,7 @@ const form = useForm({
     color: '#6366f1',
     sort_order: '',
     show_to_customer: false,
+    is_final: false,
 });
 
 const openCreate = () => {
@@ -35,6 +36,7 @@ const openEdit = (status) => {
     form.color = status.color ?? '#6366f1';
     form.sort_order = status.sort_order ?? '';
     form.show_to_customer = status.show_to_customer;
+    form.is_final = status.is_final;
     showForm.value = true;
 };
 
@@ -101,6 +103,12 @@ const deleteStatus = () => {
                         >
                             {{ __('Visible to customer') }}
                         </span>
+                        <span
+                            v-if="status.is_final"
+                            class="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary"
+                        >
+                            {{ __('Final') }}
+                        </span>
                     </div>
                     <div class="flex gap-2">
                         <AppButton size="sm" variant="secondary" @click="openEdit(status)">{{ __('Edit') }}</AppButton>
@@ -150,6 +158,11 @@ const deleteStatus = () => {
                     <label class="flex cursor-pointer items-center gap-3">
                         <input v-model="form.show_to_customer" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
                         <span class="text-sm text-ocean-deep">{{ __('Visible to customer') }}</span>
+                    </label>
+
+                    <label class="flex cursor-pointer items-center gap-3">
+                        <input v-model="form.is_final" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
+                        <span class="text-sm text-ocean-deep">{{ __('Final status (marks item as done)') }}</span>
                     </label>
 
                     <div class="flex gap-2 pt-1">

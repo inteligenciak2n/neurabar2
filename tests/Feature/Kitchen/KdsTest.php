@@ -86,11 +86,11 @@ class KdsTest extends TestCase
         $venue = Venue::factory()->create();
         $this->loginAs(UserRole::Attendant, $venue);
 
-        $status = PreparationStatus::factory()->create(['venue_id' => $venue->id, 'name' => 'Ready']);
+        $status = PreparationStatus::factory()->create(['venue_id' => $venue->id, 'name' => 'Ready', 'is_final' => true]);
         $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
         $order = Order::factory()->create(['attendance_id' => $attendance->id]);
 
-        // Single item in order — marking it ready should set ready_at
+        // Single item in order — marking it with a final status should set ready_at
         $item = OrderItem::factory()->create(['order_id' => $order->id, 'ready_at' => null]);
 
         $this->put(route('kitchen.items.status', $item->id), [
@@ -98,6 +98,25 @@ class KdsTest extends TestCase
         ])->assertRedirect();
 
         $this->assertNotNull(OrderItem::find($item->id)->ready_at);
+    }
+
+    public function test_ready_at_is_not_set_when_status_is_not_final(): void
+    {
+        Event::fake([ItemStatusUpdated::class]);
+
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Attendant, $venue);
+
+        $status = PreparationStatus::factory()->create(['venue_id' => $venue->id, 'name' => 'In Preparation', 'is_final' => false]);
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
+        $order = Order::factory()->create(['attendance_id' => $attendance->id]);
+        $item = OrderItem::factory()->create(['order_id' => $order->id, 'ready_at' => null]);
+
+        $this->put(route('kitchen.items.status', $item->id), [
+            'preparation_status_id' => $status->id,
+        ])->assertRedirect();
+
+        $this->assertNull(OrderItem::find($item->id)->ready_at);
     }
 
     public function test_item_from_another_venue_returns_validation_error(): void
