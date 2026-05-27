@@ -30,7 +30,7 @@ class UpdateItemStatusAction
             'ready_at' => $readyAt,
         ]);
 
-        $item->refresh()->load('order.attendance');
+        $item->refresh()->load('order.attendance', 'preparationStatus');
 
         event(new ItemStatusUpdated($item));
 

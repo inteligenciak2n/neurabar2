@@ -3,6 +3,7 @@
 namespace App\Events\Orders;
 
 use App\Models\Orders\Order;
+use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -19,11 +20,14 @@ class OrderPlaced implements ShouldBroadcast
 
     public function __construct(public Order $order) {}
 
-    /** @return array<int, PrivateChannel> */
+    /** @return array<int, Channel|PrivateChannel> */
     public function broadcastOn(): array
     {
+        $venueId = $this->order->attendance->venue_id;
+
         return [
-            new PrivateChannel("venue.{$this->order->attendance->venue_id}.kitchen"),
+            new PrivateChannel("venue.{$venueId}.kitchen"),
+            new Channel("venue.{$venueId}.display"),
         ];
     }
 

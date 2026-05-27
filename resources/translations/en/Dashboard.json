@@ -10,5 +10,12 @@
     "pending": "pending",
     "Open a new attendance to start taking orders.": "Open a new attendance to start taking orders.",
     "Manage Menu": "Manage Menu",
-    "No open attendances": "No open attendances"
+    "No open attendances": "No open attendances",
+    "Open for": "Open for",
+    "Identifier": "Identifier",
+    "Partial total": "Partial total",
+    "Actions": "Actions",
+    "Pay": "Pay",
+    "Order": "Order",
+    "Channel": "Channel"
 }

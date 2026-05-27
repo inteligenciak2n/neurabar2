@@ -29,6 +29,7 @@ class AttendanceController extends Controller
         return Inertia::render('Attendances/Index', [
             'attendances' => $attendances,
             'serviceLocations' => $serviceLocations,
+            'venueId' => $venue->id,
         ]);
     }
 
@@ -43,10 +44,13 @@ class AttendanceController extends Controller
 
     public function show(Attendance $attendance): Response
     {
+        $venue = app('tenant');
+
         $attendance->load(['orders.items.product', 'orders.items.preparationStatus', 'serviceLocation', 'createdBy']);
 
         return Inertia::render('Attendances/Show', [
             'attendance' => $attendance,
+            'venueId' => $venue->id,
         ]);
     }
 

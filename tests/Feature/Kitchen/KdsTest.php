@@ -160,4 +160,100 @@ class KdsTest extends TestCase
 
         Event::assertDispatched(OrderPlaced::class);
     }
+
+    public function test_item_status_updated_event_includes_enriched_payload(): void
+    {
+        Event::fake([ItemStatusUpdated::class]);
+
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Attendant, $venue);
+
+        $status = PreparationStatus::factory()->create(['venue_id' => $venue->id, 'is_final' => false]);
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
+        $order = Order::factory()->create(['attendance_id' => $attendance->id]);
+        $item = OrderItem::factory()->create(['order_id' => $order->id, 'ready_at' => null]);
+
+        $this->put(route('kitchen.items.status', $item->id), [
+            'preparation_status_id' => $status->id,
+        ])->assertRedirect();
+
+        Event::assertDispatched(ItemStatusUpdated::class, function (ItemStatusUpdated $event) use ($item, $attendance, $order, $status) {
+            $payload = $event->broadcastWith();
+
+            return $payload['item_id'] === $item->id
+                && $payload['attendance_id'] === $attendance->id
+                && $payload['order_id'] === $order->id
+                && $payload['preparation_status_id'] === $status->id
+                && isset($payload['preparation_status']['name'])
+                && isset($payload['preparation_status']['is_final']);
+        });
+    }
+
+    public function test_item_status_updated_event_broadcasts_on_public_display_channel(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Attendant, $venue);
+
+        $status = PreparationStatus::factory()->create(['venue_id' => $venue->id]);
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
+        $order = Order::factory()->create(['attendance_id' => $attendance->id]);
+        $item = OrderItem::factory()->create([
+            'order_id' => $order->id,
+            'preparation_status_id' => $status->id,
+            'ready_at' => null,
+        ]);
+
+        $item->load('order.attendance', 'preparationStatus');
+        $event = new ItemStatusUpdated($item);
+        $channels = collect($event->broadcastOn())->map(fn ($c) => $c->name);
+
+        $this->assertTrue($channels->contains("private-venue.{$venue->id}.kitchen"));
+        $this->assertTrue($channels->contains("venue.{$venue->id}.display"));
+    }
+
+    public function test_order_placed_event_broadcasts_on_public_display_channel(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Attendant, $venue);
+
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
+        $order = Order::factory()->create(['attendance_id' => $attendance->id]);
+
+        $order->load('attendance');
+        $event = new OrderPlaced($order);
+        $channels = collect($event->broadcastOn())->map(fn ($c) => $c->name);
+
+        $this->assertTrue($channels->contains("private-venue.{$venue->id}.kitchen"));
+        $this->assertTrue($channels->contains("venue.{$venue->id}.display"));
+    }
+
+    public function test_attendance_show_returns_venue_id(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Attendant, $venue);
+
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
+
+        $this->get(route('attendances.show', $attendance->id))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Attendances/Show')
+                ->has('attendance')
+                ->has('venueId')
+                ->where('venueId', $venue->id)
+            );
+    }
+
+    public function test_attendance_index_returns_venue_id(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Attendant, $venue);
+
+        $this->get(route('attendances.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Attendances/Index')
+                ->has('attendances')
+                ->has('venueId')
+                ->where('venueId', $venue->id)
+            );
+    }
 }

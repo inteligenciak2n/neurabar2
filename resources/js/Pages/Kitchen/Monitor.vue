@@ -1,8 +1,10 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
+import { router } from '@inertiajs/vue3';
 
 const props = defineProps({
     openItems: Array,
+    venueId: String,
 });
 
 const lastUpdated = ref(new Date().toLocaleTimeString());
@@ -12,11 +14,29 @@ function getStatusBadgeStyle(status) {
     return { backgroundColor: status.color + '20', color: status.color };
 }
 
-// Refresh via polling every 30s
+function reload() {
+    router.reload({ only: ['openItems'] });
+    lastUpdated.value = new Date().toLocaleTimeString();
+}
+
+let displayChannel = null;
+
 onMounted(() => {
-    setInterval(() => {
-        window.location.reload();
-    }, 30000);
+    if (!props.venueId) return;
+
+    displayChannel = window.Echo.channel(`venue.${props.venueId}.display`)
+        .listen('.ItemStatusUpdated', () => {
+            reload();
+        })
+        .listen('.OrderPlaced', () => {
+            reload();
+        });
+});
+
+onUnmounted(() => {
+    if (props.venueId && displayChannel) {
+        window.Echo.leaveChannel(`venue.${props.venueId}.display`);
+    }
 });
 </script>
 

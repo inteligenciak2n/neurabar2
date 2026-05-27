@@ -4,10 +4,13 @@ import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
 import AppBadge from '@/Components/AppBadge.vue';
 import AppEmptyState from '@/Components/AppEmptyState.vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
+import { onMounted, onUnmounted } from 'vue';
+import { toast } from 'vue-sonner';
 
 const props = defineProps({
     attendance: Object,
+    venueId: String,
 });
 
 const statusColor = (status) => ({
@@ -16,6 +19,50 @@ const statusColor = (status) => ({
     ready: '#22c55e',
     delivered: '#64748b',
 }[status] ?? '#94a3b8');
+
+let notificationSound = null;
+
+function playSound() {
+    try {
+        if (!notificationSound) {
+            notificationSound = new Audio('/sounds/new-order.mp3');
+        }
+        notificationSound.play().catch(() => {});
+    } catch {
+        // Audio not available
+    }
+}
+
+let kitchenChannel = null;
+
+onMounted(() => {
+    if (!props.venueId) return;
+
+    kitchenChannel = window.Echo.private(`venue.${props.venueId}.kitchen`)
+        .listen('.ItemStatusUpdated', (event) => {
+            if (event.attendance_id !== props.attendance.id) return;
+
+            if (event.ready_at) {
+                playSound();
+                toast.success(__('Item ready to serve'), {
+                    description: event.preparation_status?.name ?? __('Item is ready'),
+                });
+            }
+
+            router.reload({ only: ['attendance'] });
+        })
+        .listen('.OrderPlaced', (event) => {
+            if (event.order?.attendance_id !== props.attendance.id) return;
+
+            router.reload({ only: ['attendance'] });
+        });
+});
+
+onUnmounted(() => {
+    if (props.venueId && kitchenChannel) {
+        window.Echo.leaveChannel(`venue.${props.venueId}.kitchen`);
+    }
+});
 </script>
 
 <template>

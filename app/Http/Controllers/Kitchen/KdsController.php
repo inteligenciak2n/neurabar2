@@ -77,6 +77,7 @@ class KdsController
 
         return Inertia::render('Kitchen/Monitor', [
             'openItems' => $openItems,
+            'venueId' => $venueId,
         ]);
     }
 }

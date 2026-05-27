@@ -4,12 +4,13 @@ import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
 import AppBadge from '@/Components/AppBadge.vue';
 import AppEmptyState from '@/Components/AppEmptyState.vue';
-import { useForm, Link } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { useForm, Link, router } from '@inertiajs/vue3';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 const props = defineProps({
     attendances: Array,
     serviceLocations: Array,
+    venueId: String,
 });
 
 const showForm = ref(false);
@@ -52,6 +53,23 @@ const submit = () => {
         },
     });
 };
+
+let kitchenChannel = null;
+
+onMounted(() => {
+    if (!props.venueId) return;
+
+    kitchenChannel = window.Echo.private(`venue.${props.venueId}.kitchen`)
+        .listen('.OrderPlaced', () => {
+            router.reload({ only: ['attendances'] });
+        });
+});
+
+onUnmounted(() => {
+    if (props.venueId && kitchenChannel) {
+        window.Echo.leaveChannel(`venue.${props.venueId}.kitchen`);
+    }
+});
 </script>
 
 <template>
