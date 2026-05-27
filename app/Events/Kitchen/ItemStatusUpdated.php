@@ -20,6 +20,11 @@ class ItemStatusUpdated implements ShouldBroadcast
 
     public function __construct(public OrderItem $item) {}
 
+    public function broadcastAs(): string
+    {
+        return 'ItemStatusUpdated';
+    }
+
     /** @return array<int, Channel|PrivateChannel> */
     public function broadcastOn(): array
     {

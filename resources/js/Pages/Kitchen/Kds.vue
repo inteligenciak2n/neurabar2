@@ -17,7 +17,7 @@ const props = defineProps({
 const page = usePage();
 const isLoading = ref(false);
 
-const venueId = computed(() => page.props.auth?.venue?.id);
+const venueId = computed(() => page.props.defs?.venue?.id);
 
 function getItemsForStation(stationId) {
     return props.openItems?.[stationId] ?? [];

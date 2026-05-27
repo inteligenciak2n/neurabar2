@@ -16,7 +16,7 @@ const props = defineProps({
 });
 
 const page = usePage();
-const venueId = computed(() => page.props.auth?.venue?.id);
+const venueId = computed(() => page.props.defs?.venue?.id);
 
 const channelLabels = {
     table: 'Table',

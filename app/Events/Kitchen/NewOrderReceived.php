@@ -27,6 +27,11 @@ class NewOrderReceived implements ShouldBroadcast
         public array $items
     ) {}
 
+    public function broadcastAs(): string
+    {
+        return 'NewOrderReceived';
+    }
+
     /** @return array<int, PrivateChannel> */
     public function broadcastOn(): array
     {

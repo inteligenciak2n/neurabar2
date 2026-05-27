@@ -20,6 +20,11 @@ class OrderPlaced implements ShouldBroadcast
 
     public function __construct(public Order $order) {}
 
+    public function broadcastAs(): string
+    {
+        return 'OrderPlaced';
+    }
+
     /** @return array<int, Channel|PrivateChannel> */
     public function broadcastOn(): array
     {
