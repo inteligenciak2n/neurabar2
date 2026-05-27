@@ -50,6 +50,7 @@ class PlaceOrderAction
                     'quantity' => $itemData['quantity'],
                     'unit_price' => $unitPrice,
                     'notes' => $itemData['notes'] ?? null,
+                    'preparation_status_id' => $attendance->venue->initialStatus?->id,
                 ]);
 
                 foreach ($itemData['modifiers'] ?? [] as $modifierData) {
@@ -78,6 +79,7 @@ class PlaceOrderAction
                         'quantity' => $comboItem->quantity ?? 1,
                         'unit_price' => $unitPrice,
                         'notes' => null,
+                        'preparation_status_id' => $attendance->venue->initialStatus?->id,
                     ]);
                 }
             }

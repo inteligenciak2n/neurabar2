@@ -83,6 +83,16 @@ class Venue extends Model
         return $this->hasMany(PreparationStatus::class)->orderBy('sort_order');
     }
 
+    public function initialStatus(): HasOne
+    {
+        return $this->hasOne(PreparationStatus::class)->where('is_initial', true);
+    }
+
+    public function finalStatus(): HasOne
+    {
+        return $this->hasOne(PreparationStatus::class)->where('is_final', true);
+    }
+
     public function serviceLocations(): HasMany
     {
         return $this->hasMany(ServiceLocation::class);

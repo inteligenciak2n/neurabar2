@@ -20,6 +20,7 @@ class PreparationStatus extends Model
         'sort_order',
         'show_to_customer',
         'is_final',
+        'is_initial',
     ];
 
     protected function casts(): array
@@ -28,6 +29,7 @@ class PreparationStatus extends Model
             'sort_order' => 'integer',
             'show_to_customer' => 'boolean',
             'is_final' => 'boolean',
+            'is_initial' => 'boolean',
         ];
     }
 }

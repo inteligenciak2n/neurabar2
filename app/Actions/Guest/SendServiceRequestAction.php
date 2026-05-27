@@ -65,6 +65,7 @@ class SendServiceRequestAction
                 'quantity' => 1,
                 'unit_price' => 0,
                 'notes' => $validated['message'],
+                'preparation_status_id' => $venue->initialStatus?->id,
             ]);
 
             return $order;

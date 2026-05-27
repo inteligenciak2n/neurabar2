@@ -87,9 +87,9 @@ class CreateUserOwnerDefinitions
         }
 
         $statuses = [
-            ['name' => 'Pendente',     'color' => '#94a3b8', 'sort_order' => 1, 'show_to_customer' => false],
-            ['name' => 'Em Preparo',   'color' => '#f59e0b', 'sort_order' => 2, 'show_to_customer' => false],
-            ['name' => 'Pronto',       'color' => '#22c55e', 'sort_order' => 3, 'show_to_customer' => true],
+            ['name' => 'Pendente',     'color' => '#94a3b8', 'sort_order' => 1, 'show_to_customer' => false, 'is_final' => false],
+            ['name' => 'Em Preparo',   'color' => '#f59e0b', 'sort_order' => 2, 'show_to_customer' => true, 'is_final' => false],
+            ['name' => 'Pronto',       'color' => '#22c55e', 'sort_order' => 3, 'show_to_customer' => true, 'is_final' => true],
         ];
 
         foreach ($statuses as $status) {

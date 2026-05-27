@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('preparation_statuses', function (Blueprint $table): void {
-            $table->boolean('is_final')->default(false)->after('show_to_customer');
+            $table->boolean('is_initial')->default(false)->after('show_to_customer');
+            $table->boolean('is_final')->default(false)->after('is_initial');
         });
     }
 
@@ -22,6 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('preparation_statuses', function (Blueprint $table): void {
+            $table->dropColumn('is_initial');
             $table->dropColumn('is_final');
         });
     }
