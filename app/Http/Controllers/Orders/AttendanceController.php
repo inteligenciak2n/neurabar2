@@ -8,6 +8,7 @@ use App\Http\Requests\Orders\StoreAttendanceRequest;
 use App\Http\Requests\Orders\UpdateAttendanceRequest;
 use App\Models\Orders\Attendance;
 use App\Models\Settings\ServiceLocation;
+use Illuminate\Http\JsonResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -52,6 +53,13 @@ class AttendanceController extends Controller
             'attendance' => $attendance,
             'venueId' => $venue->id,
         ]);
+    }
+
+    public function orders(Attendance $attendance): JsonResponse
+    {
+        $attendance->load(['orders.items.product', 'orders.items.preparationStatus']);
+
+        return response()->json($attendance->orders);
     }
 
     public function update(UpdateAttendanceRequest $request, Attendance $attendance)

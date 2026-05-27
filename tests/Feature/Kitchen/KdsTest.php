@@ -227,6 +227,64 @@ class KdsTest extends TestCase
         $this->assertTrue($channels->contains("venue.{$venue->id}.display"));
     }
 
+    public function test_order_status_changes_to_in_preparation_when_item_gets_non_final_status(): void
+    {
+        Event::fake([ItemStatusUpdated::class]);
+
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Attendant, $venue);
+
+        $status = PreparationStatus::factory()->create(['venue_id' => $venue->id, 'is_final' => false]);
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
+        $order = Order::factory()->create(['attendance_id' => $attendance->id, 'status' => 'open']);
+        $item = OrderItem::factory()->create(['order_id' => $order->id, 'ready_at' => null]);
+
+        $this->put(route('kitchen.items.status', $item->id), [
+            'preparation_status_id' => $status->id,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'in_preparation']);
+    }
+
+    public function test_order_status_changes_to_ready_when_all_items_are_done(): void
+    {
+        Event::fake([ItemStatusUpdated::class]);
+
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Attendant, $venue);
+
+        $status = PreparationStatus::factory()->create(['venue_id' => $venue->id, 'is_final' => true]);
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
+        $order = Order::factory()->create(['attendance_id' => $attendance->id, 'status' => 'in_preparation']);
+        $item = OrderItem::factory()->create(['order_id' => $order->id, 'ready_at' => null]);
+
+        $this->put(route('kitchen.items.status', $item->id), [
+            'preparation_status_id' => $status->id,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'ready']);
+    }
+
+    public function test_order_status_does_not_regress_from_in_preparation_with_non_final_status(): void
+    {
+        Event::fake([ItemStatusUpdated::class]);
+
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Attendant, $venue);
+
+        $status = PreparationStatus::factory()->create(['venue_id' => $venue->id, 'is_final' => false]);
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
+        $order = Order::factory()->create(['attendance_id' => $attendance->id, 'status' => 'in_preparation']);
+        $item = OrderItem::factory()->create(['order_id' => $order->id, 'ready_at' => null]);
+
+        $this->put(route('kitchen.items.status', $item->id), [
+            'preparation_status_id' => $status->id,
+        ])->assertRedirect();
+
+        // Status already in_preparation — should remain unchanged
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'in_preparation']);
+    }
+
     public function test_attendance_show_returns_venue_id(): void
     {
         $venue = Venue::factory()->create();

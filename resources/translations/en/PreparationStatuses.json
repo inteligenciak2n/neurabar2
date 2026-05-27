@@ -11,5 +11,8 @@
     "Save": "Save",
     "Delete": "Delete",
     "Edit Status": "Edit Status",
-    "Name": "Name"
+    "Name": "Name",
+    "Final status (marks item as done)": "Final status (marks item as done)",
+    "Sort Order": "Sort Order",
+    "Final": "Final"
 }

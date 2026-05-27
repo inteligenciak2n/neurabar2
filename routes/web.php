@@ -110,6 +110,7 @@ Route::middleware([
         Route::post('/', [AttendanceController::class, 'store'])->name('store');
         Route::get('/{attendance}', [AttendanceController::class, 'show'])->name('show');
         Route::put('/{attendance}', [AttendanceController::class, 'update'])->name('update');
+        Route::get('/{attendance}/orders', [AttendanceController::class, 'orders'])->name('orders');
         Route::post('/{attendance}/orders', [OrderController::class, 'store'])->name('orders.store');
     });
 

@@ -4,14 +4,20 @@ import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
 import AppBadge from '@/Components/AppBadge.vue';
 import AppEmptyState from '@/Components/AppEmptyState.vue';
-import { Link, router } from '@inertiajs/vue3';
-import { onMounted, onUnmounted } from 'vue';
+import { Link } from '@inertiajs/vue3';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { toast } from 'vue-sonner';
+import axios from 'axios';
+import { useTranslate } from '@/Composables/useTranslate';
 
 const props = defineProps({
     attendance: Object,
     venueId: String,
 });
+
+const __ = useTranslate();
+
+const orders = ref(props.attendance.orders ?? []);
 
 const statusColor = (status) => ({
     open: '#3b82f6',
@@ -19,6 +25,13 @@ const statusColor = (status) => ({
     ready: '#22c55e',
     delivered: '#64748b',
 }[status] ?? '#94a3b8');
+
+const statusName = (status) => ({
+    open: __('Open'),
+    in_preparation: __('In Preparation'),
+    ready: __('Ready'),
+    delivered: __('Delivered'),
+}[status] ?? __('Unknown'));
 
 let notificationSound = null;
 
@@ -33,13 +46,18 @@ function playSound() {
     }
 }
 
+async function fetchOrders() {
+    const { data } = await axios.get(route('attendances.orders', props.attendance.id));
+    orders.value = data;
+}
+
 let kitchenChannel = null;
 
 onMounted(() => {
     if (!props.venueId) return;
 
     kitchenChannel = window.Echo.private(`venue.${props.venueId}.kitchen`)
-        .listen('.ItemStatusUpdated', (event) => {
+        .listen('.ItemStatusUpdated', async (event) => {
             if (event.attendance_id !== props.attendance.id) return;
 
             if (event.ready_at) {
@@ -49,12 +67,12 @@ onMounted(() => {
                 });
             }
 
-            router.reload({ only: ['attendance'] });
+            await fetchOrders();
         })
-        .listen('.OrderPlaced', (event) => {
+        .listen('.OrderPlaced', async (event) => {
             if (event.order?.attendance_id !== props.attendance.id) return;
 
-            router.reload({ only: ['attendance'] });
+            await fetchOrders();
         });
 });
 
@@ -92,16 +110,16 @@ onUnmounted(() => {
         </div>
 
         <AppEmptyState
-            v-if="!attendance.orders?.length"
+            v-if="!orders.length"
             :title="__('No orders yet')"
             :description="__('Take the first order for this attendance.')"
         />
 
         <div v-else class="space-y-4">
-            <AppCard v-for="order in attendance.orders" :key="order.id">
+            <AppCard v-for="order in orders" :key="order.id">
                 <div class="mb-2 flex items-center justify-between">
                     <span class="font-heading text-sm font-semibold text-ocean-deep">{{ __('Order') }} #{{ order.order_number }}</span>
-                    <AppBadge :label="order.status" :color="statusColor(order.status)" />
+                    <AppBadge :label="statusName(order.status)" :color="statusColor(order.status)" />
                 </div>
 
                 <div v-if="order.items?.length" class="divide-y divide-muted">
@@ -111,8 +129,8 @@ onUnmounted(() => {
                             <p v-if="item.notes" class="text-xs text-muted-foreground">{{ item.notes }}</p>
                             <AppBadge
                                 v-if="item.preparation_status"
-                                :label="item.preparation_status?.status ? __(item.preparation_status?.status) : __('pending')"
-                                :color="statusColor(item.preparation_status?.status)"
+                                :label="item.preparation_status.name"
+                                :color="item.preparation_status.color"
                                 class="mt-1"
                             />
                         </div>

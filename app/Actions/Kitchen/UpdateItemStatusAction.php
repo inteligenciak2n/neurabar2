@@ -30,6 +30,14 @@ class UpdateItemStatusAction
             'ready_at' => $readyAt,
         ]);
 
+        $order = $item->order;
+
+        if ($readyAt !== null) {
+            $order->update(['status' => 'ready']);
+        } elseif ($order->status === 'open') {
+            $order->update(['status' => 'in_preparation']);
+        }
+
         $item->refresh()->load('order.attendance', 'preparationStatus');
 
         event(new ItemStatusUpdated($item));

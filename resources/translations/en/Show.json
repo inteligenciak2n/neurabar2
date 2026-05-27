@@ -7,5 +7,9 @@
     "Order": "Order",
     "pending": "pending",
     "guests": "guests",
-    "Payment": "Payment"
+    "Payment": "Payment",
+    "In Preparation": "In Preparation",
+    "Delivered": "Delivered",
+    "Ready": "Ready",
+    "Open": "Open"
 }
