@@ -76,5 +76,10 @@
     "Edit Category": "Edit Category",
     "Modifiers": "Modifiers",
     "Combos": "Combos",
-    "Products": "Products"
+    "Products": "Products",
+    "bar": "bar",
+    "table": "table",
+    "area": "area",
+    "takeaway": "takeaway",
+    "delivery": "delivery"
 }

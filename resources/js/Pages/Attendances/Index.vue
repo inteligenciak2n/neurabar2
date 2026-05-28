@@ -24,6 +24,7 @@ const form = useForm({
     notes: '',
 });
 
+const stateServiceLocation = ref([props.serviceLocations?.[0]?.type]); // Track which service location types are expanded
 const serviceLocationsByType = () => {
     let types = {};
     for (const loc of props.serviceLocations) {
@@ -33,6 +34,14 @@ const serviceLocationsByType = () => {
         types[loc.type].push(loc);
     }
     return types;
+};
+
+const toggleServiceLocationType = (type) => {
+    if (stateServiceLocation.value.includes(type)) {
+        stateServiceLocation.value = stateServiceLocation.value.filter(t => t !== type);
+    } else {
+        stateServiceLocation.value.push(type);
+    }
 };
 
 const channelLabel = (value) => {
@@ -132,28 +141,47 @@ onUnmounted(() => {
                     <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Service Location') }}</label>
                     
                     <template v-for="(locType, type) in serviceLocationsByType()" :key="type" >
-                        <template v-for="loc in locType" :key="loc.id">
-                            <button
-                                type="button"
-                                @click="form.service_location_id = loc.id"
-                                :class="{'bg-primary text-white': form.service_location_id === loc.id, 'bg-gray-200 text-gray-700': form.service_location_id !== loc.id}"
-                                class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
-                            >
-                                {{ loc.name }}
-                            </button>
-                        </template>
-                    </template>                    
-                    <select
-                        v-model="form.service_location_id"
-                        class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                        <option value="">{{ __('None') }}</option>
-                        <option v-for="loc in serviceLocations" :key="loc.id" :value="loc.id">{{ loc.name }}</option>
-                    </select>
+                        <div class="mb-2 font-semibold text-ocean-deep border rounded-md relative">
+                            <button 
+                                type="button" 
+                                class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium"
+                                @click="() => toggleServiceLocationType(type)"
+                                >{{ __(type) }}</button>
+                            <div v-if="stateServiceLocation.includes(type)" class="p-2">
+                                <template v-for="loc in locType" :key="loc.id">
+                                    <button
+                                        type="button"
+                                        @click="form.service_location_id = loc.id"
+                                        :class="{'bg-primary text-white': form.service_location_id === loc.id, 'bg-gray-200 text-gray-700': form.service_location_id !== loc.id}"
+                                        class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                                    >
+                                        {{ loc.name }}
+                                    </button>
+                                </template>
+                            </div>
+                            <div v-else
+                            class="w-full h-full absolute top-0 left-0 opacity-50 cursor-pointer"
+                            @click="() => toggleServiceLocationType(type)"
+                            ></div>
+                        </div>
+                    </template>
                 </div>
 
                 <div>
                     <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Party Size') }}</label>
+
+                    <template v-for="s in [1,2,3,4,5,6,7,8,9,10]" :key="s">
+                        <button
+                            type="button"
+                            @click="form.party_size = s"
+                            :class="{'bg-primary text-white': form.party_size === s, 'bg-gray-200 text-gray-700': form.party_size !== s}"
+                            class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                            {{ s }}
+                        </button>
+
+                    </template>
+
                     <input
                         v-model="form.party_size"
                         type="number"
