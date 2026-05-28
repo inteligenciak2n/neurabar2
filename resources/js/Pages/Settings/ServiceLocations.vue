@@ -84,7 +84,7 @@ const deleteLocation = () => {
                 :description="__('Add locations such as tables, bars, or areas.')"
             />
 
-            <div v-if="locations.length" class="divide-y divide-muted">
+            <div v-if="locations.length && !showForm" class="divide-y divide-muted">
                 <div
                     v-for="location in locations"
                     :key="location.id"

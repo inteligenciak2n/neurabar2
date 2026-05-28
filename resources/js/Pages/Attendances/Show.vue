@@ -33,6 +33,12 @@ const statusName = (status) => ({
     delivered: __('Delivered'),
 }[status] ?? __('Unknown'));
 
+const channelsLabel = (channel) => ({
+    in_person: __('In Person'),
+    online: __('Online'),
+    phone: __('Phone'),
+}[channel] ?? channel);
+
 let notificationSound = null;
 
 function playSound() {
