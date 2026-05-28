@@ -98,7 +98,7 @@ const moveDown = (categories, index) => {
                 @action="openCreate"
             />
 
-            <div v-if="categories.length" class="divide-y divide-muted">
+            <div v-if="categories.length && !showForm" class="divide-y divide-muted">
                 <div
                     v-for="(category, index) in categories"
                     :key="category.id"

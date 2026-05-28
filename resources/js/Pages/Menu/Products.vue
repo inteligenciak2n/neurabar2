@@ -36,6 +36,7 @@ const filteredProducts = computed(() => {
 });
 
 const filterByCategory = (categoryId) => {
+    showForm.value = false;
     selectedCategoryId.value = categoryId;
     router.get(route('menu.products.index'), { category_id: categoryId || undefined }, { preserveState: true, replace: true });
 };
@@ -133,7 +134,7 @@ const deleteProduct = () => {
                 @action="openCreate"
             />
 
-            <div v-if="filteredProducts.length" class="divide-y divide-muted">
+            <div v-if="filteredProducts.length && !showForm" class="divide-y divide-muted">
                 <div
                     v-for="product in filteredProducts"
                     :key="product.id"
