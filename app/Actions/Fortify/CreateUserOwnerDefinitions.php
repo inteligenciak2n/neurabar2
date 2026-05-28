@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Menu\Category;
 use App\Models\Menu\Menu;
 use App\Models\Menu\Product;
+use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\KitchenStation;
 use App\Models\Settings\PreparationStatus;
 use App\Models\Settings\ServiceLocation;
@@ -84,6 +85,17 @@ class CreateUserOwnerDefinitions
 
         foreach ($statuses as $status) {
             PreparationStatus::create(array_merge($status, ['venue_id' => $venue->id]));
+        }
+
+        $attedance_channels = [
+            ['name' => 'Balcão', 'value' => 'balcao', 'sort_order' => 1],
+            ['name' => 'Mesa', 'value' => 'mesa', 'sort_order' => 2],
+            ['name' => 'Delivery', 'value' => 'delivery', 'sort_order' => 3],
+            ['name' => 'Retirada', 'value' => 'retirada', 'sort_order' => 4],
+        ];
+
+        foreach ($attedance_channels as $channel) {
+            AttendanceChannel::create(array_merge($channel, ['venue_id' => $venue->id, 'active' => true]));
         }
 
         $venue->users()->attach($user->id, ['role' => UserRole::Owner->value]);

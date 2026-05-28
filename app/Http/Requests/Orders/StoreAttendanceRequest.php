@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Orders;
 
+use App\Models\Settings\AttendanceChannel;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class StoreAttendanceRequest extends FormRequest
 {
@@ -15,8 +15,16 @@ class StoreAttendanceRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
+        $venue = app('tenant');
+
+        $validChannels = AttendanceChannel::withoutGlobalScopes()
+            ->where('venue_id', $venue->id)
+            ->where('active', true)
+            ->pluck('value')
+            ->toArray();
+
         return [
-            'channel' => ['required', Rule::in(['counter', 'table', 'delivery', 'service_request'])],
+            'channel' => ['required', 'string', 'in:'.implode(',', $validChannels)],
             'customer_identifier' => ['nullable', 'string', 'max:255'],
             'service_location_id' => ['nullable', 'uuid', 'exists:service_locations,id'],
             'party_size' => ['nullable', 'integer', 'min:1'],

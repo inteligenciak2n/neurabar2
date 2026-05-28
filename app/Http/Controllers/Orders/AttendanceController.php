@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Orders\StoreAttendanceRequest;
 use App\Http\Requests\Orders\UpdateAttendanceRequest;
 use App\Models\Orders\Attendance;
+use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\ServiceLocation;
 use Illuminate\Http\JsonResponse;
 use Inertia\Inertia;
@@ -19,7 +20,7 @@ class AttendanceController extends Controller
         $venue = app('tenant');
 
         $attendances = Attendance::open()
-            ->with(['serviceLocation', 'createdBy', 'orders'])
+            ->with(['serviceLocation', 'createdBy', 'orders' => fn ($q) => $q->latest(), 'orders.items'])
             ->latest()
             ->get();
 
@@ -27,9 +28,16 @@ class AttendanceController extends Controller
             ->where('venue_id', $venue->id)
             ->get(['id', 'name']);
 
+        $channels = AttendanceChannel::withoutGlobalScopes()
+            ->where('venue_id', $venue->id)
+            ->where('active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'name', 'value']);
+
         return Inertia::render('Attendances/Index', [
             'attendances' => $attendances,
             'serviceLocations' => $serviceLocations,
+            'channels' => $channels,
             'venueId' => $venue->id,
         ]);
     }
@@ -47,7 +55,13 @@ class AttendanceController extends Controller
     {
         $venue = app('tenant');
 
-        $attendance->load(['orders.items.product', 'orders.items.preparationStatus', 'serviceLocation', 'createdBy']);
+        $attendance->load([
+            'orders' => fn ($q) => $q->latest(), 
+            'orders.items.product', 
+            'orders.items.preparationStatus', 
+            'serviceLocation', 
+            'createdBy',
+            ]);
 
         return Inertia::render('Attendances/Show', [
             'attendance' => $attendance,
@@ -57,7 +71,7 @@ class AttendanceController extends Controller
 
     public function orders(Attendance $attendance): JsonResponse
     {
-        $attendance->load(['orders.items.product', 'orders.items.preparationStatus']);
+        $attendance->load(['orders' => fn ($q) => $q->latest(), 'orders.items.product', 'orders.items.preparationStatus']);
 
         return response()->json($attendance->orders);
     }

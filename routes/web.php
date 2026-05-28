@@ -24,6 +24,7 @@ use App\Http\Controllers\Platform\LoginController as PlatformLoginController;
 use App\Http\Controllers\Platform\PlanAssignmentController;
 use App\Http\Controllers\Platform\PlanCatalogController;
 use App\Http\Controllers\Platform\PlatformUserController;
+use App\Http\Controllers\Settings\AttendanceChannelController;
 use App\Http\Controllers\Settings\DashboardController;
 use App\Http\Controllers\Settings\KitchenStationController;
 use App\Http\Controllers\Settings\PreparationStatusController;
@@ -168,6 +169,11 @@ Route::middleware([
         Route::post('/service-locations', [ServiceLocationController::class, 'store'])->name('service-locations.store');
         Route::put('/service-locations/{location}', [ServiceLocationController::class, 'update'])->name('service-locations.update');
         Route::delete('/service-locations/{location}', [ServiceLocationController::class, 'destroy'])->name('service-locations.destroy');
+
+        Route::get('/attendance-channels', [AttendanceChannelController::class, 'index'])->name('attendance-channels.index');
+        Route::post('/attendance-channels', [AttendanceChannelController::class, 'store'])->name('attendance-channels.store');
+        Route::put('/attendance-channels/{channel}', [AttendanceChannelController::class, 'update'])->name('attendance-channels.update');
+        Route::delete('/attendance-channels/{channel}', [AttendanceChannelController::class, 'destroy'])->name('attendance-channels.destroy');
 
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');

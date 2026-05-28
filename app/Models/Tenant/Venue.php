@@ -4,6 +4,7 @@ namespace App\Models\Tenant;
 
 use App\Models\Menu\Menu;
 use App\Models\Orders\Attendance;
+use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\KitchenStation;
 use App\Models\Settings\PreparationStatus;
 use App\Models\Settings\ServiceLocation;
@@ -107,6 +108,11 @@ class Venue extends Model
     public function serviceLocations(): HasMany
     {
         return $this->hasMany(ServiceLocation::class);
+    }
+
+    public function attendanceChannels(): HasMany
+    {
+        return $this->hasMany(AttendanceChannel::class)->orderBy('sort_order');
     }
 
     public function menus(): HasMany

@@ -10,24 +10,22 @@ import { onMounted, onUnmounted, ref } from 'vue';
 const props = defineProps({
     attendances: Array,
     serviceLocations: Array,
+    channels: Array,
     venueId: String,
 });
 
 const showForm = ref(false);
 
 const form = useForm({
-    channel: 'counter',
+    channel: '',
     customer_identifier: '',
     service_location_id: '',
     party_size: '',
     notes: '',
 });
 
-const channelLabels = {
-    counter: 'Counter',
-    table: 'Table',
-    delivery: 'Delivery',
-    service_request: 'Service Request',
+const channelLabel = (value) => {
+    return props.channels?.find((c) => c.value === value)?.name ?? value;
 };
 
 const elapsedMinutes = (createdAt) => {
@@ -45,11 +43,19 @@ const ordersTotal = (attendance) => {
     return total.toFixed(2);
 };
 
+const initForm = () => {
+    form.channel = props.channels?.[0]?.value ?? '';
+    form.customer_identifier = '';
+    form.service_location_id = '';
+    form.party_size = '';
+    form.notes = '';
+};
+
 const submit = () => {
     form.post(route('attendances.store'), {
         onSuccess: () => {
             showForm.value = false;
-            form.reset();
+            initForm();
         },
     });
 };
@@ -77,7 +83,7 @@ onUnmounted(() => {
         <template #header>
             <div class="flex items-center justify-between">
                 <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Attendances') }}</h1>
-                <AppButton @click="showForm = true">{{ __('New Attendance') }}</AppButton>
+                <AppButton @click="initForm(); showForm = true">{{ __('New Attendance') }}</AppButton>
             </div>
         </template>
 
@@ -91,10 +97,7 @@ onUnmounted(() => {
                         v-model="form.channel"
                         class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     >
-                        <option value="counter">{{ __('Counter') }}</option>
-                        <option value="table">{{ __('Table') }}</option>
-                        <option value="delivery">{{ __('Delivery') }}</option>
-                        <option value="service_request">{{ __('Service Request') }}</option>
+                        <option v-for="ch in channels" :key="ch.id" :value="ch.value">{{ ch.name }}</option>
                     </select>
                     <p v-if="form.errors.channel" class="mt-1 text-xs text-destructive">{{ form.errors.channel }}</p>
                 </div>
@@ -143,7 +146,7 @@ onUnmounted(() => {
 
                 <div class="flex gap-2 sm:col-span-2">
                     <AppButton type="submit" :loading="form.processing">{{ __('Open Attendance') }}</AppButton>
-                    <AppButton type="button" variant="ghost" @click="showForm = false; form.reset()">{{ __('Cancel') }}</AppButton>
+                    <AppButton type="button" variant="ghost" @click="showForm = false; initForm()">{{ __('Cancel') }}</AppButton>
                 </div>
             </form>
         </AppCard>
@@ -153,7 +156,7 @@ onUnmounted(() => {
             :title="__('No open attendances')"
             :description="__('Open a new attendance to start taking orders.')"
             :action-label="__('New Attendance')"
-            @action="showForm = true"
+            @action="initForm(); showForm = true"
         />
 
         <div v-if="attendances.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -161,7 +164,7 @@ onUnmounted(() => {
                 <div class="flex items-start justify-between">
                     <div>
                         <div class="flex items-center gap-2">
-                            <AppBadge :label="channelLabels[attendance.channel] ?? attendance.channel" color="#3b82f6" />
+                            <AppBadge :label="channelLabel(attendance.channel)" color="#3b82f6" />
                             <span v-if="attendance.customer_identifier" class="text-sm font-semibold text-ocean-deep">
                                 {{ __('Identifier:') }} {{ attendance.customer_identifier }}
                             </span>
