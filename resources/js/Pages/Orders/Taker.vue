@@ -57,7 +57,7 @@ const toggleModifier = (group, optionId) => {
         modalModifiers.value[group.id] = [];
     }
     const list = modalModifiers.value[group.id];
-    if (group.type === 'single') {
+    if (!group.multiple_selection) {
         modalModifiers.value[group.id] = [optionId];
     } else {
         const idx = list.indexOf(optionId);
@@ -438,7 +438,7 @@ const placeOrder = () => {
                             >
                                 <div class="flex items-center gap-2">
                                     <input
-                                        :type="group.type === 'single' ? 'radio' : 'checkbox'"
+                                        :type="!group.multiple_selection ? 'radio' : 'checkbox'"
                                         :name="`group-${group.id}`"
                                         :value="option.id"
                                         :checked="isModifierSelected(group.id, option.id)"

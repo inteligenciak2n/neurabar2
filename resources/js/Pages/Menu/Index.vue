@@ -82,7 +82,13 @@ const moveDown = (categories, index) => {
                 <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Menu') }}</h1>
                 <div class="flex items-center gap-3">
                     <Link :href="route('menu.products.index')" class="text-sm font-medium text-primary hover:underline">
-                        {{ __('Manage Products') }}
+                        {{ __('Products') }}
+                    </Link>
+                    <Link :href="route('menu.modifier-groups.index')" class="text-sm font-medium text-primary hover:underline">
+                        {{ __('Modifiers') }}
+                    </Link>
+                    <Link :href="route('menu.combos.index')" class="text-sm font-medium text-primary hover:underline">
+                        {{ __('Combos') }}
                     </Link>
                     <AppButton @click="openCreate">{{ __('Add Category') }}</AppButton>
                 </div>

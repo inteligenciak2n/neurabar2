@@ -149,6 +149,29 @@ const allStations = computed(() => {
                             <p class="font-body font-medium text-sm text-ocean-deep">
                                 {{ item.quantity }}× {{ item.product?.name ?? __('Custom request') }}
                             </p>
+                            <p v-if="item.variation" class="text-xs text-muted-foreground">
+                                {{ item.variation.name }}
+                            </p>
+                            <!-- Combo badge -->
+                            <span
+                                v-if="item.combo"
+                                class="mt-1 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
+                            >
+                                🍱 {{ item.combo.name }}
+                            </span>
+                            <!-- Modifiers list -->
+                            <ul v-if="item.modifiers?.length" class="mt-1 space-y-0.5">
+                                <li
+                                    v-for="modifier in item.modifiers"
+                                    :key="modifier.id"
+                                    class="text-xs text-muted-foreground"
+                                >
+                                    + {{ modifier.modifier_option?.name }}
+                                    <span v-if="modifier.extra_price_snapshot > 0" class="text-primary">
+                                        (+R$ {{ Number(modifier.extra_price_snapshot).toFixed(2) }})
+                                    </span>
+                                </li>
+                            </ul>
                             <p v-if="item.notes" class="mt-1 text-xs text-muted-foreground italic">
                                 {{ item.notes }}
                             </p>

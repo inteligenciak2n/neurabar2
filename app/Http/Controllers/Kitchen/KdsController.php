@@ -27,6 +27,7 @@ class KdsController
         $openItems = OrderItem::with([
             'product',
             'variation',
+            'combo:id,name',
             'modifiers.modifierOption',
             'preparationStatus',
             'order.attendance.serviceLocation',

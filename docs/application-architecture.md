@@ -279,6 +279,119 @@ O middleware `RequirePlatformRole` (alias `platform_role`) protege as rotas do p
 
 ---
 
+---
+
+## Arquitetura do Menu
+
+### Visão Geral
+
+```
+Venue
+  └── Menu (1 ou mais menus por venue)
+        └── Category (categorias ordenadas por sort_order)
+              └── Product (produtos com preço base, station, descrição, active)
+                    ├── ProductVariation (variações: tamanho, sabor — têm preço próprio)
+                    └── ModifierGroup  ◄─── (pivot) product_modifier_group
+                          └── ModifierOption (opção com extra_price, active)
+
+Venue
+  └── Combo (combos com preço fixo)
+        └── ComboItem (product_id + variation_id + quantity)
+```
+
+### Entidades e Tabelas
+
+| Entidade | Tabela | Escopo |
+|---|---|---|
+| `Menu` | `menus` | `venue_id` |
+| `Category` | `menu_categories` | via `menu_id` |
+| `Product` | `products` | via `category.menu.venue_id` |
+| `ProductVariation` | `product_variations` | via `product_id` |
+| `ModifierGroup` | `modifier_groups` | `venue_id` |
+| `ModifierOption` | `modifier_options` | via `modifier_group_id` |
+| `Combo` | `combos` | `venue_id` |
+| `ComboItem` | `combo_items` | via `combo_id` |
+
+### Regras de Negócio
+
+**Modificadores**
+- Um `ModifierGroup` pertence diretamente à venue (não ao produto) para reuso entre produtos.
+- A associação produto ↔ grupo é feita pela pivot `product_modifier_group`.
+- `required = true` → o atendente **deve** selecionar ao menos uma opção do grupo antes de confirmar o item no pedido.
+- `multiple_selection = true` → checkboxes (várias opções); `false` → radio (uma opção).
+- `extra_price` da opção é capturado no momento do pedido em `order_item_modifiers.extra_price_snapshot` — imutável após o registro.
+
+**Variações**
+- Quando um produto tem variações, o preço da variação prevalece sobre o `product.price`.
+- Se `variation_id` está preenchido no `OrderItem`, o preço base usado é `product_variations.price`.
+
+**Combos**
+- Um combo tem preço fixo (`combos.price`) independente dos produtos que o compõem.
+- Ao registrar um pedido, cada `ComboItem` vira um `OrderItem` separado, todos com o mesmo `combo_id` para agrupamento visual.
+- Itens de combo não aceitam modificadores no fluxo atual (são bundled fixos).
+
+### Fluxo de Pedido com Modificadores
+
+```
+Atendente abre produto no Taker.vue
+    │
+    ├── Tem variações?  → Seleciona variação (radio)
+    │
+    ├── Tem modifier_groups?
+    │       ├── required=true, multiple_selection=false → radio, obrigatório
+    │       ├── required=true, multiple_selection=true  → checkboxes, obrigatório
+    │       └── required=false → opcional
+    │
+    └── Adiciona ao cart com modifiers[]={modifier_option_id, name}
+          ↓
+PlaceOrderAction::execute()
+    → cria OrderItem com unit_price (snapshot do preço)
+    → para cada modifier_option_id:
+          cria OrderItemModifier com extra_price_snapshot (snapshot do extra_price)
+```
+
+### Exibição no KDS
+
+O `KdsController` carrega os `OrderItem` abertos com:
+- `modifiers.modifierOption` — lista de modificadores aplicados
+- `combo` — combo ao qual o item pertence (se houver)
+- `preparationStatus` — status de preparo atual
+
+O `Kds.vue` exibe, por item:
+- Nome do produto + variação
+- Badge "🍱 NomeDoCombo" quando `item.combo` não é nulo
+- Lista de modificadores com nome e extra price
+- Notas do item
+
+### Referência de Arquivos do Menu
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `app/Models/Menu/Menu.php` | Model do menu |
+| `app/Models/Menu/Category.php` | Categoria com `sort_order` |
+| `app/Models/Menu/Product.php` | Produto com BelongsToVenue e relações |
+| `app/Models/Menu/ProductVariation.php` | Variações de produto |
+| `app/Models/Menu/ModifierGroup.php` | Grupo de modificadores (venue-scoped) |
+| `app/Models/Menu/ModifierOption.php` | Opção com `extra_price` |
+| `app/Models/Menu/Combo.php` | Combo com BelongsToVenue |
+| `app/Models/Menu/ComboItem.php` | Linha do combo com product + variation + quantity |
+| `app/Models/Orders/OrderItem.php` | Item de pedido com `combo_id`, `variation_id`, `unit_price` |
+| `app/Models/Orders/OrderItemModifier.php` | Modificador aplicado com `extra_price_snapshot` |
+| `app/Http/Controllers/Menu/ProductController.php` | CRUD de produtos + sync de modifier groups |
+| `app/Http/Controllers/Menu/ModifierGroupController.php` | CRUD de grupos |
+| `app/Http/Controllers/Menu/ModifierOptionController.php` | CRUD de opções |
+| `app/Http/Controllers/Menu/ComboController.php` | CRUD de combos |
+| `app/Actions/Menu/CreateComboAction.php` | Criação transacional de combo com items |
+| `app/Actions/Menu/UpdateComboAction.php` | Atualização transacional (delete + recreate items) |
+| `app/Actions/Orders/PlaceOrderAction.php` | Registra pedido com modifiers e combos |
+| `resources/js/Pages/Menu/Products.vue` | Tela de produtos com filtro por categoria |
+| `resources/js/Pages/Menu/Modifiers.vue` | CRUD completo de grupos e opções |
+| `resources/js/Pages/Menu/Combos.vue` | CRUD de combos com itens dinâmicos |
+| `resources/js/Pages/Orders/Taker.vue` | Order taker com seleção de modifiers e combos |
+| `resources/js/Pages/Kitchen/Kds.vue` | KDS com exibição de modifiers e badge de combo |
+
+---
+
 ## Referência de Arquivos
 
 | Arquivo | Responsabilidade |
