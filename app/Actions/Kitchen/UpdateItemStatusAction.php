@@ -24,7 +24,7 @@ class UpdateItemStatusAction
 
         $status = PreparationStatus::findOrFail($preparationStatusId);
 
-        $readyAt = ($status->is_final && $this->isLastPendingItem($item)) ? now() : null;
+        $readyAt = ($status->is_final) ? now() : null;
 
         $item->update([
             'preparation_status_id' => $preparationStatusId,
@@ -33,9 +33,9 @@ class UpdateItemStatusAction
 
         $order = $item->order;
 
-        if ($readyAt !== null) {
+        if ($this->isLastPendingItem($item) && $order->status === OrderStatus::InPreparation) {
             $order->update(['status' => OrderStatus::Ready]);
-        } elseif ($order->status === OrderStatus::Open) {
+        } else if ($order->status === OrderStatus::Open) {
             $order->update(['status' => OrderStatus::InPreparation]);
         }
 
@@ -49,7 +49,6 @@ class UpdateItemStatusAction
     private function isLastPendingItem(OrderItem $item): bool
     {
         return OrderItem::where('order_id', $item->order_id)
-            ->where('id', '!=', $item->id)
             ->whereNull('ready_at')
             ->doesntExist();
     }

@@ -1,42 +1,20 @@
 <?php
 
-use App\Models\Tenant\Venue;
+use App\Models\User;
 use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
-    return (int) $user->id === (int) $id;
+    return $user->id === $id;
 });
 
 Broadcast::channel('user.{id}', function ($user, $id) {
     return $user->id === $id;
 });
 
-Broadcast::channel('venue.{id}.kitchen', function ($user, string $id) {
-    if ($user->venue_id === $id) {
-        return true;
-    }
-
-    if ($user->corporation_id) {
-        return Venue::where('id', $id)
-            ->where('corporation_id', $user->corporation_id)
-            ->where('active', true)
-            ->exists();
-    }
-
-    return false;
+Broadcast::channel('venue.{id}.kitchen', function (User $user, string $id) {
+    return $user->venues()->wherePivot('venue_id', $id)->exists();
 });
 
-Broadcast::channel('venue.{venueId}.station.{stationId}', function ($user, string $venueId) {
-    if ($user->venue_id === $venueId) {
-        return true;
-    }
-
-    if ($user->corporation_id) {
-        return Venue::where('id', $venueId)
-            ->where('corporation_id', $user->corporation_id)
-            ->where('active', true)
-            ->exists();
-    }
-
-    return false;
+Broadcast::channel('venue.{venueId}.station.{stationId}', function (User $user, string $venueId) {
+    return $user->venues()->wherePivot('venue_id', $venueId)->exists();
 });

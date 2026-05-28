@@ -30,14 +30,14 @@ const logout = () => {
     router.post(route('logout'));
 };
 
-// watch(
-//     () => page.props.venue_switched,
-//     (switched) => {
-//         if (switched && window.Echo) {
-//             window.Echo.connector.pusher.connection.connect();
-//         }
-//     },
-// );
+watch(
+    () => page.props.venue_switched,
+    (switched) => {
+        if (switched && window.Echo) {
+            window.Echo.connector.pusher.connection.connect();
+        }
+    },
+);
 </script>
 
 <template>
