@@ -24,6 +24,17 @@ const form = useForm({
     notes: '',
 });
 
+const serviceLocationsByType = () => {
+    let types = {};
+    for (const loc of props.serviceLocations) {
+        if (!types[loc.type]) {
+            types[loc.type] = [];
+        }
+        types[loc.type].push(loc);
+    }
+    return types;
+};
+
 const channelLabel = (value) => {
     return props.channels?.find((c) => c.value === value)?.name ?? value;
 };
@@ -93,12 +104,16 @@ onUnmounted(() => {
             <form class="grid grid-cols-1 gap-3 sm:grid-cols-2" @submit.prevent="submit">
                 <div>
                     <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Channel') }} <span class="text-destructive">*</span></label>
-                    <select
-                        v-model="form.channel"
-                        class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                        <option v-for="ch in channels" :key="ch.id" :value="ch.value">{{ ch.name }}</option>
-                    </select>
+                    <template v-for="ch in channels" :key="ch.id">
+                        <button
+                            type="button"
+                            @click="form.channel = ch.value"
+                            :class="{'bg-primary text-white': form.channel === ch.value, 'bg-gray-200 text-gray-700': form.channel !== ch.value}"
+                            class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                            {{ ch.name }}
+                        </button>
+                    </template>
                     <p v-if="form.errors.channel" class="mt-1 text-xs text-destructive">{{ form.errors.channel }}</p>
                 </div>
 
@@ -115,6 +130,19 @@ onUnmounted(() => {
 
                 <div v-if="serviceLocations.length">
                     <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Service Location') }}</label>
+                    
+                    <template v-for="(locType, type) in serviceLocationsByType()" :key="type" >
+                        <template v-for="loc in locType" :key="loc.id">
+                            <button
+                                type="button"
+                                @click="form.service_location_id = loc.id"
+                                :class="{'bg-primary text-white': form.service_location_id === loc.id, 'bg-gray-200 text-gray-700': form.service_location_id !== loc.id}"
+                                class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                            >
+                                {{ loc.name }}
+                            </button>
+                        </template>
+                    </template>                    
                     <select
                         v-model="form.service_location_id"
                         class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
@@ -159,7 +187,7 @@ onUnmounted(() => {
             @action="initForm(); showForm = true"
         />
 
-        <div v-if="attendances.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div v-if="attendances.length && !showForm" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <AppCard v-for="attendance in attendances" :key="attendance.id">
                 <div class="flex items-start justify-between">
                     <div>

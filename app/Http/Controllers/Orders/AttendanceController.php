@@ -26,7 +26,7 @@ class AttendanceController extends Controller
 
         $serviceLocations = ServiceLocation::withoutGlobalScopes()
             ->where('venue_id', $venue->id)
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'type']);
 
         $channels = AttendanceChannel::withoutGlobalScopes()
             ->where('venue_id', $venue->id)
