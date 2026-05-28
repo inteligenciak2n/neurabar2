@@ -31,7 +31,7 @@ class DashboardController
             ->sum('grand_total');
 
         $attendancesList = Attendance::open()
-            ->with(['serviceLocation', 'orders'])
+            ->with(['serviceLocation', 'orders', 'orders.items'])
             ->latest()
             ->take(20)
             ->get();

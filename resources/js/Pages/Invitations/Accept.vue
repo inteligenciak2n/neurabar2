@@ -28,7 +28,7 @@ const accept = () => {
                 </h1>
                 <p class="text-muted-foreground mt-2">
                     <span v-if="invitedBy">
-                        <strong>{{ invitedBy }}</strong> {{ __('invited you to collaborate on') }}
+                        <strong>{{ invitedBy }}</strong> {{ __('invited you to collaborate on ') }}
                     </span>
                     <span v-else>{{ __('You have been invited to collaborate on') }}</span>
                     <strong> {{ venueName }}</strong>.

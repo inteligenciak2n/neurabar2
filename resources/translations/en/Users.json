@@ -14,5 +14,10 @@
     "leave blank to keep current": "leave blank to keep current",
     "Save": "Save",
     "Cancel": "Cancel",
-    "New User": "New User"
+    "New User": "New User",
+    "Owner": "Owner",
+    "General Manager": "General Manager",
+    "Section Manager": "Section Manager",
+    "Attendant": "Attendant",
+    "Corporation Admin": "Corporation Admin"
 }

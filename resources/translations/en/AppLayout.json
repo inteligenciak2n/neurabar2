@@ -8,5 +8,12 @@
     "Dashboard": "Dashboard",
     "Menu": "Menu",
     "Profile": "Profile",
-    "Pontos Comerciais": "Pontos Comerciais"
+    "Pontos Comerciais": "Pontos Comerciais",
+    "Switch Venue": "Switch Venue",
+    "New Venue": "New Venue",
+    "Owner": "Owner",
+    "Attendant": "Attendant",
+    "General Manager": "General Manager",
+    "Corporation Admin": "Corporation Admin",
+    "Section Manager": "Section Manager"
 }

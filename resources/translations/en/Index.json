@@ -67,5 +67,10 @@
     "Service Location": "Service Location",
     "None": "None",
     "Save": "Save",
-    "more": "more"
+    "more": "more",
+    "Add Venue": "Add Venue",
+    "City": "City",
+    "Venues": "Venues",
+    "Active": "Active",
+    "Status": "Status"
 }

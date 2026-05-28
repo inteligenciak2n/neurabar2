@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use App\Services\Languages\TranslationService;
 use Illuminate\Http\Request;
@@ -70,7 +71,7 @@ class HandleInertiaRequests extends Middleware
                     return $user->venues()
                         ->where('active', true)
                         ->get(['venues.id', 'venues.name'])
-                        ->map(fn ($v) => ['id' => $v->id, 'name' => $v->name])
+                        ->map(fn ($v) => ['id' => $v->id, 'name' => $v->name, 'role' => $v->pivot->role instanceof UserRole ? $v->pivot->role->value : $v->pivot->role])
                         ->toArray();
                 },
             ],

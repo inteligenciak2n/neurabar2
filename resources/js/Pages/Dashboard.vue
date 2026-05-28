@@ -6,6 +6,7 @@ import AppButton from '@/Components/AppButton.vue';
 import AppEmptyState from '@/Components/AppEmptyState.vue';
 import { router, usePage, Link } from '@inertiajs/vue3';
 import { onMounted, onUnmounted, computed } from 'vue';
+import { useCheckRole } from '@/Composables/useCheckRole';
 
 const props = defineProps({
     open_attendances_count: Number,
@@ -17,6 +18,7 @@ const props = defineProps({
 
 const page = usePage();
 const venueId = computed(() => page.props.defs?.venue?.id);
+const { isManager } = useCheckRole();
 
 const channelLabels = {
     table: 'Table',
@@ -68,7 +70,6 @@ onUnmounted(() => {
         </template>
 
         <div class="py-6 px-4 sm:px-6 max-w-7xl mx-auto space-y-6">
-            <pre>{{ page.props.defs }}</pre>
             <!-- Metrics row -->
             <div class="grid gap-4 sm:grid-cols-3">
                 <AppCard>
@@ -79,7 +80,7 @@ onUnmounted(() => {
                     <p class="text-sm font-body text-muted-foreground">{{ __('Items in Preparation') }}</p>
                     <p class="font-heading text-3xl font-bold text-warm-gold mt-1">{{ items_in_preparation }}</p>
                 </AppCard>
-                <AppCard>
+                <AppCard v-if="isManager()">
                     <p class="text-sm font-body text-muted-foreground">{{ __("Today's Revenue") }}</p>
                     <p class="font-heading text-3xl font-bold text-accent mt-1">
                         R$ {{ todays_revenue.toFixed(2) }}
