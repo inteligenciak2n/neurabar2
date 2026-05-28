@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { ref, watch } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import ApplicationMark from '@/Components/ApplicationMark.vue';
 import Banner from '@/Components/Banner.vue';
 import Dropdown from '@/Components/Dropdown.vue';
@@ -10,6 +10,7 @@ import CustomHead from '@/Components/CustomHead.vue';
 import { useTranslate } from '@/Composables/useTranslate'
 
 const __ = useTranslate();
+const page = usePage();
 
 defineProps({
     title: String,
@@ -28,6 +29,15 @@ const navItems = [
 const logout = () => {
     router.post(route('logout'));
 };
+
+// watch(
+//     () => page.props.venue_switched,
+//     (switched) => {
+//         if (switched && window.Echo) {
+//             window.Echo.connector.pusher.connection.connect();
+//         }
+//     },
+// );
 </script>
 
 <template>

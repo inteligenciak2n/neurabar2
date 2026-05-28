@@ -2,7 +2,7 @@
 
 namespace App\Actions\Fortify;
 
-use App\Actions\Settings\CreateUserAction;
+use App\Enums\UserRole;
 use App\Models\Menu\Category;
 use App\Models\Menu\Menu;
 use App\Models\Menu\Product;
@@ -15,89 +15,82 @@ use App\Models\Tenant\PlanCatalog;
 use App\Models\Tenant\Venue;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 
 class CreateUserOwnerDefinitions
 {
     public function handle(User $user): void
     {
         DB::beginTransaction();
-            $venue = $this->setUserDefaults($user);
-            $menu = $this->createMenu($venue);
-            $this->createProductCategories($menu);
-            $this->createServiceLocations($venue);
-            $this->createUserAttendant($venue, $user);
+        $venue = $this->createCorporationAndVenue($user);
+        $menu = $this->createMenu($venue);
+        $this->createProductCategories($menu);
+        $this->createServiceLocations($venue);
+        $this->createUserAttendant($venue, $user);
         DB::commit();
     }
 
-    private function setUserDefaults(User $user): Venue
+    private function createCorporationAndVenue(User $user): Venue
     {
-        $plan = PlanCatalog::where('code', 'pro')->firstOrFail();
-            
-        $corporation = Corporation::create(
-            [
-                'tax_id' => '00.000.000/0001-00',
-                'name' => 'Test Corp',
-                'email' => 'corp@test.com',
-                'contact_phone' => '11999990000',
-                'plan_catalog_id' => $plan->id,
-                'plan_name' => $plan->name,
-                'subscription_value' => $plan->monthly_price,
-                'active' => true,
-            ]
+        $plan = PlanCatalog::firstOrCreate(
+            ['code' => 'pro'],
+            ['name' => 'Pro', 'monthly_price' => 99.90, 'active' => true]
         );
 
-        $venue = Venue::create(
-            [
-                'call_waiter_slug' => 'test-bar',
-                'corporation_id' => $corporation->id,
-                'name' => 'Test Bar',
-                'tax_id' => '00.000.000/0001-00',
-                'phone' => '11999990000',
-                'city' => 'São Paulo',
-                'state' => 'SP',
-                'timezone' => 'America/Sao_Paulo',
-                'active' => true,
-            ]
-        );
+        $corporation = Corporation::create([
+            'owner_id' => $user->id,
+            'tax_id' => '00.000.000/0001-00',
+            'name' => 'Test Corp',
+            'email' => 'corp@test.com',
+            'contact_phone' => '11999990000',
+            'plan_catalog_id' => $plan->id,
+            'plan_name' => $plan->name,
+            'subscription_value' => $plan->monthly_price,
+            'active' => true,
+        ]);
 
-        VenueSettings::create(
-            [
-                'venue_id' => $venue->id,
-                'cover_charge' => 10.00,
-                'service_fee_percent' => 10.00,
-                'table_count' => 30,
-            ]
-        );
+        $venue = Venue::create([
+            'call_waiter_slug' => strtolower(str_replace(' ', '-', $user->name)).'-call-attendant',
+            'corporation_id' => $corporation->id,
+            'name' => $user->name.' ponto de venda',
+            'tax_id' => '00.000.000/0001-00',
+            'phone' => '11999990000',
+            'city' => 'São Paulo',
+            'state' => 'SP',
+            'timezone' => 'America/Sao_Paulo',
+            'active' => true,
+        ]);
 
-
-        $user->venue_id = $venue->id;
-        $user->corporation_id = $corporation->id;
-        $user->save();
+        VenueSettings::create([
+            'venue_id' => $venue->id,
+            'cover_charge' => 10.00,
+            'service_fee_percent' => 10.00,
+            'table_count' => 30,
+        ]);
 
         foreach (['Cozinha', 'Bar'] as $i => $stationName) {
-            KitchenStation::create(
-                [
-                    'venue_id' => $venue->id,
-                    'name' => $stationName,
-                    'sort_order' => $i + 1,
-                    'active' => true,
-                ]
-            );
+            KitchenStation::create([
+                'venue_id' => $venue->id,
+                'name' => $stationName,
+                'sort_order' => $i + 1,
+                'active' => true,
+            ]);
         }
 
         $statuses = [
-            ['name' => 'Pendente',     'color' => '#94a3b8', 'sort_order' => 1, 'show_to_customer' => false, 'is_final' => false],
-            ['name' => 'Em Preparo',   'color' => '#f59e0b', 'sort_order' => 2, 'show_to_customer' => true, 'is_final' => false],
-            ['name' => 'Pronto',       'color' => '#22c55e', 'sort_order' => 3, 'show_to_customer' => true, 'is_final' => true],
+            ['name' => 'Pendente', 'color' => '#94a3b8', 'sort_order' => 1, 'show_to_customer' => false, 'is_final' => false, 'is_initial' => true],
+            ['name' => 'Em Preparo', 'color' => '#f59e0b', 'sort_order' => 2, 'show_to_customer' => true, 'is_final' => false, 'is_initial' => false],
+            ['name' => 'Pronto', 'color' => '#22c55e', 'sort_order' => 3, 'show_to_customer' => true, 'is_final' => true, 'is_initial' => false],
         ];
 
         foreach ($statuses as $status) {
-            PreparationStatus::create(
-                array_merge($status, ['venue_id' => $venue->id])
-            );
+            PreparationStatus::create(array_merge($status, ['venue_id' => $venue->id]));
         }
-        
+
+        $venue->users()->attach($user->id, ['role' => UserRole::Owner->value]);
+
+        $user->current_venue_id = $venue->id;
+        $user->save();
+
         return $venue;
     }
 
@@ -171,7 +164,7 @@ class CreateUserOwnerDefinitions
                 'sort_order' => $categoryData['sort_order'],
             ]);
 
-            foreach ($products as $index => $productData) {
+            foreach ($products as $productData) {
                 Product::create([
                     'category_id' => $category->id,
                     'name' => $productData['name'],
@@ -204,25 +197,22 @@ class CreateUserOwnerDefinitions
         }
     }
 
-    private function createUserAttendant(Venue $venue, User $user): void
-    {            
-        $data = [
+    private function createUserAttendant(Venue $venue, User $owner): void
+    {
+        $emailParts = explode('@', $owner->email);
+        $attendantEmail = $emailParts[0].'+attendant@'.$emailParts[1];
+
+        $attendant = User::create([
             'name' => 'Atendente Padrão',
-            'email' => explode('@', $user->email)[0] . '+attendant@' . explode('@', $user->email)[1],
-            'role' => 'attendant',
+            'email' => $attendantEmail,
+            'password' => $owner->password,
             'pin' => null,
             'active' => true,
-        ];
-
-        User::create([
-            'venue_id' => $venue->id,
-            'corporation_id' => $venue->corporation_id,
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => $user->password, // Hash::make($data['password']),
-            'role' => $data['role'],
-            'pin' => $data['pin'] ?? null,
-            'active' => $data['active'] ?? true,
         ]);
+
+        $venue->users()->attach($attendant->id, ['role' => UserRole::Attendant->value]);
+
+        $attendant->current_venue_id = $venue->id;
+        $attendant->save();
     }
 }

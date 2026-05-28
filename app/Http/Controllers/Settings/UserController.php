@@ -19,14 +19,16 @@ class UserController extends Controller
     {
         $venue = app('tenant');
 
-        $query = User::where('venue_id', $venue->id);
-
-        if ($venue->corporation_id !== null) {
-            $query->orWhere('corporation_id', $venue->corporation_id);
-        }
-
-        $users = $query->orderBy('name')
-            ->get(['id', 'name', 'email', 'role', 'active', 'venue_id', 'corporation_id']);
+        $users = $venue->users()
+            ->orderBy('name')
+            ->get(['users.id', 'users.name', 'users.email', 'users.active'])
+            ->map(fn ($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'active' => $user->active,
+                'role' => $user->pivot->role,
+            ]);
 
         return Inertia::render('Settings/Users', [
             'users' => $users,
@@ -37,7 +39,11 @@ class UserController extends Controller
     {
         $venue = app('tenant');
 
-        $action->execute($venue, $request);
+        $result = $action->execute($venue, $request);
+
+        if ($result === 'invitation_sent') {
+            return back()->with('success', 'Invitation sent.');
+        }
 
         return back()->with('success', 'User created.');
     }
@@ -45,10 +51,7 @@ class UserController extends Controller
     public function update(UpdateUserRequest $request, User $user, UpdateUserAction $action): RedirectResponse
     {
         $venue = app('tenant');
-        abort_unless(
-            $user->venue_id === $venue->id || ($venue->corporation_id && $user->corporation_id === $venue->corporation_id),
-            403
-        );
+        abort_unless($venue->users()->wherePivot('user_id', $user->id)->exists(), 403);
 
         $action->execute($user, $request);
 
@@ -58,12 +61,9 @@ class UserController extends Controller
     public function destroy(User $user, DeleteUserAction $action): RedirectResponse
     {
         $venue = app('tenant');
-        abort_unless(
-            $user->venue_id === $venue->id || ($venue->corporation_id && $user->corporation_id === $venue->corporation_id),
-            403
-        );
+        abort_unless($venue->users()->wherePivot('user_id', $user->id)->exists(), 403);
 
-        $action->execute($user);
+        $action->execute($user, $venue->id);
 
         return back()->with('success', 'User deleted.');
     }

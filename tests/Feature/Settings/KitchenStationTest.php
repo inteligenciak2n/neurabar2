@@ -5,7 +5,6 @@ namespace Tests\Feature\Settings;
 use App\Enums\UserRole;
 use App\Models\Settings\KitchenStation;
 use App\Models\Tenant\Venue;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -23,14 +22,7 @@ class KitchenStationTest extends TestCase
     public function test_owner_can_create_kitchen_station(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
+        $this->loginAs(UserRole::Owner, $venue);
 
         $this->post(route('settings.kitchen-stations.store'), [
             'name' => 'Grill Station',
@@ -47,15 +39,8 @@ class KitchenStationTest extends TestCase
     public function test_owner_can_update_kitchen_station(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
+        $this->loginAs(UserRole::Owner, $venue);
         $station = KitchenStation::factory()->create(['venue_id' => $venue->id]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
 
         $this->put(route('settings.kitchen-stations.update', $station->id), [
             'name' => 'Updated Station',
@@ -68,15 +53,8 @@ class KitchenStationTest extends TestCase
     public function test_owner_can_delete_kitchen_station_without_products(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
+        $this->loginAs(UserRole::Owner, $venue);
         $station = KitchenStation::factory()->create(['venue_id' => $venue->id]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
 
         $this->delete(route('settings.kitchen-stations.destroy', $station->id))
             ->assertRedirect();
@@ -87,14 +65,7 @@ class KitchenStationTest extends TestCase
     public function test_station_name_is_required(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
+        $this->loginAs(UserRole::Owner, $venue);
 
         $this->post(route('settings.kitchen-stations.store'), ['name' => ''])
             ->assertSessionHasErrors('name');

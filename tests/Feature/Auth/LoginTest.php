@@ -17,10 +17,10 @@ class LoginTest extends TestCase
         $venue = Venue::factory()->create();
         $user = User::factory()->create([
             'email' => 'owner@test.com',
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
+            'current_venue_id' => $venue->id,
             'active' => true,
         ]);
+        $venue->users()->attach($user->id, ['role' => UserRole::Owner->value]);
 
         $response = $this->post('/login', [
             'email' => 'owner@test.com',
@@ -36,8 +36,7 @@ class LoginTest extends TestCase
         $venue = Venue::factory()->create();
         User::factory()->create([
             'email' => 'inactive@test.com',
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
+            'current_venue_id' => $venue->id,
             'active' => false,
         ]);
 
@@ -46,7 +45,7 @@ class LoginTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertSessionHasErrors();
+        $response->assertSessionHasErrors('email');
         $this->assertGuest();
     }
 
@@ -55,8 +54,7 @@ class LoginTest extends TestCase
         $venue = Venue::factory()->create();
         User::factory()->create([
             'email' => 'user@test.com',
-            'role' => UserRole::Attendant,
-            'venue_id' => $venue->id,
+            'current_venue_id' => $venue->id,
             'active' => true,
         ]);
 
@@ -73,8 +71,7 @@ class LoginTest extends TestCase
     {
         $venue = Venue::factory()->create();
         $user = User::factory()->create([
-            'role' => UserRole::Attendant,
-            'venue_id' => $venue->id,
+            'current_venue_id' => $venue->id,
             'active' => true,
         ]);
 

@@ -4,7 +4,6 @@ namespace Tests\Feature\Settings;
 
 use App\Enums\UserRole;
 use App\Models\Tenant\Venue;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -22,14 +21,7 @@ class VenueSettingsTest extends TestCase
     public function test_owner_can_update_general_settings(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
+        $this->loginAs(UserRole::Owner, $venue);
 
         $this->put(route('settings.general.update'), [
             'cover_charge' => '10.00',
@@ -46,14 +38,7 @@ class VenueSettingsTest extends TestCase
     public function test_service_fee_percent_cannot_exceed_100(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
+        $this->loginAs(UserRole::Owner, $venue);
 
         $this->put(route('settings.general.update'), [
             'service_fee_percent' => '150',

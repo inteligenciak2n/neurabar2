@@ -3,13 +3,13 @@
 namespace App\Providers;
 
 use App\Actions\Jetstream\DeleteUser;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
-use Laravel\Jetstream\Jetstream;
-use App\Models\User;
+use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Fortify;
-use Illuminate\Support\Facades\Auth;
-
+use Laravel\Jetstream\Jetstream;
 
 class JetstreamServiceProvider extends ServiceProvider
 {
@@ -39,7 +39,15 @@ class JetstreamServiceProvider extends ServiceProvider
 
             if ($user && Auth::getProvider()->validateCredentials($user, $credentials)) {
                 $user = User::find($user->id);
+
+                if (! $user->active) {
+                    throw ValidationException::withMessages([
+                        Fortify::username() => ['This account is inactive.'],
+                    ]);
+                }
+
                 $user->setSessionLanguage();
+
                 return $user;
             }
         });

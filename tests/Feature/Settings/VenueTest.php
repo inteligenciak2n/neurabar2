@@ -4,7 +4,6 @@ namespace Tests\Feature\Settings;
 
 use App\Enums\UserRole;
 use App\Models\Tenant\Venue;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -36,14 +35,7 @@ class VenueTest extends TestCase
     public function test_owner_can_update_venue(): void
     {
         $venue = Venue::factory()->create(['name' => 'Old Name', 'active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
+        $this->loginAs(UserRole::Owner, $venue);
 
         $this->put(route('settings.venue.update'), [
             'name' => 'New Name',
@@ -58,14 +50,7 @@ class VenueTest extends TestCase
     public function test_venue_name_is_required(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
+        $this->loginAs(UserRole::Owner, $venue);
 
         $this->put(route('settings.venue.update'), ['name' => ''])
             ->assertSessionHasErrors('name');
@@ -76,14 +61,7 @@ class VenueTest extends TestCase
         Venue::factory()->create(['call_waiter_slug' => 'taken-slug']);
 
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
+        $this->loginAs(UserRole::Owner, $venue);
 
         $this->put(route('settings.venue.update'), [
             'name' => 'My Venue',
@@ -94,14 +72,7 @@ class VenueTest extends TestCase
     public function test_same_venue_can_keep_its_own_slug(): void
     {
         $venue = Venue::factory()->create(['call_waiter_slug' => 'my-slug', 'active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
+        $this->loginAs(UserRole::Owner, $venue);
 
         $this->put(route('settings.venue.update'), [
             'name' => 'My Venue',

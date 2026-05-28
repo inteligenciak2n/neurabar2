@@ -6,6 +6,7 @@ use App\Http\Controllers\Corporation\VenueController as CorporationVenueControll
 use App\Http\Controllers\Guest\CallWaiterController;
 use App\Http\Controllers\Guest\PublicMenuController;
 use App\Http\Controllers\Guest\TrackOrderController;
+use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Kitchen\KdsController;
 use App\Http\Controllers\Menu\CategoryController;
 use App\Http\Controllers\Menu\ComboController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Menu\ModifierGroupController;
 use App\Http\Controllers\Menu\ModifierOptionController;
 use App\Http\Controllers\Menu\ProductController;
 use App\Http\Controllers\Menu\ProductVariationController;
+use App\Http\Controllers\NoVenueController;
 use App\Http\Controllers\Orders\AttendanceController;
 use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\Payment\PaymentController;
@@ -59,6 +61,19 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     ->post('/account/venue/{id}', [VenueSelectorController::class, 'store'])
     ->name('venue.select');
 
+// No-venue fallback — auth required, no tenant context
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])
+    ->prefix('no-venue')->name('no-venue.')->group(function () {
+        Route::get('/', [NoVenueController::class, 'index'])->name('index');
+        Route::post('/', [NoVenueController::class, 'store'])->name('store');
+    });
+
+// Invitations — public show (redirects to login if unauthenticated), accept requires auth
+Route::get('/invitations/{token}', [InvitationController::class, 'show'])->name('invitations.show');
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])
+    ->post('/invitations/{token}/accept', [InvitationController::class, 'accept'])
+    ->name('invitations.accept');
+
 // Operational routes — auth + tenant context required
 Route::middleware([
     'auth:sanctum',
@@ -69,7 +84,7 @@ Route::middleware([
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Menu — edit routes restricted to managers; products page accessible by all
-    Route::prefix('menu')->name('menu.')->middleware(['role:corporation_admin,owner,general_manager'])->group(function () {
+    Route::prefix('menu')->name('menu.')->middleware(['role:owner,general_manager'])->group(function () {
         Route::get('/', [CategoryController::class, 'index'])->name('index');
         Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
         Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
@@ -161,13 +176,13 @@ Route::middleware([
     });
 });
 
-// Corporation panel — auth + tenant + corporation roles
+// Corporation panel — auth + tenant + owner role
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
     'tenant',
-    'role:corporation_admin,owner,general_manager',
+    'role:owner,general_manager',
 ])->prefix('corporation')->name('corporation.')->group(function () {
     Route::get('/dashboard', [CorporationDashboardController::class, 'index'])->name('dashboard');
     Route::post('/venues/{id}/switch', [CorporationDashboardController::class, 'switchVenue'])->name('venues.switch');

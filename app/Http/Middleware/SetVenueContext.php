@@ -11,21 +11,22 @@ class SetVenueContext
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $user = User::findOrFail($request->user()->id);
+        $user = $request->user();
 
-        if (! $user) {
+        if (! $user instanceof User) {
             return $next($request);
         }
 
-        if (! $user->role?->isOperational()) {
-            abort(403, 'Platform users cannot access operational routes.');
-        }
-
-        $venue = $user->activeVenue();
+        $venue = $user->currentVenue;
 
         if (! $venue) {
-            dd('teste', $user->activeVenue());
-            abort(403, 'Venue context unavailable.');
+            return redirect()->route('no-venue.index');
+        }
+
+        $hasAccess = $user->venues()->wherePivot('venue_id', $venue->id)->exists();
+
+        if (! $hasAccess) {
+            abort(403, 'Acesso não autorizado a esta venue.');
         }
 
         app()->instance('tenant', $venue);

@@ -5,7 +5,6 @@ namespace Tests\Feature\Settings;
 use App\Enums\UserRole;
 use App\Models\Settings\ServiceLocation;
 use App\Models\Tenant\Venue;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -23,14 +22,7 @@ class ServiceLocationSettingsTest extends TestCase
     public function test_owner_can_create_service_location(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
+        $this->loginAs(UserRole::Owner, $venue);
 
         $this->post(route('settings.service-locations.store'), [
             'name' => 'Mesa 10',
@@ -48,15 +40,8 @@ class ServiceLocationSettingsTest extends TestCase
     public function test_owner_can_update_service_location(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
+        $this->loginAs(UserRole::Owner, $venue);
         $location = ServiceLocation::factory()->create(['venue_id' => $venue->id]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
 
         $this->put(route('settings.service-locations.update', $location->id), [
             'name' => 'Área VIP',
@@ -74,15 +59,8 @@ class ServiceLocationSettingsTest extends TestCase
     public function test_owner_can_delete_service_location(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
+        $this->loginAs(UserRole::Owner, $venue);
         $location = ServiceLocation::factory()->create(['venue_id' => $venue->id]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
 
         $this->delete(route('settings.service-locations.destroy', $location->id))
             ->assertRedirect();
@@ -93,14 +71,7 @@ class ServiceLocationSettingsTest extends TestCase
     public function test_invalid_type_returns_validation_error(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
+        $this->loginAs(UserRole::Owner, $venue);
 
         $this->post(route('settings.service-locations.store'), [
             'name' => 'Área X',
@@ -111,14 +82,7 @@ class ServiceLocationSettingsTest extends TestCase
     public function test_location_name_is_required(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
+        $this->loginAs(UserRole::Owner, $venue);
 
         $this->post(route('settings.service-locations.store'), [
             'name' => '',
@@ -131,15 +95,8 @@ class ServiceLocationSettingsTest extends TestCase
         $venue = Venue::factory()->create(['active' => true]);
         $otherVenue = Venue::factory()->create(['active' => true]);
 
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
+        $this->loginAs(UserRole::Owner, $venue);
         ServiceLocation::factory()->create(['venue_id' => $otherVenue->id, 'name' => 'OtherLocation']);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
 
         $response = $this->get(route('settings.service-locations.index'));
         $response->assertOk();

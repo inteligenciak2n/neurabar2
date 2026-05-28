@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Corporation;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tenant\Venue;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,7 +13,7 @@ class CorporationDashboardController extends Controller
     public function index(): Response
     {
         $venue = app('tenant');
-        $venues = Venue::where('corporation_id', $venue->corporation_id)
+        $venues = $venue->corporation->venues()
             ->withCount(['attendances' => fn ($q) => $q->whereDate('created_at', today())])
             ->get()
             ->map(fn ($v) => [
@@ -32,13 +31,20 @@ class CorporationDashboardController extends Controller
 
     public function switchVenue(Request $request, string $id): RedirectResponse
     {
-        $currentVenue = app('tenant');
-        $target = Venue::where('corporation_id', $currentVenue->corporation_id)
-            ->findOrFail($id);
+        $user = $request->user();
+        $venue = app('tenant');
 
-        $request->session()->put('active_venue_id', $target->id);
+        $hasAccess = $user->venues()
+            ->wherePivot('venue_id', $id)
+            ->where('corporation_id', $venue->corporation_id)
+            ->exists();
+
+        abort_unless($hasAccess, 403, 'Acesso não autorizado a esta venue.');
+
+        $user->current_venue_id = $id;
+        $user->save();
 
         return redirect()->route('corporation.dashboard')
-            ->with('success', 'Venue switched to '.$target->name.'.');
+            ->with('venue_switched', true);
     }
 }

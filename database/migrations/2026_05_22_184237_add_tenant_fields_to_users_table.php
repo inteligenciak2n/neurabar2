@@ -12,10 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table): void {
-            $table->string('role')->nullable()->after('email');
-            $table->uuid('venue_id')->nullable()->after('role');
-            $table->uuid('corporation_id')->nullable()->after('venue_id');
-            $table->string('pin')->nullable()->after('corporation_id');
+            $table->uuid('current_venue_id')->nullable()->after('email');
+            $table->string('pin')->nullable()->after('current_venue_id');
             $table->boolean('active')->default(true)->after('pin');
         });
     }
@@ -26,7 +24,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table): void {
-            $table->dropColumn(['role', 'venue_id', 'corporation_id', 'pin', 'active']);
+            $table->dropColumn(['current_venue_id', 'pin', 'active']);
         });
     }
 };

@@ -7,17 +7,16 @@ use App\Models\User;
 
 class DeleteUserAction
 {
-    /** @var list<UserRole> */
-    private const RESTRICTED_ROLES = [UserRole::SuperAdmin, UserRole::CorporationAdmin];
-
-    public function execute(User $user): void
+    public function execute(User $user, string $venueId): void
     {
+        $pivotRole = $user->venues()->wherePivot('venue_id', $venueId)->first()?->pivot?->role;
+
         abort_if(
-            in_array($user->role, self::RESTRICTED_ROLES, true),
+            $pivotRole && in_array($pivotRole, UserRole::platformRoles(), true),
             403,
-            'Cannot delete users with this role from venue settings.'
+            'Cannot delete users with platform roles from venue settings.'
         );
 
-        $user->delete();
+        $user->venues()->detach($venueId);
     }
 }

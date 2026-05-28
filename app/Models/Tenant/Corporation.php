@@ -2,6 +2,7 @@
 
 namespace App\Models\Tenant;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +15,7 @@ class Corporation extends Model
     use HasUuids;
 
     protected $fillable = [
+        'owner_id',
         'name',
         'tax_id',
         'email',
@@ -34,6 +36,11 @@ class Corporation extends Model
             'active' => 'boolean',
             'subscription_value' => 'decimal:2',
         ];
+    }
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id');
     }
 
     public function planCatalog(): BelongsTo

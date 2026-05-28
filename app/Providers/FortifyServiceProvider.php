@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 use Laravel\Fortify\Fortify;
@@ -42,11 +43,17 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::authenticateUsing(function (Request $request) {
             $user = User::where('email', $request->email)->first();
 
-            if ($user && Hash::check($request->password, $user->password) && $user->active) {
-                return $user;
+            if (! $user || ! Hash::check($request->password, $user->password)) {
+                return null;
             }
 
-            return null;
+            if (! $user->active) {
+                throw ValidationException::withMessages([
+                    Fortify::username() => ['This account is inactive.'],
+                ]);
+            }
+
+            return $user;
         });
 
         Fortify::redirects('login', '/dashboard');

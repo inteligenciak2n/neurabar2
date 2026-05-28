@@ -22,7 +22,7 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'photo' => ['nullable', 'mimes:jpg,jpeg,png', 'max:1024'],
-            'lang' => ['required', 'string', 'in:'. implode(',', TranslationService::getLanguageKeys())],
+            'lang' => ['nullable', 'string', 'in:'.implode(',', TranslationService::getLanguageKeys())],
         ])->validateWithBag('updateProfileInformation');
 
         if (isset($input['photo'])) {
@@ -36,7 +36,7 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             $user->forceFill([
                 'name' => $input['name'],
                 'email' => $input['email'],
-                'lang' => $input['lang'],
+                'lang' => $input['lang'] ?? $user->lang ?? 'pt',
             ])->save();
 
             $user->setSessionLanguage();

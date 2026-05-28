@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Models;
 
+use App\Enums\AttendanceStatus;
 use App\Models\Orders\Attendance;
 use App\Models\Settings\KitchenStation;
 use App\Models\Tenant\Venue;
@@ -65,6 +66,6 @@ class TenantScopeTest extends TestCase
         $openAttendances = Attendance::open()->get();
 
         $this->assertCount(1, $openAttendances);
-        $this->assertEquals('open', $openAttendances->first()->status);
+        $this->assertEquals(AttendanceStatus::Open, $openAttendances->first()->status);
     }
 }

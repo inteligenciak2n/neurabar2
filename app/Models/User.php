@@ -10,6 +10,8 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -37,9 +39,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',
-        'venue_id',
-        'corporation_id',
+        'current_venue_id',
         'pin',
         'active',
         'lang',
@@ -73,55 +73,56 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'active' => 'boolean',
-            'role' => UserRole::class,
         ];
     }
 
-    public function venue(): BelongsTo
+    public function currentVenue(): BelongsTo
     {
-        return $this->belongsTo(Venue::class);
+        return $this->belongsTo(Venue::class, 'current_venue_id');
     }
 
-    public function corporation(): BelongsTo
+    public function venues(): BelongsToMany
     {
-        return $this->belongsTo(Corporation::class);
+        return $this->belongsToMany(Venue::class, 'user_venue')
+            ->using(UserVenue::class)
+            ->withPivot('role')
+            ->withTimestamps();
     }
 
-    public function activeVenue() //: ?Venue
+    public function ownedCorporation(): HasOne
     {
-        if (! $this->role?->isOperational()) {
+        return $this->hasOne(Corporation::class, 'owner_id');
+    }
+
+    public function activeVenue(): ?Venue
+    {
+        return $this->currentVenue;
+    }
+
+    public function currentVenueRole(): ?UserRole
+    {
+        if (! $this->current_venue_id) {
             return null;
         }
 
-        if (in_array($this->role, [UserRole::CorporationAdmin, UserRole::Owner], true)) {
-            $activeVenueId = session('active_venue_id');
+        $pivot = $this->venues()
+            ->wherePivot('venue_id', $this->current_venue_id)
+            ->first();
 
-            if ($activeVenueId) {
-                $venue = Venue::find($activeVenueId);
-
-                if ($venue && $venue->corporation_id === $this->corporation_id) {
-                    return $venue;
-                }
-            }
-
-            if ($this->corporation_id) {
-                return Venue::where('corporation_id', $this->corporation_id)
-                    ->where('active', true)
-                    ->first();
-            }
-
-            // Fallback: venue directly assigned (e.g. owner without a corporation)
-            return $this->venue;
+        if (! $pivot) {
+            return null;
         }
 
-        return $this->venue;
+        $role = $pivot->pivot->role;
+
+        return $role instanceof UserRole ? $role : UserRole::tryFrom((string) $role);
     }
 
     public function setSessionLanguage(): void
     {
         if ($this->lang && $this->lang !== app()->getLocale()) {
             session(['locale' => $this->lang]);
-            app()->setLocale( $this->lang );
+            app()->setLocale($this->lang);
         }
     }
 }

@@ -11,7 +11,6 @@ enum UserRole: string
     case ReadOnly = 'read_only';
 
     // Operational (SaaS clients)
-    case CorporationAdmin = 'corporation_admin';
     case Owner = 'owner';
     case GeneralManager = 'general_manager';
     case SectionManager = 'section_manager';
@@ -27,7 +26,6 @@ enum UserRole: string
     public static function operationalRoles(): array
     {
         return [
-            self::CorporationAdmin,
             self::Owner,
             self::GeneralManager,
             self::SectionManager,
@@ -37,7 +35,7 @@ enum UserRole: string
 
     public function isOwnerOrAbove(): bool
     {
-        return in_array($this, [self::Owner, self::CorporationAdmin], true);
+        return $this === self::Owner;
     }
 
     public function isPlatform(): bool
@@ -57,7 +55,6 @@ enum UserRole: string
             self::Finance => 'Finance',
             self::Registration => 'Registration',
             self::ReadOnly => 'Read Only',
-            self::CorporationAdmin => 'Corporation Admin',
             self::Owner => 'Owner',
             self::GeneralManager => 'General Manager',
             self::SectionManager => 'Section Manager',

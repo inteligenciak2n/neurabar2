@@ -5,7 +5,6 @@ namespace Tests\Feature\Settings;
 use App\Enums\UserRole;
 use App\Models\Settings\PreparationStatus;
 use App\Models\Tenant\Venue;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -23,14 +22,7 @@ class PreparationStatusSettingsTest extends TestCase
     public function test_owner_can_create_preparation_status(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
+        $this->loginAs(UserRole::Owner, $venue);
 
         $this->post(route('settings.preparation-statuses.store'), [
             'name' => 'In Progress',
@@ -50,15 +42,8 @@ class PreparationStatusSettingsTest extends TestCase
     public function test_owner_can_update_preparation_status(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
+        $this->loginAs(UserRole::Owner, $venue);
         $status = PreparationStatus::factory()->create(['venue_id' => $venue->id]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
 
         $this->put(route('settings.preparation-statuses.update', $status->id), [
             'name' => 'Ready',
@@ -77,15 +62,8 @@ class PreparationStatusSettingsTest extends TestCase
     public function test_owner_can_delete_preparation_status(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
+        $this->loginAs(UserRole::Owner, $venue);
         $status = PreparationStatus::factory()->create(['venue_id' => $venue->id]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
 
         $this->delete(route('settings.preparation-statuses.destroy', $status->id))
             ->assertRedirect();
@@ -96,14 +74,7 @@ class PreparationStatusSettingsTest extends TestCase
     public function test_invalid_hex_color_returns_validation_error(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
+        $this->loginAs(UserRole::Owner, $venue);
 
         $this->post(route('settings.preparation-statuses.store'), [
             'name' => 'Pending',
@@ -114,14 +85,7 @@ class PreparationStatusSettingsTest extends TestCase
     public function test_status_name_is_required(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
+        $this->loginAs(UserRole::Owner, $venue);
 
         $this->post(route('settings.preparation-statuses.store'), ['name' => ''])
             ->assertSessionHasErrors('name');
@@ -132,15 +96,8 @@ class PreparationStatusSettingsTest extends TestCase
         $venue = Venue::factory()->create(['active' => true]);
         $otherVenue = Venue::factory()->create(['active' => true]);
 
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
+        $this->loginAs(UserRole::Owner, $venue);
         PreparationStatus::factory()->create(['venue_id' => $otherVenue->id, 'name' => 'OtherStatus']);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
 
         $response = $this->get(route('settings.preparation-statuses.index'));
         $response->assertOk();

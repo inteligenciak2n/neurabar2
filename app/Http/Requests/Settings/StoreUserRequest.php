@@ -19,9 +19,14 @@ class StoreUserRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255'],
             'password' => ['required', Password::defaults()],
-            'role' => ['required', new Enum(UserRole::class)],
+            'role' => ['required', new Enum(UserRole::class), function (string $attribute, mixed $value, \Closure $fail) {
+                $role = UserRole::tryFrom($value);
+                if ($role && ! in_array($role, UserRole::operationalRoles())) {
+                    abort(403);
+                }
+            }],
             'pin' => ['nullable', 'string', 'max:10'],
             'active' => ['boolean'],
         ];

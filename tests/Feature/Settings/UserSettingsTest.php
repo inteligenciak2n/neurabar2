@@ -22,14 +22,7 @@ class UserSettingsTest extends TestCase
     public function test_owner_can_create_operational_user(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
+        $this->loginAs(UserRole::Owner, $venue);
 
         $this->post(route('settings.users.store'), [
             'name' => 'New Attendant',
@@ -41,6 +34,9 @@ class UserSettingsTest extends TestCase
 
         $this->assertDatabaseHas('users', [
             'email' => 'attendant@test.com',
+        ]);
+
+        $this->assertDatabaseHas('user_venue', [
             'role' => 'attendant',
             'venue_id' => $venue->id,
         ]);
@@ -49,14 +45,7 @@ class UserSettingsTest extends TestCase
     public function test_owner_cannot_create_super_admin(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $user = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-
-        $this->actingAs($user);
-        app()->instance('tenant', $venue);
+        $this->loginAs(UserRole::Owner, $venue);
 
         $this->post(route('settings.users.store'), [
             'name' => 'Super Admin',
@@ -70,24 +59,14 @@ class UserSettingsTest extends TestCase
     public function test_owner_can_delete_attendant(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $owner = User::factory()->create([
-            'role' => UserRole::Owner,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-        $attendant = User::factory()->create([
-            'role' => UserRole::Attendant,
-            'venue_id' => $venue->id,
-            'active' => true,
-        ]);
-
-        $this->actingAs($owner);
-        app()->instance('tenant', $venue);
+        $this->loginAs(UserRole::Owner, $venue);
+        $attendant = User::factory()->create(['active' => true, 'current_venue_id' => $venue->id]);
+        $venue->users()->attach($attendant->id, ['role' => UserRole::Attendant->value]);
 
         $this->delete(route('settings.users.destroy', $attendant->id))
             ->assertRedirect();
 
-        $this->assertDatabaseMissing('users', ['id' => $attendant->id]);
+        $this->assertDatabaseMissing('user_venue', ['user_id' => $attendant->id, 'venue_id' => $venue->id]);
     }
 
     public function test_attendant_cannot_manage_users(): void

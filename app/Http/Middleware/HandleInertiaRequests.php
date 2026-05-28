@@ -3,8 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Models\User;
-use Illuminate\Http\Request;
 use App\Services\Languages\TranslationService;
+use Illuminate\Http\Request;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -51,7 +51,30 @@ class HandleInertiaRequests extends Middleware
 
                     return $venue?->only(['id', 'name', 'timezone']);
                 },
+                'current_venue_role' => function () use ($request): ?string {
+                    $user = $request->user();
+
+                    if (! $user instanceof User) {
+                        return null;
+                    }
+
+                    return $user->currentVenueRole()?->value;
+                },
+                'venues' => function () use ($request): array {
+                    $user = $request->user();
+
+                    if (! $user instanceof User) {
+                        return [];
+                    }
+
+                    return $user->venues()
+                        ->where('active', true)
+                        ->get(['venues.id', 'venues.name'])
+                        ->map(fn ($v) => ['id' => $v->id, 'name' => $v->name])
+                        ->toArray();
+                },
             ],
+            'venue_switched' => fn () => $request->session()->pull('venue_switched', false),
             'language' => TranslationService::getLanguagesDefinitions($request),
         ];
     }

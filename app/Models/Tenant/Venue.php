@@ -8,10 +8,13 @@ use App\Models\Settings\KitchenStation;
 use App\Models\Settings\PreparationStatus;
 use App\Models\Settings\ServiceLocation;
 use App\Models\Settings\VenueSettings;
+use App\Models\User;
+use App\Models\UserVenue;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -66,6 +69,14 @@ class Venue extends Model
     public function corporation(): BelongsTo
     {
         return $this->belongsTo(Corporation::class);
+    }
+
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'user_venue')
+            ->using(UserVenue::class)
+            ->withPivot('role')
+            ->withTimestamps();
     }
 
     public function settings(): HasOne

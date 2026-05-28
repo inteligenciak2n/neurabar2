@@ -2,14 +2,7 @@
 
 namespace App\Actions\Fortify;
 
-use App\Models\Settings\KitchenStation;
-use App\Models\Settings\PreparationStatus;
-use App\Models\Settings\VenueSettings;
-use App\Models\Tenant\Corporation;
-use App\Models\Tenant\PlanCatalog;
-use App\Models\Tenant\Venue;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
@@ -33,38 +26,21 @@ class CreateNewUser implements CreatesNewUsers
             'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature() ? ['accepted', 'required'] : '',
         ])->validate();
 
-        return tap( User::create([
+        $user = User::create([
             'name' => $input['name'],
             'email' => $input['email'],
-            'password' => Hash::make(  $this->resolvePassword($input['password']) ),
-            'role' => $input['role'] ?? 'owner',
-            'active' => $input['active'] ?? true,
-        ]), function (User $user) use ($input) {
+            'password' => Hash::make($this->resolvePassword($input['password'] ?? null)),
+            'active' => true,
+        ]);
 
-            $this->setUserDefaults($user);  
+        $action = app(CreateUserOwnerDefinitions::class);
+        $action->handle($user);
 
-            if( isset($input['venue_id']) ) {
-                $user->venue_id = $input['venue_id'];
-                $user->save();
-            }
-
-            if( isset($input['corporation_id']) ) {
-                $user->corporation_id = $input['corporation_id'];
-                $user->save();
-            }
-        });
+        return $user;
     }
 
-    private function resolvePassword( ?string $password = null ): string
+    private function resolvePassword(?string $password = null): string
     {
         return $password ?? bin2hex(random_bytes(16));
-    }
-
-    private function setUserDefaults(User $user): void
-    {
-        if( $user->role->isOwnerOrAbove() ) {
-            $action = app(CreateUserOwnerDefinitions::class);
-            $action->handle($user);
-        }
     }
 }

@@ -18,10 +18,10 @@ abstract class TestCase extends BaseTestCase
         $venue ??= Venue::factory()->create();
 
         $user = User::factory()->create([
-            'role' => $role,
-            'venue_id' => $venue->id,
-            'corporation_id' => $venue->corporation_id,
+            'current_venue_id' => $venue->id,
         ]);
+
+        $venue->users()->attach($user->id, ['role' => $role->value]);
 
         $this->actingAs($user);
 

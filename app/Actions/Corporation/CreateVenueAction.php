@@ -2,6 +2,7 @@
 
 namespace App\Actions\Corporation;
 
+use App\Enums\UserRole;
 use App\Models\Settings\KitchenStation;
 use App\Models\Settings\PreparationStatus;
 use App\Models\Settings\VenueSettings;
@@ -30,13 +31,17 @@ class CreateVenueAction
         ]);
 
         $statuses = [
-            ['name' => 'Pending', 'color' => '#94a3b8', 'sort_order' => 1, 'show_to_customer' => false],
-            ['name' => 'In Progress', 'color' => '#f59e0b', 'sort_order' => 2, 'show_to_customer' => true],
-            ['name' => 'Ready', 'color' => '#22c55e', 'sort_order' => 3, 'show_to_customer' => true],
+            ['name' => 'Pending', 'color' => '#94a3b8', 'sort_order' => 1, 'show_to_customer' => false, 'is_final' => false, 'is_initial' => true],
+            ['name' => 'In Progress', 'color' => '#f59e0b', 'sort_order' => 2, 'show_to_customer' => true, 'is_final' => false, 'is_initial' => false],
+            ['name' => 'Ready', 'color' => '#22c55e', 'sort_order' => 3, 'show_to_customer' => true, 'is_final' => true, 'is_initial' => false],
         ];
 
         foreach ($statuses as $status) {
             PreparationStatus::create(['venue_id' => $venue->id, ...$status]);
+        }
+
+        if ($corporation->owner_id) {
+            $venue->users()->attach($corporation->owner_id, ['role' => UserRole::Owner->value]);
         }
 
         return $venue;

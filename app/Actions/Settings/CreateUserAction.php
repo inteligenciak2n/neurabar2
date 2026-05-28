@@ -10,28 +10,33 @@ use Illuminate\Support\Facades\Hash;
 
 class CreateUserAction
 {
-    /** @var list<UserRole> */
-    private const RESTRICTED_ROLES = [UserRole::SuperAdmin, UserRole::CorporationAdmin];
-
-    public function execute(Venue $venue, StoreUserRequest $request): User
+    public function execute(Venue $venue, StoreUserRequest $request): User|string
     {
         $data = $request->validated();
+        $role = UserRole::from($data['role']);
 
-        abort_if(
-            in_array(UserRole::from($data['role']), self::RESTRICTED_ROLES, true),
-            403,
-            'Cannot create users with this role from venue settings.'
-        );
+        $existingUser = User::where('email', $data['email'])->first();
 
-        return User::create([
-            'venue_id' => $venue->id,
-            'corporation_id' => $venue->corporation_id,
+        if ($existingUser) {
+            $action = app(InviteUserToVenueAction::class);
+            $action->execute($venue, $data['email'], $role, $request->user());
+
+            return 'invitation_sent';
+        }
+
+        $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'role' => $data['role'],
             'pin' => $data['pin'] ?? null,
             'active' => $data['active'] ?? true,
         ]);
+
+        $venue->users()->attach($user->id, ['role' => $role->value]);
+
+        $user->current_venue_id = $venue->id;
+        $user->save();
+
+        return $user;
     }
 }
