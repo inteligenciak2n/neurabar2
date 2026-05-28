@@ -31,5 +31,7 @@
     "Add Variation": "Add Variation",
     "Variations": "Variations",
     "Variations override the base price (e.g. Small, Medium, Large).": "Variations override the base price (e.g. Small, Medium, Large).",
-    "No variations yet. Add one to offer size or option choices.": "No variations yet. Add one to offer size or option choices."
+    "No variations yet. Add one to offer size or option choices.": "No variations yet. Add one to offer size or option choices.",
+    "Price (R$)": "Price (R$)",
+    "Add": "Add"
 }

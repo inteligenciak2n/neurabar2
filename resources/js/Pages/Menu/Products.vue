@@ -66,7 +66,14 @@ const cancelAddVariation = () => {
 
 const submitCreateVariation = (product) => {
     variationForm.post(route('menu.products.variations.store', product.id), {
-        onSuccess: cancelAddVariation,
+        onSuccess: () => {
+            router.reload({ only: ['products'],
+                onFinish: () => {
+                    editingProduct.value = props.products.find((p) => p.id === product.id);
+                },
+             });
+            cancelAddVariation();
+        },
     });
 };
 
