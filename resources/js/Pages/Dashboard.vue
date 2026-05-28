@@ -68,6 +68,7 @@ onUnmounted(() => {
         </template>
 
         <div class="py-6 px-4 sm:px-6 max-w-7xl mx-auto space-y-6">
+            <pre>{{ page.props.defs }}</pre>
             <!-- Metrics row -->
             <div class="grid gap-4 sm:grid-cols-3">
                 <AppCard>

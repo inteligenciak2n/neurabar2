@@ -7,10 +7,13 @@ import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import AppEmptyState from '@/Components/AppEmptyState.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { useTranslate } from '@/Composables/useTranslate';
 
 defineProps({
     users: Array,
 });
+
+const __  = useTranslate();
 
 const OPERATIONAL_ROLES = [
     'owner',
@@ -21,11 +24,11 @@ const OPERATIONAL_ROLES = [
 
 const roleLabel = (role) => {
     const labels = {
-        owner: 'Owner',
-        general_manager: 'General Manager',
-        section_manager: 'Section Manager',
-        attendant: 'Attendant',
-        corporation_admin: 'Corporation Admin',
+        owner: __('Owner'),
+        general_manager: __('General Manager'),
+        section_manager: __('Section Manager'),
+        attendant: __('Attendant'),
+        corporation_admin: __('Corporation Admin'),
     };
     return labels[role] ?? role;
 };

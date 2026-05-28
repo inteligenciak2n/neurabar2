@@ -19,11 +19,10 @@ defineProps({
 const mobileMenuOpen = ref(false);
 
 const navItems = [
-    { label: __('Dashboard'),   routeName: 'dashboard',         activePattern: 'dashboard' },
-    { label: __('Attendances'), routeName: 'attendances.index', activePattern: 'attendances.*' },
-    { label: __('Kitchen'),     routeName: 'kitchen.kds',       activePattern: 'kitchen.*' },
-    { label: __('Menu'),        routeName: 'menu.index',        activePattern: 'menu.*' },
-    { label: __('Settings'),    routeName: 'settings.index',    activePattern: 'settings.*' },
+    { label: __('Dashboard'),   routeName: 'dashboard',         activePattern: 'dashboard', roles: ['owner', 'general_manager', 'section_manager', 'attendant'] },
+    { label: __('Attendances'), routeName: 'attendances.index', activePattern: 'attendances.*', roles: ['owner', 'general_manager', 'section_manager', 'attendant'] },
+    { label: __('Kitchen'),     routeName: 'kitchen.kds',       activePattern: 'kitchen.*', roles: ['owner', 'general_manager', 'section_manager', 'attendant'] },
+    { label: __('Menu'),        routeName: 'menu.index',        activePattern: 'menu.*', roles: ['owner', 'general_manager', 'section_manager', 'attendant'] },
 ];
 
 const logout = () => {
@@ -71,9 +70,12 @@ watch(
 
                 <!-- Center: Main nav (desktop) -->
                 <nav class="hidden items-center gap-1 lg:flex">
-                    <Link
+                    <template                        
                         v-for="item in navItems"
                         :key="item.label"
+                    >
+                    <Link
+                        v-if="item.roles.includes($page.props.defs.current_venue_role)"
                         :href="route(item.routeName)"
                         :class="[
                             'rounded-md px-3 py-2 text-sm font-body font-medium transition-colors',
@@ -84,6 +86,7 @@ watch(
                     >
                         {{ item.label }}
                     </Link>
+                    </template>
                 </nav>
 
                 <!-- Right: User dropdown + mobile toggle -->
@@ -106,10 +109,23 @@ watch(
 
                         <template #content>
                             <div class="block px-4 py-2 text-xs text-muted-foreground">{{ __('Manage Account') }}</div>
-                            <DropdownLink :href="route('profile.show')">{{ __('Profile') }}</DropdownLink>
-                            <DropdownLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')">
+                            <DropdownLink 
+                            :href="route('profile.show')">
+                                {{ __('Profile') }}
+                            </DropdownLink>
+
+                            <DropdownLink 
+                            v-if="['owner', 'general_manager', 'section_manager', 'attendant'].includes($page.props.defs.current_venue_role)"
+                            :href="route('settings.index')">
+                                {{ __('Settings') }}
+                            </DropdownLink>
+
+                            <DropdownLink 
+                            v-if="$page.props.jetstream.hasApiFeatures" 
+                            :href="route('api-tokens.index')">
                                 {{ __('API Tokens') }}
                             </DropdownLink>
+
                             <div class="border-t border-border" />
                             <form @submit.prevent="logout">
                                 <DropdownLink as="button">{{ __('Log Out') }}</DropdownLink>
@@ -136,9 +152,12 @@ watch(
                 class="sticky top-16 z-10 border-b border-border bg-white px-4 py-3 shadow-card lg:hidden"
             >
                 <nav class="flex flex-col gap-1">
-                    <Link
+                    <template                         
                         v-for="item in navItems"
                         :key="item.label"
+                    >
+                    <Link
+                        v-if="item.roles.includes($page.props.defs.current_venue_role)"
                         :href="route(item.routeName)"
                         :class="[
                             'rounded-md px-3 py-2.5 text-sm font-body font-medium transition-colors',
@@ -150,6 +169,7 @@ watch(
                     >
                         {{ item.label }}
                     </Link>
+                    </template>
                 </nav>
             </div>
 
