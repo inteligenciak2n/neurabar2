@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Settings;
 
+use App\Enums\ServiceLocationType;
 use App\Models\Settings\ServiceLocation;
 use App\Models\Tenant\Venue;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -21,7 +22,7 @@ class ServiceLocationFactory extends Factory
         return [
             'venue_id' => Venue::factory(),
             'name' => 'Mesa '.fake()->numberBetween(1, 50),
-            'type' => 'table',
+            'type' => ServiceLocationType::Table,
             'active' => true,
         ];
     }

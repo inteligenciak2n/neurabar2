@@ -2,6 +2,7 @@
 
 namespace App\Actions\Fortify;
 
+use App\Enums\ServiceLocationType;
 use App\Enums\UserRole;
 use App\Models\Menu\Category;
 use App\Models\Menu\Menu;
@@ -193,10 +194,10 @@ class CreateUserOwnerDefinitions
     private function createServiceLocations(Venue $venue): void
     {
         $locations = [
-            ...array_map(fn (int $n) => ['name' => "Mesa {$n}", 'type' => 'table'], range(1, 10)),
-            ['name' => 'Balcão', 'type' => 'counter'],
-            ['name' => 'Área Externa 1', 'type' => 'table'],
-            ['name' => 'Área Externa 2', 'type' => 'table'],
+            ...array_map(fn (int $n) => ['name' => "Mesa {$n}", 'type' => ServiceLocationType::Table], range(1, 10)),
+            ['name' => 'Balcão', 'type' => ServiceLocationType::Bar],
+            ['name' => 'Área Externa 1', 'type' => ServiceLocationType::Area],
+            ['name' => 'Área Externa 2', 'type' => ServiceLocationType::Area],
         ];
 
         foreach ($locations as $location) {

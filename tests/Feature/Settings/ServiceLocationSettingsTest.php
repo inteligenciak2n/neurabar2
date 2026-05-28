@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Settings;
 
+use App\Enums\ServiceLocationType;
 use App\Enums\UserRole;
 use App\Models\Settings\ServiceLocation;
 use App\Models\Tenant\Venue;
@@ -112,5 +113,39 @@ class ServiceLocationSettingsTest extends TestCase
         $this->loginAs(UserRole::Attendant);
 
         $this->get(route('settings.service-locations.index'))->assertForbidden();
+    }
+
+    public function test_index_provides_location_types_from_enum(): void
+    {
+        $this->loginAs(UserRole::Owner);
+
+        $this->get(route('settings.service-locations.index'))
+            ->assertInertia(fn ($page) => $page
+                ->has('locationTypes')
+                ->where('locationTypes', array_column(ServiceLocationType::cases(), 'value'))
+            );
+    }
+
+    public function test_store_rejects_type_not_in_enum(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+
+        $this->post(route('settings.service-locations.store'), [
+            'name' => 'Área X',
+            'type' => 'counter',
+        ])->assertSessionHasErrors('type');
+    }
+
+    public function test_update_rejects_type_not_in_enum(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+        $location = ServiceLocation::factory()->create(['venue_id' => $venue->id]);
+
+        $this->put(route('settings.service-locations.update', $location->id), [
+            'name' => 'Área X',
+            'type' => 'counter',
+        ])->assertSessionHasErrors('type');
     }
 }

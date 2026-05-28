@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Actions\Settings\CreateServiceLocationAction;
 use App\Actions\Settings\DeleteServiceLocationAction;
 use App\Actions\Settings\UpdateServiceLocationAction;
+use App\Enums\ServiceLocationType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\StoreServiceLocationRequest;
 use App\Http\Requests\Settings\UpdateServiceLocationRequest;
@@ -21,6 +22,7 @@ class ServiceLocationController extends Controller
 
         return Inertia::render('Settings/ServiceLocations', [
             'locations' => app('tenant')->serviceLocations()->get(),
+            'locationTypes' => array_column(ServiceLocationType::cases(), 'value'),
         ]);
     }
 

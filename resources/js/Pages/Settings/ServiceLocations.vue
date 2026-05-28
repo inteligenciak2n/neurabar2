@@ -9,9 +9,8 @@ import { ref } from 'vue';
 
 defineProps({
     locations: Array,
+    locationTypes: Array,
 });
-
-const LOCATION_TYPES = ['table', 'bar', 'area', 'delivery', 'takeaway'];
 
 const showForm = ref(false);
 const editingLocation = ref(null);
@@ -130,7 +129,7 @@ const deleteLocation = () => {
                             v-model="form.type"
                             class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         >
-                            <option v-for="type in LOCATION_TYPES" :key="type" :value="type" class="capitalize">
+                            <option v-for="type in locationTypes" :key="type" :value="type" class="capitalize">
                                 {{ __(type) }}
                             </option>
                         </select>

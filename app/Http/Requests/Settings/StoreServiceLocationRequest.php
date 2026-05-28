@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Settings;
 
+use App\Enums\ServiceLocationType;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Enum;
 
 class StoreServiceLocationRequest extends FormRequest
 {
@@ -16,7 +18,7 @@ class StoreServiceLocationRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'string', 'in:table,bar,area,delivery,takeaway'],
+            'type' => ['required', new Enum(ServiceLocationType::class)],
             'active' => ['boolean'],
         ];
     }
