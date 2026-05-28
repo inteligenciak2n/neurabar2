@@ -21,5 +21,15 @@
     "Save": "Save",
     "Edit": "Edit",
     "Deactivate": "Deactivate",
-    "Edit Product": "Edit Product"
+    "Edit Product": "Edit Product",
+    "Modifier Groups": "Modifier Groups",
+    "Select which modifier groups apply to this product.": "Select which modifier groups apply to this product.",
+    "req.": "req.",
+    "Save Modifiers": "Save Modifiers",
+    "Delete Variation": "Delete Variation",
+    "Are you sure you want to delete this variation?": "Are you sure you want to delete this variation?",
+    "Add Variation": "Add Variation",
+    "Variations": "Variations",
+    "Variations override the base price (e.g. Small, Medium, Large).": "Variations override the base price (e.g. Small, Medium, Large).",
+    "No variations yet. Add one to offer size or option choices.": "No variations yet. Add one to offer size or option choices."
 }

@@ -12,6 +12,7 @@ const props = defineProps({
     products: Array,
     categories: Array,
     stations: Array,
+    modifierGroups: Array,
     filters: Object,
 });
 
@@ -27,6 +28,74 @@ const form = useForm({
     kitchen_station_id: '',
     active: true,
 });
+
+const syncForm = useForm({
+    modifier_group_ids: [],
+});
+
+const toggleGroupInSync = (groupId) => {
+    const idx = syncForm.modifier_group_ids.indexOf(groupId);
+    if (idx >= 0) {
+        syncForm.modifier_group_ids.splice(idx, 1);
+    } else {
+        syncForm.modifier_group_ids.push(groupId);
+    }
+};
+
+const submitSync = (product) => {
+    syncForm.put(route('menu.products.modifier-groups.sync', product.id));
+};
+
+// Variations
+const variationForm = useForm({ name: '', price: '', active: true });
+const addingVariation = ref(false);
+const editingVariationId = ref(null);
+const editVariationForm = useForm({ name: '', price: '', active: true });
+const variationToDelete = ref(null);
+
+const openAddVariation = () => {
+    addingVariation.value = true;
+    variationForm.reset();
+    variationForm.active = true;
+};
+
+const cancelAddVariation = () => {
+    addingVariation.value = false;
+    variationForm.reset();
+};
+
+const submitCreateVariation = (product) => {
+    variationForm.post(route('menu.products.variations.store', product.id), {
+        onSuccess: cancelAddVariation,
+    });
+};
+
+const openEditVariation = (variation) => {
+    editingVariationId.value = variation.id;
+    editVariationForm.name = variation.name;
+    editVariationForm.price = variation.price;
+    editVariationForm.active = variation.active;
+};
+
+const closeEditVariation = () => {
+    editingVariationId.value = null;
+};
+
+const submitEditVariation = (product, variation) => {
+    editVariationForm.put(route('menu.products.variations.update', [product.id, variation.id]), {
+        onSuccess: closeEditVariation,
+    });
+};
+
+const confirmDeleteVariation = (variation) => {
+    variationToDelete.value = variation;
+};
+
+const deleteVariation = () => {
+    router.delete(route('menu.products.variations.destroy', [editingProduct.value.id, variationToDelete.value.id]), {
+        onSuccess: () => { variationToDelete.value = null; },
+    });
+};
 
 const selectedCategoryId = ref(props.filters?.category_id ?? '');
 
@@ -57,6 +126,7 @@ const openEdit = (product) => {
     form.category_id = product.category_id;
     form.kitchen_station_id = product.kitchen_station_id ?? '';
     form.active = product.active;
+    syncForm.modifier_group_ids = (product.modifier_groups ?? []).map((g) => g.id);
     showForm.value = true;
 };
 
@@ -64,6 +134,9 @@ const closeForm = () => {
     showForm.value = false;
     editingProduct.value = null;
     form.reset();
+    addingVariation.value = false;
+    editingVariationId.value = null;
+    variationToDelete.value = null;
 };
 
 const submit = () => {
@@ -150,6 +223,14 @@ const deleteProduct = () => {
                             <span v-if="product.category">{{ product.category.name }}</span>
                             <span v-if="product.kitchen_station">{{ product.kitchen_station.name }}</span>
                         </div>
+                        <div v-if="product.modifier_groups?.length" class="mt-1 flex flex-wrap gap-1">
+                            <AppBadge
+                                v-for="group in product.modifier_groups"
+                                :key="group.id"
+                                :label="group.name"
+                                color="#6366f1"
+                            />
+                        </div>
                     </div>
                     <div class="flex gap-2">
                         <AppButton size="sm" variant="secondary" @click="toggleActive(product)">
@@ -221,18 +302,155 @@ const deleteProduct = () => {
                         />
                     </div>
 
-                    <div class="flex items-center gap-2 sm:col-span-2">
+                    <div class="flex items-center gap-2 sm:col-span-2 justify-end">
                         <label class="flex cursor-pointer items-center gap-2">
                             <input v-model="form.active" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
                             <span class="text-sm text-ocean-deep">{{ __('Active') }}</span>
                         </label>
                     </div>
 
-                    <div class="flex gap-2 sm:col-span-2">
+                    <div class="flex gap-2 sm:col-span-2 justify-end">
                         <AppButton type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>
                         <AppButton type="button" variant="ghost" @click="closeForm">{{ __('Cancel') }}</AppButton>
                     </div>
                 </form>
+
+                <!-- Modifier groups sync — only for existing products -->
+                <div v-if="editingProduct && modifierGroups?.length" class="mt-4 border-t border-border pt-4">
+                    <div class="mb-2 flex items-center justify-between">
+                        <p class="text-sm font-medium text-ocean-deep">{{ __('Modifier Groups') }}</p>
+                        <AppButton size="sm" :loading="syncForm.processing" @click="submitSync(editingProduct)">
+                            {{ __('Save Modifiers') }}
+                        </AppButton>
+                    </div>
+                    <p class="mb-2 text-xs text-muted-foreground">{{ __('Select which modifier groups apply to this product.') }}</p>
+                    <div class="flex flex-wrap gap-2">
+                        <label
+                            v-for="group in modifierGroups"
+                            :key="group.id"
+                            class="flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors"
+                            :class="syncForm.modifier_group_ids.includes(group.id)
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'border-border text-ocean-deep hover:border-primary/40'"
+                        >
+                            <input
+                                type="checkbox"
+                                :checked="syncForm.modifier_group_ids.includes(group.id)"
+                                class="sr-only"
+                                @change="toggleGroupInSync(group.id)"
+                            />
+                            {{ group.name }}
+                            <span v-if="group.required" class="ml-1 text-xs text-amber-600">({{ __('req.') }})</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Variations — only for existing products -->
+                <div v-if="editingProduct" class="mt-4 border-t border-border pt-4">
+                    <div class="mb-2 flex items-center justify-between">
+                        <p class="text-sm font-medium text-ocean-deep">{{ __('Variations') }}</p>
+                        <AppButton size="sm" variant="secondary" @click="openAddVariation">{{ __('Add Variation') }}</AppButton>
+                    </div>
+                    <p class="mb-2 text-xs text-muted-foreground">{{ __('Variations override the base price (e.g. Small, Medium, Large).') }}</p>
+
+                    <!-- Existing variations -->
+                    <div v-if="editingProduct.variations?.length" class="mb-3 space-y-2">
+                        <div
+                            v-for="variation in editingProduct.variations"
+                            :key="variation.id"
+                            class="rounded border border-border p-2"
+                        >
+                            <!-- View row -->
+                            <div v-if="editingVariationId !== variation.id" class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-medium text-ocean-deep">{{ variation.name }}</span>
+                                    <span class="text-sm text-muted-foreground">R$ {{ Number(variation.price).toFixed(2) }}</span>
+                                    <AppBadge :label="variation.active ? __('Active') : __('Inactive')" :color="variation.active ? '#22c55e' : '#94a3b8'" />
+                                </div>
+                                <div class="flex gap-1">
+                                    <AppButton size="sm" variant="secondary" @click="openEditVariation(variation)">{{ __('Edit') }}</AppButton>
+                                    <AppButton size="sm" variant="destructive" @click="confirmDeleteVariation(variation)">{{ __('Delete') }}</AppButton>
+                                </div>
+                            </div>
+
+                            <!-- Inline edit row -->
+                            <form
+                                v-else
+                                class="grid grid-cols-1 gap-2 sm:grid-cols-3"
+                                @submit.prevent="submitEditVariation(editingProduct, variation)"
+                            >
+                                <div>
+                                    <input
+                                        v-model="editVariationForm.name"
+                                        type="text"
+                                        :placeholder="__('Name')"
+                                        class="w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                    />
+                                    <p v-if="editVariationForm.errors.name" class="mt-0.5 text-xs text-destructive">{{ editVariationForm.errors.name }}</p>
+                                </div>
+                                <div>
+                                    <input
+                                        v-model="editVariationForm.price"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        :placeholder="__('Price (R$)')"
+                                        class="w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                    />
+                                    <p v-if="editVariationForm.errors.price" class="mt-0.5 text-xs text-destructive">{{ editVariationForm.errors.price }}</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label class="flex cursor-pointer items-center gap-1.5 text-sm text-ocean-deep">
+                                        <input v-model="editVariationForm.active" type="checkbox" class="h-4 w-4 rounded border-border text-primary" />
+                                        {{ __('Active') }}
+                                    </label>
+                                    <AppButton type="submit" size="sm" :loading="editVariationForm.processing">{{ __('Save') }}</AppButton>
+                                    <AppButton type="button" size="sm" variant="ghost" @click="closeEditVariation">{{ __('Cancel') }}</AppButton>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <p v-if="!editingProduct.variations?.length && !addingVariation" class="mb-2 text-xs italic text-muted-foreground">
+                        {{ __('No variations yet. Add one to offer size or option choices.') }}
+                    </p>
+
+                    <!-- Add variation form -->
+                    <form
+                        v-if="addingVariation"
+                        class="grid grid-cols-1 gap-2 rounded border border-dashed border-primary/40 p-2 sm:grid-cols-3"
+                        @submit.prevent="submitCreateVariation(editingProduct)"
+                    >
+                        <div>
+                            <input
+                                v-model="variationForm.name"
+                                type="text"
+                                :placeholder="__('Name')"
+                                class="w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            />
+                            <p v-if="variationForm.errors.name" class="mt-0.5 text-xs text-destructive">{{ variationForm.errors.name }}</p>
+                        </div>
+                        <div>
+                            <input
+                                v-model="variationForm.price"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                :placeholder="__('Price (R$)')"
+                                class="w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            />
+                            <p v-if="variationForm.errors.price" class="mt-0.5 text-xs text-destructive">{{ variationForm.errors.price }}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="flex cursor-pointer items-center gap-1.5 text-sm text-ocean-deep">
+                                <input v-model="variationForm.active" type="checkbox" class="h-4 w-4 rounded border-border text-primary" />
+                                {{ __('Active') }}
+                            </label>
+                            <AppButton type="submit" size="sm" :loading="variationForm.processing">{{ __('Add') }}</AppButton>
+                            <AppButton type="button" size="sm" variant="ghost" @click="cancelAddVariation">{{ __('Cancel') }}</AppButton>
+                        </div>
+                    </form>
+                </div>
             </div>
         </AppCard>
 
@@ -244,6 +462,16 @@ const deleteProduct = () => {
             variant="destructive"
             @confirm="deleteProduct"
             @cancel="productToDelete = null"
+        />
+
+        <AppConfirmModal
+            :show="!!variationToDelete"
+            :title="__('Delete Variation')"
+            :message="__('Are you sure you want to delete this variation?')"
+            :confirm-label="__('Delete')"
+            variant="destructive"
+            @confirm="deleteVariation"
+            @cancel="variationToDelete = null"
         />
     </AppLayout>
 </template>
