@@ -21,8 +21,8 @@ const mobileMenuOpen = ref(false);
 const navItems = [
     { label: __('Dashboard'),   routeName: 'dashboard',         activePattern: 'dashboard', roles: ['owner', 'general_manager', 'section_manager', 'attendant'] },
     { label: __('Attendances'), routeName: 'attendances.index', activePattern: 'attendances.*', roles: ['owner', 'general_manager', 'section_manager', 'attendant'] },
-    { label: __('Kitchen'),     routeName: 'kitchen.kds',       activePattern: 'kitchen.*', roles: ['owner', 'general_manager', 'section_manager', 'attendant'] },
-    { label: __('Menu'),        routeName: 'menu.index',        activePattern: 'menu.*', roles: ['owner', 'general_manager', 'section_manager', 'attendant'] },
+    { label: __('Kitchen'),     routeName: 'kitchen.kds',       activePattern: 'kitchen.*', roles: ['owner', 'general_manager', 'section_manager'] },
+    { label: __('Menu'),        routeName: 'menu.index',        activePattern: 'menu.*', roles: ['owner', 'general_manager', 'section_manager',] },
 ];
 
 const logout = () => {
