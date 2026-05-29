@@ -3,7 +3,10 @@
 use App\Http\Controllers\Auth\VenueSelectorController;
 use App\Http\Controllers\Corporation\CorporationDashboardController;
 use App\Http\Controllers\Corporation\VenueController as CorporationVenueController;
-use App\Http\Controllers\Guest\CallWaiterController;
+use App\Http\Controllers\Guest\GuestCheckoutController;
+use App\Http\Controllers\Guest\GuestHubController;
+use App\Http\Controllers\Guest\GuestOrderController;
+use App\Http\Controllers\Guest\GuestSessionController;
 use App\Http\Controllers\Guest\PublicMenuController;
 use App\Http\Controllers\Guest\TrackOrderController;
 use App\Http\Controllers\InvitationController;
@@ -47,15 +50,22 @@ Route::get('/', function () {
 
 // Public guest routes — no auth required
 Route::middleware('throttle:60,1')->group(function () {
-    Route::get('/menu/{slug}', [PublicMenuController::class, 'show'])->name('menu.public');
-    Route::get('/calling/{slug}', [CallWaiterController::class, 'show'])->name('call-waiter.show');
     Route::get('/kitchen/monitor', [KdsController::class, 'monitor'])->name('kitchen.monitor');
     Route::get('/order/{order}/track', [TrackOrderController::class, 'show'])->name('orders.track');
 });
 
-Route::post('/calling/{slug}', [CallWaiterController::class, 'store'])
-    ->middleware('throttle:call-waiter')
-    ->name('call-waiter.store');
+// Guest Hub — QR-code-based visitor flow
+Route::prefix('g/{token}')->name('guest.')->group(function () {
+    Route::get('/', [GuestHubController::class, 'show'])->name('hub')->middleware('throttle:60,1');
+    Route::get('/menu', [PublicMenuController::class, 'show'])->name('menu')->middleware('throttle:60,1');
+    Route::post('/session', [GuestSessionController::class, 'store'])->name('session.store')->middleware('throttle:10,1');
+    Route::post('/session/verify', [GuestSessionController::class, 'verify'])->name('session.verify')->middleware('throttle:3,15');
+    Route::get('/orders', [GuestOrderController::class, 'index'])->name('orders.index')->middleware('throttle:30,1');
+    Route::post('/orders', [GuestOrderController::class, 'store'])->name('orders.store')->middleware('throttle:30,1');
+    Route::post('/signal', [GuestHubController::class, 'signal'])->name('signal')->middleware('throttle:10,1');
+    Route::post('/checkout', [GuestCheckoutController::class, 'store'])->name('checkout')->middleware('throttle:5,1');
+    Route::post('/verify-location', [GuestHubController::class, 'verifyLocation'])->name('verify-location')->middleware('throttle:10,1');
+});
 
 // Venue selector — auth required, no tenant context yet
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])
@@ -169,6 +179,8 @@ Route::middleware([
         Route::post('/service-locations', [ServiceLocationController::class, 'store'])->name('service-locations.store');
         Route::put('/service-locations/{location}', [ServiceLocationController::class, 'update'])->name('service-locations.update');
         Route::delete('/service-locations/{location}', [ServiceLocationController::class, 'destroy'])->name('service-locations.destroy');
+        Route::post('/service-locations/{location}/qr', [ServiceLocationController::class, 'generateQr'])->name('service-locations.qr');
+        Route::get('/service-locations/{location}/qr-pdf', [ServiceLocationController::class, 'qrPdf'])->name('service-locations.qr-pdf');
 
         Route::get('/attendance-channels', [AttendanceChannelController::class, 'index'])->name('attendance-channels.index');
         Route::post('/attendance-channels', [AttendanceChannelController::class, 'store'])->name('attendance-channels.store');

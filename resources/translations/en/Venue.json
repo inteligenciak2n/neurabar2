@@ -22,5 +22,10 @@
     "ZIP Code": "ZIP Code",
     "Used in the public guest QR code URL.": "Used in the public guest QR code URL.",
     "Save Changes": "Save Changes",
-    "Require service location on orders": "Require service location on orders"
+    "Require service location on orders": "Require service location on orders",
+    "Longitude": "Longitude",
+    "Require guest geolocation to place orders": "Require guest geolocation to place orders",
+    "Latitude": "Latitude",
+    "Geolocation": "Geolocation",
+    "Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m.": "Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m."
 }

@@ -7,6 +7,7 @@ use App\Enums\ServiceLocationType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ServiceLocation extends Model
 {
@@ -19,6 +20,8 @@ class ServiceLocation extends Model
         'name',
         'type',
         'active',
+        'default_attendance_channel_id',
+        'qr_token',
     ];
 
     protected function casts(): array
@@ -27,5 +30,10 @@ class ServiceLocation extends Model
             'type' => ServiceLocationType::class,
             'active' => 'boolean',
         ];
+    }
+
+    public function defaultAttendanceChannel(): BelongsTo
+    {
+        return $this->belongsTo(AttendanceChannel::class, 'default_attendance_channel_id');
     }
 }

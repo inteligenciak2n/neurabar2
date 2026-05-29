@@ -26,6 +26,9 @@ const form = useForm({
     require_location: props.venue.require_location ?? false,
     call_waiter_slug: props.venue.call_waiter_slug ?? '',
     logo_url: props.venue.logo_url ?? '',
+    latitude: props.venue.latitude ?? '',
+    longitude: props.venue.longitude ?? '',
+    require_geolocation: props.venue.require_geolocation ?? false,
 });
 
 const submit = () => {
@@ -184,6 +187,37 @@ const submit = () => {
                             <input v-model="form.require_location" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
                             <span class="text-sm text-ocean-deep">{{ __('Require service location on orders') }}</span>
                         </label>
+                    </div>
+                </AppCard>
+
+                <AppCard :title="__('Geolocation')">                    <div class="space-y-4">
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Latitude') }}</label>
+                                <input
+                                    v-model="form.latitude"
+                                    type="number"
+                                    step="any"
+                                    placeholder="-23.5505"
+                                    class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Longitude') }}</label>
+                                <input
+                                    v-model="form.longitude"
+                                    type="number"
+                                    step="any"
+                                    placeholder="-46.6333"
+                                    class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                />
+                            </div>
+                        </div>
+                        <label class="flex cursor-pointer items-center gap-3">
+                            <input v-model="form.require_geolocation" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
+                            <span class="text-sm text-ocean-deep">{{ __('Require guest geolocation to place orders') }}</span>
+                        </label>
+                        <p class="text-xs text-muted-foreground">{{ __('Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m.') }}</p>
                     </div>
                 </AppCard>
 

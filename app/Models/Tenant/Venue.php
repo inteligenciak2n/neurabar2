@@ -49,6 +49,9 @@ class Venue extends Model
         'evolution_api_key',
         'evolution_api_instance',
         'logo_url',
+        'latitude',
+        'longitude',
+        'require_geolocation',
     ];
 
     protected $hidden = [
@@ -64,6 +67,9 @@ class Venue extends Model
             'require_table' => 'boolean',
             'require_tab' => 'boolean',
             'require_location' => 'boolean',
+            'require_geolocation' => 'boolean',
+            'latitude' => 'float',
+            'longitude' => 'float',
         ];
     }
 

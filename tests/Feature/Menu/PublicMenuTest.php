@@ -13,43 +13,54 @@ class PublicMenuTest extends TestCase
 {
     use RefreshDatabase;
 
+    private function makeToken(Venue $venue): string
+    {
+        return rtrim(base64_encode(json_encode(['v' => $venue->id])), '=');
+    }
+
     public function test_public_menu_returns_active_products_without_authentication(): void
     {
-        $venue = Venue::factory()->withSlug('test-bar-123')->create();
+        $venue = Venue::factory()->create(['active' => true]);
         $menu = Menu::factory()->create(['venue_id' => $venue->id, 'active' => true]);
         $category = Category::factory()->create(['menu_id' => $menu->id]);
         Product::factory()->create(['category_id' => $category->id, 'active' => true, 'name' => 'Visible']);
         Product::factory()->inactive()->create(['category_id' => $category->id, 'name' => 'Hidden']);
 
-        $response = $this->get(route('menu.public', 'test-bar-123'))->assertOk();
-
-        $response->assertInertia(fn ($page) => $page
-            ->component('Guest/Menu')
-            ->where('venue.name', $venue->name)
-        );
+        $this->get(route('guest.menu', $this->makeToken($venue)))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Guest/Menu')
+                ->where('venue.name', $venue->name)
+            );
     }
 
-    public function test_inexistent_slug_returns_404(): void
+    public function test_inexistent_venue_returns_404(): void
     {
-        $this->get(route('menu.public', 'nonexistent-slug'))->assertNotFound();
+        $token = rtrim(base64_encode(json_encode(['v' => '00000000-0000-0000-0000-000000000000'])), '=');
+
+        $this->get(route('guest.menu', $token))->assertNotFound();
     }
 
     public function test_inactive_products_do_not_appear_in_public_menu(): void
     {
-        $venue = Venue::factory()->withSlug('test-bar-456')->create();
+        $venue = Venue::factory()->create(['active' => true]);
         $menu = Menu::factory()->create(['venue_id' => $venue->id, 'active' => true]);
         $category = Category::factory()->create(['menu_id' => $menu->id]);
+        Product::factory()->create(['category_id' => $category->id, 'active' => true, 'name' => 'Active Product']);
         Product::factory()->inactive()->create(['category_id' => $category->id, 'name' => 'Inactive Product']);
 
-        $response = $this->get(route('menu.public', 'test-bar-456'))->assertOk();
-
-        $response->assertInertia(fn ($page) => $page->component('Guest/Menu'));
-        // Inactive product should not appear in any category products
-        $categories = $response->viewData('page')['props']['categories'] ?? [];
-        foreach ($categories as $cat) {
-            foreach ($cat['products'] ?? [] as $product) {
-                $this->assertNotEquals('Inactive Product', $product['name']);
-            }
-        }
+        $this->get(route('guest.menu', $this->makeToken($venue)))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Guest/Menu')
+                ->has('categories', 1, fn ($cat) => $cat
+                    ->has('products', 1)
+                    ->has('products.0', fn ($product) => $product
+                        ->where('name', 'Active Product')
+                        ->etc()
+                    )
+                    ->etc()
+                )
+            );
     }
 }

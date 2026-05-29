@@ -1,6 +1,6 @@
 # User ↔ Venue Architecture
 
-**Versão:** 1.0 · **Data:** 27 de maio de 2026
+**Versão:** 1.1 · **Data:** 29 de maio de 2026
 
 > Referência técnica do modelo de identidade e acesso do NeuraBar: como usuários se relacionam com Corporations, Venues e roles operacionais.
 
@@ -416,3 +416,179 @@ O `Kds.vue` exibe, por item:
 | `database/migrations/*_create_user_venue_table.php` | Pivot many-to-many |
 | `database/migrations/*_create_venue_invitations_table.php` | Tabela de convites |
 | `database/migrations/*_add_foreign_keys_to_users_table.php` | FK current_venue_id + corporations.owner_id |
+
+---
+
+## Service Locations (Locais de Atendimento)
+
+### Visão Geral
+
+`ServiceLocation` representa um local físico de atendimento dentro de uma venue — uma mesa, balcão, área ou ponto de retirada. Cada local pode ter um canal de atendimento padrão e um QR code para uso pelo cliente final.
+
+```
+Venue
+  └── ServiceLocation (mesas, balcões, áreas...)
+        ├── type: ServiceLocationType
+        ├── active: boolean
+        ├── default_attendance_channel_id → AttendanceChannel
+        └── qr_token: string nullable
+```
+
+### Enum `ServiceLocationType`
+
+```php
+ServiceLocationType::Table     // 'table'
+ServiceLocationType::Bar       // 'bar'
+ServiceLocationType::Area      // 'area'
+ServiceLocationType::Delivery  // 'delivery'
+ServiceLocationType::Takeaway  // 'takeaway'
+```
+
+### Tabela `service_locations`
+
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| `id` | UUID PK | Identificador único |
+| `venue_id` | UUID FK | → `venues.id` (cascade delete) |
+| `name` | string | Nome do local (ex: "Mesa 7") |
+| `type` | varchar | Valor do enum `ServiceLocationType` |
+| `active` | boolean default true | Se falso, não aparece no order taker |
+| `default_attendance_channel_id` | UUID FK nullable | → `attendance_channels.id` (null on delete) |
+| `qr_token` | string unique nullable | Token codificado em base64 para o QR code |
+
+### QR Code — Geração e Estrutura do Token
+
+O `qr_token` é gerado por `GenerateQrTokenAction` e codifica um JSON com os IDs relevantes:
+
+```php
+$payload = [
+    'v' => $location->venue_id,               // venue
+    'l' => $location->id,                     // service location
+    'c' => $location->default_attendance_channel_id, // canal padrão (ou null)
+];
+$token = rtrim(base64_encode(json_encode($payload)), '=');
+```
+
+O token é **regenerável** — ao chamar `POST /settings/service-locations/{id}/qr` novamente, o token é substituído. O endpoint `GET /settings/service-locations/{id}/qr-pdf` gera um PDF (via `barryvdh/laravel-dompdf`) com o QR code renderizado usando `endroid/qr-code` v6.
+
+**Nota de compatibilidade (`endroid/qr-code` v6):** a API fluente `Builder::create()->...->build()` foi removida. Use o construtor nomeado:
+
+```php
+$qrResult = (new Builder(
+    writer: new PngWriter,
+    data: $url,
+    encoding: new Encoding('UTF-8'),
+    errorCorrectionLevel: ErrorCorrectionLevel::High,
+    size: 400,
+    margin: 10,
+    roundBlockSizeMode: RoundBlockSizeMode::Margin,
+))->build();
+```
+
+### Rotas
+
+```
+GET    /settings/service-locations                  → index (lista)
+POST   /settings/service-locations                  → store
+PUT    /settings/service-locations/{location}       → update
+DELETE /settings/service-locations/{location}       → destroy
+POST   /settings/service-locations/{location}/qr   → generateQr (gera/regenera token)
+GET    /settings/service-locations/{location}/qr-pdf → qrPdf (download PDF)
+```
+
+### Referência de Arquivos — Service Locations
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `app/Models/Settings/ServiceLocation.php` | Model com cast de `type` para `ServiceLocationType` |
+| `app/Enums/ServiceLocationType.php` | Enum dos tipos de local |
+| `app/Actions/Settings/CreateServiceLocationAction.php` | Criação do local |
+| `app/Actions/Settings/UpdateServiceLocationAction.php` | Atualização do local |
+| `app/Actions/Settings/DeleteServiceLocationAction.php` | Exclusão do local |
+| `app/Actions/Settings/GenerateQrTokenAction.php` | Gera e persiste o `qr_token` |
+| `app/Http/Controllers/Settings/ServiceLocationController.php` | Controller com CRUD + QR |
+| `app/Http/Requests/Settings/StoreServiceLocationRequest.php` | Validação de criação |
+| `app/Http/Requests/Settings/UpdateServiceLocationRequest.php` | Validação de atualização |
+| `resources/js/Pages/Settings/ServiceLocations.vue` | UI de gerenciamento de locais |
+| `resources/views/pdf/service-location-qr.blade.php` | Template do PDF do QR code |
+| `database/migrations/2026_05_22_184250_create_service_locations_table.php` | Criação da tabela |
+| `database/migrations/2026_05_29_182149_add_qr_fields_to_service_locations_table.php` | Adiciona `default_attendance_channel_id` e `qr_token` |
+
+---
+
+## Guest Hub
+
+### Visão Geral
+
+O Guest Hub é a interface pública acessada pelo cliente final ao escanear o QR code de um `ServiceLocation`. Não requer autenticação da venue — o contexto é inferido a partir do `qr_token` embutido na URL.
+
+```
+GET /g/{token}   → GuestHubController::show()   → Guest/Hub.vue
+```
+
+### Decodificação do Token
+
+`GuestTokenService::decode(string $token)` realiza o processo inverso de `GenerateQrTokenAction`:
+
+1. Decodifica o base64 → JSON com `v`, `l`, `c`.
+2. Carrega `Venue`, `ServiceLocation` e `AttendanceChannel` (quando presentes).
+3. Retorna o array `['venue', 'serviceLocation', 'attendanceChannel']`.
+
+### Sessão de Guest
+
+`GuestTokenService::resolveSession(Request $request, Venue $venue)` resolve ou cria uma sessão de guest anônima associada ao IP/sessão do visitante. A sessão persiste dados como `geolocation_verified`.
+
+### Verificação de Geolocalização
+
+Quando `venue.require_geolocation = true`, o Hub solicita a posição GPS do cliente antes de liberar ações. O `POST /g/{token}/verify-location` usa `GeolocationService` para calcular a distância entre o cliente e as coordenadas da venue (`venues.latitude`, `venues.longitude`). Se dentro do raio permitido, marca `geolocation_verified = true` na sessão.
+
+### Sinalizações (Chamada de Atendente)
+
+O cliente pode enviar um sinal ao atendente via `POST /g/{token}/signal`, que dispara o evento `GuestSignaled`. Esse evento é transmitido via WebSocket para os atendentes da venue.
+
+### Fluxo Completo
+
+```
+Cliente escaneia QR
+    │
+    └── GET /g/{token}
+            │
+            GuestTokenService::decode($token)
+            → carrega Venue, ServiceLocation, AttendanceChannel
+            │
+            GuestTokenService::resolveSession()
+            → recupera ou cria sessão anônima
+            │
+            Inertia::render('Guest/Hub', [...])
+                ├── token, venue (id, name, logo_url, require_geolocation)
+                ├── serviceLocation (id, name, type)
+                ├── attendanceChannel (id, name)
+                ├── hasSession: bool
+                └── geolocationVerified: bool
+
+Cliente chama atendente
+    └── POST /g/{token}/signal
+            → valida sessão ativa (abort 403 se não há sessão)
+            → dispara GuestSignaled(venueId, locationName, message, signalOnly)
+```
+
+### Rotas do Guest Hub
+
+```
+GET  /g/{token}                   → show (exibe o Hub)
+POST /g/{token}/signal            → signal (chama atendente)
+POST /g/{token}/verify-location   → verifyLocation (valida GPS)
+```
+
+> Essas rotas **não usam** o middleware `tenant` nem requerem autenticação de `User`.
+
+### Referência de Arquivos — Guest Hub
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `app/Http/Controllers/Guest/GuestHubController.php` | Controller do hub público |
+| `app/Services/GuestTokenService.php` | Decodificação do token e resolução de sessão |
+| `app/Services/GeolocationService.php` | Cálculo de distância e verificação de raio |
+| `app/Events/Orders/GuestSignaled.php` | Evento de sinalização transmitido via WebSocket |
+| `app/Http/Requests/Guest/StoreGuestSignalRequest.php` | Validação do payload de sinalização |
+| `resources/js/Pages/Guest/Hub.vue` | Interface pública do cliente |

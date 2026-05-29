@@ -1,36 +1,85 @@
 <script setup>
 import GuestLayout from '@/Layouts/GuestLayout.vue';
-import AppSkeleton from '@/Components/AppSkeleton.vue';
 import AppEmptyState from '@/Components/AppEmptyState.vue';
-import { ref } from 'vue';
+import ProductDetailDrawer from '@/Components/Guest/ProductDetailDrawer.vue';
+import CartPanel from '@/Components/Guest/CartPanel.vue';
+import { ref, computed } from 'vue';
+import { useTranslate } from '@/Composables/useTranslate';
 
 const props = defineProps({
+    token: String,
     venue: Object,
+    serviceLocation: Object,
     categories: Array,
 });
 
-const selectedCategoryId = ref(props.categories?.[0]?.id ?? null);
+const __ = useTranslate();
 
-const selectedCategory = () => props.categories.find((c) => c.id === selectedCategoryId.value);
+const selectedCategoryId = ref(props.categories?.[0]?.id ?? null);
+const selectedProduct = ref(null);
+const showProductDrawer = ref(false);
+const cartOpen = ref(false);
+const cartItems = ref([]);
+const orderPlaced = ref(false);
+const orderError = ref(null);
+
+const selectedCategory = computed(() =>
+    props.categories.find((c) => c.id === selectedCategoryId.value),
+);
+
+const cartCount = computed(() => cartItems.value.reduce((s, i) => s + i.quantity, 0));
+
+function openProduct(product) {
+    selectedProduct.value = product;
+    showProductDrawer.value = true;
+}
+
+function addToCart(item) {
+    // merge with existing same product+variation
+    const existing = cartItems.value.find(
+        (i) => i.product_id === item.product_id && i.variation_id === item.variation_id,
+    );
+    if (existing) {
+        existing.quantity += item.quantity;
+    } else {
+        cartItems.value.push(item);
+    }
+}
+
+function removeFromCart(index) {
+    cartItems.value.splice(index, 1);
+}
+
+function handleOrderPlaced() {
+    cartItems.value = [];
+    orderPlaced.value = true;
+    setTimeout(() => { orderPlaced.value = false; }, 4000);
+}
 </script>
 
 <template>
-    <GuestLayout :title="venue.name + ' — Menu'" :venue="venue">
-        <!-- Venue header -->
-        <div class="mb-6 text-center">
-            <img
-                v-if="venue.logo_url"
-                :src="venue.logo_url"
-                :alt="venue.name"
-                class="mx-auto mb-3 h-16 w-auto rounded-lg object-contain"
-            />
-            <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ venue.name }}</h1>
+    <GuestLayout :title="venue.name + ' — Cardápio'" :venue="venue">
+
+        <!-- Back link -->
+        <a :href="`/g/${token}`" class="mb-4 flex items-center gap-1 text-sm text-primary hover:underline">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            {{ __('Back') }}
+        </a>
+
+        <!-- Order placed toast -->
+        <div v-if="orderPlaced" class="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 font-medium">
+            {{ __('Order placed! We are preparing it for you.') }}
+        </div>
+        <div v-if="orderError" class="mb-4 rounded-xl bg-destructive/5 border border-destructive/30 px-4 py-3 text-sm text-destructive">
+            {{ orderError }}
         </div>
 
         <AppEmptyState
             v-if="!categories.length"
-            :title=" __('Menu not available')"
-            :description=" __('This venue has no menu items yet.')"
+            :title="__('Menu not available')"
+            :description="__('This venue has no menu items yet.')"
         />
 
         <template v-else>
@@ -48,17 +97,18 @@ const selectedCategory = () => props.categories.find((c) => c.id === selectedCat
             </div>
 
             <!-- Products grid -->
-            <template v-if="selectedCategory()">
+            <template v-if="selectedCategory">
                 <AppEmptyState
-                    v-if="!selectedCategory().products?.length"
-                    title="No items in this category"
-                    description="Check back later."
+                    v-if="!selectedCategory.products?.length"
+                    :title="__('No items in this category')"
+                    :description="__('Check back later.')"
                 />
-                <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div
-                        v-for="product in selectedCategory().products"
+                <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2 pb-24">
+                    <button
+                        v-for="product in selectedCategory.products"
                         :key="product.id"
-                        class="rounded-lg bg-white p-4 shadow-card"
+                        class="rounded-xl bg-white p-4 shadow-card text-left active:scale-95 transition-transform"
+                        @click="openProduct(product)"
                     >
                         <div class="flex items-start justify-between gap-2">
                             <div class="flex-1">
@@ -69,9 +119,38 @@ const selectedCategory = () => props.categories.find((c) => c.id === selectedCat
                                 R$ {{ Number(product.price).toFixed(2) }}
                             </span>
                         </div>
-                    </div>
+                    </button>
                 </div>
             </template>
         </template>
+
+        <!-- Cart FAB -->
+        <button
+            v-if="cartCount > 0"
+            class="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg active:opacity-80 z-40"
+            @click="cartOpen = true"
+        >
+            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-primary text-xs font-bold">{{ cartCount }}</span>
+            {{ __('View Cart') }}
+        </button>
+
+        <!-- Product drawer -->
+        <ProductDetailDrawer
+            v-if="selectedProduct"
+            v-model="showProductDrawer"
+            :product="selectedProduct"
+            @add-to-cart="addToCart"
+        />
+
+        <!-- Cart panel -->
+        <CartPanel
+            v-model="cartOpen"
+            :token="token"
+            :items="cartItems"
+            @remove="removeFromCart"
+            @order-placed="handleOrderPlaced"
+            @error="orderError = $event"
+        />
+
     </GuestLayout>
 </template>

@@ -33,6 +33,9 @@ class UpdateVenueRequest extends FormRequest
             'require_location' => ['boolean'],
             'call_waiter_slug' => ['nullable', 'string', 'max:100', Rule::unique('venues', 'call_waiter_slug')->ignore(app('tenant')->id)],
             'logo_url' => ['nullable', 'url', 'max:1000'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'require_geolocation' => ['boolean'],
         ];
     }
 }

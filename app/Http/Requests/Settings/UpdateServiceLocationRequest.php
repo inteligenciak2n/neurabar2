@@ -20,6 +20,7 @@ class UpdateServiceLocationRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', new Enum(ServiceLocationType::class)],
             'active' => ['boolean'],
+            'default_attendance_channel_id' => ['nullable', 'uuid', 'exists:attendance_channels,id'],
         ];
     }
 }

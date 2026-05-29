@@ -7,9 +7,10 @@ import AppEmptyState from '@/Components/AppEmptyState.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
-defineProps({
+const props = defineProps({
     locations: Array,
     locationTypes: Array,
+    attendanceChannels: Array,
 });
 
 const showForm = ref(false);
@@ -20,6 +21,7 @@ const form = useForm({
     name: '',
     type: 'table',
     active: true,
+    default_attendance_channel_id: null,
 });
 
 const openCreate = () => {
@@ -27,6 +29,7 @@ const openCreate = () => {
     form.reset();
     form.type = 'table';
     form.active = true;
+    form.default_attendance_channel_id = null;
     showForm.value = true;
 };
 
@@ -35,6 +38,7 @@ const openEdit = (location) => {
     form.name = location.name;
     form.type = location.type;
     form.active = location.active;
+    form.default_attendance_channel_id = location.default_attendance_channel_id ?? null;
     showForm.value = true;
 };
 
@@ -64,6 +68,10 @@ const deleteLocation = () => {
     router.delete(route('settings.service-locations.destroy', locationToDelete.value.id), {
         onSuccess: () => { locationToDelete.value = null; },
     });
+};
+
+const generateQr = (location) => {
+    router.post(route('settings.service-locations.qr', location.id));
 };
 </script>
 
@@ -100,8 +108,24 @@ const deleteLocation = () => {
                         >
                             {{ location.active ? __('Active') : __('Inactive') }}
                         </span>
+                        <span v-if="location.default_attendance_channel" class="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-xs font-semibold">
+                            {{ location.default_attendance_channel.name }}
+                        </span>
                     </div>
                     <div class="flex gap-2">
+                        <a
+                            v-if="location.qr_token"
+                            size="sm"
+                            variant="secondary"
+                            tag="a"
+                            :href="route('settings.service-locations.qr-pdf', location.id)"
+                            target="_blank"
+                        >
+                            {{ __('PDF QR') }}
+                        </a>
+                        <AppButton size="sm" variant="secondary" @click="generateQr(location)">
+                            {{ location.qr_token ? __('Regenerate QR') : __('Generate QR') }}
+                        </AppButton>
                         <AppButton size="sm" variant="secondary" @click="openEdit(location)">{{ __('Edit') }}</AppButton>
                         <AppButton size="sm" variant="destructive" @click="confirmDelete(location)">{{ __('Delete') }}</AppButton>
                     </div>
@@ -134,6 +158,20 @@ const deleteLocation = () => {
                             </option>
                         </select>
                         <p v-if="form.errors.type" class="mt-1 text-xs text-destructive">{{ form.errors.type }}</p>
+                    </div>
+
+                    <div v-if="attendanceChannels.length">
+                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Default Channel') }}</label>
+                        <select
+                            v-model="form.default_attendance_channel_id"
+                            class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                            <option :value="null">{{ __('— None —') }}</option>
+                            <option v-for="channel in attendanceChannels" :key="channel.id" :value="channel.id">
+                                {{ channel.name }}
+                            </option>
+                        </select>
+                        <p v-if="form.errors.default_attendance_channel_id" class="mt-1 text-xs text-destructive">{{ form.errors.default_attendance_channel_id }}</p>
                     </div>
 
                     <label class="flex cursor-pointer items-center gap-3">
