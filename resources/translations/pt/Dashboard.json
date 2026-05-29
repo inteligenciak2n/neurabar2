@@ -10,5 +10,12 @@
     "pending": "pendente",
     "Open a new attendance to start taking orders.": "Abra um novo atendimento para começar a receber pedidos.",
     "Manage Menu": "Gerenciar menu",
-    "No open attendances": "Sem presenças abertas"
+    "No open attendances": "Sem presenças abertas",
+    "Open for": "Aberto para",
+    "Identifier": "Identificador",
+    "Partial total": "Total parcial",
+    "Actions": "Ações",
+    "Pay": "Pague",
+    "Order": "Pedido",
+    "Channel": "Canal"
 }

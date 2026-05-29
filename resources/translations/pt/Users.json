@@ -13,5 +13,11 @@
     "PIN": "ALFINETE",
     "leave blank to keep current": "deixe em branco para se manter atualizado",
     "Save": "Salvar",
-    "Cancel": "Cancelar"
+    "Cancel": "Cancelar",
+    "New User": "Novo usuário",
+    "Owner": "Proprietário",
+    "General Manager": "Gerente geral",
+    "Section Manager": "Gerente de Seção",
+    "Attendant": "Atendente",
+    "Corporation Admin": "Administrador da corporação"
 }

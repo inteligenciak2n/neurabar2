@@ -13,5 +13,11 @@
     "PIN": "ALFILER",
     "leave blank to keep current": "déjelo en blanco para mantenerse al día",
     "Save": "Guardar",
-    "Cancel": "Cancelar"
+    "Cancel": "Cancelar",
+    "New User": "Nuevo usuario",
+    "Owner": "Dueño",
+    "General Manager": "Gerente general",
+    "Section Manager": "Gerente de sección",
+    "Attendant": "Asistente",
+    "Corporation Admin": "Administrador de la corporación"
 }

@@ -1,3 +1,7 @@
 {
-    "Add additional security to your account using two factor authentication.": "Agregue seguridad adicional a su cuenta mediante la autenticación de dos factores."
+    "Add additional security to your account using two factor authentication.": "Agregue seguridad adicional a su cuenta mediante la autenticación de dos factores.",
+    "You have not enabled two factor authentication.": "No has activado la autenticación de dos factores.",
+    "Enable": "Habilitar",
+    "When two factor authentication is enabled, you will be prompted for a secure, random token during authentication. You may retrieve this token from your phone's Google Authenticator application.": "Cuando la autenticación de dos factores esté habilitada, se le solicitará un token seguro y aleatorio durante la autenticación. Puedes recuperar este token desde la aplicación Google Authenticator de tu teléfono.",
+    "Two Factor Authentication": "Autenticación de dos factores"
 }

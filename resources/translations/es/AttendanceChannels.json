@@ -1,0 +1,18 @@
+{
+    "Attendance Channels": "Canales de asistencia",
+    "Delete": "Borrar",
+    "Are you sure you want to delete this channel?": "¿Estás seguro de que quieres eliminar este canal?",
+    "Delete Attendance Channel": "Eliminar canal de asistencia",
+    "Edit": "Editar",
+    "Add Channel": "Añadir canal",
+    "Active": "Activo",
+    "e.g. Counter": "p. ej., contador",
+    "Lowercase letters, numbers and underscores only.": "Solo letras minúsculas, números y guiones bajos.",
+    "Edit Channel": "Editar canal",
+    "Name": "Nombre",
+    "Value (slug)": "Valor (slug)",
+    "Sort Order": "Orden de clasificación",
+    "e.g. counter": "por ejemplo, contador",
+    "Save": "Guardar",
+    "Cancel": "Cancelar"
+}

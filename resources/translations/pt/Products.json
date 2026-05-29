@@ -21,5 +21,17 @@
     "Save": "Salvar",
     "Edit": "Editar",
     "Deactivate": "Desativar",
-    "Edit Product": "Editar produto"
+    "Edit Product": "Editar produto",
+    "Modifier Groups": "Grupos de modificadores",
+    "Select which modifier groups apply to this product.": "Selecione quais grupos de modificadores se aplicam a esse produto.",
+    "req.": "solicitação.",
+    "Save Modifiers": "Salvar modificadores",
+    "Delete Variation": "Excluir variação",
+    "Are you sure you want to delete this variation?": "Tem certeza de que deseja excluir essa variação?",
+    "Add Variation": "Adicionar variação",
+    "Variations": "Variações",
+    "Variations override the base price (e.g. Small, Medium, Large).": "As variações substituem o preço base (por exemplo, pequeno, médio, grande).",
+    "No variations yet. Add one to offer size or option choices.": "Ainda não há variações. Adicione um para oferecer opções de tamanho ou opção.",
+    "Price (R$)": "Preço (R$)",
+    "Add": "Adicionar"
 }

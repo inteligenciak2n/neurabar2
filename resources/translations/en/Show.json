@@ -11,5 +11,7 @@
     "In Preparation": "In Preparation",
     "Delivered": "Delivered",
     "Ready": "Ready",
-    "Open": "Open"
+    "Open": "Open",
+    "No orders yet": "No orders yet",
+    "Take the first order for this attendance.": "Take the first order for this attendance."
 }

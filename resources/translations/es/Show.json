@@ -6,5 +6,12 @@
     "Opened by": "Inaugurado por",
     "Order": "Pedido",
     "pending": "pendiente",
-    "guests": "huéspedes"
+    "guests": "huéspedes",
+    "Payment": "Pago",
+    "In Preparation": "En preparación",
+    "Delivered": "Entregado",
+    "Ready": "Listo",
+    "Open": "Abrir",
+    "No orders yet": "Aún no hay pedidos",
+    "Take the first order for this attendance.": "Haga el primer pedido para esta asistencia."
 }
