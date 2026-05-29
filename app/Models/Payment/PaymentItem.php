@@ -2,6 +2,7 @@
 
 namespace App\Models\Payment;
 
+use App\Enums\PaymentMethod;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,6 +23,7 @@ class PaymentItem extends Model
     protected function casts(): array
     {
         return [
+            'method' => PaymentMethod::class,
             'amount' => 'decimal:2',
         ];
     }

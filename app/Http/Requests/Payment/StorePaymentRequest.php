@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Payment;
 
+use App\Enums\PaymentMethod;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,7 +19,7 @@ class StorePaymentRequest extends FormRequest
         return [
             'party_size' => ['nullable', 'integer', 'min:0'],
             'methods' => ['required', 'array', 'min:1'],
-            'methods.*.type' => ['required', Rule::in(['cash', 'credit_card', 'debit_card', 'pix', 'other'])],
+            'methods.*.type' => ['required', Rule::enum(PaymentMethod::class)],
             'methods.*.amount' => ['required', 'numeric', 'min:0.01'],
             'methods.*.notes' => ['nullable', 'string', 'max:255'],
         ];

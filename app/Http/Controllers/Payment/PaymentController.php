@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Payment;
 
 use App\Actions\Payment\RegisterPaymentAction;
+use App\Enums\PaymentMethod;
 use App\Http\Requests\Payment\StorePaymentRequest;
 use App\Models\Orders\Attendance;
 use App\Models\Settings\VenueSettings;
@@ -32,7 +33,7 @@ class PaymentController
             'attendance' => $attendance,
             'totals' => $totals,
             'perPerson' => $perPerson,
-            'paymentMethods' => ['cash', 'credit_card', 'debit_card', 'pix', 'other'],
+            'paymentMethods' => PaymentMethod::values(),
             'coverChargePerPerson' => (float) $settings->cover_charge,
             'serviceFeePercent' => (float) $settings->service_fee_percent,
         ]);
