@@ -28,17 +28,29 @@ const methodLabels = {
     other: __('Other'),
 };
 
+// Pré-calcula o total inicial para preencher o primeiro método
+const initialPartySize = props.attendance.party_size ?? 1;
+const initialItemsTotal = parseFloat(props.totals.items_total ?? 0);
+const initialCoverCharge = props.coverChargePerPerson * initialPartySize;
+const initialSubtotal = initialItemsTotal + initialCoverCharge;
+const initialServiceFee = Math.round(initialSubtotal * (props.serviceFeePercent / 100) * 100) / 100;
+const initialGrandTotal = Math.round((initialItemsTotal + initialCoverCharge + initialServiceFee) * 100) / 100;
+
 const form = useForm({
-    party_size: props.attendance.party_size ?? 1,
-    methods: [{ type: 'cash', amount: '', notes: '' }],
+    party_size: initialPartySize,
+    methods: [],
 });
 
+// Ref separado para evitar bug de reatividade do useForm com arrays aninhados
+const localMethods = ref([{ type: 'cash', amount: initialGrandTotal.toFixed(2), notes: '' }]);
+
 function addMethod() {
-    form.methods.push({ type: 'cash', amount: '', notes: '' });
+    let restValue = initialGrandTotal - localMethods.value.reduce((sum, m) => sum + parseFloat(m.amount || 0), 0);
+    localMethods.value.push({ type: 'cash', amount: restValue.toFixed(2), notes: '' });
 }
 
 function removeMethod(index) {
-    form.methods.splice(index, 1);
+    localMethods.value.splice(index, 1);
 }
 
 const itemsTotal = computed(() => parseFloat(props.totals.items_total ?? 0));
@@ -64,7 +76,7 @@ const perPersonAmount = computed(() => {
 });
 
 const methodsSum = computed(() =>
-    form.methods.reduce((sum, m) => sum + parseFloat(m.amount || 0), 0)
+    localMethods.value.reduce((sum, m) => sum + parseFloat(m.amount || 0), 0)
 );
 
 const sumMatchesTotal = computed(() =>
@@ -80,6 +92,7 @@ function confirmPayment() {
 }
 
 function submitPayment() {
+    form.methods = localMethods.value.map(m => ({ ...m }));
     form.post(route('payment.store', props.attendance.id), {
         onSuccess: () => { showConfirm.value = false; },
         onError: () => { showConfirm.value = false; },
@@ -163,7 +176,7 @@ function formatCurrency(value) {
             <AppCard :title="__('Payment Methods')">
                 <div class="space-y-3">
                     <div
-                        v-for="(method, index) in form.methods"
+                        v-for="(method, index) in localMethods"
                         :key="index"
                         class="flex gap-2 items-start"
                     >
@@ -188,7 +201,7 @@ function formatCurrency(value) {
                             class="flex-1 rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                         <button
-                            v-if="form.methods.length > 1"
+                            v-if="localMethods.length > 1"
                             type="button"
                             class="text-destructive text-sm hover:underline"
                             @click="removeMethod(index)"
@@ -210,7 +223,7 @@ function formatCurrency(value) {
                     </div>
                 </div>
 
-                <p v-if="form.methods.length && !sumMatchesTotal" class="mt-2 text-xs text-destructive">
+                <p v-if="localMethods.length && !sumMatchesTotal" class="mt-2 text-xs text-destructive">
                     {{ __('The sum of payment methods must equal the grand total.') }} ({{ formatCurrency(grandTotal) }})
                 </p>
 
