@@ -20,7 +20,7 @@ const form = useForm({
     attendance_channel_id: '',
     customer_identifier: '',
     service_location_id: '',
-    party_size: '',
+    party_size: 1,
     notes: '',
 });
 
@@ -63,7 +63,7 @@ const initForm = () => {
     form.attendance_channel_id = props.channels?.[0]?.id ?? '';
     form.customer_identifier = '';
     form.service_location_id = '';
-    form.party_size = '';
+    form.party_size = 1;
     form.notes = '';
 };
 
@@ -210,7 +210,6 @@ onUnmounted(() => {
             :action-label="__('New Attendance')"
             @action="initForm(); showForm = true"
         />
-
         <div v-if="attendances.length && !showForm" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <AppCard v-for="attendance in attendances" :key="attendance.id">
                 <div class="flex items-start justify-between">
@@ -220,9 +219,15 @@ onUnmounted(() => {
                             <span v-if="attendance.customer_identifier" class="text-sm font-semibold text-ocean-deep">
                                 {{ __('Identifier:') }} {{ attendance.customer_identifier }}
                             </span>
+                            <span v-if="attendance.service_location" class="text-sm text-ocean-deep">
+                                {{ attendance.service_location.name }}
+                            </span>
                         </div>
                         <p class="mt-1 text-xs text-muted-foreground">
                             {{ __('Open for') }} {{ elapsedMinutes(attendance.created_at) }} {{ __('min') }}
+                        </p>
+                        <p class="mt-0.5 text-xs text-muted-foreground">
+                            {{ __('Initiated by:') }} {{ attendance.created_by.name }}
                         </p>
                         <p class="mt-0.5 text-xs text-muted-foreground">
                             {{ __('Total:') }} R$ {{ ordersTotal(attendance) }}
