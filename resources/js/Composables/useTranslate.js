@@ -7,14 +7,14 @@ const translationCache = new Set()
 
 export function useTranslate() {
 
-    const __ = ( stringText = null, bindings = {} ) => {
+    const __ = ( stringText = null, bindings = {}, componentName = null ) => {
         if (!stringText) return ''
 
         const page = usePage()
         const instance = getCurrentInstance()
 
         // Nome do componente
-        const componentName = instance?.type?.name || 
+        componentName = componentName || instance?.type?.name || 
                               instance?.type?.__name || 
                               instance?.proxy?.$options?.name ||
                               'UnknownComponent'
