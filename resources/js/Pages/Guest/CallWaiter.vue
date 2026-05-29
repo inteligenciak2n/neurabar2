@@ -5,13 +5,15 @@ import AppCard from '@/Components/AppCard.vue';
 import { useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import axios from 'axios';
+import { useTranslate } from '@/Composables/useTranslate';
 
 const props = defineProps({
-    venueName: String,
+    venue: Object,
     headerUrl: String,
     passphraseRequired: Boolean,
 });
 
+const __ = useTranslate();
 const protocol = ref(null);
 const submitted = ref(false);
 const serverError = ref(null);
@@ -40,17 +42,27 @@ async function submit() {
             form.errors.passphrase = errors.passphrase?.[0] ?? null;
             form.errors.message = errors.message?.[0] ?? null;
         } else {
-            serverError.value = 'An error occurred. Please try again.';
+            serverError.value = __('An error occurred. Please try again.');
         }
     }
 }
+
+const shortMessages = [
+    __('Need assistance'),
+    __('Ready to order'),
+    __('Requesting the bill'),
+    __('More napkins, please'),
+    __('Can we change tables?'),
+];
+
+const shortMessagesPanel = ref(false);
 </script>
 
 <template>
-    <GuestLayout :title="`${__('Call Waiter')} — ${venueName}`">
+    <GuestLayout :title="venue.name" :venue="venue">
         <!-- Header image -->
         <div v-if="headerUrl" class="mb-6 -mt-8 rounded-xl overflow-hidden">
-            <img :src="headerUrl" :alt="venueName" class="w-full h-40 object-cover" />
+            <img :src="headerUrl" :alt="venue.name" class="w-full h-40 object-cover" />
         </div>
 
         <!-- Success state -->
@@ -70,7 +82,7 @@ async function submit() {
         </AppCard>
 
         <!-- Request form -->
-        <AppCard v-else :title="`Call Waiter — ${venueName}`">
+        <AppCard v-else :title="venue.name">
             <form @submit.prevent="submit" class="flex flex-col gap-4">
                 <div>
                     <label class="block text-sm font-medium text-ocean-deep mb-1">
@@ -79,7 +91,7 @@ async function submit() {
                     <input
                         v-model="form.customer_identifier"
                         type="text"
-                        placeholder="e.g. Table 5 or João"
+                        :placeholder="__('e.g. Table 5 or João')"
                         class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                 </div>
@@ -91,11 +103,27 @@ async function submit() {
                     <textarea
                         v-model="form.message"
                         rows="3"
-                        placeholder="{{ __('How can we help? e.g. \'Need more napkins\' or \'Ready to order\'') }}"
+                        :placeholder="__('How can we help? e.g. \'Need more napkins\' or \'Ready to order\'')"
                         class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                         maxlength="500"
                     />
                     <p v-if="form.errors.message" class="mt-1 text-xs text-destructive">{{ form.errors.message }}</p>
+
+                    <div class="mt-1 flex items-center justify-end gap-2">
+                        <span class="text-xs text-muted-foreground">{{ form.message.length }}/500</span>
+                    </div>
+
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        <button
+                            v-for="msg in shortMessages"
+                            :key="msg"
+                            type="button"
+                            class="rounded-full border border-border px-3 py-1.5 text-sm text-ocean-deep hover:bg-muted hover:border-primary transition-colors"
+                            @click="form.message = msg; shortMessagesPanel = false"
+                        >
+                            {{ msg }}
+                        </button>
+                    </div>
                 </div>
 
                 <div v-if="passphraseRequired">
@@ -105,7 +133,7 @@ async function submit() {
                     <input
                         v-model="form.passphrase"
                         type="text"
-                        placeholder="{{ __('Enter the venue passphrase') }}"
+                        :placeholder="__('Enter the venue passphrase')"
                         class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     <p v-if="form.errors.passphrase" class="mt-1 text-xs text-destructive">{{ form.errors.passphrase }}</p>

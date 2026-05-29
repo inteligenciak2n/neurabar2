@@ -47,13 +47,13 @@ Route::get('/', function () {
 
 // Public guest routes — no auth required
 Route::middleware('throttle:60,1')->group(function () {
-    Route::get('/qr/{slug}', [PublicMenuController::class, 'show'])->name('menu.public');
-    Route::get('/call-waiter/{slug}', [CallWaiterController::class, 'show'])->name('call-waiter.show');
+    Route::get('/menu/{slug}', [PublicMenuController::class, 'show'])->name('menu.public');
+    Route::get('/calling/{slug}', [CallWaiterController::class, 'show'])->name('call-waiter.show');
     Route::get('/kitchen/monitor', [KdsController::class, 'monitor'])->name('kitchen.monitor');
     Route::get('/order/{order}/track', [TrackOrderController::class, 'show'])->name('orders.track');
 });
 
-Route::post('/call-waiter/{slug}', [CallWaiterController::class, 'store'])
+Route::post('/calling/{slug}', [CallWaiterController::class, 'store'])
     ->middleware('throttle:call-waiter')
     ->name('call-waiter.store');
 

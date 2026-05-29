@@ -15,7 +15,7 @@ const selectedCategory = () => props.categories.find((c) => c.id === selectedCat
 </script>
 
 <template>
-    <GuestLayout :title="venue.name + ' — Menu'">
+    <GuestLayout :title="venue.name + ' — Menu'" :venue="venue">
         <!-- Venue header -->
         <div class="mb-6 text-center">
             <img
@@ -35,11 +35,11 @@ const selectedCategory = () => props.categories.find((c) => c.id === selectedCat
 
         <template v-else>
             <!-- Category tabs -->
-            <div class="mb-4 flex gap-2 overflow-x-auto pb-1">
+            <div class="mb-4 flex gap-2 overflow-x-auto pb-1 border-b border-muted">
                 <button
                     v-for="category in categories"
                     :key="category.id"
-                    class="whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors"
+                    class="whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors"
                     :class="selectedCategoryId === category.id ? 'bg-primary text-white' : 'bg-white text-ocean-deep shadow-card hover:bg-ocean-light'"
                     @click="selectedCategoryId = category.id"
                 >

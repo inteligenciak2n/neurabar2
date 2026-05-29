@@ -20,7 +20,7 @@ class CallWaiterController
         }
 
         return Inertia::render('Guest/CallWaiter', [
-            'venueName' => $venue->name,
+            'venue' => $venue->only('id', 'name', 'logo_url'),
             'headerUrl' => $venue->call_waiter_header_url,
             'passphraseRequired' => $venue->call_waiter_passphrase !== null && $venue->call_waiter_passphrase !== '',
         ]);
