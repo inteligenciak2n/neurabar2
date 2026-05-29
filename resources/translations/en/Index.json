@@ -81,5 +81,13 @@
     "table": "table",
     "area": "area",
     "takeaway": "takeaway",
-    "delivery": "delivery"
+    "delivery": "delivery",
+    "Pix": "Pix",
+    "Credit Card": "Credit Card",
+    "Cash": "Cash",
+    "Debit Card": "Debit Card",
+    "Other": "Other",
+    "Register payment of": "Register payment of",
+    "and close this attendance?": "and close this attendance?",
+    "Remove": "Remove"
 }

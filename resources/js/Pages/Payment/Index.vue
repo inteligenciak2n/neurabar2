@@ -6,6 +6,7 @@ import AppBadge from '@/Components/AppBadge.vue';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import { useForm, Link } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import { useTranslate } from '@/Composables/useTranslate';
 
 const props = defineProps({
     attendance: Object,
@@ -17,17 +18,18 @@ const props = defineProps({
 });
 
 const showConfirm = ref(false);
+const __ = useTranslate();
 
 const methodLabels = {
-    cash: 'Cash',
-    credit_card: 'Credit Card',
-    debit_card: 'Debit Card',
-    pix: 'Pix',
-    other: 'Other',
+    cash: __('Cash'),
+    credit_card: __('Credit Card'),
+    debit_card: __('Debit Card'),
+    pix: __('Pix'),
+    other: __('Other'),
 };
 
 const form = useForm({
-    party_size: props.attendance.party_size ?? '',
+    party_size: props.attendance.party_size ?? 1,
     methods: [{ type: 'cash', amount: '', notes: '' }],
 });
 
