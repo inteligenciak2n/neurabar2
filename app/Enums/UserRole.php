@@ -19,7 +19,12 @@ enum UserRole: string
     /** @return list<self> */
     public static function platformRoles(): array
     {
-        return [self::SuperAdmin, self::Finance, self::Registration, self::ReadOnly];
+        return [
+            self::SuperAdmin, 
+            self::Finance, 
+            self::Registration, 
+            self::ReadOnly
+        ];
     }
 
     /** @return list<self> */

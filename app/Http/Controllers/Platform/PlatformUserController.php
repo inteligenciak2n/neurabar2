@@ -26,7 +26,7 @@ class PlatformUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:platform_users,email'],
             'password' => ['required', 'string', 'min:8'],
-            'role' => ['required', 'string', 'in:super_admin,finance,registration,read_only'],
+            'role' => ['required', 'string', 'in:' . implode(',', array_map(fn($role) => $role->value, \App\Enums\UserRole::platformRoles()))],
             'active' => ['boolean'],
         ]);
 
@@ -41,7 +41,7 @@ class PlatformUserController extends Controller
             'name' => ['sometimes', 'string', 'max:255'],
             'email' => ['sometimes', 'email', 'unique:platform_users,email,'.$platformUser->id],
             'password' => ['nullable', 'string', 'min:8'],
-            'role' => ['sometimes', 'string', 'in:super_admin,finance,registration,read_only'],
+            'role' => ['sometimes', 'string', 'in:' . implode(',', array_map(fn($role) => $role->value, \App\Enums\UserRole::platformRoles()))],
             'active' => ['sometimes', 'boolean'],
         ]);
 

@@ -42,7 +42,6 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Gate::define('manage-menu', fn (User $user) => in_array($user->role, [
-            UserRole::CorporationAdmin,
             UserRole::Owner,
             UserRole::GeneralManager,
         ], true));
@@ -58,7 +57,6 @@ class AppServiceProvider extends ServiceProvider
         ], true));
 
         Gate::define('access-corporation', fn (User $user) => in_array($user->role, [
-            UserRole::CorporationAdmin,
             UserRole::Owner,
             UserRole::GeneralManager,
         ], true));
