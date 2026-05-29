@@ -226,7 +226,7 @@ onUnmounted(() => {
                         <p class="mt-1 text-xs text-muted-foreground">
                             {{ __('Open for') }} {{ elapsedMinutes(attendance.created_at) }} {{ __('min') }}
                         </p>
-                        <p class="mt-0.5 text-xs text-muted-foreground">
+                        <p v-if="attendance?.created_by?.name" class="mt-0.5 text-xs text-muted-foreground">
                             {{ __('Initiated by:') }} {{ attendance.created_by.name }}
                         </p>
                         <p class="mt-0.5 text-xs text-muted-foreground">

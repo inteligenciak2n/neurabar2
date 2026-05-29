@@ -113,6 +113,9 @@ const generateQr = (location) => {
                         </span>
                     </div>
                     <div class="flex gap-2">
+                        <a :href="location.hub_url" target="_blank" rel="noopener noreferrer">
+                            {{ __('View Hub') }}
+                        </a>
                         <a
                             v-if="location.qr_token"
                             size="sm"

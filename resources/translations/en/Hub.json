@@ -13,5 +13,12 @@
     "View Orders": "View Orders",
     "Loading...": "Loading...",
     "No orders yet.": "No orders yet.",
-    "Order": "Order"
+    "Order": "Order",
+    "Qty": "Qty",
+    "Yes, request bill": "Yes, request bill",
+    "Request Bill?": "Request Bill?",
+    "The waiter will be notified to bring your bill.": "The waiter will be notified to bring your bill.",
+    "Cancel": "Cancel",
+    "Sending...": "Sending...",
+    "Bill requested! The waiter will be with you shortly.": "Bill requested! The waiter will be with you shortly."
 }

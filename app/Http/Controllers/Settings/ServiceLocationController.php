@@ -29,7 +29,19 @@ class ServiceLocationController extends Controller
         $venue = app('tenant');
 
         return Inertia::render('Settings/ServiceLocations', [
-            'locations' => $venue->serviceLocations()->with('defaultAttendanceChannel:id,name')->get(),
+            'locations' => $venue
+                                ->serviceLocations()
+                                ->with('defaultAttendanceChannel:id,name')
+                                ->get()
+                                ->map(fn ($location) => [
+                                    'id' => $location->id,
+                                    'name' => $location->name,
+                                    'type' => $location->type->value,
+                                    'active' => $location->active,
+                                    'default_attendance_channel' => $location->defaultAttendanceChannel,
+                                    'qr_token' => $location->qr_token,
+                                    'hub_url' => url('/g/'.$location->qr_token)
+                                ]),
             'locationTypes' => array_column(ServiceLocationType::cases(), 'value'),
             'attendanceChannels' => $venue->attendanceChannels()->where('active', true)->get(['id', 'name']),
         ]);
