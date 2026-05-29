@@ -20,7 +20,7 @@ class AttendanceController extends Controller
         $venue = app('tenant');
 
         $attendances = Attendance::open()
-            ->with(['serviceLocation', 'createdBy', 'orders' => fn ($q) => $q->latest(), 'orders.items'])
+            ->with(['attendanceChannel:id,name', 'serviceLocation', 'createdBy', 'orders' => fn ($q) => $q->latest(), 'orders.items'])
             ->latest()
             ->get();
 
@@ -32,7 +32,7 @@ class AttendanceController extends Controller
             ->where('venue_id', $venue->id)
             ->where('active', true)
             ->orderBy('sort_order')
-            ->get(['id', 'name', 'value']);
+            ->get(['id', 'name']);
 
         return Inertia::render('Attendances/Index', [
             'attendances' => $attendances,
@@ -56,12 +56,12 @@ class AttendanceController extends Controller
         $venue = app('tenant');
 
         $attendance->load([
-            'orders' => fn ($q) => $q->latest(), 
-            'orders.items.product', 
-            'orders.items.preparationStatus', 
-            'serviceLocation', 
+            'orders' => fn ($q) => $q->latest(),
+            'orders.items.product',
+            'orders.items.preparationStatus',
+            'serviceLocation',
             'createdBy',
-            ]);
+        ]);
 
         return Inertia::render('Attendances/Show', [
             'attendance' => $attendance,

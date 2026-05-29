@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignUuid('venue_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('service_location_id')->nullable()->constrained()->nullOnDelete();
             $table->string('customer_identifier')->nullable();
-            $table->string('channel')->default('table');
+            $table->uuid('attendance_channel_id')->nullable();
             $table->string('status')->default('open');
             $table->integer('party_size')->nullable();
             $table->text('notes')->nullable();

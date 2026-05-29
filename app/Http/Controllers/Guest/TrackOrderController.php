@@ -11,9 +11,9 @@ class TrackOrderController extends Controller
 {
     public function show(Order $order): Response
     {
-        $order->load('attendance:id,channel');
+        $order->load('attendance.attendanceChannel:id,is_trackable');
 
-        abort_if($order->attendance?->channel === 'service_request', 404);
+        abort_if(! ($order->attendance?->attendanceChannel?->is_trackable ?? true), 404);
 
         $items = $order->items()
             ->with(['product:id,name', 'variation:id,name', 'preparationStatus:id,name,color,show_to_customer'])

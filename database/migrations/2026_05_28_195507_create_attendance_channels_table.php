@@ -15,10 +15,18 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('venue_id')->constrained()->cascadeOnDelete();
             $table->string('name');
-            $table->string('value')->comment('Slug used in attendances.channel');
+            $table->boolean('is_trackable')->default(true);
+            $table->boolean('requires_customer_identifier')->default(false);
             $table->boolean('active')->default(true);
             $table->integer('sort_order')->default(0);
             $table->timestamps();
+        });
+
+        Schema::table('attendances', function (Blueprint $table): void {
+            $table->foreign('attendance_channel_id')
+                ->references('id')
+                ->on('attendance_channels')
+                ->nullOnDelete();
         });
     }
 
@@ -27,6 +35,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('attendances', function (Blueprint $table): void {
+            $table->dropForeign(['attendance_channel_id']);
+        });
+
         Schema::dropIfExists('attendance_channels');
     }
 };

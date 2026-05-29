@@ -89,10 +89,10 @@ class CreateUserOwnerDefinitions
         }
 
         $attedance_channels = [
-            ['name' => 'Balcão', 'value' => 'balcao', 'sort_order' => 1],
-            ['name' => 'Mesa', 'value' => 'mesa', 'sort_order' => 2],
-            ['name' => 'Delivery', 'value' => 'delivery', 'sort_order' => 3],
-            ['name' => 'Retirada', 'value' => 'retirada', 'sort_order' => 4],
+            ['name' => 'Mesa', 'sort_order' => 1],
+            ['name' => 'Balcão', 'sort_order' => 2],
+            ['name' => 'Delivery', 'sort_order' => 3],
+            ['name' => 'Retirada', 'sort_order' => 4],
         ];
 
         foreach ($attedance_channels as $channel) {

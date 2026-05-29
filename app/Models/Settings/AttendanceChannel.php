@@ -3,9 +3,11 @@
 namespace App\Models\Settings;
 
 use App\Concerns\BelongsToVenue;
+use App\Models\Orders\Attendance;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AttendanceChannel extends Model
 {
@@ -16,7 +18,8 @@ class AttendanceChannel extends Model
     protected $fillable = [
         'venue_id',
         'name',
-        'value',
+        'is_trackable',
+        'requires_customer_identifier',
         'active',
         'sort_order',
     ];
@@ -24,8 +27,15 @@ class AttendanceChannel extends Model
     protected function casts(): array
     {
         return [
+            'is_trackable' => 'boolean',
+            'requires_customer_identifier' => 'boolean',
             'active' => 'boolean',
             'sort_order' => 'integer',
         ];
+    }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class);
     }
 }

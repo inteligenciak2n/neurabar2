@@ -3,6 +3,7 @@
 namespace Database\Factories\Orders;
 
 use App\Models\Orders\Attendance;
+use App\Models\Settings\AttendanceChannel;
 use App\Models\Tenant\Venue;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -20,7 +21,7 @@ class AttendanceFactory extends Factory
     {
         return [
             'venue_id' => Venue::factory(),
-            'channel' => 'table',
+            'attendance_channel_id' => AttendanceChannel::factory(),
             'status' => 'open',
             'party_size' => fake()->numberBetween(1, 8),
         ];

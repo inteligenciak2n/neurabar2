@@ -5,6 +5,7 @@ namespace Tests\Feature\Guest;
 use App\Models\Orders\Attendance;
 use App\Models\Orders\Order;
 use App\Models\Orders\OrderItem;
+use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\PreparationStatus;
 use App\Models\Tenant\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -82,9 +83,13 @@ class TrackOrderTest extends TestCase
     public function test_service_request_order_is_not_trackable(): void
     {
         $venue = Venue::factory()->create();
+        $channel = AttendanceChannel::factory()->create([
+            'venue_id' => $venue->id,
+            'is_trackable' => false,
+        ]);
         $attendance = Attendance::factory()->create([
             'venue_id' => $venue->id,
-            'channel' => 'service_request',
+            'attendance_channel_id' => $channel->id,
         ]);
         $order = Order::factory()->create(['attendance_id' => $attendance->id]);
 

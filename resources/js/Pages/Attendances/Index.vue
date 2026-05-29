@@ -17,7 +17,7 @@ const props = defineProps({
 const showForm = ref(false);
 
 const form = useForm({
-    channel: '',
+    attendance_channel_id: '',
     customer_identifier: '',
     service_location_id: '',
     party_size: '',
@@ -44,10 +44,6 @@ const toggleServiceLocationType = (type) => {
     }
 };
 
-const channelLabel = (value) => {
-    return props.channels?.find((c) => c.value === value)?.name ?? value;
-};
-
 const elapsedMinutes = (createdAt) => {
     const diff = Date.now() - new Date(createdAt).getTime();
     return Math.floor(diff / 60000);
@@ -64,7 +60,7 @@ const ordersTotal = (attendance) => {
 };
 
 const initForm = () => {
-    form.channel = props.channels?.[0]?.value ?? '';
+    form.attendance_channel_id = props.channels?.[0]?.id ?? '';
     form.customer_identifier = '';
     form.service_location_id = '';
     form.party_size = '';
@@ -116,14 +112,14 @@ onUnmounted(() => {
                     <template v-for="ch in channels" :key="ch.id">
                         <button
                             type="button"
-                            @click="form.channel = ch.value"
-                            :class="{'bg-primary text-white': form.channel === ch.value, 'bg-gray-200 text-gray-700': form.channel !== ch.value}"
+                            @click="form.attendance_channel_id = ch.id"
+                            :class="{'bg-primary text-white': form.attendance_channel_id === ch.id, 'bg-gray-200 text-gray-700': form.attendance_channel_id !== ch.id}"
                             class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
                         >
                             {{ ch.name }}
                         </button>
                     </template>
-                    <p v-if="form.errors.channel" class="mt-1 text-xs text-destructive">{{ form.errors.channel }}</p>
+                    <p v-if="form.errors.attendance_channel_id" class="mt-1 text-xs text-destructive">{{ form.errors.attendance_channel_id }}</p>
                 </div>
 
                 <div>
@@ -220,7 +216,7 @@ onUnmounted(() => {
                 <div class="flex items-start justify-between">
                     <div>
                         <div class="flex items-center gap-2">
-                            <AppBadge :label="channelLabel(attendance.channel)" color="#3b82f6" />
+                            <AppBadge :label="attendance.attendance_channel?.name ?? ''" color="#3b82f6" />
                             <span v-if="attendance.customer_identifier" class="text-sm font-semibold text-ocean-deep">
                                 {{ __('Identifier:') }} {{ attendance.customer_identifier }}
                             </span>

@@ -26,7 +26,8 @@ class AttendanceChannelTest extends TestCase
 
         $this->post(route('settings.attendance-channels.store'), [
             'name' => 'Balcão',
-            'value' => 'balcao',
+            'is_trackable' => true,
+            'requires_customer_identifier' => false,
             'active' => true,
             'sort_order' => 0,
         ])->assertRedirect();
@@ -34,7 +35,6 @@ class AttendanceChannelTest extends TestCase
         $this->assertDatabaseHas('attendance_channels', [
             'venue_id' => $venue->id,
             'name' => 'Balcão',
-            'value' => 'balcao',
         ]);
     }
 
@@ -46,7 +46,8 @@ class AttendanceChannelTest extends TestCase
 
         $this->put(route('settings.attendance-channels.update', $channel->id), [
             'name' => 'Delivery',
-            'value' => 'delivery',
+            'is_trackable' => true,
+            'requires_customer_identifier' => false,
             'active' => true,
             'sort_order' => 1,
         ])->assertRedirect();
@@ -54,7 +55,6 @@ class AttendanceChannelTest extends TestCase
         $this->assertDatabaseHas('attendance_channels', [
             'id' => $channel->id,
             'name' => 'Delivery',
-            'value' => 'delivery',
         ]);
     }
 
@@ -70,17 +70,6 @@ class AttendanceChannelTest extends TestCase
         $this->assertDatabaseMissing('attendance_channels', ['id' => $channel->id]);
     }
 
-    public function test_invalid_value_slug_returns_validation_error(): void
-    {
-        $venue = Venue::factory()->create(['active' => true]);
-        $this->loginAs(UserRole::Owner, $venue);
-
-        $this->post(route('settings.attendance-channels.store'), [
-            'name' => 'Inválido',
-            'value' => 'valor invalido!',
-        ])->assertSessionHasErrors('value');
-    }
-
     public function test_channel_name_is_required(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
@@ -88,7 +77,6 @@ class AttendanceChannelTest extends TestCase
 
         $this->post(route('settings.attendance-channels.store'), [
             'name' => '',
-            'value' => 'balcao',
         ])->assertSessionHasErrors('name');
     }
 

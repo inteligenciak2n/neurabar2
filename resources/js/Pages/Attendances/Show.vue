@@ -33,11 +33,7 @@ const statusName = (status) => ({
     delivered: __('Delivered'),
 }[status] ?? __('Unknown'));
 
-const channelsLabel = (channel) => ({
-    in_person: __('In Person'),
-    online: __('Online'),
-    phone: __('Phone'),
-}[channel] ?? channel);
+const channelsLabel = (channel) => channel;
 
 let notificationSound = null;
 
@@ -90,12 +86,12 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <AppLayout :title="`${__('Attendance')} — ${attendance.customer_identifier ?? attendance.channel}`">
+    <AppLayout :title="`${__('Attendance')} — ${attendance.customer_identifier ?? attendance.attendance_channel?.name ?? ''}`">
         <template #header>
             <div class="flex items-center gap-4">
                 <Link :href="route('attendances.index')" class="text-sm font-medium text-primary hover:underline">← {{ __('Attendances') }}</Link>
                 <h1 class="font-heading text-2xl font-bold text-ocean-deep">
-                    {{ attendance.customer_identifier ?? attendance.channel }}
+                    {{ attendance.customer_identifier ?? attendance.attendance_channel?.name ?? '' }}
                 </h1>
                 <AppBadge :label="attendance.status" :color="attendance.status === 'open' ? '#22c55e' : '#94a3b8'" />
             </div>

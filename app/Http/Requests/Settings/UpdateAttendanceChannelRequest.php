@@ -16,7 +16,8 @@ class UpdateAttendanceChannelRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'value' => ['required', 'string', 'max:100', 'regex:/^[a-z0-9_]+$/'],
+            'is_trackable' => ['boolean'],
+            'requires_customer_identifier' => ['boolean'],
             'active' => ['boolean'],
             'sort_order' => ['integer', 'min:0'],
         ];

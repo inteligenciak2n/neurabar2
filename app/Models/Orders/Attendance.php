@@ -5,6 +5,7 @@ namespace App\Models\Orders;
 use App\Concerns\BelongsToVenue;
 use App\Enums\AttendanceStatus;
 use App\Models\Payment\Payment;
+use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\ServiceLocation;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,8 +25,8 @@ class Attendance extends Model
     protected $fillable = [
         'venue_id',
         'service_location_id',
+        'attendance_channel_id',
         'customer_identifier',
-        'channel',
         'status',
         'party_size',
         'notes',
@@ -40,6 +41,11 @@ class Attendance extends Model
             'closed_at' => 'datetime',
             'status' => AttendanceStatus::class,
         ];
+    }
+
+    public function attendanceChannel(): BelongsTo
+    {
+        return $this->belongsTo(AttendanceChannel::class);
     }
 
     public function serviceLocation(): BelongsTo
