@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Actions\Fortify\CreateNewUser;
+use App\Actions\Fortify\CreateNewUserPlatform;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -15,24 +16,25 @@ class DatabaseSeeder extends Seeder
             PlanCatalogsSeeder::class,
         ]);
 
-        $action = new CreateNewUser();
+        $action = new CreateNewUserPlatform();
         $action->create([
             'name' => 'Rodrigo Admin',
             'email' => 'rdgo.serafim@gmail.com',
             'password' => '@belha22',
             'password_confirmation' => '@belha22',
             'terms' => true,
-            'role' => 'super_admin',
+            'profile' => 'super_admin',
             'active' => true,
         ]);
 
+        $action = new CreateNewUser();
         $action->create([
             'name' => 'Jose Owner',
             'email' => 'jose.owner@test.com',
             'password' => '@belha22',
             'password_confirmation' => '@belha22',
             'terms' => true,
-            'role' => 'owner',
+            'profile' => 'client',
             'active' => true,
         ]);
     }

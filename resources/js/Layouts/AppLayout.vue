@@ -149,6 +149,13 @@ const roleLabel = (role) => {
                                             {{ __('New Venue') }}
                                         </Link>
                                     </template>
+
+                                    <Link
+                                    :href="route('corporation.dashboard')"
+                                    class="flex flex-col w-full justify-start text-start text-sm transition-colors hover:bg-muted px-3 py-2"
+                                    >
+                                    {{ __('Management') }}
+                                    </Link>
                                 </div>
                             </div>
                         </transition>

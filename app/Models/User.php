@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+use App\Enums\ProfileEnum;
 use App\Enums\UserRole;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\Venue;
@@ -43,6 +45,7 @@ class User extends Authenticatable
         'pin',
         'active',
         'lang',
+        'profile',
     ];
 
     /**
@@ -51,6 +54,7 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $hidden = [
+        'profile',
         'password',
         'remember_token',
         'two_factor_recovery_codes',
@@ -73,6 +77,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'active' => 'boolean',
+            'profile' => ProfileEnum::class,
         ];
     }
 

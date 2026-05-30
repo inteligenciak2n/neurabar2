@@ -17,5 +17,11 @@
     "Actions": "Actions",
     "Pay": "Pay",
     "Order": "Order",
-    "Channel": "Channel"
+    "Channel": "Channel",
+    "Corporation Dashboard": "Corporation Dashboard",
+    "Current": "Current",
+    "Active": "Active",
+    "Add Venue": "Add Venue",
+    "Edit": "Edit",
+    "Attendances today": "Attendances today"
 }

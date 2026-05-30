@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 use Laravel\Jetstream\Jetstream;
 
-class CreateNewUser implements CreatesNewUsers
+class CreateNewUserPlatform implements CreatesNewUsers
 {
     use PasswordValidationRules;
 
@@ -29,7 +29,9 @@ class CreateNewUser implements CreatesNewUsers
         ])->validate();
 
 
-        $input['profile'] = ProfileEnum::Client->value;
+        if(!isset($input['profile']) || !in_array($input['profile'], ProfileEnum::values())) {
+            $input['profile'] = ProfileEnum::Client->value;
+        }
 
         $user = User::create([
             'name' => $input['name'],
