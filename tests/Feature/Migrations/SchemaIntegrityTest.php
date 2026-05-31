@@ -18,7 +18,7 @@ class SchemaIntegrityTest extends TestCase
     {
         return [
             'venues' => ['venues', ['id', 'corporation_id', 'name', 'active', 'timezone']],
-            'corporations' => ['corporations', ['id', 'owner_id', 'name', 'tax_id', 'plan_catalog_id', 'active']],
+            'corporations' => ['corporations', ['id', 'owner_id', 'name', 'tax_id', 'plan_catalog_id', 'active', 'self_connection']],
             'user_venue' => ['user_venue', ['user_id', 'venue_id', 'role']],
             'venue_invitations' => ['venue_invitations', ['id', 'email', 'venue_id', 'role', 'token', 'expires_at']],
             'plan_catalogs' => ['plan_catalogs', ['id', 'code', 'name', 'monthly_price', 'active']],
@@ -33,7 +33,7 @@ class SchemaIntegrityTest extends TestCase
             'modifier_options' => ['modifier_options', ['id', 'modifier_group_id', 'name', 'extra_price']],
             'combos' => ['combos', ['id', 'venue_id', 'name', 'price', 'active']],
             'combo_items' => ['combo_items', ['id', 'combo_id', 'product_id', 'quantity']],
-            'attendances' => ['attendances', ['id', 'venue_id', 'status', 'channel']],
+            'attendances' => ['attendances', ['id', 'venue_id', 'status', 'attendance_channel_id']],
             'orders' => ['orders', ['id', 'attendance_id', 'order_number', 'status']],
             'order_items' => ['order_items', ['id', 'order_id', 'product_id', 'quantity', 'unit_price']],
             'order_item_modifiers' => ['order_item_modifiers', ['id', 'order_item_id', 'modifier_option_id']],

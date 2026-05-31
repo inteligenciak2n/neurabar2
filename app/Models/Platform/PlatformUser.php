@@ -2,6 +2,7 @@
 
 namespace App\Models\Platform;
 
+use App\Enums\ProfileEnum;
 use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -36,5 +37,10 @@ class PlatformUser extends Authenticatable
             'active' => 'boolean',
             'role' => UserRole::class,
         ];
+    }
+
+    public function getProfileAttribute(): ?ProfileEnum
+    {
+        return ProfileEnum::tryFrom($this->role?->value);
     }
 }

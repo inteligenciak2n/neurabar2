@@ -24,8 +24,7 @@ return new class extends Migration
             $table->date('plan_start_date')->nullable();
             $table->date('plan_end_date')->nullable();
             $table->boolean('active')->default(true);
-            $table->boolean('is_encapsulated')->default(false);
-            $table->string('capsula_connection')->nullable();
+            $table->string('self_connection')->nullable();
             $table->timestamps();
         });
     }

@@ -219,7 +219,7 @@ Route::prefix($platformPath)->name('platform.')->group(function () {
     Route::post('/login', [PlatformLoginController::class, 'store'])->name('login.store');
     Route::post('/logout', [PlatformLoginController::class, 'destroy'])->name('logout');
 
-    Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified', 'platform_profile'])->group(function () {
+    Route::middleware(['auth:web,platform', 'platform_profile'])->group(function () {
         Route::get('/', [PlatformDashboardController::class, 'index'])->name('dashboard');
 
         Route::get('/corporations', [PlatformCorporationController::class, 'index'])->name('corporations.index');

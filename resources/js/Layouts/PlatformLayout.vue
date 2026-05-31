@@ -31,7 +31,7 @@ const platformNavItems = [
                 <!-- Logo -->
                 <div class="flex h-14 shrink-0 items-center gap-2 px-5 border-b border-border">
                     <span class="font-heading text-base font-bold text-ocean-deep tracking-tight">NeuraBar</span>
-                    <span class="rounded-full bg-warm-gold/20 px-2 py-0.5 text-xs font-medium text-warm-gold">Admin</span>
+                    <span class="rounded-full bg-warm-gold/20 px-2 py-0.5 text-xs font-medium text-warm-gold">Backoffice</span>
                 </div>
 
                 <!-- Nav -->
