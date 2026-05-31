@@ -13,24 +13,20 @@ enum ProfileEnum: string
     // Operational (SaaS clients)
     case Client = 'client';
 
-
-    static public function values(): array
+    public static function values(): array
     {
-        return array_map(fn($case) => $case->value, self::cases());
+        return array_map(fn ($case) => $case->value, self::cases());
     }
 
-
-    static public function operationalProfiles(): array
+    public static function operationalProfiles(): array
     {
         return [
             self::Client->value,
         ];
     }
 
-
-    static public function plataformProfiles(): array
+    public static function platformProfiles(): array
     {
         return array_diff(self::values(), self::operationalProfiles());
     }
-
 }

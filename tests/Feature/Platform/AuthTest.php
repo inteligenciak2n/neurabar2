@@ -11,12 +11,12 @@ class AuthTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_platform_login_page_is_accessible(): void
+    public function test_backoffice_login_page_is_accessible(): void
     {
         $this->get(route('platform.login'))->assertOk();
     }
 
-    public function test_platform_user_can_login(): void
+    public function test_backoffice_user_can_login(): void
     {
         $user = PlatformUser::factory()->create([
             'email' => 'admin@platform.test',
@@ -32,7 +32,7 @@ class AuthTest extends TestCase
         $this->assertAuthenticatedAs($user, 'platform');
     }
 
-    public function test_platform_login_fails_with_wrong_credentials(): void
+    public function test_backoffice_login_fails_with_wrong_credentials(): void
     {
         PlatformUser::factory()->create(['email' => 'admin@platform.test', 'password' => bcrypt('correct')]);
 
@@ -42,12 +42,12 @@ class AuthTest extends TestCase
         ])->assertSessionHasErrors('email');
     }
 
-    public function test_platform_dashboard_requires_platform_auth(): void
+    public function test_backoffice_dashboard_requires_platform_auth(): void
     {
         $this->get(route('platform.dashboard'))->assertRedirect(route('platform.login'));
     }
 
-    public function test_platform_logout_works(): void
+    public function test_backoffice_logout_works(): void
     {
         $this->loginAsPlatformUser(UserRole::SuperAdmin);
 

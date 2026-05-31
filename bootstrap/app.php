@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RequirePlatformProfile;
 use App\Http\Middleware\RequirePlatformRole;
 use App\Http\Middleware\RequireRole;
 use App\Http\Middleware\SetLocaleMiddleware;
@@ -29,7 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->statefulApi();
         $middleware->redirectGuestsTo(function (Request $request) {
-            $platformPath = config('platform.path', '_platform');
+            $platformPath = config('platform.path', 'backoffice');
 
             if (str_starts_with($request->path(), $platformPath)) {
                 return route('platform.login');
@@ -41,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'tenant' => SetVenueContext::class,
             'role' => RequireRole::class,
+            'platform_profile' => RequirePlatformProfile::class,
             'platform_role' => RequirePlatformRole::class,
         ]);
     })

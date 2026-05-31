@@ -26,6 +26,13 @@ class Corporation extends Model
         'plan_start_date',
         'plan_end_date',
         'active',
+        'is_encapsulated',
+        'capsula_connection',
+    ];
+
+    protected $hidden = [
+        'is_encapsulated',
+        'capsula_connection',
     ];
 
     protected function casts(): array
@@ -34,6 +41,7 @@ class Corporation extends Model
             'plan_start_date' => 'date',
             'plan_end_date' => 'date',
             'active' => 'boolean',
+            'is_encapsulated' => 'boolean',
             'subscription_value' => 'decimal:2',
         ];
     }

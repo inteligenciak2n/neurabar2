@@ -1,3 +1,11 @@
 {
-    "Create a new Venue": "Create a new Venue"
+    "Create a new Venue": "Create a new Venue",
+    "Venue Name": "Venue Name",
+    "Create your first Venue": "Create your first Venue",
+    "Welcome, :name!": "Welcome, :name!",
+    "You do not have a venue registered yet. Create your first venue to start operating.": "You do not have a venue registered yet. Create your first venue to start operating.",
+    "Ex: John's Bar": "Ex: John's Bar",
+    "Create Venue": "Create Venue",
+    "Welcome,": "Welcome,",
+    "Welcome": "Welcome"
 }

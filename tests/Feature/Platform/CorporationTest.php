@@ -13,7 +13,7 @@ class CorporationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_platform_user_can_list_corporations(): void
+    public function test_backoffice_user_can_list_corporations(): void
     {
         $this->loginAsPlatformUser(UserRole::Finance);
 
@@ -22,7 +22,7 @@ class CorporationTest extends TestCase
         $this->get(route('platform.corporations.index'))->assertOk();
     }
 
-    public function test_platform_user_can_create_corporation(): void
+    public function test_backoffice_user_can_create_corporation(): void
     {
         Mail::fake();
 
@@ -40,7 +40,7 @@ class CorporationTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'john@test.com']);
     }
 
-    public function test_platform_user_can_assign_plan(): void
+    public function test_backoffice_user_can_assign_plan(): void
     {
         $this->loginAsPlatformUser(UserRole::Registration);
 
@@ -60,7 +60,7 @@ class CorporationTest extends TestCase
         ]);
     }
 
-    public function test_platform_user_can_search_corporations(): void
+    public function test_backoffice_user_can_search_corporations(): void
     {
         $this->loginAsPlatformUser(UserRole::ReadOnly);
 

@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\CreateNewUserPlatform;
+use App\Enums\ProfileEnum;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -23,7 +24,7 @@ class DatabaseSeeder extends Seeder
             'password' => '@belha22',
             'password_confirmation' => '@belha22',
             'terms' => true,
-            'profile' => 'super_admin',
+            'profile' => ProfileEnum::SuperAdmin->value,
             'active' => true,
         ]);
 
@@ -34,7 +35,7 @@ class DatabaseSeeder extends Seeder
             'password' => '@belha22',
             'password_confirmation' => '@belha22',
             'terms' => true,
-            'profile' => 'client',
+            'profile' => ProfileEnum::Client->value,
             'active' => true,
         ]);
     }

@@ -2,20 +2,33 @@
 
 namespace App\Http\Responses;
 
+use App\Enums\ProfileEnum;
+use Illuminate\Http\Request;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 
 class LoginResponse implements LoginResponseContract
 {
     public function toResponse($request)
     {
-        $redirectUrl = $request->wantsJson()
-            ? url(config('fortify.home', '/dashboard'))
-            : redirect()->intended(config('fortify.home', '/dashboard'))->getTargetUrl();
-
         if ($request->wantsJson()) {
             return response()->json(['two_factor' => false]);
         }
 
-        return redirect()->intended(config('fortify.home', '/dashboard'));
+        $home = $this->resolveHome($request);
+
+        return redirect()->intended($home);
+    }
+
+    private function resolveHome(Request $request): string
+    {
+        $profile = $request->user()?->profile;
+
+        if ($profile instanceof ProfileEnum && in_array($profile->value, ProfileEnum::platformProfiles(), true)) {
+            $platformPath = config('platform.path', 'backoffice');
+
+            return url($platformPath);
+        }
+
+        return (config('fortify.home', '/dashboard') ?? '/dashboard');
     }
 }

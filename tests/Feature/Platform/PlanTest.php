@@ -11,7 +11,7 @@ class PlanTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_platform_user_can_view_plans(): void
+    public function test_backoffice_user_can_view_plans(): void
     {
         $this->loginAsPlatformUser(UserRole::Finance);
 

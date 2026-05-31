@@ -23,7 +23,7 @@ defineProps({
                         <img :src="venue.logo_url" :alt="venue.name" class="h-8 w-auto" />
                     </div>
                     <ApplicationMark v-else class="h-8 w-auto text-primary" />
-                    <span class="font-heading text-lg font-bold text-ocean-deep">{{ venue.name }}</span>
+                    <span class="font-heading text-lg font-bold text-ocean-deep">{{ venue?.name ?? 'NeuraBar' }}</span>
                 </div>
             </header>
 
@@ -38,7 +38,7 @@ defineProps({
             <footer class="bg-white border-t border-border shadow-card flex justify-center">
                 <div class="mx-auto max-w-lg px-4 py-4 text-center text-sm text-muted-foreground">
                     <span>
-                        &copy; {{ new Date().getFullYear() }} {{ venue.name }}. {{ __('All rights reserved') }}
+                        &copy; {{ new Date().getFullYear() }} {{ venue?.name ?? 'NeuraBar' }}. {{ __('All rights reserved') }}
                     </span>
                     <span class="mx-2">|</span>
                     <span>

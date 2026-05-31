@@ -38,7 +38,7 @@ class MetricsTest extends TestCase
         $this->assertEquals(2, $summary['inactive_corporations']);
     }
 
-    public function test_platform_dashboard_is_accessible(): void
+    public function test_backoffice_dashboard_is_accessible(): void
     {
         $this->loginAsPlatformUser(UserRole::ReadOnly);
 

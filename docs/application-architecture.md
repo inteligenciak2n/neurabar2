@@ -272,7 +272,7 @@ A página `NoVenue.vue` exibe as opções disponíveis: venues às quais o usuá
 - Tabela: `platform_users`
 - Guard: `platform`
 - Roles: `UserRole::SuperAdmin`, `Finance`, `Registration`, `ReadOnly`
-- Login: `/_platform/login` (prefixo configurável em `config/platform.php`)
+- Login: `/backoffice/login` (prefixo configurável em `config/platform.php`)
 - **Nunca** interage com `user_venue` ou `current_venue_id`
 
 O middleware `RequirePlatformRole` (alias `platform_role`) protege as rotas do painel de plataforma.

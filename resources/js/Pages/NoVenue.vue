@@ -26,7 +26,7 @@ const submit = () => {
         <div class="bg-white shadow-card rounded-xl p-8">
             <div class="text-center mb-6">
                 <h1 class="text-2xl font-heading font-bold text-ocean-deep">
-                    {{ __('Welcome, :name!', { name: userName }) }}
+                    {{ __('Welcome') }}, {{ userName }}!
                 </h1>
                 <p class="text-muted-foreground mt-2">
                     {{ __('You do not have a venue registered yet. Create your first venue to start operating.') }}

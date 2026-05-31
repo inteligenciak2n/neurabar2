@@ -408,7 +408,7 @@ create_payment_items_table
   method enum(cash|credit_card|debit_card|pix|other)
   amount decimal(10,2), notes string nullable, timestamps
 
-create_platform_users_table
+createbackoffice_users_table
   id uuid PK, name, email string unique, password
   role enum(super_admin|finance|registration|read_only)
   active boolean default true, timestamps

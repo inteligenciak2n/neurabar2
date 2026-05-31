@@ -10,7 +10,7 @@ class RequirePlatformRole
 {
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        if (! in_array(auth('platform')->user()?->profile?->value, $roles, true)) {
+        if (! in_array($request->user()?->profile?->value, $roles, true)) {
             abort(403);
         }
 
