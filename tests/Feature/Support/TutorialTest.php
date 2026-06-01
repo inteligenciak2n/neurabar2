@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Support;
 
+use App\Enums\ProfileEnum;
 use App\Enums\UserRole;
 use App\Models\Support\Tutorial;
 use App\Models\Support\TutorialCategory;
@@ -55,7 +56,7 @@ class TutorialTest extends TestCase
 
     public function test_backoffice_agent_can_list_tutorials(): void
     {
-        $this->loginAsPlatformUser(UserRole::SuperAdmin);
+        $this->loginAsPlatformUser(ProfileEnum::SuperAdmin);
 
         $this->get(route('platform.support.tutorials.index'))->assertOk();
     }
@@ -64,7 +65,7 @@ class TutorialTest extends TestCase
     {
         Storage::fake('public');
 
-        $this->loginAsPlatformUser(UserRole::SuperAdmin);
+        $this->loginAsPlatformUser(ProfileEnum::SuperAdmin);
 
         $category = TutorialCategory::create(['name' => 'Help', 'active' => true, 'position' => 0]);
 
@@ -81,7 +82,7 @@ class TutorialTest extends TestCase
 
     public function test_backoffice_agent_can_update_tutorial(): void
     {
-        $this->loginAsPlatformUser(UserRole::SuperAdmin);
+        $this->loginAsPlatformUser(ProfileEnum::SuperAdmin);
 
         $category = TutorialCategory::create(['name' => 'Help', 'active' => true, 'position' => 0]);
         $tutorial = Tutorial::create([
@@ -106,7 +107,7 @@ class TutorialTest extends TestCase
 
     public function test_backoffice_agent_can_delete_tutorial(): void
     {
-        $this->loginAsPlatformUser(UserRole::SuperAdmin);
+        $this->loginAsPlatformUser(ProfileEnum::SuperAdmin);
 
         $category = TutorialCategory::create(['name' => 'Help', 'active' => true, 'position' => 0]);
         $tutorial = Tutorial::create([
@@ -125,7 +126,7 @@ class TutorialTest extends TestCase
 
     public function test_backoffice_agent_can_toggle_published(): void
     {
-        $this->loginAsPlatformUser(UserRole::SuperAdmin);
+        $this->loginAsPlatformUser(ProfileEnum::SuperAdmin);
 
         $category = TutorialCategory::create(['name' => 'Help', 'active' => true, 'position' => 0]);
         $tutorial = Tutorial::create([

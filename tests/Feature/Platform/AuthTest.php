@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Platform;
 
-use App\Enums\UserRole;
-use App\Models\Platform\PlatformUser;
+use App\Enums\ProfileEnum;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -11,48 +11,42 @@ class AuthTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_backoffice_login_page_is_accessible(): void
+    public function test_backoffice_dashboard_requires_authentication(): void
     {
-        $this->get(route('platform.login'))->assertOk();
+        $this->get(route('platform.dashboard'))->assertRedirect(route('login'));
     }
 
-    public function test_backoffice_user_can_login(): void
+    public function test_platform_user_can_access_backoffice_dashboard(): void
     {
-        $user = PlatformUser::factory()->create([
-            'email' => 'admin@platform.test',
-            'password' => bcrypt('password'),
-            'role' => UserRole::SuperAdmin,
-        ]);
+        $this->loginAsPlatformUser(ProfileEnum::SuperAdmin);
 
-        $this->post(route('platform.login.store'), [
-            'email' => 'admin@platform.test',
-            'password' => 'password',
-        ])->assertRedirect(route('platform.dashboard'));
-
-        $this->assertAuthenticatedAs($user, 'platform');
+        $this->get(route('platform.dashboard'))->assertOk();
     }
 
-    public function test_backoffice_login_fails_with_wrong_credentials(): void
+    public function test_client_user_is_forbidden_from_backoffice(): void
     {
-        PlatformUser::factory()->create(['email' => 'admin@platform.test', 'password' => bcrypt('correct')]);
+        $user = User::factory()->create(['profile' => ProfileEnum::Client]);
 
-        $this->post(route('platform.login.store'), [
-            'email' => 'admin@platform.test',
-            'password' => 'wrong',
-        ])->assertSessionHasErrors('email');
+        $this->actingAs($user);
+
+        $this->get(route('platform.dashboard'))->assertForbidden();
     }
 
-    public function test_backoffice_dashboard_requires_platform_auth(): void
+    public function test_client_user_is_forbidden_from_backoffice_corporations(): void
     {
-        $this->get(route('platform.dashboard'))->assertRedirect(route('platform.login'));
+        $user = User::factory()->create(['profile' => ProfileEnum::Client]);
+
+        $this->actingAs($user);
+
+        $this->get(route('platform.corporations.index'))->assertForbidden();
     }
 
-    public function test_backoffice_logout_works(): void
+    public function test_platform_user_can_logout(): void
     {
-        $this->loginAsPlatformUser(UserRole::SuperAdmin);
+        $this->loginAsPlatformUser(ProfileEnum::SuperAdmin);
 
-        $this->post(route('platform.logout'))->assertRedirect(route('platform.login'));
+        $this->post(route('logout'))->assertRedirect();
 
-        $this->assertGuest('platform');
+        $this->assertGuest();
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Platform;
 
-use App\Enums\UserRole;
+use App\Enums\ProfileEnum;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\PlanCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,7 +15,7 @@ class CorporationTest extends TestCase
 
     public function test_backoffice_user_can_list_corporations(): void
     {
-        $this->loginAsPlatformUser(UserRole::Finance);
+        $this->loginAsPlatformUser(ProfileEnum::Finance);
 
         Corporation::factory()->count(3)->create();
 
@@ -26,7 +26,7 @@ class CorporationTest extends TestCase
     {
         Mail::fake();
 
-        $this->loginAsPlatformUser(UserRole::Registration);
+        $this->loginAsPlatformUser(ProfileEnum::Registration);
 
         $this->post(route('platform.corporations.store'), [
             'name' => 'Test Corp',
@@ -42,7 +42,7 @@ class CorporationTest extends TestCase
 
     public function test_backoffice_user_can_assign_plan(): void
     {
-        $this->loginAsPlatformUser(UserRole::Registration);
+        $this->loginAsPlatformUser(ProfileEnum::Registration);
 
         $corporation = Corporation::factory()->create();
         $plan = PlanCatalog::factory()->create(['monthly_price' => 299.00]);
@@ -62,7 +62,7 @@ class CorporationTest extends TestCase
 
     public function test_backoffice_user_can_search_corporations(): void
     {
-        $this->loginAsPlatformUser(UserRole::ReadOnly);
+        $this->loginAsPlatformUser(ProfileEnum::ReadOnly);
 
         Corporation::factory()->create(['name' => 'Acme Corp']);
         Corporation::factory()->create(['name' => 'Other Co']);

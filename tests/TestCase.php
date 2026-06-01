@@ -2,8 +2,8 @@
 
 namespace Tests;
 
+use App\Enums\ProfileEnum;
 use App\Enums\UserRole;
-use App\Models\Platform\PlatformUser;
 use App\Models\Tenant\Venue;
 use App\Models\User;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -31,14 +31,14 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
-     * Login as a platform-level user with the given role.
+     * Login as a platform-level user with the given profile.
      */
-    protected function loginAsPlatformUser(UserRole $role): PlatformUser
+    protected function loginAsPlatformUser(ProfileEnum $profile): User
     {
-        $platformUser = PlatformUser::factory()->create(['role' => $role]);
+        $user = User::factory()->create(['profile' => $profile]);
 
-        $this->actingAs($platformUser, 'platform');
+        $this->actingAs($user);
 
-        return $platformUser;
+        return $user;
     }
 }

@@ -25,7 +25,6 @@ use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\Payment\PaymentController;
 use App\Http\Controllers\Platform\CorporationController as PlatformCorporationController;
 use App\Http\Controllers\Platform\DashboardController as PlatformDashboardController;
-use App\Http\Controllers\Platform\LoginController as PlatformLoginController;
 use App\Http\Controllers\Platform\PlanAssignmentController;
 use App\Http\Controllers\Platform\PlanCatalogController;
 use App\Http\Controllers\Platform\PlatformUserController;
@@ -240,15 +239,11 @@ Route::middleware([
     Route::put('/venues/{venue}', [CorporationVenueController::class, 'update'])->name('venues.update');
 });
 
-// Platform backoffice — separate guard
+// Platform backoffice — guard web com platform_profile
 $platformPath = config('platform.path', 'backoffice');
 
 Route::prefix($platformPath)->name('platform.')->group(function () {
-    Route::get('/login', [PlatformLoginController::class, 'index'])->name('login');
-    Route::post('/login', [PlatformLoginController::class, 'store'])->name('login.store');
-    Route::post('/logout', [PlatformLoginController::class, 'destroy'])->name('logout');
-
-    Route::middleware(['auth:web,platform', 'platform_profile'])->group(function () {
+    Route::middleware(['auth', 'platform_profile'])->group(function () {
         Route::get('/', [PlatformDashboardController::class, 'index'])->name('dashboard');
 
         Route::get('/corporations', [PlatformCorporationController::class, 'index'])->name('corporations.index');
@@ -266,8 +261,8 @@ Route::prefix($platformPath)->name('platform.')->group(function () {
         Route::middleware(['platform_role:super_admin'])->group(function () {
             Route::get('/users', [PlatformUserController::class, 'index'])->name('users.index');
             Route::post('/users', [PlatformUserController::class, 'store'])->name('users.store');
-            Route::put('/users/{platformUser}', [PlatformUserController::class, 'update'])->name('users.update');
-            Route::delete('/users/{platformUser}', [PlatformUserController::class, 'destroy'])->name('users.destroy');
+            Route::put('/users/{user}', [PlatformUserController::class, 'update'])->name('users.update');
+            Route::delete('/users/{user}', [PlatformUserController::class, 'destroy'])->name('users.destroy');
         });
 
         // Support management — all platform users

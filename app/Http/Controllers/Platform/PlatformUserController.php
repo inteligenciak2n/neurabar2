@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Platform;
 
+use App\Enums\ProfileEnum;
 use App\Http\Controllers\Controller;
-use App\Models\Platform\PlatformUser;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,7 +14,9 @@ class PlatformUserController extends Controller
 {
     public function index(): Response
     {
-        $users = PlatformUser::orderBy('name')->get();
+        $users = User::whereIn('profile', ProfileEnum::platformProfiles())
+            ->orderBy('name')
+            ->get();
 
         return Inertia::render('Platform/Users/Index', [
             'users' => $users,
@@ -24,24 +27,24 @@ class PlatformUserController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'unique:platform_users,email'],
+            'email' => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
-            'role' => ['required', 'string', 'in:' . implode(',', array_map(fn($role) => $role->value, \App\Enums\UserRole::platformRoles()))],
+            'profile' => ['required', 'string', 'in:'.implode(',', ProfileEnum::platformProfiles())],
             'active' => ['boolean'],
         ]);
 
-        PlatformUser::create($validated);
+        User::create($validated);
 
         return back()->with('success', 'User created successfully.');
     }
 
-    public function update(Request $request, PlatformUser $platformUser): RedirectResponse
+    public function update(Request $request, User $user): RedirectResponse
     {
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
-            'email' => ['sometimes', 'email', 'unique:platform_users,email,'.$platformUser->id],
+            'email' => ['sometimes', 'email', 'unique:users,email,'.$user->id],
             'password' => ['nullable', 'string', 'min:8'],
-            'role' => ['sometimes', 'string', 'in:' . implode(',', array_map(fn($role) => $role->value, \App\Enums\UserRole::platformRoles()))],
+            'profile' => ['sometimes', 'string', 'in:'.implode(',', ProfileEnum::platformProfiles())],
             'active' => ['sometimes', 'boolean'],
         ]);
 
@@ -49,14 +52,14 @@ class PlatformUserController extends Controller
             unset($validated['password']);
         }
 
-        $platformUser->update($validated);
+        $user->update($validated);
 
         return back()->with('success', 'User updated successfully.');
     }
 
-    public function destroy(PlatformUser $platformUser): RedirectResponse
+    public function destroy(User $user): RedirectResponse
     {
-        $platformUser->delete();
+        $user->delete();
 
         return back()->with('success', 'User deleted successfully.');
     }

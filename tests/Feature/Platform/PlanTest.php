@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Platform;
 
-use App\Enums\UserRole;
+use App\Enums\ProfileEnum;
 use App\Models\Tenant\PlanCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -13,14 +13,14 @@ class PlanTest extends TestCase
 
     public function test_backoffice_user_can_view_plans(): void
     {
-        $this->loginAsPlatformUser(UserRole::Finance);
+        $this->loginAsPlatformUser(ProfileEnum::Finance);
 
         $this->get(route('platform.plans.index'))->assertOk();
     }
 
     public function test_super_admin_can_create_plan(): void
     {
-        $this->loginAsPlatformUser(UserRole::SuperAdmin);
+        $this->loginAsPlatformUser(ProfileEnum::SuperAdmin);
 
         $this->post(route('platform.plans.store'), [
             'code' => 'STARTER',
@@ -35,7 +35,7 @@ class PlanTest extends TestCase
 
     public function test_super_admin_can_update_plan(): void
     {
-        $this->loginAsPlatformUser(UserRole::SuperAdmin);
+        $this->loginAsPlatformUser(ProfileEnum::SuperAdmin);
 
         $plan = PlanCatalog::factory()->create(['monthly_price' => 99.00]);
 
@@ -52,7 +52,7 @@ class PlanTest extends TestCase
 
     public function test_super_admin_can_delete_plan(): void
     {
-        $this->loginAsPlatformUser(UserRole::SuperAdmin);
+        $this->loginAsPlatformUser(ProfileEnum::SuperAdmin);
 
         $plan = PlanCatalog::factory()->create();
 

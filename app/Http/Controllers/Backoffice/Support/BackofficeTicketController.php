@@ -5,12 +5,12 @@ namespace App\Http\Controllers\Backoffice\Support;
 use App\Actions\Support\AgentReplyToTicketAction;
 use App\Actions\Support\AssignTicketAction;
 use App\Actions\Support\UpdateTicketStatusAction;
+use App\Enums\ProfileEnum;
 use App\Enums\Support\TicketPriority;
 use App\Enums\Support\TicketStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Support\ReplyTicketRequest;
 use App\Http\Requests\Support\UpdateTicketRequest;
-use App\Models\Platform\PlatformUser;
 use App\Models\Support\Ticket;
 use App\Models\Support\TicketCategory;
 use App\Models\User;
@@ -38,7 +38,7 @@ class BackofficeTicketController extends Controller
         $userIds = $tickets->pluck('user_id')->unique()->filter();
         $users = User::whereIn('id', $userIds)->get(['id', 'name', 'email'])->keyBy('id');
 
-        $agents = PlatformUser::orderBy('name')->get(['id', 'name']);
+        $agents = User::whereIn('profile', ProfileEnum::platformProfiles())->orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('Backoffice/Support/Tickets/Index', [
             'tickets' => $tickets,
@@ -60,9 +60,9 @@ class BackofficeTicketController extends Controller
 
         $user = User::find($ticket->user_id, ['id', 'name', 'email']);
         $assignedAgent = $ticket->assigned_to
-            ? PlatformUser::find($ticket->assigned_to, ['id', 'name', 'email'])
+            ? User::find($ticket->assigned_to, ['id', 'name', 'email'])
             : null;
-        $agents = PlatformUser::orderBy('name')->get(['id', 'name']);
+        $agents = User::whereIn('profile', ProfileEnum::platformProfiles())->orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('Backoffice/Support/Tickets/Show', [
             'ticket' => $ticket,
@@ -87,7 +87,7 @@ class BackofficeTicketController extends Controller
 
         if ($request->has('assigned_to')) {
             $agent = $request->validated('assigned_to')
-                ? PlatformUser::find($request->validated('assigned_to'))
+                ? User::find($request->validated('assigned_to'))
                 : null;
             $assignAction->execute($ticket, $agent);
         }
@@ -101,8 +101,8 @@ class BackofficeTicketController extends Controller
 
     public function reply(string $ticketId, ReplyTicketRequest $request, AgentReplyToTicketAction $action): RedirectResponse
     {
-        /** @var PlatformUser $agent */
-        $agent = PlatformUser::find($request->user()->id);
+        /** @var User $agent */
+        $agent = $request->user();
 
         $ticket = Ticket::on('support')->where('id', $ticketId)->firstOrFail();
 

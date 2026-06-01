@@ -39,7 +39,6 @@ class SchemaIntegrityTest extends TestCase
             'order_item_modifiers' => ['order_item_modifiers', ['id', 'order_item_id', 'modifier_option_id']],
             'payments' => ['payments', ['id', 'attendance_id', 'grand_total']],
             'payment_items' => ['payment_items', ['id', 'payment_id', 'method', 'amount']],
-            'platform_users' => ['platform_users', ['id', 'name', 'email', 'role', 'active']],
         ];
     }
 

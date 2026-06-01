@@ -4,7 +4,6 @@ namespace App\Actions\Support;
 
 use App\Enums\Support\TicketAuthorType;
 use App\Http\Requests\Support\ReplyTicketRequest;
-use App\Models\Platform\PlatformUser;
 use App\Models\Support\Ticket;
 use App\Models\Support\TicketMessage;
 use App\Models\User;
@@ -14,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 
 class AgentReplyToTicketAction
 {
-    public function execute(Ticket $ticket, PlatformUser $agent, ReplyTicketRequest $request): TicketMessage
+    public function execute(Ticket $ticket, User $agent, ReplyTicketRequest $request): TicketMessage
     {
         if (! $ticket->isOpen()) {
             throw ValidationException::withMessages([

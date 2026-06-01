@@ -10,7 +10,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
-use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -29,15 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
         $middleware->statefulApi();
-        $middleware->redirectGuestsTo(function (Request $request) {
-            $platformPath = config('platform.path', 'backoffice');
-
-            if (str_starts_with($request->path(), $platformPath)) {
-                return route('platform.login');
-            }
-
-            return route('login');
-        });
+        $middleware->redirectGuestsTo(fn () => route('login'));
 
         $middleware->alias([
             'tenant' => SetVenueContext::class,

@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Platform;
 
-use App\Enums\UserRole;
+use App\Enums\ProfileEnum;
 use App\Models\Tenant\Corporation;
 use App\Services\Platform\MetricsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -40,7 +40,7 @@ class MetricsTest extends TestCase
 
     public function test_backoffice_dashboard_is_accessible(): void
     {
-        $this->loginAsPlatformUser(UserRole::ReadOnly);
+        $this->loginAsPlatformUser(ProfileEnum::ReadOnly);
 
         $this->get(route('platform.dashboard'))->assertOk();
     }
