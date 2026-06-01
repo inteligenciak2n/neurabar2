@@ -9,13 +9,11 @@ import AppToast from '@/Components/AppToast.vue';
 import CustomHead from '@/Components/CustomHead.vue';
 import { useTranslate } from '@/Composables/useTranslate'
 import { useCheckRole } from '@/Composables/useCheckRole';
-import { useDark } from '@vueuse/core';
-
+import ToggleDark from '@/Components/ToggleDark.vue';
 
 const __ = useTranslate();
 const page = usePage();
 const { isManager } = useCheckRole();
-const isDark = useDark()
 
 defineProps({
     title: String,
@@ -24,9 +22,6 @@ defineProps({
 const mobileMenuOpen = ref(false);
 const venueDropdownOpen = ref(false);
 
-const toggleDark = () => {
-    isDark.value = !isDark.value
-}
 
 const switchVenue = (id) => {
     if (id === page.props.defs.venue?.id) {
@@ -193,19 +188,7 @@ const roleLabel = (role) => {
                 <!-- Right: User dropdown + mobile toggle -->
                 <div class="flex items-center gap-2">
                     
-                <button @click="toggleDark()" class="flex items-center justify-center rounded-full hover:bg-[#f1f9fc] dark:hover:bg-gray-700 p-3 cursor-pointer hover:text-[#594cda] transition-all duration-200" v-tippy="isDark ? 'Modo claro' : 'Modo escuro'">
-                    <svg
-                    v-if="isDark"
-                    class="h-4 w-4 text-muted-foreground ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707M16.95 7.05l-.707-.707M7.05 16.95l-.707-.707M12 5a7 7 0 100 14 7 7 0 000-14z" />
-                    </svg>
-                    <svg
-                    v-else
-                    class="h-4 w-4 text-muted-foreground ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 118.646 3.646 9.003 9.003 0 0020.354 15.354z" />
-                    </svg>
-
-                </button>
+                <ToggleDark />
 
                     <!-- User dropdown -->
                     <Dropdown align="right" width="48">

@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppToast from '@/Components/AppToast.vue';
+import ToggleDark from '@/Components/ToggleDark.vue';
 
 defineProps({
     title: String,
@@ -55,6 +56,8 @@ const platformNavItems = [
 
                 <!-- User footer -->
                 <div class="shrink-0 border-t border-border p-4 dark:border-gray-700">
+                    <ToggleDark />
+
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-body text-muted-foreground truncate dark:text-gray-400">
                             {{ $page.props.auth.user?.name ?? 'Platform User' }}
