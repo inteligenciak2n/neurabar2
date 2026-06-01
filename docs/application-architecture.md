@@ -1,6 +1,6 @@
 # User ↔ Venue Architecture
 
-**Versão:** 1.1 · **Data:** 29 de maio de 2026
+**Versão:** 1.2 · **Data:** 1 de junho de 2026
 
 > Referência técnica do modelo de identidade e acesso do NeuraBar: como usuários se relacionam com Corporations, Venues e roles operacionais.
 
@@ -9,21 +9,32 @@
 ## Visão Geral
 
 ```
-PlatformUser  (guard: platform)
-      │
-      │  administra
-      ▼
-Corporation  ─── owner_id ──►  User
-      │
-      │  has many
-      ▼
-    Venue  ◄────── user_venue (pivot) ──────►  User
-                   role: UserRole (operacional)
+User  (guard: web — único model de autenticação)
+  │
+  │  profile: ProfileEnum
+  │    ├── Client        → acesso operacional (via user_venue)
+  │    ├── SuperAdmin    → acesso total ao backoffice
+  │    ├── Finance       → acesso financeiro ao backoffice
+  │    ├── Registration  → acesso de cadastro ao backoffice
+  │    └── ReadOnly      → acesso somente leitura ao backoffice
+  │
+  ├── administra (platform profiles)
+  │       ▼
+  │   Corporation  ─── owner_id ──►  User
+  │         │
+  │         │  has many
+  │         ▼
+  │       Venue  ◄────── user_venue (pivot) ──────►  User (profile=Client)
+  │                      role: UserRole (operacional)
+  │
+  └── pertence a (Client profile, via user_venue)
+          ▼
+        Venue (role: Owner | GeneralManager | SectionManager | Attendant)
 ```
 
 Um `User` pode pertencer a **múltiplas Venues** através da tabela pivot `user_venue`. Cada entrada no pivot carrega a `role` daquele usuário naquela venue específica. A venue ativa no momento é rastreada por `users.current_venue_id`.
 
-`PlatformUser` é uma entidade **completamente separada** (guard `platform`, tabela `platform_users`) usada pela equipe interna do NeuraBar. Não compartilha tabela, guard ou enum com os usuários SaaS.
+Toda a autenticação usa um **único guard `web`** e um **único model `User`**. O campo `profile` (cast para `ProfileEnum`) distingue usuários operacionais (clientes SaaS) de usuários internos do NeuraBar.
 
 ---
 
@@ -265,17 +276,91 @@ A página `NoVenue.vue` exibe as opções disponíveis: venues às quais o usuá
 
 ---
 
-## Platform Users
+## Platform Users (Equipe Interna NeuraBar)
 
-`PlatformUser` é uma entidade separada para a equipe interna do NeuraBar:
+A equipe interna do NeuraBar usa o mesmo model `User` e o mesmo guard `web`. A distinção é feita pelo campo `profile` (cast para `ProfileEnum`):
 
-- Tabela: `platform_users`
-- Guard: `platform`
-- Roles: `UserRole::SuperAdmin`, `Finance`, `Registration`, `ReadOnly`
-- Login: `/backoffice/login` (prefixo configurável em `config/platform.php`)
-- **Nunca** interage com `user_venue` ou `current_venue_id`
+```php
+// Profiles de plataforma — acesso ao backoffice
+ProfileEnum::SuperAdmin   // 'super_admin' — acesso total
+ProfileEnum::Finance      // 'finance'
+ProfileEnum::Registration // 'registration'
+ProfileEnum::ReadOnly     // 'read_only'
 
-O middleware `RequirePlatformRole` (alias `platform_role`) protege as rotas do painel de plataforma.
+// Profile operacional — acesso SaaS
+ProfileEnum::Client       // 'client'
+```
+
+### Login
+
+O login é unificado em `/login` (Fortify). Após autenticação, o `LoginResponse` detecta o `profile` e redireciona:
+- `ProfileEnum::Client` → `/dashboard` (venue operacional)
+- Qualquer profile de plataforma → `/backoffice` (painel interno)
+
+```php
+// app/Http/Responses/LoginResponse.php
+private function resolveHome(Request $request): string
+{
+    $profile = $request->user()?->profile;
+
+    if ($profile instanceof ProfileEnum && in_array($profile->value, ProfileEnum::platformProfiles(), true)) {
+        return url(config('platform.path', 'backoffice'));
+    }
+
+    return config('fortify.home', '/dashboard');
+}
+```
+
+### Proteção das Rotas do Backoffice
+
+Todas as rotas `/backoffice/*` usam dois middlewares em cascata:
+
+```
+auth               → requer autenticação (guard web)
+platform_profile   → verifica que profile ∈ ProfileEnum::platformProfiles()
+                     caso contrário: abort(403)
+```
+
+Isso garante que qualquer `User` com `profile = Client` receba `403` se tentar acessar o backoffice, independentemente de estar autenticado.
+
+Para restrições por profile específico dentro do backoffice:
+
+```php
+Route::middleware(['platform_role:super_admin'])->group(function () {
+    // apenas SuperAdmin pode gerenciar usuários de plataforma
+});
+```
+
+### Criação de Usuários de Plataforma
+
+Use `CreateNewUserPlatform` (ou o seeder para o ambiente de desenvolvimento):
+
+```php
+$action = new CreateNewUserPlatform();
+$action->create([
+    'name'     => 'Nome do Agente',
+    'email'    => 'agente@neurabar.com',
+    'password' => 'senha_segura',
+    'profile'  => ProfileEnum::Finance->value,
+]);
+```
+
+Usuários de plataforma **nunca** têm entradas em `user_venue` e **nunca** devem ter `current_venue_id` preenchido.
+
+### Referência de Arquivos — Platform
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `app/Enums/ProfileEnum.php` | Enum com `platformProfiles()` / `operationalProfiles()` |
+| `app/Http/Responses/LoginResponse.php` | Redireciona ao backoffice ou dashboard conforme `profile` |
+| `app/Http/Middleware/RequirePlatformProfile.php` | Bloqueia profiles não-plataforma com `abort(403)` |
+| `app/Http/Middleware/RequirePlatformRole.php` | Restringe por profile específico dentro do backoffice |
+| `app/Actions/Fortify/CreateNewUserPlatform.php` | Cria `User` com profile de plataforma |
+| `app/Http/Controllers/Platform/DashboardController.php` | Dashboard do backoffice |
+| `app/Http/Controllers/Platform/PlatformUserController.php` | CRUD de usuários de plataforma |
+| `app/Http/Controllers/Platform/CorporationController.php` | Gestão de corporations |
+| `app/Http/Controllers/Platform/PlanCatalogController.php` | Catálogo de planos |
+| `config/platform.php` | Prefixo da URL do backoffice (`PLATFORM_PATH`) |
 
 ---
 
@@ -610,7 +695,7 @@ Ticket ──── TicketMessage ──── TicketAttachment
   │         is_internal (notas internas — visíveis apenas ao backoffice)
   │
   ├── category_id → TicketCategory
-  ├── assigned_to (UUID sem FK → PlatformUser)
+  ├── assigned_to (UUID sem FK → User com profile de plataforma)
   └── TicketRating (avaliação 1–5 estrelas após resolução)
 
 TutorialCategory
@@ -713,7 +798,7 @@ GET    /support/tutorials/{slug}             → support.tutorials.show
 GET    /support/attachments/{attachmentId}   → support.attachments.show
 ```
 
-**Backoffice (auth:web,platform + platform_profile)**
+**Backoffice (auth + platform_profile)**
 
 ```
 GET    /backoffice/support/tickets                              → platform.support.tickets.index
