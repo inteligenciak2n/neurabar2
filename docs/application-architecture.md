@@ -592,3 +592,189 @@ POST /g/{token}/verify-location   → verifyLocation (valida GPS)
 | `app/Events/Orders/GuestSignaled.php` | Evento de sinalização transmitido via WebSocket |
 | `app/Http/Requests/Guest/StoreGuestSignalRequest.php` | Validação do payload de sinalização |
 | `resources/js/Pages/Guest/Hub.vue` | Interface pública do cliente |
+
+---
+
+## Módulo de Suporte
+
+### Visão Geral
+
+O módulo de suporte oferece um sistema completo de chamados (tickets) entre clientes SaaS e a equipe interna do NeuraBar, além de uma base de tutoriais e manuais em Markdown. Toda a persistência é isolada em um banco de dados dedicado (`laravel_support`), acessado pela conexão Eloquent `support` — sem chaves estrangeiras cruzadas com o banco principal.
+
+```
+User (banco principal)
+  │  user_id (UUID sem FK)
+  ▼
+Ticket ──── TicketMessage ──── TicketAttachment
+  │              │
+  │         is_internal (notas internas — visíveis apenas ao backoffice)
+  │
+  ├── category_id → TicketCategory
+  ├── assigned_to (UUID sem FK → PlatformUser)
+  └── TicketRating (avaliação 1–5 estrelas após resolução)
+
+TutorialCategory
+  └── Tutorial (conteúdo Markdown, slug único, publicado/rascunho)
+```
+
+### Banco de Dados Isolado
+
+A conexão `support` aponta para o banco `laravel_support` (configurável via `DB_SUPPORT_DATABASE`). Todos os models do módulo declaram `protected $connection = 'support'`. As referências a entidades do banco principal (`user_id`, `venue_id`, `assigned_to`) são armazenadas como UUIDs simples, sem constraints de FK — o enriquecimento é feito no momento da consulta.
+
+Para executar as migrations do módulo, use o comando Artisan dedicado:
+
+```bash
+php artisan support:migrate           # aplica migrations pendentes
+php artisan support:migrate --fresh   # recria as tabelas (wipe + migrate)
+php artisan support:migrate --seed    # aplica e semeia dados iniciais
+```
+
+### Tabelas (banco `laravel_support`)
+
+| Tabela | Descrição |
+|---|---|
+| `support_ticket_categories` | Categorias de chamado (ex: Financeiro, Técnico) |
+| `support_tickets` | Chamados com status, prioridade e referências cross-DB |
+| `support_ticket_messages` | Mensagens do thread, com flag `is_internal` |
+| `support_ticket_attachments` | Arquivos anexados a mensagens (máx. 5 × 10 MB) |
+| `support_ticket_ratings` | Avaliação 1–5 estrelas do chamado após resolução |
+| `support_tutorial_categories` | Categorias de tutoriais com `position` |
+| `support_tutorials` | Tutoriais em Markdown com slug único e flag `published` |
+
+### Enums
+
+| Enum | Valores |
+|---|---|
+| `TicketStatus` | `Open`, `InProgress`, `Resolved`, `Closed` |
+| `TicketPriority` | `Low`, `Medium`, `High`, `Urgent` |
+| `TicketAuthorType` | `User`, `PlatformUser` |
+
+### Ciclo de Vida de um Chamado
+
+```
+Cliente abre chamado (POST /support/tickets)
+    │   OpenTicketAction → cria Ticket + TicketMessage + anexos
+    │   → TicketOpenedNotification → email backoffice
+    │
+    ├── Agente responde (POST /backoffice/support/tickets/{id}/messages)
+    │       AgentReplyToTicketAction → cria TicketMessage (author_type=platform_user)
+    │       → is_internal=true? → nota interna, sem notificação ao cliente
+    │       → is_internal=false? → NewMessageNotification → email do cliente
+    │
+    ├── Cliente responde (POST /support/tickets/{id}/messages)
+    │       ReplyToTicketAction → cria TicketMessage (author_type=user)
+    │       → NewMessageNotification → email backoffice
+    │
+    ├── Agente resolve (PUT /backoffice/support/tickets/{id} status=resolved)
+    │       UpdateTicketStatusAction → seta closed_at, status=Resolved
+    │       → TicketResolvedNotification → email cliente com link de avaliação
+    │
+    └── Cliente avalia (POST /support/tickets/{id}/rate)
+            RateTicketAction → cria/atualiza TicketRating (score 1–5)
+```
+
+### Notas Internas
+
+Mensagens com `is_internal = true` são visíveis **apenas** para agentes do backoffice. O frontend cliente (`Support/Tickets/Show.vue`) nunca recebe essas mensagens — o controller filtra via `where('is_internal', false)`. No backoffice, notas internas são renderizadas com fundo amarelo/âmbar e badge "Nota Interna".
+
+### Anexos
+
+Arquivos são armazenados no disco `local` em `support/attachments/{ticket_id}/`. O acesso é controlado: o endpoint `GET /support/attachments/{attachmentId}` verifica se o usuário autenticado é dono do chamado antes de transmitir o arquivo via `Storage::download()`.
+
+### Tutoriais (Markdown)
+
+Os tutoriais são escritos em Markdown e renderizados em HTML no frontend. A geração do `slug` é feita automaticamente por `Tutorial::generateSlug(string $title)`, que garante unicidade adicionando um sufixo contador se necessário. Imagens destacadas ficam no disco `public` em `support/tutorials/`.
+
+### Notificações (Queued)
+
+Todas as notificações implementam `ShouldQueue` e usam o canal `mail`.
+
+| Notificação | Acionador | Destinatário |
+|---|---|---|
+| `TicketOpenedNotification` | Chamado aberto | Email do backoffice (`config('support.email')`) |
+| `NewMessageNotification` | Nova mensagem no thread | Cliente OU backoffice (detectado por tipo) |
+| `TicketResolvedNotification` | Status → Resolved | Cliente (inclui link para avaliação) |
+
+### Rotas
+
+**Client (auth:sanctum + verified + tenant)**
+
+```
+GET    /support                              → support.dashboard
+GET    /support/tickets                      → support.tickets.index
+GET    /support/tickets/create               → support.tickets.create
+POST   /support/tickets                      → support.tickets.store
+GET    /support/tickets/{ticketId}           → support.tickets.show
+POST   /support/tickets/{ticketId}/messages  → support.tickets.messages.store
+POST   /support/tickets/{ticketId}/close     → support.tickets.close
+POST   /support/tickets/{ticketId}/rate      → support.tickets.rate
+GET    /support/tutorials                    → support.tutorials.index
+GET    /support/tutorials/{slug}             → support.tutorials.show
+GET    /support/attachments/{attachmentId}   → support.attachments.show
+```
+
+**Backoffice (auth:web,platform + platform_profile)**
+
+```
+GET    /backoffice/support/tickets                              → platform.support.tickets.index
+GET    /backoffice/support/tickets/{ticketId}                  → platform.support.tickets.show
+PUT    /backoffice/support/tickets/{ticketId}                  → platform.support.tickets.update
+POST   /backoffice/support/tickets/{ticketId}/messages         → platform.support.tickets.messages.store
+GET    /backoffice/support/tutorials                           → platform.support.tutorials.index
+GET    /backoffice/support/tutorials/create                    → platform.support.tutorials.create
+POST   /backoffice/support/tutorials                          → platform.support.tutorials.store
+GET    /backoffice/support/tutorials/{tutorialId}/edit         → platform.support.tutorials.edit
+PUT    /backoffice/support/tutorials/{tutorialId}              → platform.support.tutorials.update
+DELETE /backoffice/support/tutorials/{tutorialId}              → platform.support.tutorials.destroy
+POST   /backoffice/support/tutorials/{tutorialId}/toggle-published → platform.support.tutorials.toggle-published
+```
+
+### Referência de Arquivos — Módulo de Suporte
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `app/Enums/Support/TicketStatus.php` | Status do chamado com métodos `label()`, `color()`, `openStatuses()` |
+| `app/Enums/Support/TicketPriority.php` | Prioridade com `label()` e `color()` |
+| `app/Enums/Support/TicketAuthorType.php` | Tipo do autor da mensagem |
+| `app/Models/Support/Ticket.php` | Model principal do chamado |
+| `app/Models/Support/TicketCategory.php` | Categoria de chamado |
+| `app/Models/Support/TicketMessage.php` | Mensagem do thread com `isFromPlatform()` |
+| `app/Models/Support/TicketAttachment.php` | Anexo com `url()` |
+| `app/Models/Support/TicketRating.php` | Avaliação pós-resolução |
+| `app/Models/Support/TutorialCategory.php` | Categoria de tutorial com `publishedTutorials()` |
+| `app/Models/Support/Tutorial.php` | Tutorial com `generateSlug()` e `scopePublished()` |
+| `app/Actions/Support/OpenTicketAction.php` | Abre chamado + primeira mensagem + anexos + notificação |
+| `app/Actions/Support/ReplyToTicketAction.php` | Resposta do cliente ao chamado |
+| `app/Actions/Support/AgentReplyToTicketAction.php` | Resposta do agente (suporta `is_internal`) |
+| `app/Actions/Support/UpdateTicketStatusAction.php` | Muda status, seta `closed_at`, notifica se Resolved |
+| `app/Actions/Support/AssignTicketAction.php` | Atribui chamado a um agente |
+| `app/Actions/Support/RateTicketAction.php` | Cria/atualiza avaliação do chamado |
+| `app/Actions/Support/StoreAttachmentsAction.php` | Persiste arquivos no disco `local` |
+| `app/Actions/Support/ManageTutorialAction.php` | CRUD de tutoriais com upload de imagem |
+| `app/Policies/Support/TicketPolicy.php` | Autorização por ownership e status do chamado |
+| `app/Policies/Support/TutorialPolicy.php` | Autorização de acesso a tutoriais publicados |
+| `app/Http/Controllers/Support/SupportDashboardController.php` | Dashboard do cliente |
+| `app/Http/Controllers/Support/TicketController.php` | CRUD de chamados (cliente) |
+| `app/Http/Controllers/Support/TicketMessageController.php` | Resposta do cliente |
+| `app/Http/Controllers/Support/TicketRatingController.php` | Avaliação do cliente |
+| `app/Http/Controllers/Support/TutorialController.php` | Listagem e exibição de tutoriais + download de anexo |
+| `app/Http/Controllers/Backoffice/Support/BackofficeTicketController.php` | Gestão de chamados (backoffice) |
+| `app/Http/Controllers/Backoffice/Support/BackofficeTutorialController.php` | CRUD de tutoriais (backoffice) |
+| `app/Notifications/Support/TicketOpenedNotification.php` | Email para backoffice ao abrir chamado |
+| `app/Notifications/Support/NewMessageNotification.php` | Email bidirecional de nova mensagem |
+| `app/Notifications/Support/TicketResolvedNotification.php` | Email ao cliente com link de avaliação |
+| `app/Console/Commands/SupportMigrate.php` | Comando `support:migrate` com `--fresh` e `--seed` |
+| `database/migrations/support/` | 7 migrations do banco `laravel_support` |
+| `resources/js/Pages/Support/Dashboard.vue` | Dashboard do cliente com chamados e tutoriais |
+| `resources/js/Pages/Support/Tickets/Index.vue` | Lista paginada de chamados do cliente |
+| `resources/js/Pages/Support/Tickets/Create.vue` | Formulário de abertura de chamado |
+| `resources/js/Pages/Support/Tickets/Show.vue` | Thread do chamado com resposta e avaliação |
+| `resources/js/Pages/Support/Tutorials/Index.vue` | Categorias e cards de tutoriais |
+| `resources/js/Pages/Support/Tutorials/Show.vue` | Artigo Markdown renderizado com sidebar |
+| `resources/js/Pages/Backoffice/Support/Tickets/Index.vue` | Lista de chamados do backoffice com filtros |
+| `resources/js/Pages/Backoffice/Support/Tickets/Show.vue` | Detalhe do chamado para agentes |
+| `resources/js/Pages/Backoffice/Support/Tutorials/Index.vue` | Listagem e gerenciamento de tutoriais |
+| `resources/js/Pages/Backoffice/Support/Tutorials/Form.vue` | Formulário compartilhado criar/editar tutorial |
+| `tests/Feature/Support/TicketTest.php` | Testes de abertura, resposta, fechamento e avaliação |
+| `tests/Feature/Support/TutorialTest.php` | Testes de CRUD de tutoriais e acesso público |
+

@@ -102,7 +102,7 @@ class BackofficeTicketController extends Controller
     public function reply(string $ticketId, ReplyTicketRequest $request, AgentReplyToTicketAction $action): RedirectResponse
     {
         /** @var PlatformUser $agent */
-        $agent = $request->user();
+        $agent = PlatformUser::find($request->user()->id);
 
         $ticket = Ticket::on('support')->where('id', $ticketId)->firstOrFail();
 
