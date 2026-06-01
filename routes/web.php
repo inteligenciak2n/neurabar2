@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\VenueSelectorController;
+use App\Http\Controllers\Backoffice\Support\BackofficeTicketController;
+use App\Http\Controllers\Backoffice\Support\BackofficeTutorialController;
 use App\Http\Controllers\Corporation\CorporationDashboardController;
 use App\Http\Controllers\Corporation\VenueController as CorporationVenueController;
 use App\Http\Controllers\Guest\GuestCheckoutController;
@@ -35,6 +37,11 @@ use App\Http\Controllers\Settings\ServiceLocationController;
 use App\Http\Controllers\Settings\UserController;
 use App\Http\Controllers\Settings\VenueController;
 use App\Http\Controllers\Settings\VenueSettingsController;
+use App\Http\Controllers\Support\SupportDashboardController;
+use App\Http\Controllers\Support\TicketController;
+use App\Http\Controllers\Support\TicketMessageController;
+use App\Http\Controllers\Support\TicketRatingController;
+use App\Http\Controllers\Support\TutorialController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -155,6 +162,28 @@ Route::middleware([
         Route::post('/{attendance}', [PaymentController::class, 'store'])->name('store');
     });
 
+    // Support — available to all authenticated users with a venue context
+    Route::prefix('support')->name('support.')->group(function () {
+        Route::get('/', [SupportDashboardController::class, 'index'])->name('dashboard');
+
+        Route::prefix('tickets')->name('tickets.')->group(function () {
+            Route::get('/', [TicketController::class, 'index'])->name('index');
+            Route::get('/create', [TicketController::class, 'create'])->name('create');
+            Route::post('/', [TicketController::class, 'store'])->name('store');
+            Route::get('/{ticketId}', [TicketController::class, 'show'])->name('show');
+            Route::post('/{ticketId}/messages', [TicketMessageController::class, 'store'])->name('messages.store');
+            Route::post('/{ticketId}/close', [TicketController::class, 'close'])->name('close');
+            Route::post('/{ticketId}/rate', [TicketRatingController::class, 'store'])->name('rate');
+        });
+
+        Route::prefix('tutorials')->name('tutorials.')->group(function () {
+            Route::get('/', [TutorialController::class, 'index'])->name('index');
+            Route::get('/{slug}', [TutorialController::class, 'show'])->name('show');
+        });
+
+        Route::get('/attachments/{attachmentId}', [TutorialController::class, 'attachment'])->name('attachments.show');
+    });
+
     // Settings — owner or general manager only
     Route::prefix('settings')->name('settings.')->middleware(['role:owner,general_manager'])->group(function () {
         Route::get('/', fn () => Inertia::render('Settings/Index'))->name('index');
@@ -239,6 +268,26 @@ Route::prefix($platformPath)->name('platform.')->group(function () {
             Route::post('/users', [PlatformUserController::class, 'store'])->name('users.store');
             Route::put('/users/{platformUser}', [PlatformUserController::class, 'update'])->name('users.update');
             Route::delete('/users/{platformUser}', [PlatformUserController::class, 'destroy'])->name('users.destroy');
+        });
+
+        // Support management — all platform users
+        Route::prefix('support')->name('support.')->group(function () {
+            Route::prefix('tickets')->name('tickets.')->group(function () {
+                Route::get('/', [BackofficeTicketController::class, 'index'])->name('index');
+                Route::get('/{ticketId}', [BackofficeTicketController::class, 'show'])->name('show');
+                Route::put('/{ticketId}', [BackofficeTicketController::class, 'update'])->name('update');
+                Route::post('/{ticketId}/messages', [BackofficeTicketController::class, 'reply'])->name('messages.store');
+            });
+
+            Route::prefix('tutorials')->name('tutorials.')->group(function () {
+                Route::get('/', [BackofficeTutorialController::class, 'index'])->name('index');
+                Route::get('/create', [BackofficeTutorialController::class, 'create'])->name('create');
+                Route::post('/', [BackofficeTutorialController::class, 'store'])->name('store');
+                Route::get('/{tutorialId}/edit', [BackofficeTutorialController::class, 'edit'])->name('edit');
+                Route::put('/{tutorialId}', [BackofficeTutorialController::class, 'update'])->name('update');
+                Route::delete('/{tutorialId}', [BackofficeTutorialController::class, 'destroy'])->name('destroy');
+                Route::post('/{tutorialId}/toggle-published', [BackofficeTutorialController::class, 'togglePublished'])->name('toggle-published');
+            });
         });
     });
 });

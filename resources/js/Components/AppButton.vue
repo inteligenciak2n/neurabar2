@@ -1,4 +1,6 @@
 <script setup>
+import { Link } from '@inertiajs/vue3';
+
 defineProps({
     variant: {
         type: String,
@@ -22,6 +24,10 @@ defineProps({
         type: String,
         default: 'button',
     },
+    href: {
+        type: String,
+        default: null,
+    },
 });
 
 const variantClasses = {
@@ -39,7 +45,9 @@ const sizeClasses = {
 </script>
 
 <template>
-    <button
+    <component
+        :is="href ? Link : 'button'"
+        :href="href"
         :type="type"
         :disabled="disabled || loading"
         :class="[
@@ -61,5 +69,5 @@ const sizeClasses = {
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
         <slot />
-    </button>
+    </component>
 </template>

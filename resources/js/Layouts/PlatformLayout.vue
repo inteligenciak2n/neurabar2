@@ -13,6 +13,8 @@ const logout = () => {
 
 const platformNavItems = [
     { label: 'Dashboard',    routeName: 'platform.dashboard',          activePattern: 'platform.dashboard' },
+    { label: 'Tickets',      routeName: 'platform.support.tickets.index',          activePattern: 'platform.support.tickets.*' },
+    { label: 'Tutoriais',    routeName: 'platform.support.tutorials.index',          activePattern: 'platform.support.tutorials.*' },
     { label: 'Corporations', routeName: 'platform.corporations.index',  activePattern: 'platform.corporations.*' },
     { label: 'Plans',        routeName: 'platform.plans.index',         activePattern: 'platform.plans.*' },
     { label: 'Users',        routeName: 'platform.users.index',         activePattern: 'platform.users.*' },

@@ -213,6 +213,13 @@ const roleLabel = (role) => {
                             :href="route('settings.index')">
                                 {{ __('Settings') }}
                             </DropdownLink>
+                            
+                            
+                            <DropdownLink 
+                            v-if="isManager()"
+                            :href="route('support.dashboard')">
+                                {{ __('Support') }}
+                            </DropdownLink>
 
                             <DropdownLink 
                             v-if="$page.props.jetstream.hasApiFeatures" 
