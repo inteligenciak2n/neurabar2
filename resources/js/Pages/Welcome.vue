@@ -1,176 +1,534 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
+import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 
 defineProps({
-    canLogin: {
-        type: Boolean,
-    },
-    canRegister: {
-        type: Boolean,
-    },
-    laravelVersion: {
-        type: String,
-        required: true,
-    },
-    phpVersion: {
-        type: String,
-        required: true,
-    },
+    canLogin: Boolean,
+    canRegister: Boolean,
 });
 
-function handleImageError() {
-    document.getElementById('screenshot-container')?.classList.add('!hidden');
-    document.getElementById('docs-card')?.classList.add('!row-span-1');
-    document.getElementById('docs-card-content')?.classList.add('!flex-row');
-    document.getElementById('background')?.classList.add('!hidden');
-}
+const features = [
+    {
+        icon: 'menu',
+        title: 'Cardápio Digital Completo',
+        description: 'Crie menus com categorias, produtos, variações de preço e modificadores. Atualize em tempo real sem reimprimir nada.',
+    },
+    {
+        icon: 'orders',
+        title: 'Pedidos em Tempo Real',
+        description: 'Atendentes anotam pedidos pelo tablet ou celular. Tudo cai automaticamente na cozinha via WebSocket.',
+    },
+    {
+        icon: 'kds',
+        title: 'KDS — Tela de Cozinha',
+        description: 'A cozinha acompanha cada pedido em tempo real, com status de preparo e alertas de prioridade.',
+    },
+    {
+        icon: 'payment',
+        title: 'Pagamentos e Fechamento',
+        description: 'Divida a conta, registre pagamentos por método e feche atendimentos com total controle financeiro.',
+    },
+    {
+        icon: 'qrcode',
+        title: 'QR Code para a Mesa',
+        description: 'O cliente escaneia, visualiza o cardápio, faz pedidos e chama o garçom — tudo pelo próprio celular.',
+    },
+    {
+        icon: 'corporation',
+        title: 'Multi-unidades',
+        description: 'Gerencie várias filiais de uma única conta. Cada venue com seu cardápio, equipe e configurações independentes.',
+    },
+];
+
+const steps = [
+    {
+        number: '01',
+        title: 'Crie sua conta',
+        description: 'Cadastro gratuito em menos de 2 minutos. Sem cartão de crédito.',
+    },
+    {
+        number: '02',
+        title: 'Configure seu estabelecimento',
+        description: 'Adicione seu cardápio, equipe, mesas e locais de atendimento.',
+    },
+    {
+        number: '03',
+        title: 'Comece a atender',
+        description: 'Abra atendimentos, anote pedidos e acompanhe tudo em tempo real.',
+    },
+];
+
+const plans = [
+    {
+        name: 'Básico',
+        price: 'R$ 97',
+        period: '/mês',
+        description: 'Ideal para bares e restaurantes iniciando a digitalização.',
+        features: ['1 unidade', 'Cardápio digital', 'Pedidos e KDS', 'Até 3 usuários', 'Suporte por e-mail'],
+        cta: 'Começar grátis',
+        highlighted: false,
+    },
+    {
+        name: 'Pro',
+        price: 'R$ 197',
+        period: '/mês',
+        description: 'Para operações que precisam de mais controle e escala.',
+        features: ['1 unidade', 'Tudo do Básico', 'QR Code para mesas', 'Relatórios avançados', 'Usuários ilimitados', 'Suporte prioritário'],
+        cta: 'Assinar Pro',
+        highlighted: true,
+    },
+    {
+        name: 'Enterprise',
+        price: 'Sob consulta',
+        period: '',
+        description: 'Para grupos e redes com múltiplas unidades.',
+        features: ['Unidades ilimitadas', 'Tudo do Pro', 'Painel corporativo', 'SLA garantido', 'Onboarding dedicado'],
+        cta: 'Falar com vendas',
+        highlighted: false,
+    },
+];
 </script>
 
 <template>
-    <Head title="Welcome" />
-    <div class="bg-gray-50 text-black/50 dark:bg-black dark:text-white/50">
-        <img id="background" class="absolute -left-20 top-0 max-w-[877px]" src="https://laravel.com/assets/img/welcome/background.svg" />
-        <div class="relative min-h-screen flex flex-col items-center justify-center selection:bg-[#FF2D20] selection:text-white">
-            <div class="relative w-full max-w-2xl px-6 lg:max-w-7xl">
-                <header class="grid grid-cols-2 items-center gap-2 py-10 lg:grid-cols-3">
-                    <div class="flex lg:justify-center lg:col-start-2">
-                        <svg class="h-12 w-auto text-white lg:h-16 lg:text-[#FF2D20]" viewBox="0 0 62 65" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M61.8548 14.6253C61.8778 14.7102 61.8895 14.7978 61.8897 14.8858V28.5615C61.8898 28.737 61.8434 28.9095 61.7554 29.0614C61.6675 29.2132 61.5409 29.3392 61.3887 29.4265L49.9104 36.0351V49.1337C49.9104 49.4902 49.7209 49.8192 49.4118 49.9987L25.4519 63.7916C25.3971 63.8227 25.3372 63.8427 25.2774 63.8639C25.255 63.8714 25.2338 63.8851 25.2101 63.8913C25.0426 63.9354 24.8666 63.9354 24.6991 63.8913C24.6716 63.8838 24.6467 63.8689 24.6205 63.8589C24.5657 63.8389 24.5084 63.8215 24.456 63.7916L0.501061 49.9987C0.348882 49.9113 0.222437 49.7853 0.134469 49.6334C0.0465019 49.4816 0.000120578 49.3092 0 49.1337L0 8.10652C0 8.01678 0.0124642 7.92953 0.0348998 7.84477C0.0423783 7.8161 0.0598282 7.78993 0.0697995 7.76126C0.0884958 7.70891 0.105946 7.65531 0.133367 7.6067C0.152063 7.5743 0.179485 7.54812 0.20192 7.51821C0.230588 7.47832 0.256763 7.43719 0.290416 7.40229C0.319084 7.37362 0.356476 7.35243 0.388883 7.32751C0.425029 7.29759 0.457436 7.26518 0.498568 7.2415L12.4779 0.345059C12.6296 0.257786 12.8015 0.211853 12.9765 0.211853C13.1515 0.211853 13.3234 0.257786 13.475 0.345059L25.4531 7.2415H25.4556C25.4955 7.26643 25.5292 7.29759 25.5653 7.32626C25.5977 7.35119 25.6339 7.37362 25.6625 7.40104C25.6974 7.43719 25.7224 7.47832 25.7523 7.51821C25.7735 7.54812 25.8021 7.5743 25.8196 7.6067C25.8483 7.65656 25.8645 7.70891 25.8844 7.76126C25.8944 7.78993 25.9118 7.8161 25.9193 7.84602C25.9423 7.93096 25.954 8.01853 25.9542 8.10652V33.7317L35.9355 27.9844V14.8846C35.9355 14.7973 35.948 14.7088 35.9704 14.6253C35.9792 14.5954 35.9954 14.5692 36.0053 14.5405C36.0253 14.4882 36.0427 14.4346 36.0702 14.386C36.0888 14.3536 36.1163 14.3274 36.1375 14.2975C36.1674 14.2576 36.1923 14.2165 36.2272 14.1816C36.2559 14.1529 36.292 14.1317 36.3244 14.1068C36.3618 14.0769 36.3942 14.0445 36.4341 14.0208L48.4147 7.12434C48.5663 7.03694 48.7383 6.99094 48.9133 6.99094C49.0883 6.99094 49.2602 7.03694 49.4118 7.12434L61.3899 14.0208C61.4323 14.0457 61.4647 14.0769 61.5021 14.1055C61.5333 14.1305 61.5694 14.1529 61.5981 14.1803C61.633 14.2165 61.6579 14.2576 61.6878 14.2975C61.7103 14.3274 61.7377 14.3536 61.7551 14.386C61.7838 14.4346 61.8 14.4882 61.8199 14.5405C61.8312 14.5692 61.8474 14.5954 61.8548 14.6253ZM59.893 27.9844V16.6121L55.7013 19.0252L49.9104 22.3593V33.7317L59.8942 27.9844H59.893ZM47.9149 48.5566V37.1768L42.2187 40.4299L25.953 49.7133V61.2003L47.9149 48.5566ZM1.99677 9.83281V48.5566L23.9562 61.199V49.7145L12.4841 43.2219L12.4804 43.2194L12.4754 43.2169C12.4368 43.1945 12.4044 43.1621 12.3682 43.1347C12.3371 43.1097 12.3009 43.0898 12.2735 43.0624L12.271 43.0586C12.2386 43.0275 12.2162 42.9888 12.1887 42.9539C12.1638 42.9203 12.1339 42.8916 12.114 42.8567L12.1127 42.853C12.0903 42.8156 12.0766 42.7707 12.0604 42.7283C12.0442 42.6909 12.023 42.656 12.013 42.6161C12.0005 42.5688 11.998 42.5177 11.9931 42.4691C11.9881 42.4317 11.9781 42.3943 11.9781 42.3569V15.5801L6.18848 12.2446L1.99677 9.83281ZM12.9777 2.36177L2.99764 8.10652L12.9752 13.8513L22.9541 8.10527L12.9752 2.36177H12.9777ZM18.1678 38.2138L23.9574 34.8809V9.83281L19.7657 12.2459L13.9749 15.5801V40.6281L18.1678 38.2138ZM48.9133 9.14105L38.9344 14.8858L48.9133 20.6305L58.8909 14.8846L48.9133 9.14105ZM47.9149 22.3593L42.124 19.0252L37.9323 16.6121V27.9844L43.7219 31.3174L47.9149 33.7317V22.3593ZM24.9533 47.987L39.59 39.631L46.9065 35.4555L36.9352 29.7145L25.4544 36.3242L14.9907 42.3482L24.9533 47.987Z" fill="currentColor"/></svg>
-                    </div>
-                    <nav v-if="canLogin" class="-mx-3 flex flex-1 justify-end">
+    <Head title="NeuraBar — Gestão inteligente para bares e restaurantes" />
+
+    <div class="min-h-screen bg-muted font-body text-foreground antialiased">
+
+        <!-- ==================== NAVBAR ==================== -->
+        <header class="sticky top-0 z-50 border-b border-border bg-surface/90 backdrop-blur-sm">
+            <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+                <!-- Logo -->
+                <Link href="/" class="flex items-center gap-2.5">
+                    <ApplicationLogo class="h-8 w-8" />
+                    <span class="font-heading text-xl font-bold text-ocean-deep">NeuraBar</span>
+                </Link>
+
+                <!-- Nav links desktop -->
+                <nav class="hidden items-center gap-8 md:flex">
+                    <a href="#funcionalidades" class="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Funcionalidades</a>
+                    <a href="#como-funciona" class="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Como funciona</a>
+                    <a href="#planos" class="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Planos</a>
+                </nav>
+
+                <!-- CTA buttons -->
+                <div class="flex items-center gap-3">
+                    <template v-if="canLogin">
                         <Link
-                            v-if="$page.props.auth.user"
-                            :href="route('dashboard')"
-                            class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
+                            :href="route('login')"
+                            class="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:block"
                         >
-                            Dashboard
+                            Entrar
                         </Link>
+                    </template>
+                    <template v-if="canRegister">
+                        <Link
+                            :href="route('register')"
+                            class="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        >
+                            Começar grátis
+                        </Link>
+                    </template>
+                </div>
+            </div>
+        </header>
 
-                        <template v-else>
-                            <Link
-                                :href="route('login')"
-                                class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
-                            >
-                                Log in
-                            </Link>
+        <!-- ==================== HERO ==================== -->
+        <section class="relative overflow-hidden bg-ocean-deep py-20 lg:py-32">
+            <!-- Background decorative elements -->
+            <div class="pointer-events-none absolute inset-0 overflow-hidden">
+                <div class="absolute -right-64 -top-64 h-[600px] w-[600px] rounded-full bg-primary/10 blur-3xl"></div>
+                <div class="absolute -bottom-32 -left-32 h-[400px] w-[400px] rounded-full bg-accent/10 blur-3xl"></div>
+                <div class="absolute left-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/5"></div>
+            </div>
 
+            <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="mx-auto max-w-3xl text-center">
+                    <!-- Badge -->
+                    <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5">
+                        <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-primary"></span>
+                        <span class="text-xs font-medium text-primary">SaaS para Bares &amp; Restaurantes</span>
+                    </div>
+
+                    <h1 class="font-heading text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+                        Gerencie seu bar ou restaurante com
+                        <span class="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"> inteligência</span>
+                    </h1>
+
+                    <p class="mt-6 text-lg leading-relaxed text-white/70">
+                        Cardápio digital, pedidos em tempo real, KDS para cozinha, controle de pagamentos e muito mais — tudo em uma plataforma moderna e fácil de usar.
+                    </p>
+
+                    <div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+                        <template v-if="canRegister">
                             <Link
-                                v-if="canRegister"
                                 :href="route('register')"
-                                class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
+                                class="inline-flex w-full items-center justify-center rounded-lg bg-primary px-8 py-3.5 text-base font-semibold text-white shadow-ocean transition-all hover:bg-primary-hover hover:shadow-lg sm:w-auto"
                             >
-                                Register
+                                Começar grátis agora
+                                <svg class="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
                             </Link>
                         </template>
-                    </nav>
-                </header>
-
-                <main class="mt-6">
-                    <div class="grid gap-6 lg:grid-cols-2 lg:gap-8">
                         <a
-                            href="https://laravel.com/docs"
-                            id="docs-card"
-                            class="flex flex-col items-start gap-6 overflow-hidden rounded-lg bg-white p-6 shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] ring-1 ring-white/[0.05] transition duration-300 hover:text-black/70 hover:ring-black/20 focus:outline-none focus-visible:ring-[#FF2D20] md:row-span-3 lg:p-10 lg:pb-10 dark:bg-zinc-900 dark:ring-zinc-800 dark:hover:text-white/70 dark:hover:ring-zinc-700 dark:focus-visible:ring-[#FF2D20]"
+                            href="#funcionalidades"
+                            class="inline-flex w-full items-center justify-center rounded-lg border border-white/20 bg-white/5 px-8 py-3.5 text-base font-semibold text-white transition-all hover:bg-white/10 sm:w-auto"
                         >
-                            <div id="screenshot-container" class="relative flex w-full flex-1 items-stretch">
-                                <img
-                                    src="https://laravel.com/assets/img/welcome/docs-light.svg"
-                                    alt="Laravel documentation screenshot"
-                                    class="aspect-video h-full w-full flex-1 rounded-[10px] object-top object-cover drop-shadow-[0px_4px_34px_rgba(0,0,0,0.06)] dark:hidden"
-                                    @error="handleImageError"
-                                />
-                                <img
-                                    src="https://laravel.com/assets/img/welcome/docs-dark.svg"
-                                    alt="Laravel documentation screenshot"
-                                    class="hidden aspect-video h-full w-full flex-1 rounded-[10px] object-top object-cover drop-shadow-[0px_4px_34px_rgba(0,0,0,0.25)] dark:block"
-                                />
-                                <div
-                                    class="absolute -bottom-16 -left-16 h-40 w-[calc(100%+8rem)] bg-gradient-to-b from-transparent via-white to-white dark:via-zinc-900 dark:to-zinc-900"
-                                ></div>
+                            Ver funcionalidades
+                        </a>
+                    </div>
+
+                    <p class="mt-4 text-sm text-white/40">Sem cartão de crédito · Configuração em minutos · Cancele quando quiser</p>
+                </div>
+
+                <!-- Hero visual — dashboard mockup -->
+                <div class="relative mx-auto mt-16 max-w-4xl">
+                    <div class="overflow-hidden rounded-xl border border-white/10 bg-surface shadow-ocean">
+                        <!-- Mock browser bar -->
+                        <div class="flex items-center gap-2 border-b border-border bg-muted px-4 py-3">
+                            <div class="h-3 w-3 rounded-full bg-red-400/70"></div>
+                            <div class="h-3 w-3 rounded-full bg-yellow-400/70"></div>
+                            <div class="h-3 w-3 rounded-full bg-green-400/70"></div>
+                            <div class="mx-auto flex h-6 w-64 items-center rounded-md bg-border px-3">
+                                <span class="text-xs text-muted-foreground">app.neurabar.com/dashboard</span>
                             </div>
-
-                            <div class="relative flex items-center gap-6 lg:items-end">
-                                <div id="docs-card-content" class="flex items-start gap-6 lg:flex-col">
-                                    <div class="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#FF2D20]/10 sm:size-16">
-                                        <svg class="size-5 sm:size-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path fill="#FF2D20" d="M23 4a1 1 0 0 0-1.447-.894L12.224 7.77a.5.5 0 0 1-.448 0L2.447 3.106A1 1 0 0 0 1 4v13.382a1.99 1.99 0 0 0 1.105 1.79l9.448 4.728c.14.065.293.1.447.1.154-.005.306-.04.447-.105l9.453-4.724a1.99 1.99 0 0 0 1.1-1.789V4ZM3 6.023a.25.25 0 0 1 .362-.223l7.5 3.75a.251.251 0 0 1 .138.223v11.2a.25.25 0 0 1-.362.224l-7.5-3.75a.25.25 0 0 1-.138-.22V6.023Zm18 11.2a.25.25 0 0 1-.138.224l-7.5 3.75a.249.249 0 0 1-.329-.099.249.249 0 0 1-.033-.12V9.772a.251.251 0 0 1 .138-.224l7.5-3.75a.25.25 0 0 1 .362.224v11.2Z"/><path fill="#FF2D20" d="m3.55 1.893 8 4.048a1.008 1.008 0 0 0 .9 0l8-4.048a1 1 0 0 0-.9-1.785l-7.322 3.706a.506.506 0 0 1-.452 0L4.454.108a1 1 0 0 0-.9 1.785H3.55Z"/></svg>
-                                    </div>
-
-                                    <div class="pt-3 sm:pt-5 lg:pt-0">
-                                        <h2 class="text-xl font-semibold text-black dark:text-white">Documentation</h2>
-
-                                        <p class="mt-4 text-sm/relaxed">
-                                            Laravel has wonderful documentation covering every aspect of the framework. Whether you are a newcomer or have prior experience with Laravel, we recommend reading our documentation from beginning to end.
-                                        </p>
+                        </div>
+                        <!-- Mock dashboard content -->
+                        <div class="grid grid-cols-3 gap-4 p-6 sm:grid-cols-4">
+                            <!-- Sidebar -->
+                            <div class="hidden flex-col gap-2 sm:flex">
+                                <div class="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2">
+                                    <div class="h-2 w-2 rounded-full bg-primary"></div>
+                                    <div class="h-2 w-16 rounded bg-primary/40"></div>
+                                </div>
+                                <div v-for="i in 5" :key="i" class="flex items-center gap-2 rounded-lg px-3 py-2">
+                                    <div class="h-2 w-2 rounded-full bg-muted-foreground/30"></div>
+                                    <div class="h-2 rounded bg-muted-foreground/20" :class="['w-20', 'w-16', 'w-24', 'w-14', 'w-20'][i-1]"></div>
+                                </div>
+                            </div>
+                            <!-- Main content area -->
+                            <div class="col-span-3 flex flex-col gap-4">
+                                <!-- Stats row -->
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div v-for="(stat, i) in [{label:'Pedidos hoje', value:'47', color:'text-primary'},{label:'Faturamento', value:'R$ 2.840', color:'text-accent'},{label:'Mesas abertas', value:'12', color:'text-warm-gold'}]" :key="i" class="rounded-lg border border-border bg-surface p-3">
+                                        <div class="text-xs text-muted-foreground">{{ stat.label }}</div>
+                                        <div class="mt-1 font-heading text-lg font-bold" :class="stat.color">{{ stat.value }}</div>
                                     </div>
                                 </div>
-
-                                <svg class="size-6 shrink-0 stroke-[#FF2D20]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75"/></svg>
-                            </div>
-                        </a>
-
-                        <a
-                            href="https://laracasts.com"
-                            class="flex items-start gap-4 rounded-lg bg-white p-6 shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] ring-1 ring-white/[0.05] transition duration-300 hover:text-black/70 hover:ring-black/20 focus:outline-none focus-visible:ring-[#FF2D20] lg:pb-10 dark:bg-zinc-900 dark:ring-zinc-800 dark:hover:text-white/70 dark:hover:ring-zinc-700 dark:focus-visible:ring-[#FF2D20]"
-                        >
-                            <div class="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#FF2D20]/10 sm:size-16">
-                                <svg class="size-5 sm:size-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><g fill="#FF2D20"><path d="M24 8.25a.5.5 0 0 0-.5-.5H.5a.5.5 0 0 0-.5.5v12a2.5 2.5 0 0 0 2.5 2.5h19a2.5 2.5 0 0 0 2.5-2.5v-12Zm-7.765 5.868a1.221 1.221 0 0 1 0 2.264l-6.626 2.776A1.153 1.153 0 0 1 8 18.123v-5.746a1.151 1.151 0 0 1 1.609-1.035l6.626 2.776ZM19.564 1.677a.25.25 0 0 0-.177-.427H15.6a.106.106 0 0 0-.072.03l-4.54 4.543a.25.25 0 0 0 .177.427h3.783c.027 0 .054-.01.073-.03l4.543-4.543ZM22.071 1.318a.047.047 0 0 0-.045.013l-4.492 4.492a.249.249 0 0 0 .038.385.25.25 0 0 0 .14.042h5.784a.5.5 0 0 0 .5-.5v-2a2.5 2.5 0 0 0-1.925-2.432ZM13.014 1.677a.25.25 0 0 0-.178-.427H9.101a.106.106 0 0 0-.073.03l-4.54 4.543a.25.25 0 0 0 .177.427H8.4a.106.106 0 0 0 .073-.03l4.54-4.543ZM6.513 1.677a.25.25 0 0 0-.177-.427H2.5A2.5 2.5 0 0 0 0 3.75v2a.5.5 0 0 0 .5.5h1.4a.106.106 0 0 0 .073-.03l4.54-4.543Z"/></g></svg>
-                            </div>
-
-                            <div class="pt-3 sm:pt-5">
-                                <h2 class="text-xl font-semibold text-black dark:text-white">Laracasts</h2>
-
-                                <p class="mt-4 text-sm/relaxed">
-                                    Laracasts offers thousands of video tutorials on Laravel, PHP, and JavaScript development. Check them out, see for yourself, and massively level up your development skills in the process.
-                                </p>
-                            </div>
-
-                            <svg class="size-6 shrink-0 self-center stroke-[#FF2D20]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75"/></svg>
-                        </a>
-
-                        <a
-                            href="https://laravel-news.com"
-                            class="flex items-start gap-4 rounded-lg bg-white p-6 shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] ring-1 ring-white/[0.05] transition duration-300 hover:text-black/70 hover:ring-black/20 focus:outline-none focus-visible:ring-[#FF2D20] lg:pb-10 dark:bg-zinc-900 dark:ring-zinc-800 dark:hover:text-white/70 dark:hover:ring-zinc-700 dark:focus-visible:ring-[#FF2D20]"
-                        >
-                            <div class="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#FF2D20]/10 sm:size-16">
-                                <svg class="size-5 sm:size-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><g fill="#FF2D20"><path d="M8.75 4.5H5.5c-.69 0-1.25.56-1.25 1.25v4.75c0 .69.56 1.25 1.25 1.25h3.25c.69 0 1.25-.56 1.25-1.25V5.75c0-.69-.56-1.25-1.25-1.25Z"/><path d="M24 10a3 3 0 0 0-3-3h-2V2.5a2 2 0 0 0-2-2H2a2 2 0 0 0-2 2V20a3.5 3.5 0 0 0 3.5 3.5h17A3.5 3.5 0 0 0 24 20V10ZM3.5 21.5A1.5 1.5 0 0 1 2 20V3a.5.5 0 0 1 .5-.5h14a.5.5 0 0 1 .5.5v17c0 .295.037.588.11.874a.5.5 0 0 1-.484.625L3.5 21.5ZM22 20a1.5 1.5 0 1 1-3 0V9.5a.5.5 0 0 1 .5-.5H21a1 1 0 0 1 1 1v10Z"/><path d="M12.751 6.047h2a.75.75 0 0 1 .75.75v.5a.75.75 0 0 1-.75.75h-2A.75.75 0 0 1 12 7.3v-.5a.75.75 0 0 1 .751-.753ZM12.751 10.047h2a.75.75 0 0 1 .75.75v.5a.75.75 0 0 1-.75.75h-2A.75.75 0 0 1 12 11.3v-.5a.75.75 0 0 1 .751-.753ZM4.751 14.047h10a.75.75 0 0 1 .75.75v.5a.75.75 0 0 1-.75.75h-10A.75.75 0 0 1 4 15.3v-.5a.75.75 0 0 1 .751-.753ZM4.75 18.047h7.5a.75.75 0 0 1 .75.75v.5a.75.75 0 0 1-.75.75h-7.5A.75.75 0 0 1 4 19.3v-.5a.75.75 0 0 1 .75-.753Z"/></g></svg>
-                            </div>
-
-                            <div class="pt-3 sm:pt-5">
-                                <h2 class="text-xl font-semibold text-black dark:text-white">Laravel News</h2>
-
-                                <p class="mt-4 text-sm/relaxed">
-                                    Laravel News is a community driven portal and newsletter aggregating all of the latest and most important news in the Laravel ecosystem, including new package releases and tutorials.
-                                </p>
-                            </div>
-
-                            <svg class="size-6 shrink-0 self-center stroke-[#FF2D20]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75"/></svg>
-                        </a>
-
-                        <div class="flex items-start gap-4 rounded-lg bg-white p-6 shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] ring-1 ring-white/[0.05] lg:pb-10 dark:bg-zinc-900 dark:ring-zinc-800">
-                            <div class="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#FF2D20]/10 sm:size-16">
-                                <svg class="size-5 sm:size-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <g fill="#FF2D20">
-                                        <path
-                                            d="M16.597 12.635a.247.247 0 0 0-.08-.237 2.234 2.234 0 0 1-.769-1.68c.001-.195.03-.39.084-.578a.25.25 0 0 0-.09-.267 8.8 8.8 0 0 0-4.826-1.66.25.25 0 0 0-.268.181 2.5 2.5 0 0 1-2.4 1.824.045.045 0 0 0-.045.037 12.255 12.255 0 0 0-.093 3.86.251.251 0 0 0 .208.214c2.22.366 4.367 1.08 6.362 2.118a.252.252 0 0 0 .32-.079 10.09 10.09 0 0 0 1.597-3.733ZM13.616 17.968a.25.25 0 0 0-.063-.407A19.697 19.697 0 0 0 8.91 15.98a.25.25 0 0 0-.287.325c.151.455.334.898.548 1.328.437.827.981 1.594 1.619 2.28a.249.249 0 0 0 .32.044 29.13 29.13 0 0 0 2.506-1.99ZM6.303 14.105a.25.25 0 0 0 .265-.274 13.048 13.048 0 0 1 .205-4.045.062.062 0 0 0-.022-.07 2.5 2.5 0 0 1-.777-.982.25.25 0 0 0-.271-.149 11 11 0 0 0-5.6 2.815.255.255 0 0 0-.075.163c-.008.135-.02.27-.02.406.002.8.084 1.598.246 2.381a.25.25 0 0 0 .303.193 19.924 19.924 0 0 1 5.746-.438ZM9.228 20.914a.25.25 0 0 0 .1-.393 11.53 11.53 0 0 1-1.5-2.22 12.238 12.238 0 0 1-.91-2.465.248.248 0 0 0-.22-.187 18.876 18.876 0 0 0-5.69.33.249.249 0 0 0-.179.336c.838 2.142 2.272 4 4.132 5.353a.254.254 0 0 0 .15.048c1.41-.01 2.807-.282 4.117-.802ZM18.93 12.957l-.005-.008a.25.25 0 0 0-.268-.082 2.21 2.21 0 0 1-.41.081.25.25 0 0 0-.217.2c-.582 2.66-2.127 5.35-5.75 7.843a.248.248 0 0 0-.09.299.25.25 0 0 0 .065.091 28.703 28.703 0 0 0 2.662 2.12.246.246 0 0 0 .209.037c2.579-.701 4.85-2.242 6.456-4.378a.25.25 0 0 0 .048-.189 13.51 13.51 0 0 0-2.7-6.014ZM5.702 7.058a.254.254 0 0 0 .2-.165A2.488 2.488 0 0 1 7.98 5.245a.093.093 0 0 0 .078-.062 19.734 19.734 0 0 1 3.055-4.74.25.25 0 0 0-.21-.41 12.009 12.009 0 0 0-10.4 8.558.25.25 0 0 0 .373.281 12.912 12.912 0 0 1 4.826-1.814ZM10.773 22.052a.25.25 0 0 0-.28-.046c-.758.356-1.55.635-2.365.833a.25.25 0 0 0-.022.48c1.252.43 2.568.65 3.893.65.1 0 .2 0 .3-.008a.25.25 0 0 0 .147-.444c-.526-.424-1.1-.917-1.673-1.465ZM18.744 8.436a.249.249 0 0 0 .15.228 2.246 2.246 0 0 1 1.352 2.054c0 .337-.08.67-.23.972a.25.25 0 0 0 .042.28l.007.009a15.016 15.016 0 0 1 2.52 4.6.25.25 0 0 0 .37.132.25.25 0 0 0 .096-.114c.623-1.464.944-3.039.945-4.63a12.005 12.005 0 0 0-5.78-10.258.25.25 0 0 0-.373.274c.547 2.109.85 4.274.901 6.453ZM9.61 5.38a.25.25 0 0 0 .08.31c.34.24.616.561.8.935a.25.25 0 0 0 .3.127.631.631 0 0 1 .206-.034c2.054.078 4.036.772 5.69 1.991a.251.251 0 0 0 .267.024c.046-.024.093-.047.141-.067a.25.25 0 0 0 .151-.23A29.98 29.98 0 0 0 15.957.764a.25.25 0 0 0-.16-.164 11.924 11.924 0 0 0-2.21-.518.252.252 0 0 0-.215.076A22.456 22.456 0 0 0 9.61 5.38Z"
-                                        />
-                                    </g>
-                                </svg>
-                            </div>
-
-                            <div class="pt-3 sm:pt-5">
-                                <h2 class="text-xl font-semibold text-black dark:text-white">Vibrant Ecosystem</h2>
-
-                                <p class="mt-4 text-sm/relaxed">
-                                    Laravel's robust library of first-party tools and libraries, such as <a href="https://forge.laravel.com" class="rounded-sm underline hover:text-black focus:outline-none focus-visible:ring-1 focus-visible:ring-[#FF2D20] dark:hover:text-white dark:focus-visible:ring-[#FF2D20]">Forge</a>, <a href="https://vapor.laravel.com" class="rounded-sm underline hover:text-black focus:outline-none focus-visible:ring-1 focus-visible:ring-[#FF2D20] dark:hover:text-white">Vapor</a>, <a href="https://nova.laravel.com" class="rounded-sm underline hover:text-black focus:outline-none focus-visible:ring-1 focus-visible:ring-[#FF2D20] dark:hover:text-white">Nova</a>, and <a href="https://envoyer.io" class="rounded-sm underline hover:text-black focus:outline-none focus-visible:ring-1 focus-visible:ring-[#FF2D20] dark:hover:text-white">Envoyer</a> help you take your projects to the next level. Pair them with powerful open source libraries like <a href="https://laravel.com/docs/billing" class="rounded-sm underline hover:text-black focus:outline-none focus-visible:ring-1 focus-visible:ring-[#FF2D20] dark:hover:text-white">Cashier</a>, <a href="https://laravel.com/docs/dusk" class="rounded-sm underline hover:text-black focus:outline-none focus-visible:ring-1 focus-visible:ring-[#FF2D20] dark:hover:text-white">Dusk</a>, <a href="https://laravel.com/docs/broadcasting" class="rounded-sm underline hover:text-black focus:outline-none focus-visible:ring-1 focus-visible:ring-[#FF2D20] dark:hover:text-white">Echo</a>, <a href="https://laravel.com/docs/horizon" class="rounded-sm underline hover:text-black focus:outline-none focus-visible:ring-1 focus-visible:ring-[#FF2D20] dark:hover:text-white">Horizon</a>, <a href="https://laravel.com/docs/sanctum" class="rounded-sm underline hover:text-black focus:outline-none focus-visible:ring-1 focus-visible:ring-[#FF2D20] dark:hover:text-white">Sanctum</a>, <a href="https://laravel.com/docs/telescope" class="rounded-sm underline hover:text-black focus:outline-none focus-visible:ring-1 focus-visible:ring-[#FF2D20] dark:hover:text-white">Telescope</a>, and more.
-                                </p>
+                                <!-- Orders list skeleton -->
+                                <div class="rounded-lg border border-border bg-surface p-4">
+                                    <div class="mb-3 h-3 w-32 rounded bg-muted-foreground/20"></div>
+                                    <div v-for="j in 4" :key="j" class="flex items-center gap-3 py-2">
+                                        <div class="h-2 w-2 rounded-full" :class="['bg-primary', 'bg-green-400', 'bg-warm-gold', 'bg-muted-foreground/30'][j-1]"></div>
+                                        <div class="h-2 flex-1 rounded bg-muted-foreground/15"></div>
+                                        <div class="h-2 w-12 rounded bg-muted-foreground/15"></div>
+                                        <div class="h-5 w-16 rounded bg-muted px-2 py-0.5 text-xs"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </main>
-
-                <footer class="py-16 text-center text-sm text-black dark:text-white/70">
-                    Laravel v{{ laravelVersion }} (PHP v{{ phpVersion }})
-                </footer>
+                    <!-- Glow effect below mockup -->
+                    <div class="pointer-events-none absolute -bottom-10 left-1/2 h-20 w-2/3 -translate-x-1/2 rounded-full bg-primary/20 blur-2xl"></div>
+                </div>
             </div>
-        </div>
+        </section>
+
+        <!-- ==================== SOCIAL PROOF ==================== -->
+        <section class="border-b border-border bg-surface py-10">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <p class="text-center text-sm font-medium text-muted-foreground">Confiado por estabelecimentos de todo o Brasil</p>
+                <div class="mt-6 flex flex-wrap items-center justify-center gap-8 opacity-50 grayscale">
+                    <div v-for="brand in ['Bar do Zé', 'Restaurante Bella Vista', 'Choperia Aurora', 'Pizza &amp; Cia', 'Boteco Central']" :key="brand" class="font-heading text-sm font-bold text-foreground">
+                        {{ brand }}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== FEATURES ==================== -->
+        <section id="funcionalidades" class="py-20 lg:py-28">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="mx-auto max-w-2xl text-center">
+                    <span class="text-sm font-semibold uppercase tracking-widest text-primary">Funcionalidades</span>
+                    <h2 class="mt-2 font-heading text-3xl font-bold tracking-tight text-ocean-deep sm:text-4xl">
+                        Tudo que seu estabelecimento precisa
+                    </h2>
+                    <p class="mt-4 text-base text-muted-foreground">
+                        Uma plataforma completa, do cardápio ao fechamento. Sem integrações complicadas, sem mensalidades surpresa.
+                    </p>
+                </div>
+
+                <div class="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <div
+                        v-for="feature in features"
+                        :key="feature.title"
+                        class="group relative flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 shadow-card transition-all hover:-translate-y-1 hover:border-primary/30 hover:shadow-ocean"
+                    >
+                        <!-- Icon wrapper -->
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+                            <!-- Menu icon -->
+                            <template v-if="feature.icon === 'menu'">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                </svg>
+                            </template>
+                            <!-- Orders icon -->
+                            <template v-else-if="feature.icon === 'orders'">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                </svg>
+                            </template>
+                            <!-- KDS icon -->
+                            <template v-else-if="feature.icon === 'kds'">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                            </template>
+                            <!-- Payment icon -->
+                            <template v-else-if="feature.icon === 'payment'">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                </svg>
+                            </template>
+                            <!-- QR Code icon -->
+                            <template v-else-if="feature.icon === 'qrcode'">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12v.01M12 4h.01M4 4h4v4H4V4zm12 0h4v4h-4V4zM4 16h4v4H4v-4z" />
+                                </svg>
+                            </template>
+                            <!-- Corporation icon -->
+                            <template v-else-if="feature.icon === 'corporation'">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
+                            </template>
+                        </div>
+
+                        <div>
+                            <h3 class="font-heading text-base font-semibold text-ocean-deep">{{ feature.title }}</h3>
+                            <p class="mt-2 text-sm leading-relaxed text-muted-foreground">{{ feature.description }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== HOW IT WORKS ==================== -->
+        <section id="como-funciona" class="bg-ocean-deep py-20 lg:py-28">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="mx-auto max-w-2xl text-center">
+                    <span class="text-sm font-semibold uppercase tracking-widest text-primary">Como funciona</span>
+                    <h2 class="mt-2 font-heading text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                        Do cadastro ao primeiro atendimento em minutos
+                    </h2>
+                </div>
+
+                <div class="mt-16 grid gap-8 md:grid-cols-3">
+                    <div
+                        v-for="(step, index) in steps"
+                        :key="step.number"
+                        class="relative flex flex-col items-center text-center"
+                    >
+                        <!-- Connector line -->
+                        <div
+                            v-if="index < steps.length - 1"
+                            class="absolute left-1/2 top-8 hidden h-0.5 w-full bg-gradient-to-r from-primary/50 to-transparent md:block"
+                            style="transform: translateX(50%);"
+                        ></div>
+
+                        <div class="relative z-10 flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10">
+                            <span class="font-heading text-xl font-bold text-primary">{{ step.number }}</span>
+                        </div>
+                        <h3 class="mt-4 font-heading text-lg font-semibold text-white">{{ step.title }}</h3>
+                        <p class="mt-2 text-sm leading-relaxed text-white/60">{{ step.description }}</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== PRICING ==================== -->
+        <section id="planos" class="py-20 lg:py-28">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="mx-auto max-w-2xl text-center">
+                    <span class="text-sm font-semibold uppercase tracking-widest text-primary">Planos</span>
+                    <h2 class="mt-2 font-heading text-3xl font-bold tracking-tight text-ocean-deep sm:text-4xl">
+                        Preço simples e transparente
+                    </h2>
+                    <p class="mt-4 text-base text-muted-foreground">
+                        Comece grátis por 14 dias. Sem taxa de setup, sem surpresas na fatura.
+                    </p>
+                </div>
+
+                <div class="mt-16 grid gap-6 lg:grid-cols-3">
+                    <div
+                        v-for="plan in plans"
+                        :key="plan.name"
+                        :class="[
+                            'relative flex flex-col rounded-xl border p-8 transition-all',
+                            plan.highlighted
+                                ? 'border-primary bg-ocean-deep shadow-ocean ring-2 ring-primary/50'
+                                : 'border-border bg-surface shadow-card hover:border-primary/30 hover:shadow-ocean',
+                        ]"
+                    >
+                        <div v-if="plan.highlighted" class="absolute -top-3 left-1/2 -translate-x-1/2">
+                            <span class="rounded-full bg-primary px-4 py-1 text-xs font-semibold text-white shadow-sm">Mais popular</span>
+                        </div>
+
+                        <div>
+                            <h3 :class="['font-heading text-lg font-bold', plan.highlighted ? 'text-white' : 'text-ocean-deep']">
+                                {{ plan.name }}
+                            </h3>
+                            <p :class="['mt-1 text-sm', plan.highlighted ? 'text-white/60' : 'text-muted-foreground']">
+                                {{ plan.description }}
+                            </p>
+                        </div>
+
+                        <div class="mt-6 flex items-end gap-1">
+                            <span :class="['font-heading text-4xl font-bold', plan.highlighted ? 'text-white' : 'text-ocean-deep']">
+                                {{ plan.price }}
+                            </span>
+                            <span v-if="plan.period" :class="['mb-1 text-sm', plan.highlighted ? 'text-white/50' : 'text-muted-foreground']">
+                                {{ plan.period }}
+                            </span>
+                        </div>
+
+                        <ul class="mt-8 flex flex-col gap-3">
+                            <li v-for="feat in plan.features" :key="feat" class="flex items-center gap-2.5">
+                                <svg class="h-4 w-4 shrink-0 text-primary" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                                <span :class="['text-sm', plan.highlighted ? 'text-white/80' : 'text-muted-foreground']">{{ feat }}</span>
+                            </li>
+                        </ul>
+
+                        <div class="mt-8">
+                            <Link
+                                v-if="canRegister"
+                                :href="route('register')"
+                                :class="[
+                                    'block w-full rounded-lg py-3 text-center text-sm font-semibold transition-all',
+                                    plan.highlighted
+                                        ? 'bg-primary text-white hover:bg-primary-hover'
+                                        : 'border border-border bg-muted text-ocean-deep hover:border-primary/50 hover:bg-primary/5',
+                                ]"
+                            >
+                                {{ plan.cta }}
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TESTIMONIALS ==================== -->
+        <section class="bg-surface py-20 lg:py-24">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="mx-auto max-w-2xl text-center">
+                    <h2 class="font-heading text-3xl font-bold tracking-tight text-ocean-deep sm:text-4xl">
+                        O que nossos clientes dizem
+                    </h2>
+                </div>
+                <div class="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <div
+                        v-for="testimonial in [
+                            {quote: 'Depois do NeuraBar, nossa cozinha parou de perder pedidos. O KDS mudou tudo.', author: 'Carlos M.', role: 'Dono, Choperia Aurora'},
+                            {quote: 'Em 20 minutos configurei o cardápio completo. A equipe adorou e os clientes também.', author: 'Ana Paula S.', role: 'Gerente, Restaurante Bella Vista'},
+                            {quote: 'O QR code na mesa reduziu erros nos pedidos e melhorou muito a experiência do cliente.', author: 'Rafael T.', role: 'Proprietário, Bar do Zé'},
+                        ]"
+                        :key="testimonial.author"
+                        class="flex flex-col gap-4 rounded-xl border border-border bg-muted p-6"
+                    >
+                        <div class="flex gap-1">
+                            <svg v-for="s in 5" :key="s" class="h-4 w-4 text-warm-gold" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                        </div>
+                        <p class="text-sm leading-relaxed text-muted-foreground">"{{ testimonial.quote }}"</p>
+                        <div class="mt-auto">
+                            <p class="text-sm font-semibold text-ocean-deep">{{ testimonial.author }}</p>
+                            <p class="text-xs text-muted-foreground">{{ testimonial.role }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== FINAL CTA ==================== -->
+        <section class="bg-gradient-to-br from-ocean-deep via-ocean-deep to-primary/30 py-20 lg:py-28">
+            <div class="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
+                <h2 class="font-heading text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                    Pronto para modernizar seu estabelecimento?
+                </h2>
+                <p class="mt-4 text-lg text-white/60">
+                    Junte-se a centenas de bares e restaurantes que já gerenciam seus negócios com o NeuraBar.
+                </p>
+                <div class="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+                    <template v-if="canRegister">
+                        <Link
+                            :href="route('register')"
+                            class="inline-flex w-full items-center justify-center rounded-lg bg-primary px-8 py-4 text-base font-semibold text-white shadow-ocean transition-all hover:bg-primary-hover sm:w-auto"
+                        >
+                            Criar conta gratuitamente
+                            <svg class="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                        </Link>
+                    </template>
+                    <p class="text-sm text-white/40">14 dias grátis · Sem cartão de crédito</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== FOOTER ==================== -->
+        <footer class="border-t border-border bg-ocean-deep py-12">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+                    <!-- Brand -->
+                    <div class="lg:col-span-2">
+                        <div class="flex items-center gap-2.5">
+                            <ApplicationLogo class="h-8 w-8" />
+                            <span class="font-heading text-xl font-bold text-white">NeuraBar</span>
+                        </div>
+                        <p class="mt-3 max-w-xs text-sm text-white/50">
+                            Plataforma SaaS de gestão inteligente para bares e restaurantes de pequeno e médio porte.
+                        </p>
+                    </div>
+
+                    <!-- Product -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-white">Produto</h4>
+                        <ul class="mt-4 flex flex-col gap-2">
+                            <li v-for="link in ['Funcionalidades', 'Planos', 'Como funciona']" :key="link">
+                                <a href="#" class="text-sm text-white/50 transition-colors hover:text-white">{{ link }}</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Account -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-white">Conta</h4>
+                        <ul class="mt-4 flex flex-col gap-2">
+                            <li>
+                                <Link v-if="canLogin" :href="route('login')" class="text-sm text-white/50 transition-colors hover:text-white">
+                                    Entrar
+                                </Link>
+                            </li>
+                            <li>
+                                <Link v-if="canRegister" :href="route('register')" class="text-sm text-white/50 transition-colors hover:text-white">
+                                    Criar conta
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="mt-10 border-t border-white/10 pt-8 text-center">
+                    <p class="text-xs text-white/30">
+                        &copy; {{ new Date().getFullYear() }} NeuraBar. Todos os direitos reservados.
+                    </p>
+                </div>
+            </div>
+        </footer>
     </div>
 </template>

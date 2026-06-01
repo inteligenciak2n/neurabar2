@@ -41,7 +41,6 @@ use App\Http\Controllers\Support\TicketController;
 use App\Http\Controllers\Support\TicketMessageController;
 use App\Http\Controllers\Support\TicketRatingController;
 use App\Http\Controllers\Support\TutorialController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -49,10 +48,8 @@ Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
     ]);
-});
+})->name('welcome');
 
 // Public guest routes — no auth required
 Route::middleware('throttle:60,1')->group(function () {
