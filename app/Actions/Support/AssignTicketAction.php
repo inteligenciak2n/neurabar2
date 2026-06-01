@@ -2,12 +2,12 @@
 
 namespace App\Actions\Support;
 
-use App\Models\Platform\PlatformUser;
+use App\Models\User;
 use App\Models\Support\Ticket;
 
 class AssignTicketAction
 {
-    public function execute(Ticket $ticket, ?PlatformUser $agent): Ticket
+    public function execute(Ticket $ticket, ?User $agent): Ticket
     {
         $ticket->update([
             'assigned_to' => $agent?->id,

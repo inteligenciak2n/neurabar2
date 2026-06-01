@@ -15,14 +15,15 @@ use App\Models\Support\Ticket;
 use App\Models\Support\TicketCategory;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class BackofficeTicketController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $filters = request()->only(['status', 'priority', 'assigned_to', 'search']);
+        $filters = $request->only(['status', 'priority', 'assigned_to', 'search']);
 
         $tickets = Ticket::on('support')
             ->with('category')
