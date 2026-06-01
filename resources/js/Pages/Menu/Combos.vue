@@ -114,7 +114,7 @@ const itemCount = (combo) => combo.items?.length ?? 0;
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <Link :href="route('menu.index')" class="text-sm font-medium text-primary hover:underline">← {{ __('Menu') }}</Link>
-                    <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Combos') }}</h1>
+                    <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Combos') }}</h1>
                 </div>
                 <AppButton @click="openCreate">{{ __('Add Combo') }}</AppButton>
             </div>
@@ -138,7 +138,7 @@ const itemCount = (combo) => combo.items?.length ?? 0;
                     <div class="flex items-start justify-between gap-4">
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
-                                <span class="font-body text-sm font-semibold text-ocean-deep">{{ combo.name }}</span>
+                                <span class="font-body text-sm font-semibold text-ocean-deep dark:text-gray-100">{{ combo.name }}</span>
                                 <AppBadge
                                     :label="combo.active ? __('Active') : __('Inactive')"
                                     :color="combo.active ? '#22c55e' : '#94a3b8'"
@@ -168,8 +168,8 @@ const itemCount = (combo) => combo.items?.length ?? 0;
             </div>
 
             <!-- Create / Edit Form -->
-            <div v-if="showForm" class="mt-4 rounded-lg border border-border p-4">
-                <h3 class="mb-4 font-heading text-sm font-semibold text-ocean-deep">
+            <div v-if="showForm" class="mt-4 rounded-lg border border-border dark:border-gray-700 p-4">
+                <h3 class="mb-4 font-heading text-sm font-semibold text-ocean-deep dark:text-gray-100">
                     {{ editingCombo ? __('Edit Combo') : __('New Combo') }}
                 </h3>
 
@@ -177,40 +177,40 @@ const itemCount = (combo) => combo.items?.length ?? 0;
                     <!-- Basic fields -->
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div class="sm:col-span-2">
-                            <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Name') }} <span class="text-destructive">*</span></label>
+                            <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Name') }} <span class="text-destructive">*</span></label>
                             <input
                                 v-model="form.name"
                                 type="text"
-                                class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                             />
                             <p v-if="form.errors.name" class="mt-1 text-xs text-destructive">{{ form.errors.name }}</p>
                         </div>
 
                         <div>
-                            <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Price') }} (R$) <span class="text-destructive">*</span></label>
+                            <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Price') }} (R$) <span class="text-destructive">*</span></label>
                             <input
                                 v-model="form.price"
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                             />
                             <p v-if="form.errors.price" class="mt-1 text-xs text-destructive">{{ form.errors.price }}</p>
                         </div>
 
                         <div class="flex items-center gap-2 self-end pb-2">
                             <label class="flex cursor-pointer items-center gap-2">
-                                <input v-model="form.active" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
-                                <span class="text-sm text-ocean-deep">{{ __('Active') }}</span>
+                                <input v-model="form.active" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary focus:ring-primary" />
+                                <span class="text-sm text-ocean-deep dark:text-gray-100">{{ __('Active') }}</span>
                             </label>
                         </div>
 
                         <div class="sm:col-span-2">
-                            <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Description') }}</label>
+                            <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Description') }}</label>
                             <textarea
                                 v-model="form.description"
                                 rows="2"
-                                class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                             />
                         </div>
                     </div>
@@ -218,7 +218,7 @@ const itemCount = (combo) => combo.items?.length ?? 0;
                     <!-- Items -->
                     <div>
                         <div class="mb-2 flex items-center justify-between">
-                            <label class="text-sm font-medium text-ocean-deep">{{ __('Items') }} <span class="text-destructive">*</span></label>
+                            <label class="text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Items') }} <span class="text-destructive">*</span></label>
                             <AppButton type="button" size="sm" variant="secondary" @click="addItem">{{ __('Add Item') }}</AppButton>
                         </div>
                         <p v-if="form.errors.items" class="mb-2 text-xs text-destructive">{{ form.errors.items }}</p>
@@ -227,15 +227,15 @@ const itemCount = (combo) => combo.items?.length ?? 0;
                             <div
                                 v-for="(item, index) in form.items"
                                 :key="index"
-                                class="flex items-start gap-2 rounded-md border border-border p-2"
+                                class="flex items-start gap-2 rounded-md border border-border dark:border-gray-700 p-2"
                             >
                                 <div class="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-3">
                                     <!-- Product -->
                                     <div>
-                                        <label class="mb-1 block text-xs font-medium text-ocean-deep">{{ __('Product') }}</label>
+                                        <label class="mb-1 block text-xs font-medium text-ocean-deep dark:text-gray-100">{{ __('Product') }}</label>
                                         <select
                                             v-model="item.product_id"
-                                            class="w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                            class="w-full rounded-md border border-border dark:border-gray-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                                             @change="item.variation_id = ''"
                                         >
                                             <option value="">{{ __('Select...') }}</option>
@@ -250,11 +250,11 @@ const itemCount = (combo) => combo.items?.length ?? 0;
 
                                     <!-- Variation -->
                                     <div>
-                                        <label class="mb-1 block text-xs font-medium text-ocean-deep">{{ __('Variation') }}</label>
+                                        <label class="mb-1 block text-xs font-medium text-ocean-deep dark:text-gray-100">{{ __('Variation') }}</label>
                                         <select
                                             v-model="item.variation_id"
                                             :disabled="!variationsForProduct(item.product_id).length"
-                                            class="w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                                            class="w-full rounded-md border border-border dark:border-gray-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                                         >
                                             <option value="">{{ __('None') }}</option>
                                             <option
@@ -269,12 +269,12 @@ const itemCount = (combo) => combo.items?.length ?? 0;
 
                                     <!-- Quantity -->
                                     <div>
-                                        <label class="mb-1 block text-xs font-medium text-ocean-deep">{{ __('Qty') }}</label>
+                                        <label class="mb-1 block text-xs font-medium text-ocean-deep dark:text-gray-100">{{ __('Qty') }}</label>
                                         <input
                                             v-model.number="item.quantity"
                                             type="number"
                                             min="1"
-                                            class="w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                            class="w-full rounded-md border border-border dark:border-gray-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                                         />
                                         <p v-if="form.errors[`items.${index}.quantity`]" class="mt-1 text-xs text-destructive">
                                             {{ form.errors[`items.${index}.quantity`] }}

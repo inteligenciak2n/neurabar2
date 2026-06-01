@@ -37,7 +37,7 @@ function formatDate(dateStr) {
                             />
                         </div>
 
-                        <h1 class="text-2xl font-bold text-ocean-deep mb-2">{{ tutorial.title }}</h1>
+                        <h1 class="text-2xl font-bold text-ocean-deep dark:text-gray-100 mb-2">{{ tutorial.title }}</h1>
 
                         <p v-if="tutorial.summary" class="text-muted-foreground mb-4">{{ tutorial.summary }}</p>
 
@@ -48,13 +48,13 @@ function formatDate(dateStr) {
                         <!-- Rendered markdown as HTML -->
                         <!-- eslint-disable-next-line vue/no-v-html -->
                         <div
-                            class="prose prose-sm max-w-none prose-headings:text-ocean-deep prose-a:text-primary"
+                            class="prose prose-sm max-w-none prose-headings:text-ocean-deep prose-a:text-primary dark:prose-invert"
                             v-html="tutorial.body_html ?? tutorial.body"
                         />
                     </AppCard>
 
-                    <div class="mt-6 rounded-xl border border-border bg-muted/30 p-5">
-                        <p class="text-sm text-ocean-deep font-medium">Este tutorial não resolveu seu problema?</p>
+                    <div class="mt-6 rounded-xl border border-border bg-muted/30 p-5 dark:border-gray-700 dark:bg-gray-800">
+                        <p class="text-sm text-ocean-deep font-medium dark:text-gray-100">Este tutorial não resolveu seu problema?</p>
                         <p class="mt-1 text-xs text-muted-foreground">Nossa equipe está pronta para ajudar você.</p>
                         <AppButton :href="route('support.tickets.create')" as="a" variant="secondary" class="mt-3">
                             Abrir Chamado de Suporte
@@ -72,9 +72,9 @@ function formatDate(dateStr) {
                             v-for="item in related"
                             :key="item.id"
                             :href="route('support.tutorials.show', item.slug)"
-                            class="block rounded-xl border border-border bg-white p-3 hover:border-primary/30 hover:shadow-card transition-all"
+                            class="block rounded-xl border border-border bg-white p-3 hover:border-primary/30 hover:shadow-card transition-all dark:border-gray-700 dark:bg-gray-800"
                         >
-                            <p class="font-medium text-ocean-deep text-sm line-clamp-2">{{ item.title }}</p>
+                            <p class="font-medium text-ocean-deep text-sm line-clamp-2 dark:text-gray-100">{{ item.title }}</p>
                             <p v-if="item.summary" class="mt-1 text-xs text-muted-foreground line-clamp-2">
                                 {{ item.summary }}
                             </p>

@@ -10,7 +10,7 @@ defineProps({
 <template>
     <AppLayout :title="__('Venues')">
         <template #header>
-            <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Venues') }}</h1>
+            <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Venues') }}</h1>
         </template>
 
         <div class="space-y-4">
@@ -20,7 +20,7 @@ defineProps({
                 </Link>
             </div>
 
-            <div class="bg-white rounded-xl shadow-card overflow-hidden">
+            <div class="bg-white rounded-xl shadow-card overflow-hidden dark:bg-gray-800">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-border bg-muted/50">
@@ -32,7 +32,7 @@ defineProps({
                     </thead>
                     <tbody>
                         <tr v-for="venue in venues" :key="venue.id" class="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                            <td class="px-4 py-3 font-medium text-ocean-deep">{{ venue.name }}</td>
+                            <td class="px-4 py-3 font-medium text-ocean-deep dark:text-gray-100">{{ venue.name }}</td>
                             <td class="px-4 py-3 text-muted-foreground">{{ venue.city }}</td>
                             <td class="px-4 py-3">
                                 <span :class="venue.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="rounded-full px-2 py-0.5 text-xs font-medium">

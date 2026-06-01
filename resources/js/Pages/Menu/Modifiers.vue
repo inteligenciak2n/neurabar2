@@ -148,7 +148,7 @@ const deleteOption = () => {
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <Link :href="route('menu.index')" class="text-sm font-medium text-primary hover:underline">← {{ __('Menu') }}</Link>
-                    <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Modifier Groups') }}</h1>
+                    <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Modifier Groups') }}</h1>
                 </div>
                 <AppButton @click="showCreateGroup = !showCreateGroup">{{ __('New Group') }}</AppButton>
             </div>
@@ -159,21 +159,21 @@ const deleteOption = () => {
             <AppCard v-if="showCreateGroup" :title="__('New Modifier Group')">
                 <form @submit.prevent="submitCreateGroup" class="space-y-3">
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Name') }} <span class="text-destructive">*</span></label>
+                        <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Name') }} <span class="text-destructive">*</span></label>
                         <input
                             v-model="createGroupForm.name"
                             type="text"
-                            class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                         />
                         <p v-if="createGroupForm.errors.name" class="mt-1 text-xs text-destructive">{{ createGroupForm.errors.name }}</p>
                     </div>
                     <div class="flex gap-4">
                         <label class="flex cursor-pointer items-center gap-2 text-sm">
-                            <input v-model="createGroupForm.required" type="checkbox" class="h-4 w-4 rounded border-border text-primary" />
+                            <input v-model="createGroupForm.required" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary" />
                             {{ __('Required') }}
                         </label>
                         <label class="flex cursor-pointer items-center gap-2 text-sm">
-                            <input v-model="createGroupForm.multiple_selection" type="checkbox" class="h-4 w-4 rounded border-border text-primary" />
+                            <input v-model="createGroupForm.multiple_selection" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary" />
                             {{ __('Multiple Selection') }}
                         </label>
                     </div>
@@ -199,7 +199,7 @@ const deleteOption = () => {
                 <template v-if="editingGroupId !== group.id">
                     <div class="flex items-start justify-between gap-3">
                         <div>
-                            <h3 class="font-heading text-sm font-semibold text-ocean-deep">{{ group.name }}</h3>
+                            <h3 class="font-heading text-sm font-semibold text-ocean-deep dark:text-gray-100">{{ group.name }}</h3>
                             <div class="mt-1 flex flex-wrap gap-1.5">
                                 <AppBadge v-if="group.required" label="Required" color="#f59e0b" />
                                 <AppBadge v-if="group.multiple_selection" label="Multi-select" color="#3b82f6" />
@@ -219,21 +219,21 @@ const deleteOption = () => {
                 <template v-else>
                     <form @submit.prevent="submitEditGroup(group)" class="space-y-3">
                         <div>
-                            <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Name') }}</label>
+                            <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Name') }}</label>
                             <input
                                 v-model="editGroupForm.name"
                                 type="text"
-                                class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                             />
                             <p v-if="editGroupForm.errors.name" class="mt-1 text-xs text-destructive">{{ editGroupForm.errors.name }}</p>
                         </div>
                         <div class="flex gap-4">
                             <label class="flex cursor-pointer items-center gap-2 text-sm">
-                                <input v-model="editGroupForm.required" type="checkbox" class="h-4 w-4 rounded border-border text-primary" />
+                                <input v-model="editGroupForm.required" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary" />
                                 {{ __('Required') }}
                             </label>
                             <label class="flex cursor-pointer items-center gap-2 text-sm">
-                                <input v-model="editGroupForm.multiple_selection" type="checkbox" class="h-4 w-4 rounded border-border text-primary" />
+                                <input v-model="editGroupForm.multiple_selection" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary" />
                                 {{ __('Multiple Selection') }}
                             </label>
                         </div>
@@ -245,7 +245,7 @@ const deleteOption = () => {
                 </template>
 
                 <!-- Divider -->
-                <hr class="my-3 border-border" />
+                <hr class="my-3 border-border dark:border-gray-700" />
 
                 <!-- Options list -->
                 <div class="space-y-1">
@@ -253,7 +253,7 @@ const deleteOption = () => {
                         <!-- Option view row -->
                         <div v-if="editingOptionId !== option.id" class="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-muted/50">
                             <div class="flex items-center gap-3">
-                                <span class="text-sm text-ocean-deep">{{ option.name }}</span>
+                                <span class="text-sm text-ocean-deep dark:text-gray-100">{{ option.name }}</span>
                                 <span class="text-xs text-muted-foreground">
                                     {{ option.extra_price > 0 ? `+R$ ${Number(option.extra_price).toFixed(2)}` : __('Free') }}
                                 </span>
@@ -270,30 +270,30 @@ const deleteOption = () => {
                         </div>
 
                         <!-- Option edit form (inline) -->
-                        <div v-else class="rounded-md border border-border bg-muted/30 px-3 py-2">
+                        <div v-else class="rounded-md border border-border dark:border-gray-700 bg-muted/30 px-3 py-2">
                             <form @submit.prevent="submitEditOption(group, option)" class="flex flex-wrap items-end gap-2">
                                 <div class="min-w-[180px] flex-1">
-                                    <label class="mb-1 block text-xs font-medium text-ocean-deep">{{ __('Name') }}</label>
+                                    <label class="mb-1 block text-xs font-medium text-ocean-deep dark:text-gray-100">{{ __('Name') }}</label>
                                     <input
                                         v-model="editOptionForm.name"
                                         type="text"
-                                        class="w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                        class="w-full rounded-md border border-border dark:border-gray-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                                     />
                                     <p v-if="editOptionForm.errors.name" class="mt-1 text-xs text-destructive">{{ editOptionForm.errors.name }}</p>
                                 </div>
                                 <div class="w-28">
-                                    <label class="mb-1 block text-xs font-medium text-ocean-deep">{{ __('Extra price') }} (R$)</label>
+                                    <label class="mb-1 block text-xs font-medium text-ocean-deep dark:text-gray-100">{{ __('Extra price') }} (R$)</label>
                                     <input
                                         v-model.number="editOptionForm.extra_price"
                                         type="number"
                                         min="0"
                                         step="0.01"
-                                        class="w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                        class="w-full rounded-md border border-border dark:border-gray-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                                     />
                                 </div>
                                 <div class="flex items-center gap-1 pb-1.5">
                                     <label class="flex cursor-pointer items-center gap-1.5 text-xs">
-                                        <input v-model="editOptionForm.active" type="checkbox" class="h-3.5 w-3.5 rounded border-border text-primary" />
+                                        <input v-model="editOptionForm.active" type="checkbox" class="h-3.5 w-3.5 rounded border-border dark:border-gray-700 text-primary" />
                                         {{ __('Active') }}
                                     </label>
                                 </div>
@@ -312,25 +312,25 @@ const deleteOption = () => {
                 </div>
 
                 <!-- Add option form (inline) -->
-                <div v-if="addingOptionForGroupId === group.id" class="mt-2 rounded-md border border-dashed border-border bg-muted/30 px-3 py-2">
+                <div v-if="addingOptionForGroupId === group.id" class="mt-2 rounded-md border border-dashed border-border dark:border-gray-700 bg-muted/30 px-3 py-2">
                     <form @submit.prevent="submitCreateOption(group)" class="flex flex-wrap items-end gap-2">
                         <div class="min-w-[180px] flex-1">
-                            <label class="mb-1 block text-xs font-medium text-ocean-deep">{{ __('Name') }}</label>
+                            <label class="mb-1 block text-xs font-medium text-ocean-deep dark:text-gray-100">{{ __('Name') }}</label>
                             <input
                                 v-model="createOptionForm.name"
                                 type="text"
-                                class="w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                class="w-full rounded-md border border-border dark:border-gray-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                             />
                             <p v-if="createOptionForm.errors.name" class="mt-1 text-xs text-destructive">{{ createOptionForm.errors.name }}</p>
                         </div>
                         <div class="w-28">
-                            <label class="mb-1 block text-xs font-medium text-ocean-deep">{{ __('Extra price') }} (R$)</label>
+                            <label class="mb-1 block text-xs font-medium text-ocean-deep dark:text-gray-100">{{ __('Extra price') }} (R$)</label>
                             <input
                                 v-model.number="createOptionForm.extra_price"
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                class="w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                class="w-full rounded-md border border-border dark:border-gray-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                             />
                         </div>
                         <div class="flex gap-1.5">

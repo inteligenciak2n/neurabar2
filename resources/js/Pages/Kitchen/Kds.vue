@@ -102,7 +102,7 @@ const allStations = computed(() => {
     <AppLayout :title="__('Kitchen KDS')">
         <template #header>
             <div class="flex items-center justify-between">
-                <h2 class="font-heading text-xl font-semibold text-ocean-deep">{{ __('Kitchen KDS') }}</h2>
+                <h2 class="font-heading text-xl font-semibold text-ocean-deep dark:text-gray-100">{{ __('Kitchen KDS') }}</h2>
                 <AppButton variant="ghost" size="sm" @click="reload">{{ __('Refresh') }}</AppButton>
             </div>
         </template>
@@ -144,8 +144,8 @@ const allStations = computed(() => {
             <div v-else class="grid gap-4" :style="`grid-template-columns: repeat(${allStations.length}, minmax(260px, 1fr))`">
                 <div v-for="station in allStations" :key="station.id" class="flex flex-col gap-3">
                     <!-- Station header -->
-                    <div class="sticky top-20 z-10 rounded-lg bg-white shadow-card px-4 py-2 flex items-center justify-between">
-                        <span class="font-heading font-semibold text-sm text-ocean-deep">{{ station.name }}</span>
+                    <div class="sticky top-20 z-10 rounded-lg bg-white shadow-card px-4 py-2 flex items-center justify-between dark:bg-gray-800">
+                        <span class="font-heading font-semibold text-sm text-ocean-deep dark:text-gray-100">{{ station.name }}</span>
                         <AppBadge
                             :label="`${getItemsForStation(station.id).length}`"
                             variant="primary"
@@ -164,12 +164,12 @@ const allStations = computed(() => {
                     <div
                         v-for="item in getItemsForStation(station.id)"
                         :key="item.id"
-                        class="rounded-lg bg-white shadow-card p-4 flex flex-col gap-3"
+                        class="rounded-lg bg-white shadow-card p-4 flex flex-col gap-3 dark:bg-gray-800"
                     >
                         <!-- Header row -->
                         <div class="flex items-start justify-between gap-2">
                             <div>
-                                <p class="font-heading font-semibold text-sm text-ocean-deep">
+                                <p class="font-heading font-semibold text-sm text-ocean-deep dark:text-gray-100">
                                     {{ item.order?.attendance?.customer_identifier ?? __('Guest') }}
                                 </p>
                                 <p class="text-xs text-muted-foreground">
@@ -186,7 +186,7 @@ const allStations = computed(() => {
 
                         <!-- Product -->
                         <div>
-                            <p class="font-body font-medium text-sm text-ocean-deep">
+                            <p class="font-body font-medium text-sm text-ocean-deep dark:text-gray-100">
                                 {{ item.quantity }}× {{ item.product?.name ?? __('Custom request') }}
                             </p>
                             <p v-if="item.variation" class="text-xs text-muted-foreground">

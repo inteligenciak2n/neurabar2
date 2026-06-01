@@ -39,7 +39,7 @@ function formatDate(dateStr) {
     <PlatformLayout title="Tutoriais">
         <template #header>
             <div class="flex items-center justify-between">
-                <h1 class="font-heading text-xl font-bold text-ocean-deep">Tutoriais e Manuais</h1>
+                <h1 class="font-heading text-xl font-bold text-ocean-deep dark:text-gray-100">Tutoriais e Manuais</h1>
                 <AppButton :href="route('platform.support.tutorials.create')" as="a">Novo Tutorial</AppButton>
             </div>
         </template>
@@ -51,10 +51,10 @@ function formatDate(dateStr) {
                 <div
                     v-for="tutorial in tutorials.data"
                     :key="tutorial.id"
-                    class="flex items-center justify-between py-3"
+                    class="flex items-center justify-between py-3 dark:border-gray-700"
                 >
                     <div class="min-w-0 flex-1">
-                        <p class="truncate font-medium text-ocean-deep">{{ tutorial.title }}</p>
+                        <p class="truncate font-medium text-ocean-deep dark:text-gray-100">{{ tutorial.title }}</p>
                         <p class="text-xs text-muted-foreground">
                             {{ tutorial.category?.name }} · Atualizado em {{ formatDate(tutorial.updated_at) }}
                         </p>

@@ -232,7 +232,7 @@ const placeOrder = () => {
                 <Link :href="route('attendances.show', attendance.id)" class="text-sm font-medium text-primary hover:underline">
                     ← {{ attendance.customer_identifier ?? attendance.channel }}
                 </Link>
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Take Order') }}</h1>
+                <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Take Order') }}</h1>
             </div>
         </template>
 
@@ -243,13 +243,13 @@ const placeOrder = () => {
                 <div class="mb-3 flex gap-2">
                     <button
                         class="rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
-                        :class="activeTab === 'menu' ? 'bg-primary text-white' : 'bg-white text-ocean-deep shadow-card hover:bg-ocean-light'"
+                        :class="activeTab === 'menu' ? 'bg-primary text-white' : 'bg-white text-ocean-deep shadow-card hover:bg-ocean-light dark:bg-gray-700 dark:text-gray-100'"
                         @click="activeTab = 'menu'"
                     >{{ __('Menu') }}</button>
                     <button
                         v-if="combos?.length"
                         class="rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
-                        :class="activeTab === 'combos' ? 'bg-primary text-white' : 'bg-white text-ocean-deep shadow-card hover:bg-ocean-light'"
+                        :class="activeTab === 'combos' ? 'bg-primary text-white' : 'bg-white text-ocean-deep shadow-card hover:bg-ocean-light dark:bg-gray-700 dark:text-gray-100'"
                         @click="activeTab = 'combos'"
                     >{{ __('Combos') }}</button>
                 </div>
@@ -262,7 +262,7 @@ const placeOrder = () => {
                             v-for="category in categories"
                             :key="category.id"
                             class="whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
-                            :class="selectedCategoryId === category.id ? 'bg-ocean-deep text-white' : 'bg-white text-ocean-deep shadow-card hover:bg-ocean-light'"
+                            :class="selectedCategoryId === category.id ? 'bg-ocean-deep text-white' : 'bg-white text-ocean-deep shadow-card hover:bg-ocean-light dark:bg-gray-700 dark:text-gray-100'"
                             @click="selectedCategoryId = category.id"
                         >
                             {{ category.name }}
@@ -276,13 +276,13 @@ const placeOrder = () => {
                             <button
                                 v-for="product in selectedCategory.products"
                                 :key="product.id"
-                                class="rounded-lg bg-white p-3 text-left shadow-card transition hover:ring-2 hover:ring-primary"
+                                class="rounded-lg bg-white p-3 text-left shadow-card transition hover:ring-2 hover:ring-primary dark:bg-gray-800"
                                 @click="addToCart(product)"
                             >
-                                <p class="font-body text-sm font-semibold text-ocean-deep">{{ product.name }}</p>
+                                <p class="font-body text-sm font-semibold text-ocean-deep dark:text-gray-100">{{ product.name }}</p>
                                 <p class="mt-1 font-heading text-sm font-bold text-primary">R$ {{ Number(product.price).toFixed(2) }}</p>
-                                <span v-if="product.variations?.length" class="mt-1 inline-block rounded bg-ocean-light px-1.5 py-0.5 text-xs text-ocean-deep">{{ __('Variations') }}</span>
-                                <span v-if="product.modifier_groups?.length" class="mt-1 inline-block rounded bg-ocean-light px-1.5 py-0.5 text-xs text-ocean-deep">{{ __('Modifiers') }}</span>
+                                <span v-if="product.variations?.length" class="mt-1 inline-block rounded bg-ocean-light px-1.5 py-0.5 text-xs text-ocean-deep dark:bg-gray-700 dark:text-gray-300">{{ __('Variations') }}</span>
+                                <span v-if="product.modifier_groups?.length" class="mt-1 inline-block rounded bg-ocean-light px-1.5 py-0.5 text-xs text-ocean-deep dark:bg-gray-700 dark:text-gray-300">{{ __('Modifiers') }}</span>
                             </button>
                         </div>
                     </div>
@@ -296,11 +296,11 @@ const placeOrder = () => {
                             <div
                                 v-for="combo in combos"
                                 :key="combo.id"
-                                class="rounded-lg bg-white p-4 shadow-card"
+                                class="rounded-lg bg-white p-4 shadow-card dark:bg-gray-800"
                             >
                                 <div class="flex items-start justify-between">
                                     <div>
-                                        <p class="font-body font-semibold text-ocean-deep">{{ combo.name }}</p>
+                                        <p class="font-body font-semibold text-ocean-deep dark:text-gray-100">{{ combo.name }}</p>
                                         <ul class="mt-1 space-y-0.5">
                                             <li v-for="item in combo.items" :key="item.id" class="text-xs text-muted-foreground">
                                                 {{ item.product?.name }}<span v-if="item.variation"> — {{ item.variation.name }}</span>
@@ -317,9 +317,9 @@ const placeOrder = () => {
             </div>
 
             <!-- Right: Cart -->
-            <div class="flex w-72 flex-shrink-0 flex-col rounded-lg bg-white shadow-card">
+            <div class="flex w-72 flex-shrink-0 flex-col rounded-lg bg-white shadow-card dark:bg-gray-800">
                 <div class="border-b border-border p-4">
-                    <h2 class="font-heading text-sm font-bold text-ocean-deep">{{ __('Cart') }}</h2>
+                    <h2 class="font-heading text-sm font-bold text-ocean-deep dark:text-gray-100">{{ __('Cart') }}</h2>
                 </div>
 
                 <div class="flex-1 overflow-y-auto p-4">
@@ -334,7 +334,7 @@ const placeOrder = () => {
                                     <button class="text-xs text-destructive hover:underline" @click="removeFromCart(group.items[0].key)">{{ __('Remove') }}</button>
                                 </div>
                                 <ul class="space-y-0.5">
-                                    <li v-for="ci in group.items" :key="ci.key" class="text-xs text-ocean-deep">
+                                    <li v-for="ci in group.items" :key="ci.key" class="text-xs text-ocean-deep dark:text-gray-300">
                                         {{ ci.product.name }}<span v-if="ci.variation"> — {{ ci.variation.name }}</span>
                                     </li>
                                 </ul>
@@ -343,14 +343,14 @@ const placeOrder = () => {
                             <!-- Regular item -->
                             <div v-else class="rounded-md border border-border p-2">
                                 <div class="flex items-center justify-between">
-                                    <p class="text-sm font-semibold text-ocean-deep">
+                                    <p class="text-sm font-semibold text-ocean-deep dark:text-gray-100">
                                         {{ group.item.product.name }}
                                         <span v-if="group.item.variation" class="text-xs text-muted-foreground"> ({{ group.item.variation.name }})</span>
                                     </p>
                                     <button class="text-xs text-destructive hover:underline" @click="removeFromCart(group.item.key)">{{ __('Remove') }}</button>
                                 </div>
                                 <div v-if="group.item.modifiers?.length" class="mt-0.5 flex flex-wrap gap-1">
-                                    <span v-for="m in group.item.modifiers" :key="m.modifier_option_id" class="rounded bg-ocean-light px-1.5 py-0.5 text-xs text-ocean-deep">
+                                    <span v-for="m in group.item.modifiers" :key="m.modifier_option_id" class="rounded bg-ocean-light px-1.5 py-0.5 text-xs text-ocean-deep dark:bg-gray-700 dark:text-gray-300">
                                         {{ m.name }}
                                     </span>
                                 </div>
@@ -380,7 +380,7 @@ const placeOrder = () => {
                 </div>
 
                 <div class="border-t border-border p-4">
-                    <div class="mb-3 flex justify-between text-sm font-semibold text-ocean-deep">
+                    <div class="mb-3 flex justify-between text-sm font-semibold text-ocean-deep dark:text-gray-100">
                         <span>{{ __('Total') }}</span>
                         <span>R$ {{ cartTotal }}</span>
                     </div>
@@ -398,14 +398,14 @@ const placeOrder = () => {
 
         <!-- Product Modal (variations + modifiers) -->
         <div v-if="productModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div class="w-full max-w-md rounded-xl bg-white shadow-xl">
+            <div class="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-gray-800">
                 <div class="border-b border-border px-6 py-4">
-                    <h3 class="font-heading text-lg font-bold text-ocean-deep">{{ modalProduct.name }}</h3>
+                    <h3 class="font-heading text-lg font-bold text-ocean-deep dark:text-gray-100">{{ modalProduct.name }}</h3>
                 </div>
                 <div class="max-h-[60vh] overflow-y-auto px-6 py-4 space-y-4">
                     <!-- Variations -->
                     <div v-if="modalProduct.variations?.length">
-                        <p class="mb-2 text-sm font-semibold text-ocean-deep">{{ __('Choose variation') }} <span class="text-destructive">*</span></p>
+                        <p class="mb-2 text-sm font-semibold text-ocean-deep dark:text-gray-300">{{ __('Choose variation') }} <span class="text-destructive">*</span></p>
                         <div class="space-y-1">
                             <label
                                 v-for="v in modalProduct.variations"
@@ -424,7 +424,7 @@ const placeOrder = () => {
 
                     <!-- Modifier groups -->
                     <div v-for="group in modalProduct.modifier_groups" :key="group.id">
-                        <p class="mb-2 text-sm font-semibold text-ocean-deep">
+                        <p class="mb-2 text-sm font-semibold text-ocean-deep dark:text-gray-300">
                             {{ group.name }}
                             <span v-if="group.required" class="text-destructive">*</span>
                             <span v-else class="text-xs font-normal text-muted-foreground"> ({{ __('optional') }})</span>
@@ -455,7 +455,7 @@ const placeOrder = () => {
 
                     <!-- Notes -->
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Notes (optional)') }}</label>
+                        <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Notes (optional)') }}</label>
                         <input
                             v-model="modalNotes"
                             type="text"

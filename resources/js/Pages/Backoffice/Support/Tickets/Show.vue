@@ -63,7 +63,7 @@ function formatDate(dateStr) {
     <PlatformLayout :title="ticket.subject">
         <template #header>
             <div class="flex justify-between w-full">
-                <h1 class="font-heading text-xl font-bold text-ocean-deep">{{ ticket.subject }}</h1>
+                <h1 class="font-heading text-xl font-bold text-ocean-deep dark:text-gray-100">{{ ticket.subject }}</h1>
                 <div class="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
                     <span>{{ ticketUser?.name ?? ticket.user_id }}</span>
                     <span>·</span>
@@ -74,7 +74,7 @@ function formatDate(dateStr) {
            
         <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h1 class="font-heading text-xl font-bold text-ocean-deep">{{ ticket.subject }}</h1>
+                    <h1 class="font-heading text-xl font-bold text-ocean-deep dark:text-gray-100">{{ ticket.subject }}</h1>
                     <div class="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
                         <span>{{ ticketUser?.name ?? ticket.user_id }}</span>
                         <span>·</span>
@@ -95,20 +95,20 @@ function formatDate(dateStr) {
                 <template #title>Gerenciar Chamado</template>
                 <form @submit.prevent="submitUpdate" class="grid gap-4 sm:grid-cols-3">
                     <div>
-                        <label class="block text-xs font-medium mb-1">Status</label>
-                        <select v-model="updateForm.status" class="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                        <label class="block text-xs font-medium mb-1 dark:text-gray-300">Status</label>
+                        <select v-model="updateForm.status" class="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
                             <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium mb-1">Prioridade</label>
-                        <select v-model="updateForm.priority" class="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                        <label class="block text-xs font-medium mb-1 dark:text-gray-300">Prioridade</label>
+                        <select v-model="updateForm.priority" class="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
                             <option v-for="p in priorities" :key="p.value" :value="p.value">{{ p.label }}</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium mb-1">Atribuir a</label>
-                        <select v-model="updateForm.assigned_to" class="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                        <label class="block text-xs font-medium mb-1 dark:text-gray-300">Atribuir a</label>
+                        <select v-model="updateForm.assigned_to" class="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
                             <option value="">— Sem atribuição —</option>
                             <option v-for="agent in agents" :key="agent.id" :value="agent.id">{{ agent.name }}</option>
                         </select>
@@ -138,21 +138,21 @@ function formatDate(dateStr) {
                         :key="message.id"
                         :class="[
                             'rounded-xl p-4',
-                            message.is_internal ? 'bg-yellow-50 border border-yellow-200' : message.author_type === 'platform_user' ? 'bg-primary/5 border border-primary/10' : 'bg-muted/90',
-                            message.author_type === 'platform_user' ? 'text-primary ml-16' : 'text-ocean-deep mr-16',
+                            message.is_internal ? 'bg-yellow-50 border border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800' : message.author_type === 'platform_user' ? 'bg-primary/5 border border-primary/10 dark:bg-primary/10' : 'bg-muted/90 dark:bg-gray-700/60',
+                            message.author_type === 'platform_user' ? 'text-primary ml-16' : 'text-ocean-deep mr-16 dark:text-gray-100',
                         ]"
                     >
                         <div class="flex items-center justify-between mb-2">
                             <div class="flex items-center gap-2">
                                 <span class="text-xs font-semibold uppercase tracking-wider"
-                                    :class="message.author_type === 'platform_user' ? 'text-primary' : 'text-ocean-deep'">
+                                    :class="message.author_type === 'platform_user' ? 'text-primary' : 'text-ocean-deep dark:text-gray-300'">
                                     {{ message.author_type === 'platform_user' ? 'Agente' : ticketUser?.name ?? 'Cliente' }}
                                 </span>
                                 <AppBadge v-if="message.is_internal" variant="warning" size="sm">Nota Interna</AppBadge>
                             </div>
                             <span class="text-xs text-muted-foreground">{{ formatDate(message.created_at) }}</span>
                         </div>
-                        <p class="whitespace-pre-wrap text-sm text-ocean-deep">{{ message.body }}</p>
+                        <p class="whitespace-pre-wrap text-sm text-ocean-deep dark:text-gray-100">{{ message.body }}</p>
 
                         <div v-if="message.attachments?.length" class="mt-3 flex flex-wrap gap-2">
                             <a
@@ -160,7 +160,7 @@ function formatDate(dateStr) {
                                 :key="att.id"
                                 :href="`/support/attachments/${att.id}`"
                                 target="_blank"
-                                class="inline-flex items-center gap-1 rounded-md border border-border bg-white px-2 py-1 text-xs text-primary hover:bg-muted/40"
+                                class="inline-flex items-center gap-1 rounded-md border border-border bg-white px-2 py-1 text-xs text-primary hover:bg-muted/40 dark:border-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600"
                             >
                                 📎 {{ att.filename }}
                             </a>
@@ -185,8 +185,8 @@ function formatDate(dateStr) {
                         :class="[
                             'w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2',
                             replyForm.is_internal
-                                ? 'border-yellow-300 bg-yellow-50 focus:ring-yellow-400'
-                                : 'border-border focus:ring-primary',
+                                ? 'border-yellow-300 bg-yellow-50 focus:ring-yellow-400 dark:bg-yellow-900/20 dark:border-yellow-700'
+                                : 'border-border focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100',
                         ]"
                         placeholder="Escreva sua mensagem..."
                         required

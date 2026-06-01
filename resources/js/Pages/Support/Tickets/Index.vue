@@ -44,7 +44,7 @@ const priorityLabels = {
     <AppLayout title="Meus Chamados">
         <template #header>
             <div class="flex items-center justify-between">
-                <h1 class="font-heading text-xl font-bold text-ocean-deep">Meus Chamados</h1>
+                <h1 class="font-heading text-xl font-bold text-ocean-deep dark:text-gray-100">Meus Chamados</h1>
                 <AppButton :href="route('support.tickets.create')" as="a">Novo Chamado</AppButton>
             </div>
         </template>
@@ -60,11 +60,11 @@ const priorityLabels = {
                     v-for="ticket in tickets.data"
                     :key="ticket.id"
                     :href="route('support.tickets.show', ticket.id)"
-                    class="flex items-center justify-between py-4 hover:bg-muted/30 px-2 -mx-2 rounded-lg transition-colors"
+                    class="flex items-center justify-between py-4 hover:bg-muted/30 dark:hover:bg-gray-700/30 px-2 -mx-2 rounded-lg transition-colors"
                 >
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2">
-                            <p class="truncate font-medium text-ocean-deep">{{ ticket.subject }}</p>
+                            <p class="truncate font-medium text-ocean-deep dark:text-gray-100">{{ ticket.subject }}</p>
                             <span
                                 v-if="ticket.unread_count > 0"
                                 class="inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-primary px-1 text-white text-xs font-bold"

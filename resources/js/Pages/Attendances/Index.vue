@@ -98,22 +98,22 @@ onUnmounted(() => {
     <AppLayout :title="__('Attendances')">
         <template #header>
             <div class="flex items-center justify-between">
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Attendances') }}</h1>
+                <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Attendances') }}</h1>
                 <AppButton @click="initForm(); showForm = true">{{ __('New Attendance') }}</AppButton>
             </div>
         </template>
 
         <!-- New attendance form -->
         <AppCard v-if="showForm" class="mb-6">
-            <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep">{{ __('New Attendance') }}</h3>
+            <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep dark:text-gray-100">{{ __('New Attendance') }}</h3>
             <form class="grid grid-cols-1 gap-3 sm:grid-cols-2" @submit.prevent="submit">
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Channel') }} <span class="text-destructive">*</span></label>
+                    <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Channel') }} <span class="text-destructive">*</span></label>
                     <template v-for="ch in channels" :key="ch.id">
                         <button
                             type="button"
                             @click="form.attendance_channel_id = ch.id"
-                            :class="{'bg-primary text-white': form.attendance_channel_id === ch.id, 'bg-gray-200 text-gray-700': form.attendance_channel_id !== ch.id}"
+                            :class="{'bg-primary text-white': form.attendance_channel_id === ch.id, 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200': form.attendance_channel_id !== ch.id}"
                             class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
                         >
                             {{ ch.name }}
@@ -123,21 +123,21 @@ onUnmounted(() => {
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Identifier (table/name)') }}</label>
+                    <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Identifier (table/name)') }}</label>
                     <input
                         v-model="form.customer_identifier"
                         type="text"
                         :placeholder="__('e.g. Table 5 or John')"
-                        class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                     />
                     <p v-if="form.errors.customer_identifier" class="mt-1 text-xs text-destructive">{{ form.errors.customer_identifier }}</p>
                 </div>
 
                 <div v-if="serviceLocations.length">
-                    <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Service Location') }}</label>
+                    <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Service Location') }}</label>
                     
                     <template v-for="(locType, type) in serviceLocationsByType()" :key="type" >
-                        <div class="mb-2 font-semibold text-ocean-deep border rounded-md relative">
+                        <div class="mb-2 font-semibold text-ocean-deep dark:text-gray-300 border dark:border-gray-700 rounded-md relative">
                             <button 
                                 type="button" 
                                 class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium"
@@ -148,7 +148,7 @@ onUnmounted(() => {
                                     <button
                                         type="button"
                                         @click="form.service_location_id = loc.id"
-                                        :class="{'bg-primary text-white': form.service_location_id === loc.id, 'bg-gray-200 text-gray-700': form.service_location_id !== loc.id}"
+                                        :class="{'bg-primary text-white': form.service_location_id === loc.id, 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200': form.service_location_id !== loc.id}"
                                         class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
                                     >
                                         {{ loc.name }}
@@ -164,13 +164,13 @@ onUnmounted(() => {
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Party Size') }}</label>
+                    <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Party Size') }}</label>
 
                     <template v-for="s in [1,2,3,4,5,6,7,8,9,10]" :key="s">
                         <button
                             type="button"
                             @click="form.party_size = s"
-                            :class="{'bg-primary text-white': form.party_size === s, 'bg-gray-200 text-gray-700': form.party_size !== s}"
+                            :class="{'bg-primary text-white': form.party_size === s, 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200': form.party_size !== s}"
                             class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
                         >
                             {{ s }}
@@ -182,17 +182,17 @@ onUnmounted(() => {
                         v-model="form.party_size"
                         type="number"
                         min="1"
-                        class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                     />
                 </div>
 
                 <div class="sm:col-span-2">
-                    <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Notes') }}</label>
+                    <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Notes') }}</label>
                     <textarea
                         v-model="form.notes"
                         rows="2"
                         :placeholder="__('Enter any additional notes')"
-                        class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                     />
                 </div>
 
@@ -216,10 +216,10 @@ onUnmounted(() => {
                     <div>
                         <div class="flex items-center gap-2">
                             <AppBadge :label="attendance.attendance_channel?.name ?? ''" color="#3b82f6" />
-                            <span v-if="attendance.customer_identifier" class="text-sm font-semibold text-ocean-deep">
+                            <span v-if="attendance.customer_identifier" class="text-sm font-semibold text-ocean-deep dark:text-gray-100">
                                 {{ __('Identifier:') }} {{ attendance.customer_identifier }}
                             </span>
-                            <span v-if="attendance.service_location" class="text-sm text-ocean-deep">
+                            <span v-if="attendance.service_location" class="text-sm text-ocean-deep dark:text-gray-300">
                                 {{ attendance.service_location.name }}
                             </span>
                         </div>

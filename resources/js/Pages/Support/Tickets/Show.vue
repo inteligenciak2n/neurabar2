@@ -69,7 +69,7 @@ function formatDate(dateStr) {
         <template #header>
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="font-heading text-xl font-bold text-ocean-deep">{{ ticket.subject }}</h1>
+                    <h1 class="font-heading text-xl font-bold text-ocean-deep dark:text-gray-100">{{ ticket.subject }}</h1>
                     <p class="text-sm text-muted-foreground">{{ ticket.category?.name }}</p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -90,7 +90,7 @@ function formatDate(dateStr) {
                 <template #title>Avalie o Atendimento</template>
                 <form @submit.prevent="submitRating" class="space-y-4">
                     <div>
-                        <p class="text-sm text-ocean-deep mb-2">Nota (1 = Péssimo · 5 = Excelente)</p>
+                        <p class="text-sm text-ocean-deep dark:text-gray-300 mb-2">Nota (1 = Péssimo · 5 = Excelente)</p>
                         <div class="flex gap-2">
                             <button
                                 v-for="n in 5"
@@ -101,7 +101,7 @@ function formatDate(dateStr) {
                                     'h-10 w-10 rounded-lg border text-sm font-bold transition-colors',
                                     ratingForm.score === n
                                         ? 'border-warm-gold bg-warm-gold text-white'
-                                        : 'border-border bg-white hover:border-warm-gold',
+                                        : 'border-border bg-white hover:border-warm-gold dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100',
                                 ]"
                             >
                                 {{ n }}
@@ -152,18 +152,18 @@ function formatDate(dateStr) {
                             'rounded-xl p-4',
                             message.author_type === 'platform_user'
                                 ? 'bg-primary/5 border border-primary/10'
-                                : 'bg-muted/80',
-                            message.author_type === 'platform_user' ? 'text-primary ml-16' : 'text-ocean-deep mr-16',
+                                : 'bg-muted/80 dark:bg-gray-700/60',
+                            message.author_type === 'platform_user' ? 'text-primary ml-16' : 'text-ocean-deep mr-16 dark:text-gray-100',
                         ]"
                     >
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-xs font-semibold uppercase tracking-wider"
-                                :class="message.author_type === 'platform_user' ? 'text-primary' : 'text-ocean-deep'">
+                                :class="message.author_type === 'platform_user' ? 'text-primary' : 'text-ocean-deep dark:text-gray-300'">
                                 {{ message.author_type === 'platform_user' ? 'Suporte' : 'Você' }}
                             </span>
                             <span class="text-xs text-muted-foreground">{{ formatDate(message.created_at) }}</span>
                         </div>
-                        <p class="whitespace-pre-wrap text-sm text-ocean-deep">{{ message.body }}</p>
+                        <p class="whitespace-pre-wrap text-sm text-ocean-deep dark:text-gray-100">{{ message.body }}</p>
 
                         <!-- Attachments -->
                         <div v-if="message.attachments?.length" class="mt-3 flex flex-wrap gap-2">
@@ -172,7 +172,7 @@ function formatDate(dateStr) {
                                 :key="att.id"
                                 :href="route('support.attachments.show', att.id)"
                                 target="_blank"
-                                class="inline-flex items-center gap-1 rounded-md border border-border bg-white px-2 py-1 text-xs text-primary hover:bg-muted/40"
+                                class="inline-flex items-center gap-1 rounded-md border border-border bg-white px-2 py-1 text-xs text-primary hover:bg-muted/40 dark:border-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600"
                             >
                                 📎 {{ att.filename }}
                             </a>
@@ -188,7 +188,7 @@ function formatDate(dateStr) {
                     <textarea
                         v-model="replyForm.body"
                         rows="4"
-                        class="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        class="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                         placeholder="Escreva sua mensagem..."
                         required
                     />

@@ -32,9 +32,9 @@ defineProps({
 
 const variantClasses = {
     primary:     'bg-primary text-primary-foreground hover:bg-primary-hover focus-visible:ring-primary',
-    secondary:   'bg-muted text-ocean-deep hover:bg-sand focus-visible:ring-primary',
+    secondary:   'bg-muted text-ocean-deep hover:bg-sand focus-visible:ring-primary dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600',
     destructive: 'bg-destructive text-destructive-foreground hover:bg-red-600 focus-visible:ring-destructive',
-    ghost:       'bg-transparent text-ocean-deep hover:bg-muted focus-visible:ring-primary',
+    ghost:       'bg-transparent text-ocean-deep hover:bg-muted focus-visible:ring-primary dark:text-gray-100 dark:hover:bg-gray-800',
 };
 
 const sizeClasses = {

@@ -37,10 +37,10 @@ function onFilesChange(event) {
                 <form @submit.prevent="submit" class="space-y-5">
                     <!-- Category -->
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">Categoria</label>
+                        <label class="block text-sm font-medium text-ocean-deep dark:text-gray-300 mb-1">Categoria</label>
                         <select
                             v-model="form.category_id"
-                            class="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            class="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                             required
                         >
                             <option value="" disabled>Selecione uma categoria...</option>
@@ -53,11 +53,11 @@ function onFilesChange(event) {
 
                     <!-- Subject -->
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">Assunto</label>
+                        <label class="block text-sm font-medium text-ocean-deep dark:text-gray-300 mb-1">Assunto</label>
                         <input
                             v-model="form.subject"
                             type="text"
-                            class="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            class="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                             placeholder="Descreva brevemente o problema..."
                             maxlength="255"
                             required

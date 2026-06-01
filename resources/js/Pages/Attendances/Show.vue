@@ -90,7 +90,7 @@ onUnmounted(() => {
         <template #header>
             <div class="flex items-center gap-4">
                 <Link :href="route('attendances.index')" class="text-sm font-medium text-primary hover:underline">← {{ __('Attendances') }}</Link>
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep">
+                <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">
                     {{ attendance.customer_identifier ?? attendance.attendance_channel?.name ?? '' }}
                 </h1>
                 <AppBadge :label="attendance.status" :color="attendance.status === 'open' ? '#22c55e' : '#94a3b8'" />
@@ -120,14 +120,14 @@ onUnmounted(() => {
         <div v-else class="space-y-4">
             <AppCard v-for="order in orders" :key="order.id">
                 <div class="mb-2 flex items-center justify-between">
-                    <span class="font-heading text-sm font-semibold text-ocean-deep">{{ __('Order') }} #{{ order.order_number }}</span>
+                    <span class="font-heading text-sm font-semibold text-ocean-deep dark:text-gray-100">{{ __('Order') }} #{{ order.order_number }}</span>
                     <AppBadge :label="statusName(order.status)" :color="statusColor(order.status)" />
                 </div>
 
                 <div v-if="order.items?.length" class="divide-y divide-muted">
                     <div v-for="item in order.items" :key="item.id" class="flex items-center justify-between py-2">
                         <div>
-                            <p class="text-sm text-ocean-deep">{{ item.product?.name }}</p>
+                            <p class="text-sm text-ocean-deep dark:text-gray-100">{{ item.product?.name }}</p>
                             <p v-if="item.notes" class="text-xs text-muted-foreground">{{ item.notes }}</p>
                             <AppBadge
                                 v-if="item.preparation_status"
@@ -137,7 +137,7 @@ onUnmounted(() => {
                             />
                         </div>
                         <div class="text-right">
-                            <p class="text-sm text-ocean-deep">{{ item.quantity }}×</p>
+                            <p class="text-sm text-ocean-deep dark:text-gray-100">{{ item.quantity }}×</p>
                             <p class="text-xs text-muted-foreground">R$ {{ Number(item.unit_price).toFixed(2) }}</p>
                         </div>
                     </div>

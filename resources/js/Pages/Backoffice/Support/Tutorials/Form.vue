@@ -41,7 +41,7 @@ function onImageChange(event) {
 <template>
     <PlatformLayout :title="isEdit ? 'Editar Tutorial' : 'Novo Tutorial'">
         <template #header>
-            <h1 class="font-heading text-xl font-bold text-ocean-deep">
+            <h1 class="font-heading text-xl font-bold text-ocean-deep dark:text-gray-100">
                 {{ isEdit ? 'Editar Tutorial' : 'Novo Tutorial' }}
             </h1>
         </template>
@@ -106,7 +106,7 @@ function onImageChange(event) {
                         <textarea
                             v-model="form.body"
                             rows="14"
-                            class="w-full rounded-lg border border-border bg-white px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            class="w-full rounded-lg border border-border bg-white px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                             placeholder="# Título&#10;&#10;Escreva o conteúdo em Markdown..."
                             required
                         />

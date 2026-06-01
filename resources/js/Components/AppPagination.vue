@@ -24,7 +24,7 @@ defineProps({
                     'inline-flex h-9 min-w-[2.25rem] items-center justify-center rounded px-3 text-sm font-body transition-colors',
                     link.active
                         ? 'bg-primary text-primary-foreground'
-                        : 'text-ocean-deep hover:bg-muted',
+                        : 'text-ocean-deep hover:bg-muted dark:text-gray-300 dark:hover:bg-gray-800',
                 ]"
                 v-html="link.label"
             />

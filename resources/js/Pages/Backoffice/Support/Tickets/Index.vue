@@ -63,7 +63,7 @@ function getAgentName(agentId) {
 <template>
     <PlatformLayout title="Chamados de Suporte">
         <template #header>
-            <h1 class="font-heading text-xl font-bold text-ocean-deep">Chamados de Suporte</h1>
+            <h1 class="font-heading text-xl font-bold text-ocean-deep dark:text-gray-100">Chamados de Suporte</h1>
         </template>
 
         <!-- Filters -->
@@ -73,18 +73,18 @@ function getAgentName(agentId) {
                     v-model="search"
                     type="search"
                     placeholder="Buscar por assunto..."
-                    class="rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary w-56"
+                    class="rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary w-56 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
                     @keyup.enter="applyFilters"
                 />
-                <select v-model="filterStatus" @change="applyFilters" class="rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                <select v-model="filterStatus" @change="applyFilters" class="rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
                     <option value="">Todos os status</option>
                     <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
                 </select>
-                <select v-model="filterPriority" @change="applyFilters" class="rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                <select v-model="filterPriority" @change="applyFilters" class="rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
                     <option value="">Todas as prioridades</option>
                     <option v-for="p in priorities" :key="p.value" :value="p.value">{{ p.label }}</option>
                 </select>
-                <select v-model="filterAgent" @change="applyFilters" class="rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                <select v-model="filterAgent" @change="applyFilters" class="rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
                     <option value="">Todos os agentes</option>
                     <option v-for="agent in agents" :key="agent.id" :value="agent.id">{{ agent.name }}</option>
                 </select>
@@ -105,7 +105,7 @@ function getAgentName(agentId) {
                 >
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2">
-                            <p class="truncate font-medium text-ocean-deep">{{ ticket.subject }}</p>
+                            <p class="truncate font-medium text-ocean-deep dark:text-gray-100">{{ ticket.subject }}</p>
                             <span
                                 v-if="ticket.unread_count > 0"
                                 class="inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-primary px-1 text-white text-xs font-bold"

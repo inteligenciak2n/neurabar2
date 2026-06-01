@@ -18,7 +18,7 @@ const applySearch = () => {
 <template>
     <PlatformLayout :title="__('Corporations')">
         <template #header>
-            <h1 class="font-heading text-xl font-bold text-ocean-deep">{{ __('Corporations') }}</h1>
+            <h1 class="font-heading text-xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Corporations') }}</h1>
         </template>
 
         <div class="space-y-4">
@@ -27,7 +27,7 @@ const applySearch = () => {
                     v-model="search"
                     type="text"
                     :placeholder="__('Search by name or email…')"
-                    class="rounded-md border border-border px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-primary"
+                    class="rounded-md border border-border px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
                     @input="applySearch"
                 />
                 <Link :href="route('platform.corporations.create')" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 transition-colors">
@@ -35,15 +35,15 @@ const applySearch = () => {
                 </Link>
             </div>
 
-            <div class="bg-white rounded-xl shadow-card overflow-hidden">
+            <div class="bg-white rounded-xl shadow-card overflow-hidden dark:bg-gray-800">
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="border-b border-border bg-muted/50">
-                            <th class="px-4 py-3 text-left font-medium text-muted-foreground">{{ __('Name') }}</th>
-                            <th class="px-4 py-3 text-left font-medium text-muted-foreground">{{ __('Email') }}</th>
-                            <th class="px-4 py-3 text-left font-medium text-muted-foreground">{{ __('Plan') }}</th>
-                            <th class="px-4 py-3 text-left font-medium text-muted-foreground">{{ __('MRR') }}</th>
-                            <th class="px-4 py-3 text-left font-medium text-muted-foreground">{{ __('Status') }}</th>
+                        <tr class="border-b border-border bg-muted/50 dark:border-gray-700 dark:bg-gray-700/50">
+                            <th class="px-4 py-3 text-left font-medium text-muted-foreground dark:text-gray-400">{{ __('Name') }}</th>
+                            <th class="px-4 py-3 text-left font-medium text-muted-foreground dark:text-gray-400">{{ __('Email') }}</th>
+                            <th class="px-4 py-3 text-left font-medium text-muted-foreground dark:text-gray-400">{{ __('Plan') }}</th>
+                            <th class="px-4 py-3 text-left font-medium text-muted-foreground dark:text-gray-400">{{ __('MRR') }}</th>
+                            <th class="px-4 py-3 text-left font-medium text-muted-foreground dark:text-gray-400">{{ __('Status') }}</th>
                             <th class="px-4 py-3" />
                         </tr>
                     </thead>
@@ -51,15 +51,15 @@ const applySearch = () => {
                         <tr
                             v-for="corp in corporations.data"
                             :key="corp.id"
-                            class="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
+                            class="border-b border-border last:border-0 hover:bg-muted/30 transition-colors dark:border-gray-700 dark:hover:bg-gray-700/30"
                         >
-                            <td class="px-4 py-3 font-medium text-ocean-deep">{{ corp.name }}</td>
-                            <td class="px-4 py-3 text-muted-foreground">{{ corp.email }}</td>
-                            <td class="px-4 py-3">{{ corp.plan_catalog?.name ?? '—' }}</td>
-                            <td class="px-4 py-3">R$ {{ Number(corp.subscription_value ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</td>
+                            <td class="px-4 py-3 font-medium text-ocean-deep dark:text-gray-100">{{ corp.name }}</td>
+                            <td class="px-4 py-3 text-muted-foreground dark:text-gray-400">{{ corp.email }}</td>
+                            <td class="px-4 py-3 dark:text-gray-300">{{ corp.plan_catalog?.name ?? '—' }}</td>
+                            <td class="px-4 py-3 dark:text-gray-300">R$ {{ Number(corp.subscription_value ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</td>
                             <td class="px-4 py-3">
                                 <span
-                                    :class="corp.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+                                    :class="corp.active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'"
                                     class="rounded-full px-2 py-0.5 text-xs font-medium"
                                 >
                                     {{ corp.active ? __('Active') : __('Inactive') }}
@@ -81,7 +81,7 @@ const applySearch = () => {
                     :href="link.url ?? '#'"
                     :class="[
                         'rounded px-3 py-1 text-sm',
-                        link.active ? 'bg-primary text-white' : 'bg-white text-muted-foreground hover:bg-muted',
+                        link.active ? 'bg-primary text-white' : 'bg-white text-muted-foreground hover:bg-muted dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
                         !link.url ? 'opacity-50 pointer-events-none' : '',
                     ]"
                     v-html="link.label"

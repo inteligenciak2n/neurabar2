@@ -109,7 +109,7 @@ const deleteUser = () => {
     <SettingsLayout :title="__('Users')">
         <template #header>
             <div class="flex items-center justify-between">
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Users') }}</h1>
+                <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Users') }}</h1>
                 <AppButton @click="openCreate">{{ __('Add User') }}</AppButton>
             </div>
         </template>
@@ -129,7 +129,7 @@ const deleteUser = () => {
                 >
                     <div class="flex items-center gap-3">
                         <div>
-                            <p class="font-body text-sm font-medium text-ocean-deep">{{ user.name }}</p>
+                            <p class="font-body text-sm font-medium text-ocean-deep dark:text-gray-100">{{ user.name }}</p>
                             <p class="text-xs text-muted-foreground">{{ user.email }}</p>
                         </div>
                         <AppBadge :label="roleLabel(user.role)" :variant="roleVariant(user.role)" />
@@ -147,34 +147,34 @@ const deleteUser = () => {
                 </div>
             </div>
 
-            <div v-if="showForm" class="mt-4 rounded-lg border border-border p-4">
-                <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep">
+            <div v-if="showForm" class="mt-4 rounded-lg border border-border dark:border-gray-700 p-4">
+                <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep dark:text-gray-100">
                     {{ editingUser ? __('Edit User') : __('New User') }}
                 </h3>
                 <form @submit.prevent="submit" class="space-y-3">
                     <div class="grid gap-3 sm:grid-cols-2">
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Name') }} <span class="text-destructive">*</span></label>
+                            <label class="block text-sm font-medium text-ocean-deep dark:text-gray-100 mb-1">{{ __('Name') }} <span class="text-destructive">*</span></label>
                             <input
                                 v-model="form.name"
                                 type="text"
-                                class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                             />
                             <p v-if="form.errors.name" class="mt-1 text-xs text-destructive">{{ form.errors.name }}</p>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Email') }} <span class="text-destructive">*</span></label>
+                            <label class="block text-sm font-medium text-ocean-deep dark:text-gray-100 mb-1">{{ __('Email') }} <span class="text-destructive">*</span></label>
                             <input
                                 v-model="form.email"
                                 type="email"
-                                class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                             />
                             <p v-if="form.errors.email" class="mt-1 text-xs text-destructive">{{ form.errors.email }}</p>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">
+                            <label class="block text-sm font-medium text-ocean-deep dark:text-gray-100 mb-1">
                                 {{ __('Password') }} <span v-if="!editingUser" class="text-destructive">*</span>
                                 <span v-else class="text-muted-foreground">({{ __('leave blank to keep current') }})</span>
                             </label>
@@ -182,16 +182,16 @@ const deleteUser = () => {
                                 v-model="form.password"
                                 type="password"
                                 autocomplete="new-password"
-                                class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                             />
                             <p v-if="form.errors.password" class="mt-1 text-xs text-destructive">{{ form.errors.password }}</p>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Role') }} <span class="text-destructive">*</span></label>
+                            <label class="block text-sm font-medium text-ocean-deep dark:text-gray-100 mb-1">{{ __('Role') }} <span class="text-destructive">*</span></label>
                             <select
                                 v-model="form.role"
-                                class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                             >
                                 <option v-for="r in OPERATIONAL_ROLES" :key="r" :value="r">
                                     {{ roleLabel(r) }}
@@ -201,19 +201,19 @@ const deleteUser = () => {
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('PIN') }}</label>
+                            <label class="block text-sm font-medium text-ocean-deep dark:text-gray-100 mb-1">{{ __('PIN') }}</label>
                             <input
                                 v-model="form.pin"
                                 type="text"
                                 maxlength="10"
-                                class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                             />
                         </div>
                     </div>
 
                     <label class="flex cursor-pointer items-center gap-3">
-                        <input v-model="form.active" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
-                        <span class="text-sm text-ocean-deep">{{ __('Active') }}</span>
+                        <input v-model="form.active" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary focus:ring-primary" />
+                        <span class="text-sm text-ocean-deep dark:text-gray-100">{{ __('Active') }}</span>
                     </label>
 
                     <div class="flex gap-2 pt-1">

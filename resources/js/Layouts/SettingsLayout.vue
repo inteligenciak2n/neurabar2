@@ -70,8 +70,8 @@ const navItems = [
                         :class="[
                             'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                             route().current(item.activePattern)
-                                ? 'bg-ocean-light text-primary font-semibold'
-                                : 'text-muted-foreground hover:bg-muted hover:text-ocean-deep',
+                                ? 'bg-ocean-light text-primary font-semibold dark:bg-primary/20'
+                                : 'text-muted-foreground hover:bg-muted hover:text-ocean-deep dark:hover:bg-gray-800 dark:hover:text-gray-100',
                         ]"
                     >
                         <svg
@@ -99,8 +99,8 @@ const navItems = [
                         :class="[
                             'flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
                             route().current(item.activePattern)
-                                ? 'bg-ocean-light text-primary font-semibold'
-                                : 'text-muted-foreground bg-white border border-border hover:text-ocean-deep',
+                                ? 'bg-ocean-light text-primary font-semibold dark:bg-primary/20'
+                                : 'text-muted-foreground bg-white border border-border hover:text-ocean-deep dark:bg-gray-800 dark:border-gray-700 dark:hover:text-gray-100',
                         ]"
                     >
                         {{ item.label }}

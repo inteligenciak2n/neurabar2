@@ -66,7 +66,7 @@ onUnmounted(() => {
 <template>
     <AppLayout :title="__('Dashboard')">
         <template #header>
-            <h2 class="font-heading text-xl font-semibold text-ocean-deep">{{ __('Dashboard') }}</h2>
+            <h2 class="font-heading text-xl font-semibold text-ocean-deep dark:text-gray-100">{{ __('Dashboard') }}</h2>
         </template>
 
         <div class="py-6 px-4 sm:px-6 max-w-7xl mx-auto space-y-6">
@@ -114,7 +114,7 @@ onUnmounted(() => {
                         <div
                             v-for="station in stations_summary"
                             :key="station.id"
-                            class="rounded-lg border border-border p-3 flex flex-col gap-1"
+                            class="rounded-lg border border-border p-3 flex flex-col gap-1 dark:border-gray-700"
                         >
                             <p class="text-xs font-medium text-muted-foreground">{{ station.name }}</p>
                             <p class="font-heading text-2xl font-bold" :class="station.pending_items_count > 0 ? 'text-warm-gold' : 'text-muted-foreground'">
@@ -139,7 +139,7 @@ onUnmounted(() => {
                 <div v-else class="overflow-x-auto">
                     <table class="w-full text-sm font-body">
                         <thead>
-                            <tr class="border-b border-border text-left text-muted-foreground">
+                            <tr class="border-b border-border text-left text-muted-foreground dark:border-gray-700">
                                 <th class="pb-2 pr-4 font-medium">{{ __('Identifier') }}</th>
                                 <th class="pb-2 pr-4 font-medium">{{ __('Channel') }}</th>
                                 <th class="pb-2 pr-4 font-medium">{{ __('Open for') }}</th>
@@ -148,8 +148,8 @@ onUnmounted(() => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-muted">
-                            <tr v-for="attendance in attendances_list" :key="attendance.id" class="hover:bg-muted/40">
-                                <td class="py-2 pr-4 font-medium text-ocean-deep">
+                            <tr v-for="attendance in attendances_list" :key="attendance.id" class="hover:bg-muted/40 dark:hover:bg-gray-700/40">
+                                <td class="py-2 pr-4 font-medium text-ocean-deep dark:text-gray-100">
                                     {{ attendance.customer_identifier ?? '—' }}
                                 </td>
                                 <td class="py-2 pr-4">

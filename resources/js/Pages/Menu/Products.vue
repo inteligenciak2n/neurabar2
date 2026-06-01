@@ -179,7 +179,7 @@ const deleteProduct = () => {
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <Link :href="route('menu.index')" class="text-sm font-medium text-primary hover:underline">← {{ __('Menu') }}</Link>
-                    <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Products') }}</h1>
+                    <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Products') }}</h1>
                 </div>
                 <AppButton @click="openCreate">{{ __('Add Product') }}</AppButton>
             </div>
@@ -189,7 +189,7 @@ const deleteProduct = () => {
         <div class="mb-4 flex gap-2 overflow-x-auto">
             <button
                 class="whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
-                :class="!selectedCategoryId ? 'bg-primary text-white' : 'bg-muted text-ocean-deep hover:bg-sand'"
+                :class="!selectedCategoryId ? 'bg-primary text-white' : 'bg-muted text-ocean-deep dark:text-gray-100 hover:bg-sand'"
                 @click="filterByCategory('')"
             >
                 {{ __('All') }}
@@ -198,7 +198,7 @@ const deleteProduct = () => {
                 v-for="category in categories"
                 :key="category.id"
                 class="whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
-                :class="selectedCategoryId === category.id ? 'bg-primary text-white' : 'bg-muted text-ocean-deep hover:bg-sand'"
+                :class="selectedCategoryId === category.id ? 'bg-primary text-white' : 'bg-muted text-ocean-deep dark:text-gray-100 hover:bg-sand'"
                 @click="filterByCategory(category.id)"
             >
                 {{ category.name }}
@@ -222,7 +222,7 @@ const deleteProduct = () => {
                 >
                     <div>
                         <div class="flex items-center gap-2">
-                            <span class="font-body text-sm font-semibold text-ocean-deep">{{ product.name }}</span>
+                            <span class="font-body text-sm font-semibold text-ocean-deep dark:text-gray-100">{{ product.name }}</span>
                             <AppBadge :label="product.active ? __('Active') : __('Inactive')" :color="product.active ? '#22c55e' : '#94a3b8'" />
                         </div>
                         <div class="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
@@ -249,38 +249,38 @@ const deleteProduct = () => {
                 </div>
             </div>
 
-            <div v-if="showForm" class="mt-4 rounded-lg border border-border p-4">
-                <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep">
+            <div v-if="showForm" class="mt-4 rounded-lg border border-border dark:border-gray-700 p-4">
+                <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep dark:text-gray-100">
                     {{ editingProduct ? __('Edit Product') : __('New Product') }}
                 </h3>
                 <form class="grid grid-cols-1 gap-3 sm:grid-cols-2" @submit.prevent="submit">
                     <div class="sm:col-span-2">
-                        <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Name') }} <span class="text-destructive">*</span></label>
+                        <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Name') }} <span class="text-destructive">*</span></label>
                         <input
                             v-model="form.name"
                             type="text"
-                            class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                         />
                         <p v-if="form.errors.name" class="mt-1 text-xs text-destructive">{{ form.errors.name }}</p>
                     </div>
 
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Price') }} (R$) <span class="text-destructive">*</span></label>
+                        <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Price') }} (R$) <span class="text-destructive">*</span></label>
                         <input
                             v-model="form.price"
                             type="number"
                             min="0"
                             step="0.01"
-                            class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                         />
                         <p v-if="form.errors.price" class="mt-1 text-xs text-destructive">{{ form.errors.price }}</p>
                     </div>
 
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Category') }} <span class="text-destructive">*</span></label>
+                        <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Category') }} <span class="text-destructive">*</span></label>
                         <select
                             v-model="form.category_id"
-                            class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                         >
                             <option value="">{{ __('Select a category') }}</option>
                             <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
@@ -289,10 +289,10 @@ const deleteProduct = () => {
                     </div>
 
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Kitchen Station') }}</label>
+                        <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Kitchen Station') }}</label>
                         <select
                             v-model="form.kitchen_station_id"
-                            class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                         >
                             <option value="">{{ __('None') }}</option>
                             <option v-for="station in stations" :key="station.id" :value="station.id">{{ station.name }}</option>
@@ -301,18 +301,18 @@ const deleteProduct = () => {
                     </div>
 
                     <div class="sm:col-span-2">
-                        <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Description') }}</label>
+                        <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Description') }}</label>
                         <textarea
                             v-model="form.description"
                             rows="2"
-                            class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                         />
                     </div>
 
                     <div class="flex items-center gap-2 sm:col-span-2 justify-end">
                         <label class="flex cursor-pointer items-center gap-2">
-                            <input v-model="form.active" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
-                            <span class="text-sm text-ocean-deep">{{ __('Active') }}</span>
+                            <input v-model="form.active" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary focus:ring-primary" />
+                            <span class="text-sm text-ocean-deep dark:text-gray-100">{{ __('Active') }}</span>
                         </label>
                     </div>
 
@@ -323,9 +323,9 @@ const deleteProduct = () => {
                 </form>
 
                 <!-- Modifier groups sync — only for existing products -->
-                <div v-if="editingProduct && modifierGroups?.length" class="mt-4 border-t border-border pt-4">
+                <div v-if="editingProduct && modifierGroups?.length" class="mt-4 border-t border-border dark:border-gray-700 pt-4">
                     <div class="mb-2 flex items-center justify-between">
-                        <p class="text-sm font-medium text-ocean-deep">{{ __('Modifier Groups') }}</p>
+                        <p class="text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Modifier Groups') }}</p>
                         <AppButton size="sm" :loading="syncForm.processing" @click="submitSync(editingProduct)">
                             {{ __('Save Modifiers') }}
                         </AppButton>
@@ -338,7 +338,7 @@ const deleteProduct = () => {
                             class="flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors"
                             :class="syncForm.modifier_group_ids.includes(group.id)
                                 ? 'border-primary bg-primary/10 text-primary'
-                                : 'border-border text-ocean-deep hover:border-primary/40'"
+                                : 'border-border dark:border-gray-700 text-ocean-deep dark:text-gray-100 hover:border-primary/40'"
                         >
                             <input
                                 type="checkbox"
@@ -353,9 +353,9 @@ const deleteProduct = () => {
                 </div>
 
                 <!-- Variations — only for existing products -->
-                <div v-if="editingProduct" class="mt-4 border-t border-border pt-4">
+                <div v-if="editingProduct" class="mt-4 border-t border-border dark:border-gray-700 pt-4">
                     <div class="mb-2 flex items-center justify-between">
-                        <p class="text-sm font-medium text-ocean-deep">{{ __('Variations') }}</p>
+                        <p class="text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Variations') }}</p>
                         <AppButton size="sm" variant="secondary" @click="openAddVariation">{{ __('Add Variation') }}</AppButton>
                     </div>
                     <p class="mb-2 text-xs text-muted-foreground">{{ __('Variations override the base price (e.g. Small, Medium, Large).') }}</p>
@@ -365,12 +365,12 @@ const deleteProduct = () => {
                         <div
                             v-for="variation in editingProduct.variations"
                             :key="variation.id"
-                            class="rounded border border-border p-2"
+                            class="rounded border border-border dark:border-gray-700 p-2"
                         >
                             <!-- View row -->
                             <div v-if="editingVariationId !== variation.id" class="flex items-center justify-between">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-sm font-medium text-ocean-deep">{{ variation.name }}</span>
+                                    <span class="text-sm font-medium text-ocean-deep dark:text-gray-100">{{ variation.name }}</span>
                                     <span class="text-sm text-muted-foreground">R$ {{ Number(variation.price).toFixed(2) }}</span>
                                     <AppBadge :label="variation.active ? __('Active') : __('Inactive')" :color="variation.active ? '#22c55e' : '#94a3b8'" />
                                 </div>
@@ -391,7 +391,7 @@ const deleteProduct = () => {
                                         v-model="editVariationForm.name"
                                         type="text"
                                         :placeholder="__('Name')"
-                                        class="w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                        class="w-full rounded-md border border-border dark:border-gray-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                                     />
                                     <p v-if="editVariationForm.errors.name" class="mt-0.5 text-xs text-destructive">{{ editVariationForm.errors.name }}</p>
                                 </div>
@@ -402,13 +402,13 @@ const deleteProduct = () => {
                                         min="0"
                                         step="0.01"
                                         :placeholder="__('Price (R$)')"
-                                        class="w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                        class="w-full rounded-md border border-border dark:border-gray-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                                     />
                                     <p v-if="editVariationForm.errors.price" class="mt-0.5 text-xs text-destructive">{{ editVariationForm.errors.price }}</p>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <label class="flex cursor-pointer items-center gap-1.5 text-sm text-ocean-deep">
-                                        <input v-model="editVariationForm.active" type="checkbox" class="h-4 w-4 rounded border-border text-primary" />
+                                    <label class="flex cursor-pointer items-center gap-1.5 text-sm text-ocean-deep dark:text-gray-100">
+                                        <input v-model="editVariationForm.active" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary" />
                                         {{ __('Active') }}
                                     </label>
                                     <AppButton type="submit" size="sm" :loading="editVariationForm.processing">{{ __('Save') }}</AppButton>
@@ -433,7 +433,7 @@ const deleteProduct = () => {
                                 v-model="variationForm.name"
                                 type="text"
                                 :placeholder="__('Name')"
-                                class="w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                class="w-full rounded-md border border-border dark:border-gray-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                             />
                             <p v-if="variationForm.errors.name" class="mt-0.5 text-xs text-destructive">{{ variationForm.errors.name }}</p>
                         </div>
@@ -444,13 +444,13 @@ const deleteProduct = () => {
                                 min="0"
                                 step="0.01"
                                 :placeholder="__('Price (R$)')"
-                                class="w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                class="w-full rounded-md border border-border dark:border-gray-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                             />
                             <p v-if="variationForm.errors.price" class="mt-0.5 text-xs text-destructive">{{ variationForm.errors.price }}</p>
                         </div>
                         <div class="flex items-center gap-2">
-                            <label class="flex cursor-pointer items-center gap-1.5 text-sm text-ocean-deep">
-                                <input v-model="variationForm.active" type="checkbox" class="h-4 w-4 rounded border-border text-primary" />
+                            <label class="flex cursor-pointer items-center gap-1.5 text-sm text-ocean-deep dark:text-gray-100">
+                                <input v-model="variationForm.active" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary" />
                                 {{ __('Active') }}
                             </label>
                             <AppButton type="submit" size="sm" :loading="variationForm.processing">{{ __('Add') }}</AppButton>

@@ -34,34 +34,34 @@ const submitPlan = () => {
 <template>
     <PlatformLayout :title="__('Edit Corporation')">
         <template #header>
-            <h1 class="font-heading text-xl font-bold text-ocean-deep">{{ corporation.name }}</h1>
+            <h1 class="font-heading text-xl font-bold text-ocean-deep dark:text-gray-100">{{ corporation.name }}</h1>
         </template>
 
         <div class="max-w-2xl space-y-6">
             <!-- Basic info -->
-            <form @submit.prevent="submit" class="space-y-4 bg-white rounded-xl shadow-card p-6">
-                <h2 class="font-heading font-semibold text-ocean-deep border-b pb-2">{{ __('Corporation Info') }}</h2>
+            <form @submit.prevent="submit" class="space-y-4 bg-white rounded-xl shadow-card p-6 dark:bg-gray-800">
+                <h2 class="font-heading font-semibold text-ocean-deep border-b pb-2 dark:text-gray-100 dark:border-gray-700">{{ __('Corporation Info') }}</h2>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div class="sm:col-span-2">
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Name') }}</label>
-                        <input v-model="form.name" type="text" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Name') }}</label>
+                        <input v-model="form.name" type="text" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
                         <p v-if="form.errors.name" class="mt-1 text-xs text-destructive">{{ form.errors.name }}</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Email') }}</label>
-                        <input v-model="form.email" type="email" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Email') }}</label>
+                        <input v-model="form.email" type="email" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Tax ID') }}</label>
-                        <input v-model="form.tax_id" type="text" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Tax ID') }}</label>
+                        <input v-model="form.tax_id" type="text" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Contact Phone') }}</label>
-                        <input v-model="form.contact_phone" type="text" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Contact Phone') }}</label>
+                        <input v-model="form.contact_phone" type="text" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
                     </div>
                     <div class="flex items-center gap-2">
                         <input v-model="form.active" type="checkbox" id="active" class="h-4 w-4 rounded border-border text-primary" />
-                        <label for="active" class="text-sm font-medium text-ocean-deep">{{ __('Active') }}</label>
+                        <label for="active" class="text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Active') }}</label>
                     </div>
                 </div>
                 <div class="flex justify-end">
@@ -72,25 +72,25 @@ const submitPlan = () => {
             </form>
 
             <!-- Plan assignment -->
-            <form @submit.prevent="submitPlan" class="space-y-4 bg-white rounded-xl shadow-card p-6">
-                <h2 class="font-heading font-semibold text-ocean-deep border-b pb-2">{{ __('Plan Assignment') }}</h2>
+            <form @submit.prevent="submitPlan" class="space-y-4 bg-white rounded-xl shadow-card p-6 dark:bg-gray-800">
+                <h2 class="font-heading font-semibold text-ocean-deep border-b pb-2 dark:text-gray-100 dark:border-gray-700">{{ __('Plan Assignment') }}</h2>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Plan Catalog ID') }}</label>
-                        <input v-model="planForm.plan_catalog_id" type="text" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Plan Catalog ID') }}</label>
+                        <input v-model="planForm.plan_catalog_id" type="text" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
                         <p v-if="planForm.errors.plan_catalog_id" class="mt-1 text-xs text-destructive">{{ planForm.errors.plan_catalog_id }}</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Subscription Value') }}</label>
-                        <input v-model="planForm.subscription_value" type="number" step="0.01" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Subscription Value') }}</label>
+                        <input v-model="planForm.subscription_value" type="number" step="0.01" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Plan Start Date') }}</label>
-                        <input v-model="planForm.plan_start_date" type="date" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Plan Start Date') }}</label>
+                        <input v-model="planForm.plan_start_date" type="date" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Plan End Date') }}</label>
-                        <input v-model="planForm.plan_end_date" type="date" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Plan End Date') }}</label>
+                        <input v-model="planForm.plan_end_date" type="date" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
                     </div>
                 </div>
                 <div class="flex justify-end">
@@ -101,11 +101,11 @@ const submitPlan = () => {
             </form>
 
             <!-- Venues list -->
-            <div class="bg-white rounded-xl shadow-card p-6">
-                <h2 class="font-heading font-semibold text-ocean-deep border-b pb-2 mb-4">{{ __('Venues') }}</h2>
+            <div class="bg-white rounded-xl shadow-card p-6 dark:bg-gray-800">
+                <h2 class="font-heading font-semibold text-ocean-deep border-b pb-2 mb-4 dark:text-gray-100 dark:border-gray-700">{{ __('Venues') }}</h2>
                 <ul class="space-y-2">
-                    <li v-for="venue in corporation.venues" :key="venue.id" class="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
-                        <span class="font-medium text-ocean-deep">{{ venue.name }}</span>
+                    <li v-for="venue in corporation.venues" :key="venue.id" class="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm dark:border-gray-700">
+                        <span class="font-medium text-ocean-deep dark:text-gray-100">{{ venue.name }}</span>
                         <span :class="venue.active ? 'text-green-600' : 'text-muted-foreground'" class="text-xs">{{ venue.active ? __('Active') : __('Inactive') }}</span>
                     </li>
                     <li v-if="!corporation.venues?.length" class="text-sm text-muted-foreground">{{ __('No venues yet.') }}</li>

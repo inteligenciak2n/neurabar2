@@ -111,7 +111,7 @@ function formatCurrency(value) {
                 <Link :href="route('attendances.index')" class="text-sm font-medium text-primary hover:underline">
                     ← {{ __('Attendances') }}
                 </Link>
-                <h2 class="font-heading text-xl font-semibold text-ocean-deep">
+                <h2 class="font-heading text-xl font-semibold text-ocean-deep dark:text-gray-100">
                     {{ __('Payment') }} — {{ attendance.customer_identifier ?? attendance.channel }}
                 </h2>
             </div>
@@ -121,14 +121,14 @@ function formatCurrency(value) {
             <!-- Items summary -->
             <AppCard :title="__('Order Summary')">
                 <div v-for="order in attendance.orders" :key="order.id" class="mb-4">
-                    <p class="font-heading text-sm font-semibold text-ocean-deep mb-2">{{ __('Order') }} #{{ order.order_number }}</p>
+                    <p class="font-heading text-sm font-semibold text-ocean-deep dark:text-gray-100 mb-2">{{ __('Order') }} #{{ order.order_number }}</p>
                     <div class="divide-y divide-muted">
                         <div
                             v-for="item in order.items"
                             :key="item.id"
                             class="flex items-center justify-between py-2 text-sm"
                         >
-                            <span class="text-ocean-deep">{{ item.quantity }}× {{ item.product?.name ?? __('Item') }}</span>
+                            <span class="text-ocean-deep dark:text-gray-100">{{ item.quantity }}× {{ item.product?.name ?? __('Item') }}</span>
                             <span class="text-muted-foreground">{{ formatCurrency(item.unit_price * item.quantity) }}</span>
                         </div>
                     </div>
@@ -138,7 +138,7 @@ function formatCurrency(value) {
             <!-- Totals + Party Size -->
             <AppCard :title="__('Totals')">
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-ocean-deep mb-1">{{ __('Party Size') }}</label>
+                    <label class="block text-sm font-medium text-ocean-deep dark:text-gray-300 mb-1">{{ __('Party Size') }}</label>
                     <input
                         v-model="form.party_size"
                         type="number"
@@ -162,7 +162,7 @@ function formatCurrency(value) {
                         <span>{{ formatCurrency(serviceFeeTotal) }}</span>
                     </div>
                     <div class="flex justify-between font-heading font-semibold text-base border-t border-border pt-2">
-                        <span class="text-ocean-deep">{{ __('Grand Total') }}</span>
+                        <span class="text-ocean-deep dark:text-gray-100">{{ __('Grand Total') }}</span>
                         <span class="text-primary">{{ formatCurrency(grandTotal) }}</span>
                     </div>
                     <div v-if="perPersonAmount" class="flex justify-between text-sm text-muted-foreground">

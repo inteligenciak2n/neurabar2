@@ -29,7 +29,7 @@ const props = defineProps({
                 <div class="mb-4 flex items-center gap-2">
                     <span v-if="category.icon" class="text-2xl">{{ category.icon }}</span>
                     <div>
-                        <h2 class="text-lg font-semibold text-ocean-deep">{{ category.name }}</h2>
+                        <h2 class="text-lg font-semibold text-ocean-deep dark:text-gray-100">{{ category.name }}</h2>
                         <p v-if="category.description" class="text-sm text-muted-foreground">{{ category.description }}</p>
                     </div>
                 </div>
@@ -44,7 +44,7 @@ const props = defineProps({
                         v-for="tutorial in category.published_tutorials"
                         :key="tutorial.id"
                         :href="route('support.tutorials.show', tutorial.slug)"
-                        class="group rounded-xl border border-border bg-white p-5 hover:shadow-card hover:border-primary/30 transition-all"
+                        class="group rounded-xl border border-border bg-white p-5 hover:shadow-card hover:border-primary/30 transition-all dark:border-gray-700 dark:bg-gray-800"
                     >
                         <div v-if="tutorial.featured_image" class="mb-3 aspect-video overflow-hidden rounded-lg">
                             <img
@@ -53,7 +53,7 @@ const props = defineProps({
                                 class="h-full w-full object-cover"
                             />
                         </div>
-                        <h3 class="font-medium text-ocean-deep group-hover:text-primary transition-colors line-clamp-2">
+                        <h3 class="font-medium text-ocean-deep group-hover:text-primary transition-colors line-clamp-2 dark:text-gray-100">
                             {{ tutorial.title }}
                         </h3>
                         <p v-if="tutorial.summary" class="mt-1 text-xs text-muted-foreground line-clamp-2">

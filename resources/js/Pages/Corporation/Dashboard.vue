@@ -15,7 +15,7 @@ const switchVenue = (id) => {
 <template>
     <AppLayout :title="__('Corporation Dashboard')">
         <template #header>
-            <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Corporation Dashboard') }}</h1>
+            <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Corporation Dashboard') }}</h1>
         </template>
 
         <div class="space-y-6">
@@ -30,30 +30,30 @@ const switchVenue = (id) => {
                     v-for="venue in venues"
                     :key="venue.id"
                     :class="[
-                        'rounded-xl bg-white shadow-card p-5 border-2 transition-colors',
+                        'rounded-xl bg-white shadow-card p-5 border-2 transition-colors dark:bg-gray-800',
                         venue.id === currentVenueId ? 'border-primary' : 'border-transparent',
                     ]"
                 >
                     <div class="flex items-start justify-between mb-3">
                         <div>
-                            <h3 class="font-heading font-semibold text-ocean-deep">{{ venue.name }}</h3>
+                            <h3 class="font-heading font-semibold text-ocean-deep dark:text-gray-100">{{ venue.name }}</h3>
                             <span :class="venue.active ? 'text-green-600' : 'text-muted-foreground'" class="text-xs">
                                 {{ venue.active ? __('Active') : __('Inactive') }}
                             </span>
                         </div>
                         <span v-if="venue.id === currentVenueId" class="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">{{ __('Current') }}</span>
                     </div>
-                    <p class="text-2xl font-bold text-ocean-deep">{{ venue.today_attendances }}</p>
+                    <p class="text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ venue.today_attendances }}</p>
                     <p class="text-xs text-muted-foreground">{{ __('Attendances today') }}</p>
                     <div class="flex gap-2 mt-4">
                         <button
                             v-if="venue.id !== currentVenueId"
                             @click="switchVenue(venue.id)"
-                            class="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+                            class="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors dark:border-gray-600 dark:hover:bg-gray-700"
                         >
                             {{ __('Switch to this') }}
                         </button>
-                        <Link :href="route('corporation.venues.edit', venue.id)" class="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors">
+                        <Link :href="route('corporation.venues.edit', venue.id)" class="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors dark:border-gray-600 dark:hover:bg-gray-700">
                             {{ __('Edit') }}
                         </Link>
                     </div>

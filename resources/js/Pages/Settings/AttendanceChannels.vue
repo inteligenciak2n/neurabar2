@@ -76,7 +76,7 @@ const deleteChannel = () => {
     <SettingsLayout :title="__('Attendance Channels')">
         <template #header>
             <div class="flex items-center justify-between">
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Attendance Channels') }}</h1>
+                <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Attendance Channels') }}</h1>
                 <AppButton @click="openCreate">{{ __('Add Channel') }}</AppButton>
             </div>
         </template>
@@ -95,7 +95,7 @@ const deleteChannel = () => {
                     class="flex items-center justify-between py-3"
                 >
                     <div class="flex items-center gap-3">
-                        <span class="font-body text-sm font-medium text-ocean-deep">{{ channel.name }}</span>
+                        <span class="font-body text-sm font-medium text-ocean-deep dark:text-gray-100">{{ channel.name }}</span>
                         <span
                             :class="channel.active ? 'bg-accent/10 text-accent' : 'bg-muted text-muted-foreground'"
                             class="rounded-full px-2 py-0.5 text-xs font-semibold"
@@ -112,46 +112,46 @@ const deleteChannel = () => {
                 </div>
             </div>
 
-            <div v-if="showForm" class="mt-4 rounded-lg border border-border p-4">
-                <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep">
+            <div v-if="showForm" class="mt-4 rounded-lg border border-border dark:border-gray-700 p-4">
+                <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep dark:text-gray-100">
                     {{ editingChannel ? __('Edit Channel') : __('New Channel') }}
                 </h3>
                 <form class="space-y-3" @submit.prevent="submit">
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
-                            <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Name') }} <span class="text-destructive">*</span></label>
+                            <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Name') }} <span class="text-destructive">*</span></label>
                             <input
                                 v-model="form.name"
                                 type="text"
                                 :placeholder="__('e.g. Counter')"
-                                class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                             />
                             <p v-if="form.errors.name" class="mt-1 text-xs text-destructive">{{ form.errors.name }}</p>
                         </div>
 
                         <div>
-                            <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Sort Order') }}</label>
+                            <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Sort Order') }}</label>
                             <input
                                 v-model="form.sort_order"
                                 type="number"
                                 min="0"
-                                class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                             />
                         </div>
                     </div>
 
                     <div class="flex flex-col gap-2">
                         <label class="flex cursor-pointer items-center gap-3">
-                            <input v-model="form.active" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
-                            <span class="text-sm text-ocean-deep">{{ __('Active') }}</span>
+                            <input v-model="form.active" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary focus:ring-primary" />
+                            <span class="text-sm text-ocean-deep dark:text-gray-100">{{ __('Active') }}</span>
                         </label>
                         <label class="flex cursor-pointer items-center gap-3">
-                            <input v-model="form.is_trackable" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
-                            <span class="text-sm text-ocean-deep">{{ __('Trackable by customer') }}</span>
+                            <input v-model="form.is_trackable" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary focus:ring-primary" />
+                            <span class="text-sm text-ocean-deep dark:text-gray-100">{{ __('Trackable by customer') }}</span>
                         </label>
                         <label class="flex cursor-pointer items-center gap-3">
-                            <input v-model="form.requires_customer_identifier" type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
-                            <span class="text-sm text-ocean-deep">{{ __('Requires customer identifier') }}</span>
+                            <input v-model="form.requires_customer_identifier" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary focus:ring-primary" />
+                            <span class="text-sm text-ocean-deep dark:text-gray-100">{{ __('Requires customer identifier') }}</span>
                         </label>
                     </div>
 

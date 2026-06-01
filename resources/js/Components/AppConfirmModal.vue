@@ -36,8 +36,8 @@ const emit = defineEmits(['confirm', 'cancel']);
 <template>
     <Modal :show="show" max-width="md" @close="emit('cancel')">
         <div class="p-6">
-            <h2 class="font-heading text-lg font-semibold text-ocean-deep">{{ title }}</h2>
-            <p class="mt-2 text-sm text-muted-foreground font-body">{{ message }}</p>
+            <h2 class="font-heading text-lg font-semibold text-ocean-deep dark:text-gray-100">{{ title }}</h2>
+            <p class="mt-2 text-sm text-muted-foreground font-body dark:text-gray-400">{{ message }}</p>
 
             <div class="mt-6 flex items-center justify-end gap-3">
                 <AppButton variant="ghost" :disabled="loading" @click="emit('cancel')">

@@ -79,7 +79,7 @@ const moveDown = (categories, index) => {
     <AppLayout :title="__('Menu')">
         <template #header>
             <div class="flex items-center justify-between">
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep">{{ __('Menu') }}</h1>
+                <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Menu') }}</h1>
                 <div class="flex items-center gap-3">
                     <Link :href="route('menu.products.index')" class="text-sm font-medium text-primary hover:underline">
                         {{ __('Products') }}
@@ -112,7 +112,7 @@ const moveDown = (categories, index) => {
                 >
                     <div class="flex items-center justify-between">
                         <div>
-                            <span class="font-body text-sm font-semibold text-ocean-deep">{{ category.name }}</span>
+                            <span class="font-body text-sm font-semibold text-ocean-deep dark:text-gray-100">{{ category.name }}</span>
                             <span class="ml-2 text-xs text-muted-foreground">{{ category.products?.length ?? 0 }} {{ __('products') }}</span>
                         </div>
                         <div class="flex gap-2">
@@ -127,7 +127,7 @@ const moveDown = (categories, index) => {
                         <span
                             v-for="product in category.products.slice(0, 5)"
                             :key="product.id"
-                            class="rounded-full bg-ocean-light px-2 py-0.5 text-xs text-ocean-deep"
+                            class="rounded-full bg-ocean-light px-2 py-0.5 text-xs text-ocean-deep dark:text-gray-100"
                         >
                             {{ product.name }}
                         </span>
@@ -141,19 +141,19 @@ const moveDown = (categories, index) => {
                 </div>
             </div>
 
-            <div v-if="showForm" class="mt-4 rounded-lg border border-border p-4">
-                <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep">
+            <div v-if="showForm" class="mt-4 rounded-lg border border-border dark:border-gray-700 p-4">
+                <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep dark:text-gray-100">
                     {{ editingCategory ? __('Edit Category') : __('New Category') }}
                 </h3>
                 <form class="space-y-3" @submit.prevent="submit">
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-ocean-deep">
+                        <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">
                             {{ __('Name') }} <span class="text-destructive">*</span>
                         </label>
                         <input
                             v-model="form.name"
                             type="text"
-                            class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                         />
                         <p v-if="form.errors.name" class="mt-1 text-xs text-destructive">{{ form.errors.name }}</p>
                     </div>
