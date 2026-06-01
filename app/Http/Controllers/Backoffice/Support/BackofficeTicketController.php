@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Backoffice\Support;
 
 use App\Actions\Support\AgentReplyToTicketAction;
 use App\Actions\Support\AssignTicketAction;
+use App\Actions\Support\MarkTicketAsReadAction;
 use App\Actions\Support\UpdateTicketStatusAction;
 use App\Enums\ProfileEnum;
+use App\Enums\Support\TicketAuthorType;
 use App\Enums\Support\TicketPriority;
 use App\Enums\Support\TicketStatus;
 use App\Http\Controllers\Controller;
@@ -13,6 +15,7 @@ use App\Http\Requests\Support\ReplyTicketRequest;
 use App\Http\Requests\Support\UpdateTicketRequest;
 use App\Models\Support\Ticket;
 use App\Models\Support\TicketCategory;
+use App\Models\Support\TicketRead;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,6 +38,31 @@ class BackofficeTicketController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        /** @var User $agent */
+        $agent = $request->user();
+
+        // Attach unread count per ticket for this agent
+        $ticketIds = $tickets->pluck('id');
+        $reads = TicketRead::whereIn('ticket_id', $ticketIds)
+            ->where('reader_id', $agent->id)
+            ->where('reader_type', TicketAuthorType::PlatformUser->value)
+            ->get()
+            ->keyBy('ticket_id');
+
+        $tickets->getCollection()->transform(function (Ticket $ticket) use ($reads) {
+            $read = $reads->get($ticket->id);
+            $query = $ticket->messages()
+                ->where('author_type', TicketAuthorType::User->value);
+
+            if ($read) {
+                $query->where('created_at', '>', $read->last_read_at);
+            }
+
+            $ticket->unread_count = $query->count();
+
+            return $ticket;
+        });
+
         // Enrich with user data from main database (cross-DB)
         $userIds = $tickets->pluck('user_id')->unique()->filter();
         $users = User::whereIn('id', $userIds)->get(['id', 'name', 'email'])->keyBy('id');
@@ -52,14 +80,19 @@ class BackofficeTicketController extends Controller
         ]);
     }
 
-    public function show(string $ticketId): Response
+    public function show(Request $request, string $ticketId, MarkTicketAsReadAction $markRead): Response
     {
+        /** @var User $agent */
+        $agent = $request->user();
+
         $ticket = Ticket::on('support')
             ->where('id', $ticketId)
             ->with(['category', 'messages.attachments', 'rating'])
             ->firstOrFail();
 
-        $user = User::find($ticket->user_id, ['id', 'name', 'email']);
+        $markRead->execute($ticket, $agent->id, TicketAuthorType::PlatformUser);
+
+        $ticketUser = User::find($ticket->user_id, ['id', 'name', 'email']);
         $assignedAgent = $ticket->assigned_to
             ? User::find($ticket->assigned_to, ['id', 'name', 'email'])
             : null;
@@ -67,7 +100,7 @@ class BackofficeTicketController extends Controller
 
         return Inertia::render('Backoffice/Support/Tickets/Show', [
             'ticket' => $ticket,
-            'ticketUser' => $user,
+            'ticketUser' => $ticketUser,
             'assignedAgent' => $assignedAgent,
             'agents' => $agents,
             'categories' => TicketCategory::on('support')->where('active', true)->get(['id', 'name']),
@@ -100,7 +133,7 @@ class BackofficeTicketController extends Controller
         return back()->with('success', 'Chamado atualizado.');
     }
 
-    public function reply(string $ticketId, ReplyTicketRequest $request, AgentReplyToTicketAction $action): RedirectResponse
+    public function reply(string $ticketId, ReplyTicketRequest $request, AgentReplyToTicketAction $action, MarkTicketAsReadAction $markRead): RedirectResponse
     {
         /** @var User $agent */
         $agent = $request->user();
@@ -108,6 +141,9 @@ class BackofficeTicketController extends Controller
         $ticket = Ticket::on('support')->where('id', $ticketId)->firstOrFail();
 
         $action->execute($ticket, $agent, $request);
+
+        // Sending a reply implies the agent has read everything
+        $markRead->execute($ticket, $agent->id, TicketAuthorType::PlatformUser);
 
         return back()->with('success', 'Mensagem enviada.');
     }

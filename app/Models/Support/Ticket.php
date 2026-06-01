@@ -56,6 +56,11 @@ class Ticket extends Model
         return $this->hasOne(TicketRating::class, 'ticket_id');
     }
 
+    public function reads(): HasMany
+    {
+        return $this->hasMany(TicketRead::class, 'ticket_id');
+    }
+
     public function scopeOpen(Builder $query): void
     {
         $query->whereIn('status', [TicketStatus::Open->value, TicketStatus::InProgress->value]);

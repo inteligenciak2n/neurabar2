@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\Support;
 
+use App\Actions\Support\MarkTicketAsReadAction;
 use App\Actions\Support\OpenTicketAction;
 use App\Actions\Support\UpdateTicketStatusAction;
+use App\Enums\Support\TicketAuthorType;
 use App\Enums\Support\TicketStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Support\OpenTicketRequest;
 use App\Models\Support\Ticket;
 use App\Models\Support\TicketCategory;
+use App\Models\Support\TicketRead;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,6 +29,29 @@ class TicketController extends Controller
             ->with(['category', 'rating'])
             ->latest()
             ->paginate(15);
+
+        // Attach unread count per ticket for this user
+        $ticketIds = $tickets->pluck('id');
+        $reads = TicketRead::whereIn('ticket_id', $ticketIds)
+            ->where('reader_id', $user->id)
+            ->where('reader_type', TicketAuthorType::User->value)
+            ->get()
+            ->keyBy('ticket_id');
+
+        $tickets->getCollection()->transform(function (Ticket $ticket) use ($reads) {
+            $read = $reads->get($ticket->id);
+            $query = $ticket->messages()
+                ->where('author_type', TicketAuthorType::PlatformUser->value)
+                ->where('is_internal', false);
+
+            if ($read) {
+                $query->where('created_at', '>', $read->last_read_at);
+            }
+
+            $ticket->unread_count = $query->count();
+
+            return $ticket;
+        });
 
         return Inertia::render('Support/Tickets/Index', [
             'tickets' => $tickets,
@@ -55,20 +81,22 @@ class TicketController extends Controller
             ->with('success', 'Chamado aberto com sucesso.');
     }
 
-    public function show(Request $request, string $ticketId): Response
+    public function show(Request $request, string $ticketId, MarkTicketAsReadAction $markRead): Response
     {
         $user = $request->user();
 
         $ticket = Ticket::on('support')
             ->where('id', $ticketId)
             ->with([
-                'category', 
+                'category',
                 'messages' => fn ($q) => $q->where('is_internal', false)->with('attachments'),
-                'rating'
-                ])
+                'rating',
+            ])
             ->firstOrFail();
 
         abort_unless($ticket->user_id === $user->id, 403);
+
+        $markRead->execute($ticket, $user->id, TicketAuthorType::User);
 
         return Inertia::render('Support/Tickets/Show', [
             'ticket' => $ticket,

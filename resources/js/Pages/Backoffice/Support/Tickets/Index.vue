@@ -104,7 +104,13 @@ function getAgentName(agentId) {
                     class="flex items-center justify-between py-3 hover:bg-muted/30 px-2 -mx-2 rounded-lg transition-colors"
                 >
                     <div class="min-w-0 flex-1">
-                        <p class="truncate font-medium text-ocean-deep">{{ ticket.subject }}</p>
+                        <div class="flex items-center gap-2">
+                            <p class="truncate font-medium text-ocean-deep">{{ ticket.subject }}</p>
+                            <span
+                                v-if="ticket.unread_count > 0"
+                                class="inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-primary px-1 text-white text-xs font-bold"
+                            >{{ ticket.unread_count }}</span>
+                        </div>
                         <p class="text-xs text-muted-foreground">
                             {{ getUserName(ticket.user_id) }} · {{ ticket.category?.name }} · {{ formatDate(ticket.created_at) }}
                         </p>

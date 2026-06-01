@@ -65,6 +65,10 @@ const priorityLabels = {
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2">
                             <p class="truncate font-medium text-ocean-deep">{{ ticket.subject }}</p>
+                            <span
+                                v-if="ticket.unread_count > 0"
+                                class="inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-primary px-1 text-white text-xs font-bold"
+                            >{{ ticket.unread_count }}</span>
                             <AppBadge v-if="ticket.rating" variant="green" size="sm">Avaliado</AppBadge>
                         </div>
                         <p class="text-xs text-muted-foreground">

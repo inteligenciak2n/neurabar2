@@ -32,10 +32,10 @@ const statusLabels = {
 };
 
 const statusColors = {
-    open: 'blue',
-    in_progress: 'yellow',
-    resolved: 'green',
-    closed: 'gray',
+    open: 'primary',
+    in_progress: 'accent',
+    resolved: 'success',
+    closed: 'muted',
 };
 
 function submitReply() {
@@ -73,7 +73,7 @@ function formatDate(dateStr) {
                     <p class="text-sm text-muted-foreground">{{ ticket.category?.name }}</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <AppBadge :variant="statusColors[ticket.status]">{{ statusLabels[ticket.status] }}</AppBadge>
+                    <AppBadge :variant="statusColors[ticket.status]" :label="ticket.status" />
                     <AppButton v-if="canRate && !showRating" variant="secondary" @click="showRating = true">
                         Avaliar Atendimento
                     </AppButton>

@@ -40,11 +40,12 @@ const statusLabels = {
             <!-- Open tickets -->
             <AppCard>
                 <template #title>Meus Chamados Abertos</template>
-                <template #actions>
+
+                <div class="flex justify-end">
                     <Link :href="route('support.tickets.index')" class="text-sm text-primary hover:underline">
                         Ver todos
                     </Link>
-                </template>
+                </div>
 
                 <AppEmptyState v-if="openTickets.length === 0" message="Nenhum chamado aberto." />
 
@@ -53,10 +54,16 @@ const statusLabels = {
                         v-for="ticket in openTickets"
                         :key="ticket.id"
                         :href="route('support.tickets.show', ticket.id)"
-                        class="flex items-center justify-between py-3 hover:bg-muted/30 px-2 -mx-2 rounded-lg transition-colors"
+                        class="flex items-center justify-between py-3 hover:bg-muted/30 px-2 -mx-2 rounded-lg transition-colors hover:bg-muted/80"
                     >
                         <div class="min-w-0">
-                            <p class="truncate font-medium text-ocean-deep">{{ ticket.subject }}</p>
+                            <div class="flex items-center gap-3">
+                                <p class="truncate font-medium text-ocean-deep">{{ ticket.subject }}</p>
+                                <span
+                                    v-if="ticket.unread_count > 0"
+                                    class="inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-primary px-1 text-white text-xs font-bold"
+                                >{{ ticket.unread_count }}</span>
+                            </div>
                             <p class="text-xs text-muted-foreground">{{ ticket.category?.name }}</p>
                         </div>
                         <AppBadge :variant="statusColors[ticket.status]" class="ml-4 shrink-0">

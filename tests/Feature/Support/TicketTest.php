@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Models\Support\Ticket;
 use App\Models\Support\TicketCategory;
 use App\Models\Support\TicketMessage;
+use App\Models\Support\TicketRead;
 use App\Models\Tenant\Venue;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -37,6 +38,7 @@ class TicketTest extends TestCase
 
         \DB::connection('support')->table('support_ticket_attachments')->truncate();
         \DB::connection('support')->table('support_ticket_ratings')->truncate();
+        \DB::connection('support')->table('support_ticket_reads')->truncate();
         \DB::connection('support')->table('support_ticket_messages')->truncate();
         \DB::connection('support')->table('support_tickets')->truncate();
         \DB::connection('support')->table('support_ticket_categories')->truncate();
@@ -216,5 +218,83 @@ class TicketTest extends TestCase
         $this->post(route('support.tickets.rate', $ticket->id), [
             'score' => 5,
         ])->assertSessionHasErrors('ticket');
+    }
+
+    public function test_ticket_has_no_unread_messages_initially_for_client(): void
+    {
+        $user = $this->makeAuthUser();
+        $category = TicketCategory::create(['name' => 'Geral', 'active' => true]);
+
+        $this->post(route('support.tickets.store'), [
+            'category_id' => $category->id,
+            'subject' => 'Unread test',
+            'body' => 'Initial message',
+        ]);
+
+        $ticket = Ticket::on('support')->where('user_id', $user->id)->first();
+
+        $response = $this->get(route('support.tickets.index'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Support/Tickets/Index')
+            ->where('tickets.data.0.unread_count', 0)
+        );
+    }
+
+    public function test_opening_ticket_marks_it_as_read_for_client(): void
+    {
+        Notification::fake();
+
+        $user = $this->makeAuthUser();
+        $category = TicketCategory::create(['name' => 'Geral', 'active' => true]);
+
+        $ticket = Ticket::on('support')->create([
+            'user_id' => $user->id,
+            'category_id' => $category->id,
+            'subject' => 'Mark read test',
+            'status' => 'open',
+            'priority' => 'medium',
+        ]);
+
+        // Simulate an agent message (platform_user author_type)
+        TicketMessage::on('support')->create([
+            'ticket_id' => $ticket->id,
+            'author_id' => (string) \Str::uuid(),
+            'author_type' => 'platform_user',
+            'body' => 'Agent reply',
+        ]);
+
+        // Before opening, no read record exists → unread_count = 1
+        $this->assertNull(TicketRead::where('ticket_id', $ticket->id)->first());
+
+        // Opening the ticket marks it as read
+        $this->get(route('support.tickets.show', $ticket->id))->assertOk();
+
+        $this->assertNotNull(TicketRead::where('ticket_id', $ticket->id)->where('reader_id', $user->id)->first());
+    }
+
+    public function test_replying_to_ticket_marks_it_as_read_for_client(): void
+    {
+        Notification::fake();
+
+        $user = $this->makeAuthUser();
+        $category = TicketCategory::create(['name' => 'Geral', 'active' => true]);
+
+        $ticket = Ticket::on('support')->create([
+            'user_id' => $user->id,
+            'category_id' => $category->id,
+            'subject' => 'Reply marks read test',
+            'status' => 'open',
+            'priority' => 'medium',
+        ]);
+
+        $this->post(route('support.tickets.messages.store', $ticket->id), [
+            'body' => 'Client reply',
+        ])->assertRedirect();
+
+        $this->assertNotNull(
+            TicketRead::where('ticket_id', $ticket->id)->where('reader_id', $user->id)->first()
+        );
     }
 }
