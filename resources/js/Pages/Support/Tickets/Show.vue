@@ -152,7 +152,8 @@ function formatDate(dateStr) {
                             'rounded-xl p-4',
                             message.author_type === 'platform_user'
                                 ? 'bg-primary/5 border border-primary/10'
-                                : 'bg-muted/40',
+                                : 'bg-muted/80',
+                            message.author_type === 'platform_user' ? 'text-primary ml-16' : 'text-ocean-deep mr-16',
                         ]"
                     >
                         <div class="flex items-center justify-between mb-2">

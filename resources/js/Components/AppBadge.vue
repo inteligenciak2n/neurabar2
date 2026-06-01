@@ -11,7 +11,7 @@ defineProps({
     variant: {
         type: String,
         default: null,
-        validator: (v) => ['primary', 'accent', 'destructive', 'muted', null].includes(v),
+        validator: (v) => ['primary', 'accent', 'destructive', 'muted', 'success', null].includes(v),
     },
 });
 
@@ -20,6 +20,7 @@ const variantClasses = {
     accent:      'bg-accent/10 text-accent',
     destructive: 'bg-destructive/10 text-destructive',
     muted:       'bg-muted text-muted-foreground',
+    success:     'bg-success/10 text-success',
 };
 </script>
 

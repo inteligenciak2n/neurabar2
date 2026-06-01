@@ -31,10 +31,10 @@ const updateForm = useForm({
 const showUpdatePanel = ref(false);
 
 const statusColors = {
-    open: 'blue',
-    in_progress: 'yellow',
-    resolved: 'green',
-    closed: 'gray',
+    open: 'primary',
+    in_progress: 'accent',
+    resolved: 'success',
+    closed: 'muted',
 };
 
 function submitReply() {
@@ -62,7 +62,17 @@ function formatDate(dateStr) {
 <template>
     <PlatformLayout :title="ticket.subject">
         <template #header>
-            <div class="flex items-center justify-between">
+            <div class="flex justify-between w-full">
+                <h1 class="font-heading text-xl font-bold text-ocean-deep">{{ ticket.subject }}</h1>
+                <div class="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>{{ ticketUser?.name ?? ticket.user_id }}</span>
+                    <span>·</span>
+                    <span>{{ ticket.category?.name }}</span>
+                </div>
+            </div>
+        </template>
+           
+        <div class="flex items-center justify-between mb-6">
                 <div>
                     <h1 class="font-heading text-xl font-bold text-ocean-deep">{{ ticket.subject }}</h1>
                     <div class="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
@@ -72,13 +82,12 @@ function formatDate(dateStr) {
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <AppBadge :variant="statusColors[ticket.status]">{{ ticket.status }}</AppBadge>
+                    <AppBadge :variant="statusColors[ticket.status]" :label="ticket.status" />
                     <AppButton variant="secondary" @click="showUpdatePanel = !showUpdatePanel">
                         {{ showUpdatePanel ? 'Fechar Painel' : 'Gerenciar Chamado' }}
                     </AppButton>
                 </div>
-            </div>
-        </template>
+        </div>
 
         <div class="mx-auto max-w-4xl space-y-4">
             <!-- Management panel -->
@@ -129,7 +138,8 @@ function formatDate(dateStr) {
                         :key="message.id"
                         :class="[
                             'rounded-xl p-4',
-                            message.is_internal ? 'bg-yellow-50 border border-yellow-200' : message.author_type === 'platform_user' ? 'bg-primary/5 border border-primary/10' : 'bg-muted/40',
+                            message.is_internal ? 'bg-yellow-50 border border-yellow-200' : message.author_type === 'platform_user' ? 'bg-primary/5 border border-primary/10' : 'bg-muted/90',
+                            message.author_type === 'platform_user' ? 'text-primary ml-16' : 'text-ocean-deep mr-16',
                         ]"
                     >
                         <div class="flex items-center justify-between mb-2">

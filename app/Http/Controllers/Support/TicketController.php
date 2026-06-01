@@ -61,7 +61,11 @@ class TicketController extends Controller
 
         $ticket = Ticket::on('support')
             ->where('id', $ticketId)
-            ->with(['category', 'messages.attachments', 'rating'])
+            ->with([
+                'category', 
+                'messages' => fn ($q) => $q->where('is_internal', false)->with('attachments'),
+                'rating'
+                ])
             ->firstOrFail();
 
         abort_unless($ticket->user_id === $user->id, 403);
