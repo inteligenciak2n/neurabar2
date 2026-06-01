@@ -27,6 +27,7 @@
     "dependencies": {
         "@fontsource/dm-sans": "^5.2.8",
         "@fontsource/space-grotesk": "^5.2.10",
+        "@vueuse/core": "^14.3.0",
         "vue-sonner": "^2.0.9"
     }
 }

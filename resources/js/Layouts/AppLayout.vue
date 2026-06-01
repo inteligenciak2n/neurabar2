@@ -9,10 +9,13 @@ import AppToast from '@/Components/AppToast.vue';
 import CustomHead from '@/Components/CustomHead.vue';
 import { useTranslate } from '@/Composables/useTranslate'
 import { useCheckRole } from '@/Composables/useCheckRole';
+import { useDark } from '@vueuse/core';
+
 
 const __ = useTranslate();
 const page = usePage();
 const { isManager } = useCheckRole();
+const isDark = useDark()
 
 defineProps({
     title: String,
@@ -20,6 +23,10 @@ defineProps({
 
 const mobileMenuOpen = ref(false);
 const venueDropdownOpen = ref(false);
+
+const toggleDark = () => {
+    isDark.value = !isDark.value
+}
 
 const switchVenue = (id) => {
     if (id === page.props.defs.venue?.id) {
@@ -71,27 +78,27 @@ const roleLabel = (role) => {
 
         <AppToast />
 
-        <div class="flex min-h-screen flex-col bg-muted">
+        <div class="flex min-h-screen flex-col bg-muted dark:bg-gray-950">
             <!-- Top Header -->
-            <header class="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border bg-white px-4 shadow-card sm:px-6">
+            <header class="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border bg-white px-4 shadow-card sm:px-6 dark:border-gray-700 dark:bg-gray-900">
                 <!-- Left: Logo + Venue badge -->
                 <div class="flex items-center gap-4">
                     <Link :href="route('dashboard')" class="flex items-center gap-2.5">
                         <ApplicationMark class="h-8 w-auto text-primary" />
-                        <span class="font-heading text-lg font-bold text-ocean-deep tracking-tight">NeuraBar</span>
+                        <span class="font-heading text-lg font-bold text-ocean-deep tracking-tight dark:text-gray-100">NeuraBar</span>
                     </Link>
 
                     <!-- Venue Switcher -->
                     <div v-if="$page.props.defs.venue" class="relative hidden sm:block">
                         <button
                             @click="venueDropdownOpen = !venueDropdownOpen"
-                            class="flex items-center gap-1.5 rounded-md border border-border bg-muted px-3 py-1.5 hover:bg-border/60 transition-colors"
+                            class="flex items-center gap-1.5 rounded-md border border-border bg-muted px-3 py-1.5 hover:bg-border/60 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
                         >
-                            <span class="text-xs font-body text-muted-foreground">{{ __('Venue:') }}</span>
-                            <span class="text-xs font-heading font-semibold text-ocean-deep truncate max-w-[140px]">
+                            <span class="text-xs font-body text-muted-foreground dark:text-gray-400">{{ __('Venue:') }}</span>
+                            <span class="text-xs font-heading font-semibold text-ocean-deep truncate max-w-[140px] dark:text-gray-100">
                                 {{ $page.props.defs.venue.name }}
                             </span>
-                            <svg class="h-3 w-3 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="h-3 w-3 text-muted-foreground shrink-0 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                             </svg>
                         </button>
@@ -110,19 +117,19 @@ const roleLabel = (role) => {
                         >
                             <div
                                 v-if="venueDropdownOpen"
-                                class="absolute left-0 z-50 mt-2 w-56 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5"
+                                class="absolute left-0 z-50 mt-2 w-56 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
                             >
                                 <div class="py-1">
-                                    <div class="px-3 py-1.5 text-xs font-medium text-muted-foreground">{{ __('Switch Venue') }}</div>
+                                    <div class="px-3 py-1.5 text-xs font-medium text-muted-foreground dark:text-gray-400">{{ __('Switch Venue') }}</div>
 
                                     <button
                                         v-for="venue in $page.props.defs.venues"
                                         :key="venue.id"
                                         @click="switchVenue(venue.id)"
-                                        class="flex flex-col w-full justify-start text-start text-sm transition-colors hover:bg-muted px-3 py-2"
-                                        :class="venue.id === $page.props.defs.venue.id ? 'font-semibold text-primary' : 'text-ocean-deep'"
+                                        class="flex flex-col w-full justify-start text-start text-sm transition-colors hover:bg-muted px-3 py-2 dark:hover:bg-gray-700"
+                                        :class="venue.id === $page.props.defs.venue.id ? 'font-semibold text-primary' : 'text-ocean-deep dark:text-gray-100'"
                                     >
-                                        <div class="flex w-full items-center gap-2 text-sm transition-colors hover:bg-muted">
+                                            <div class="flex w-full items-center gap-2 text-sm transition-colors hover:bg-muted dark:hover:bg-gray-700">
                                             <svg
                                                 v-if="venue.id === $page.props.defs.venue.id"
                                                 class="h-3.5 w-3.5 shrink-0 text-primary"
@@ -133,14 +140,14 @@ const roleLabel = (role) => {
                                             <span v-else class="h-3.5 w-3.5 shrink-0" />
                                             <span class="truncate">{{ venue.name }}</span>
                                         </div>
-                                        <span class="px-3 py-1.5 text-xs font-medium text-muted-foreground">{{ roleLabel(venue.role) }}</span>
+                                        <span class="px-3 py-1.5 text-xs font-medium text-muted-foreground dark:text-gray-400">{{ roleLabel(venue.role) }}</span>
                                     </button>
 
                                     <template v-if="['owner', 'general_manager'].includes($page.props.defs.current_venue_role)">
-                                        <div class="my-1 border-t border-border" />
+                                        <div class="my-1 border-t border-border dark:border-gray-700" />
                                         <Link
                                             :href="route('corporation.venues.create')"
-                                            class="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-ocean-deep"
+                                            class="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-ocean-deep dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
                                             @click="venueDropdownOpen = false"
                                         >
                                             <svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,7 +159,7 @@ const roleLabel = (role) => {
 
                                     <Link
                                     :href="route('corporation.dashboard')"
-                                    class="flex flex-col w-full justify-start text-start text-sm transition-colors hover:bg-muted px-3 py-2"
+                                    class="flex flex-col w-full justify-start text-start text-sm transition-colors hover:bg-muted px-3 py-2 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
                                     >
                                     {{ __('Management') }}
                                     </Link>
@@ -174,8 +181,8 @@ const roleLabel = (role) => {
                         :class="[
                             'rounded-md px-3 py-2 text-sm font-body font-medium transition-colors',
                             route().current(item.activePattern)
-                                ? 'bg-primary-light text-primary'
-                                : 'text-muted-foreground hover:bg-muted hover:text-ocean-deep',
+                                ? 'bg-primary-light text-primary dark:bg-primary/20'
+                                : 'text-muted-foreground hover:bg-muted hover:text-ocean-deep dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100',
                         ]"
                     >
                         {{ item.label }}
@@ -185,24 +192,31 @@ const roleLabel = (role) => {
 
                 <!-- Right: User dropdown + mobile toggle -->
                 <div class="flex items-center gap-2">
+                    <div class="flex w-full py-3">
+                        <button @click="toggleDark()" class="flex w-full hover:bg-[#f1f9fc] dark:hover:bg-gray-700 p-3 cursor-pointer justify-center hover:text-[#594cda] transition-all duration-200" v-tippy="isDark ? 'Modo claro' : 'Modo escuro'">
+                            {{  isDark ? 'sun' : 'moon' }}
+                            <span v-if="menu" class="mx-3">{{ isDark ? 'Modo Claro' : 'Modo Escuro' }}</span>
+                        </button>
+                    </div>
+
                     <!-- User dropdown -->
                     <Dropdown align="right" width="48">
                         <template #trigger>
-                            <button class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-body text-ocean-deep hover:bg-muted transition-colors">
+                            <button class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-body text-ocean-deep hover:bg-muted transition-colors dark:text-gray-100 dark:hover:bg-gray-800">
                                 <img
-                                    class="h-7 w-7 rounded-full object-cover ring-2 ring-border"
+                                    class="h-7 w-7 rounded-full object-cover ring-2 ring-border dark:ring-gray-600"
                                     :src="$page.props.auth.user.profile_photo_url"
                                     :alt="$page.props.auth.user.name"
                                 >
                                 <span class="hidden sm:block font-medium">{{ $page.props.auth.user.name }}</span>
-                                <svg class="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="h-4 w-4 text-muted-foreground dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                                 </svg>
                             </button>
                         </template>
 
                         <template #content>
-                            <div class="block px-4 py-2 text-xs text-muted-foreground">{{ __('Manage Account') }}</div>
+                            <div class="block px-4 py-2 text-xs text-muted-foreground dark:text-gray-400">{{ __('Manage Account') }}</div>
                             <DropdownLink 
                             :href="route('profile.show')">
                                 {{ __('Profile') }}
@@ -227,7 +241,7 @@ const roleLabel = (role) => {
                                 {{ __('API Tokens') }}
                             </DropdownLink>
 
-                            <div class="border-t border-border" />
+                            <div class="border-t border-border dark:border-gray-700" />
                             <form @submit.prevent="logout">
                                 <DropdownLink as="button">{{ __('Log Out') }}</DropdownLink>
                             </form>
@@ -236,7 +250,7 @@ const roleLabel = (role) => {
 
                     <!-- Mobile menu toggle -->
                     <button
-                        class="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-ocean-deep transition-colors lg:hidden"
+                        class="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-ocean-deep transition-colors lg:hidden dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
                         @click="mobileMenuOpen = !mobileMenuOpen"
                     >
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -250,7 +264,7 @@ const roleLabel = (role) => {
             <!-- Mobile nav drawer -->
             <div
                 v-if="mobileMenuOpen"
-                class="sticky top-16 z-10 border-b border-border bg-white px-4 py-3 shadow-card lg:hidden"
+                class="sticky top-16 z-10 border-b border-border bg-white px-4 py-3 shadow-card lg:hidden dark:border-gray-700 dark:bg-gray-900"
             >
                 <nav class="flex flex-col gap-1">
                     <template                         
@@ -263,8 +277,8 @@ const roleLabel = (role) => {
                         :class="[
                             'rounded-md px-3 py-2.5 text-sm font-body font-medium transition-colors',
                             route().current(item.activePattern)
-                                ? 'bg-primary-light text-primary'
-                                : 'text-muted-foreground hover:bg-muted hover:text-ocean-deep',
+                                ? 'bg-primary-light text-primary dark:bg-primary/20'
+                                : 'text-muted-foreground hover:bg-muted hover:text-ocean-deep dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100',
                         ]"
                         @click="mobileMenuOpen = false"
                     >
