@@ -119,10 +119,16 @@ COPY --from=composer-deps /app/vendor ./vendor
 # Copy compiled assets from Stage 2
 COPY --from=assets /app/public/build ./public/build
 
-# Rodar package:discover agora que o artisan e o vendor estão disponíveis
+# Criar estrutura de diretórios que o artisan precisa (storage é volume em runtime,
+# mas precisa existir na imagem para os comandos abaixo não falharem)
+RUN mkdir -p storage/framework/{sessions,views,cache/data} \
+    storage/logs \
+    bootstrap/cache
+
+# Rodar apenas package:discover no build — optimize e view:cache devem ser
+# executados manualmente após `docker compose up` (junto com key:generate e migrate).
 RUN echo "APP_ENV=production\nAPP_KEY=build-placeholder" > .env \
     && php artisan package:discover --ansi \
-    && php artisan optimize \
     && rm .env
 
 # Permissions — storage e bootstrap/cache são montados como volumes em runtime

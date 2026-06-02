@@ -140,8 +140,9 @@ docker compose -f compose.prod.yaml exec app php artisan key:generate
 # Executar migrations
 docker compose -f compose.prod.yaml exec app php artisan migrate --force
 
-# Otimizar para produção
+# Compilar caches de config, rotas, views e eventos
 docker compose -f compose.prod.yaml exec app php artisan optimize
+docker compose -f compose.prod.yaml exec app php artisan view:cache
 ```
 
 ---
@@ -345,6 +346,7 @@ docker compose -f compose.prod.yaml exec app php artisan down
 docker compose -f compose.prod.yaml up -d --build app queue
 docker compose -f compose.prod.yaml exec app php artisan migrate --force
 docker compose -f compose.prod.yaml exec app php artisan optimize
+docker compose -f compose.prod.yaml exec app php artisan view:cache
 docker compose -f compose.prod.yaml exec app php artisan up
 
 # Limpar caches
