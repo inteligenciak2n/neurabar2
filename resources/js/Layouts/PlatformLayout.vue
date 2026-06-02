@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppToast from '@/Components/AppToast.vue';
 import ToggleDark from '@/Components/ToggleDark.vue';
+import CustomHead from '@/Components/CustomHead.vue';
 
 defineProps({
     title: String,
@@ -24,7 +25,7 @@ const platformNavItems = [
 
 <template>
     <div>
-        <Head :title="title" />
+        <CustomHead :title="title" />
 
         <AppToast />
 

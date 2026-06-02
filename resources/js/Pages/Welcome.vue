@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
+import CustomHead from '@/Components/CustomHead.vue';
 
 defineProps({
     canLogin: Boolean,
@@ -90,7 +91,7 @@ const plans = [
 </script>
 
 <template>
-    <Head title="NeuraBar — Gestão inteligente para bares e restaurantes" />
+    <CustomHead title="NeuraBar — Gestão inteligente para bares e restaurantes" />
 
     <div class="min-h-screen bg-muted font-body text-foreground antialiased">
 

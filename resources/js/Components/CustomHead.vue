@@ -25,6 +25,6 @@ defineProps({
         <meta property="og:description" content="">
         <meta property="og:image" content="">
 
-        <link rel="shortcut icon"  :href="page.props.asset + 'storage/assets/favicon.png'" />
+        <link rel="shortcut icon"  :href="$page.props.assets + '/images/favicon.svg'" />
     </Head>    
 </template>

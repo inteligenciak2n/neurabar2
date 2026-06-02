@@ -17,8 +17,12 @@ Route::get('/plans/public', function () {
         ->orderBy('sort_order')
         ->get(['name', 'description', 'monthly_price', 'code']);
 
+    $landingUrl = rtrim((string) config('platform.landing_page_url'), '/');
+
     return response()->json($plans)
-        ->header('Access-Control-Allow-Origin', '*')
+        ->header('Access-Control-Allow-Origin', $landingUrl)
+        ->header('Access-Control-Allow-Methods', 'GET')
+        ->header('Vary', 'Origin')
         ->header('Cache-Control', 'public, max-age=300');
 })->name('api.plans.public');
 

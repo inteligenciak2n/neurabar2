@@ -77,6 +77,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'venue_switched' => fn () => $request->session()->pull('venue_switched', false),
             'language' => TranslationService::getLanguagesDefinitions($request),
+            'assets' => asset('storage/assets'),
         ];
     }
 }
