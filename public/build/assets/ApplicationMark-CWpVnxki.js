@@ -1,0 +1,1 @@
+import{A as r}from"./ApplicationLogo-DB0eINq3.js";import{C as o,e as t}from"./app-frrp3da3.js";const n={__name:"ApplicationMark",setup(a){return(c,e)=>(o(),t(r,{class:"w-18 h-18 fill-current text-gray-500"}))}};export{n as _};
