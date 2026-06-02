@@ -1,26 +1,21 @@
 # Docker Compose — Produção
 # PostgreSQL: RDS externo (configurado via .env)
 # Redis: local (container)
-# Vite: não incluído (assets pré-compilados via `npm run build`)
+# Assets: compilados durante o `docker compose up --build` (multi-stage Dockerfile.prod)
 
 services:
     app:
         build:
-            context: './vendor/laravel/sail/runtimes/8.2'
-            dockerfile: Dockerfile
-            args:
-                WWWGROUP: '${WWWGROUP}'
-        image: 'sail-8.2/app'
-        extra_hosts:
-            - 'host.docker.internal:host-gateway'
+            context: '.'
+            dockerfile: 'Dockerfile.prod'
+        image: 'neurabar/app:latest'
         ports:
             - '127.0.0.1:${APP_PORT:-9090}:80'
-        environment:
-            WWWUSER: '${WWWUSER}'
-            LARAVEL_SAIL: 1
-            XDEBUG_MODE: 'off'
+        env_file:
+            - .env
         volumes:
-            - '.:/var/www/html'
+            - './storage:/var/www/html/storage'
+            - './bootstrap/cache:/var/www/html/bootstrap/cache'
         networks:
             - sail
         depends_on:
@@ -29,22 +24,17 @@ services:
         restart: unless-stopped
 
     queue:
-        build:
-            context: './vendor/laravel/sail/runtimes/8.2'
-            dockerfile: Dockerfile
-            args:
-                WWWGROUP: '${WWWGROUP}'
-        image: 'sail-8.2/app'
-        environment:
-            WWWUSER: '${WWWUSER}'
-            LARAVEL_SAIL: 1
-            XDEBUG_MODE: 'off'
+        image: 'neurabar/app:latest'
+        env_file:
+            - .env
         volumes:
-            - '.:/var/www/html'
+            - './storage:/var/www/html/storage'
+            - './bootstrap/cache:/var/www/html/bootstrap/cache'
         networks:
             - sail
         depends_on:
             - redis
+            - app
         command: ['php', 'artisan', 'queue:work', '--queue=default,broadcasts', '--sleep=3', '--tries=3', '--max-time=3600']
         restart: unless-stopped
 

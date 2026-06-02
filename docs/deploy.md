@@ -107,38 +107,14 @@ BROADCAST_CONNECTION=pusher
 
 ---
 
-## 3. Instalar Dependências e Compilar Assets
+## 3. Build e Subir os Containers Docker
 
-```bash
-# Definir o grupo do servidor web
-export WWWGROUP=$(id -g)
-export WWWUSER=$(id -u)
-
-# Instalar dependências PHP
-docker run --rm \
-    -v "$(pwd):/var/www/html" \
-    -w /var/www/html \
-    composer:2 install --no-dev --optimize-autoloader
-
-# Instalar dependências Node e compilar
-docker run --rm \
-    -v "$(pwd):/var/www/html" \
-    -w /var/www/html \
-    node:20-alpine sh -c "npm ci && npm run build"
-```
-
----
-
-## 4. Subir os Containers Docker
+O `Dockerfile.prod` usa **multi-stage build**: o Stage 1 (Node 20) compila os assets do Vite e o Stage 2 (PHP 8.2 + Apache) instala as dependências Composer e monta a aplicação. Nenhuma instalação manual prévia é necessária.
 
 ```bash
 cd /var/www/neurabar
 
-# Exportar variáveis necessárias para o Compose
-export WWWGROUP=$(id -g)
-export WWWUSER=$(id -u)
-
-# Subir em background usando o compose de produção
+# Build completo + subir em background
 docker compose -f compose.prod.yaml up -d --build
 
 # Verificar se todos os containers subiram
@@ -151,9 +127,7 @@ docker compose -f compose.prod.yaml exec app php artisan key:generate
 docker compose -f compose.prod.yaml exec app php artisan migrate --force
 
 # Otimizar para produção
-docker compose -f compose.prod.yaml exec app php artisan config:cache
-docker compose -f compose.prod.yaml exec app php artisan route:cache
-docker compose -f compose.prod.yaml exec app php artisan view:cache
+docker compose -f compose.prod.yaml exec app php artisan optimize
 ```
 
 ---
@@ -351,11 +325,10 @@ docker compose -f compose.prod.yaml logs -f queue
 # Reiniciar um serviço
 docker compose -f compose.prod.yaml restart app
 
-# Deploy de nova versão (pull + rebuild)
+# Deploy de nova versão (pull + rebuild completo)
 git pull origin main
 docker compose -f compose.prod.yaml exec app php artisan down
 docker compose -f compose.prod.yaml up -d --build app queue
-docker compose -f compose.prod.yaml exec app composer install --no-dev --optimize-autoloader
 docker compose -f compose.prod.yaml exec app php artisan migrate --force
 docker compose -f compose.prod.yaml exec app php artisan optimize
 docker compose -f compose.prod.yaml exec app php artisan up
