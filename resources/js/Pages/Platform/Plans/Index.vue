@@ -102,6 +102,37 @@ const destroy = (plan) => {
                 </div>
             </form>
 
+            <!-- Edit form -->
+            <form v-if="editingPlan" @submit.prevent="submitEdit({ id: editingPlan })" class="bg-white rounded-xl shadow-card p-6 dark:bg-gray-800">
+                <h2 class="font-heading font-semibold text-ocean-deep mb-4 dark:text-gray-100">{{ __('Edit Plan') }}</h2>
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Code') }}</label>
+                        <input v-model="editForm.code" type="text" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Name') }}</label>
+                        <input v-model="editForm.name" type="text" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Monthly Price') }}</label>
+                        <input v-model="editForm.monthly_price" type="number" step="0.01" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
+                    </div>
+                    <div class="sm:col-span-3">
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Description') }}</label>
+                        <textarea v-model="editForm.description" rows="2" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input v-model="editForm.active" type="checkbox" id="edit-active" class="rounded border-border text-primary focus:ring-primary dark:border-gray-600" />
+                        <label for="edit-active" class="text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Active') }}</label>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button type="button" @click="editingPlan = null" class="rounded-md border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-muted transition-colors dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700">{{ __('Cancel') }}</button>
+                    <button type="submit" :disabled="editForm.processing" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-60 transition-colors">{{ __('Save') }}</button>
+                </div>
+            </form>
+
             <!-- Plans list -->
             <div class="bg-white rounded-xl shadow-card overflow-hidden dark:bg-gray-800">
                 <table class="w-full text-sm">

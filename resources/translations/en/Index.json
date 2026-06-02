@@ -108,5 +108,8 @@
     "Role": "Role",
     "Password": "Password",
     "Create": "Create",
-    "New Platform User": "New Platform User"
+    "New Platform User": "New Platform User",
+    "Monthly Price": "Monthly Price",
+    "Edit Plan": "Edit Plan",
+    "Description": "Description"
 }
