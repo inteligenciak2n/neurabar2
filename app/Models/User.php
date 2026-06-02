@@ -32,6 +32,8 @@ class User extends Authenticatable
     use Notifiable;
     use TwoFactorAuthenticatable;
 
+    protected $connection = 'saas';
+
     /**
      * The attributes that are mass assignable.
      *

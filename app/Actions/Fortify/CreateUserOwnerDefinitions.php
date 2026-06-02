@@ -5,7 +5,9 @@ namespace App\Actions\Fortify;
 use App\Enums\ServiceLocationType;
 use App\Enums\UserRole;
 use App\Models\Menu\Category;
+use App\Models\Menu\Combo;
 use App\Models\Menu\Menu;
+use App\Models\Menu\ModifierGroup;
 use App\Models\Menu\Product;
 use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\KitchenStation;
@@ -207,6 +209,34 @@ class CreateUserOwnerDefinitions
                 ]);
             }
         }
+
+        $modifier = ModifierGroup::create([
+            'venue_id' => $menu->venue_id,
+            'name' => "Queijo Extra",
+            'required' => false,
+            'multiple_selection' => true,
+        ]);
+
+        $modifier->options()->createMany([
+            ['name' => 'Cheddar', 'price' => 2.00],
+            ['name' => 'Mussarela', 'price' => 1.50],
+            ['name' => 'Gorgonzola', 'price' => 3.00],
+        ]);
+
+        $combo = Combo::create([
+            'venue_id' => $menu->venue_id,
+            'name' => 'Combo Feliz X-Bacon',
+            'description' => 'X-Bacon + Batata Frita + Refrigerante Lata',
+            'price' => 49.90,
+            'active' => true,
+        ]);
+
+        $combo->items()->createMany([
+            ['product_id' => Product::where('name', 'X-Bacon')->where('venue_id', $menu->venue_id)->first()->id, 'quantity' => 1],
+            ['product_id' => Product::where('name', 'Batata Frita')->where('venue_id', $menu->venue_id)->first()->id, 'quantity' => 1],
+            ['product_id' => Product::where('name', 'Refrigerante Lata')->where('venue_id', $menu->venue_id)->first()->id, 'quantity' => 1],
+        ]);
+
     }
 
     private function createServiceLocations(Venue $venue): void
