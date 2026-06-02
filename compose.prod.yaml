@@ -8,6 +8,13 @@ services:
         build:
             context: '.'
             dockerfile: 'Dockerfile.prod'
+            args:
+                APP_URL: '${APP_URL}'
+                VITE_APP_NAME: '${APP_NAME}'
+                VITE_PUSHER_APP_KEY: '${PUSHER_APP_KEY}'
+                VITE_PUSHER_HOST: '${VITE_PUSHER_HOST}'
+                VITE_PUSHER_PORT: '${VITE_PUSHER_PORT}'
+                VITE_PUSHER_SCHEME: '${VITE_PUSHER_SCHEME}'
         image: 'neurabar/app:latest'
         ports:
             - '127.0.0.1:${APP_PORT:-9090}:80'

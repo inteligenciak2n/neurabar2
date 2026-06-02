@@ -48,18 +48,29 @@ cp .env.example .env
 nano .env
 ```
 
-git remote add env_prod neurabar:/var/www/neurabar
-cd /var/www/neurabar
-git init --initial-branch=main
-git config --add receive.denyCurrentBranch ignore
-git config --global user.email "seu.nome@email.com"
-git config --global user.name "Seu Nome"
-nano .git/hooks/post-receive
+> **Se estiver usando git push (post-receive hook)**, garanta que o hook roda como o usuário correto
+> e que os arquivos fiquem com a ownership certa:
+>
+> ```bash
+> # Conteúdo do .git/hooks/post-receive no servidor
+> #!/bin/sh
+> GIT_WORK_TREE=/var/www/neurabar git checkout -f
+> chown -R ubuntu:ubuntu /var/www/neurabar
+> chmod -R o+rX /var/www/neurabar
+> ```
 
-#!/bin/sh
-GIT_WORK_TREE=../ git checkout -f
+### Corrigir permissões no servidor (obrigatório)
 
-chmod +x .git/hooks/post-receive
+Se o diretório foi criado como root ou os arquivos foram checked out como root, corrija antes de subir os containers:
+
+```bash
+# Transferir ownership para o usuário ubuntu
+sudo chown -R ubuntu:ubuntu /var/www/neurabar
+
+# Garantir que storage/ e bootstrap/cache/ sejam graváveis pelo container (www-data = UID 33)
+sudo chown -R ubuntu:www-data /var/www/neurabar/storage /var/www/neurabar/bootstrap/cache
+chmod -R 775 /var/www/neurabar/storage /var/www/neurabar/bootstrap/cache
+```
 
 ### Variáveis críticas do `.env` para produção
 
@@ -109,13 +120,16 @@ BROADCAST_CONNECTION=pusher
 
 ## 3. Build e Subir os Containers Docker
 
-O `Dockerfile.prod` usa **multi-stage build**: o Stage 1 (Node 20) compila os assets do Vite e o Stage 2 (PHP 8.2 + Apache) instala as dependências Composer e monta a aplicação. Nenhuma instalação manual prévia é necessária.
+O `Dockerfile.prod` usa **multi-stage build**: Stage 1 (Node 20) lê as variáveis `VITE_*` do `.env` e compila os assets do Vite; Stage 2 (PHP 8.2 + Apache) instala as dependências Composer. Nenhuma instalação manual prévia é necessária.
 
 ```bash
 cd /var/www/neurabar
 
 # Build completo + subir em background
 docker compose -f compose.prod.yaml up -d --build
+
+# Se o build falhar, rode com output completo para ver o erro exato:
+docker compose -f compose.prod.yaml build --no-cache --progress=plain app 2>&1 | tee /tmp/build.log
 
 # Verificar se todos os containers subiram
 docker compose -f compose.prod.yaml ps
