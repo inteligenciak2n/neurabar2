@@ -1,0 +1,98 @@
+# Docker Compose — Produção
+# PostgreSQL: RDS externo (configurado via .env)
+# Redis: local (container)
+# Vite: não incluído (assets pré-compilados via `npm run build`)
+
+services:
+    app:
+        build:
+            context: './vendor/laravel/sail/runtimes/8.2'
+            dockerfile: Dockerfile
+            args:
+                WWWGROUP: '${WWWGROUP}'
+        image: 'sail-8.2/app'
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        ports:
+            - '127.0.0.1:${APP_PORT:-9090}:80'
+        environment:
+            WWWUSER: '${WWWUSER}'
+            LARAVEL_SAIL: 1
+            XDEBUG_MODE: 'off'
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            - redis
+            - soketi
+        restart: unless-stopped
+
+    queue:
+        build:
+            context: './vendor/laravel/sail/runtimes/8.2'
+            dockerfile: Dockerfile
+            args:
+                WWWGROUP: '${WWWGROUP}'
+        image: 'sail-8.2/app'
+        environment:
+            WWWUSER: '${WWWUSER}'
+            LARAVEL_SAIL: 1
+            XDEBUG_MODE: 'off'
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            - redis
+        command: ['php', 'artisan', 'queue:work', '--queue=default,broadcasts', '--sleep=3', '--tries=3', '--max-time=3600']
+        restart: unless-stopped
+
+    redis:
+        image: 'redis:alpine'
+        ports:
+            - '127.0.0.1:${FORWARD_REDIS_PORT:-63790}:6379'
+        volumes:
+            - 'sail-redis:/data'
+        networks:
+            - sail
+        healthcheck:
+            test:
+                - CMD
+                - redis-cli
+                - ping
+            retries: 3
+            timeout: 5s
+        restart: unless-stopped
+
+    soketi:
+        image: 'quay.io/soketi/soketi:latest-16-alpine'
+        environment:
+            SOKETI_DEBUG: '${SOKETI_DEBUG:-0}'
+            SOKETI_METRICS_SERVER_PORT: '9601'
+            SOKETI_DEFAULT_APP_ID: '${PUSHER_APP_ID}'
+            SOKETI_DEFAULT_APP_KEY: '${PUSHER_APP_KEY}'
+            SOKETI_DEFAULT_APP_SECRET: '${PUSHER_APP_SECRET}'
+        ports:
+            - '127.0.0.1:${PUSHER_PORT:-6001}:6001'
+        networks:
+            - sail
+        restart: unless-stopped
+
+    landingpage:
+        image: 'nginx:alpine'
+        ports:
+            - '127.0.0.1:${LANDING_PORT:-9080}:80'
+        volumes:
+            - './landingpage:/usr/share/nginx/html:ro'
+        networks:
+            - sail
+        restart: unless-stopped
+
+networks:
+    sail:
+        driver: bridge
+
+volumes:
+    sail-redis:
+        driver: local
