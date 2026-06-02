@@ -210,7 +210,7 @@ const plans = [
                             <div class="col-span-3 flex flex-col gap-4">
                                 <!-- Stats row -->
                                 <div class="grid grid-cols-3 gap-3">
-                                    <div v-for="(stat, i) in [{label:'Pedidos hoje', value:'47', color:'text-primary'},{label:'Faturamento', value:'R$ 2.840', color:'text-accent'},{label:'Mesas abertas', value:'12', color:'text-warm-gold'}]" :key="i" class="rounded-lg border border-border bg-surface p-3">
+                                    <div v-for="(stat, i) in [{label:'Pedidos hoje', value:'127', color:'text-primary'},{label:'Faturamento', value:'R$ 8.840', color:'text-accent'},{label:'Mesas abertas', value:'12', color:'text-warm-gold'}]" :key="i" class="rounded-lg border border-border bg-surface p-3">
                                         <div class="text-xs text-muted-foreground">{{ stat.label }}</div>
                                         <div class="mt-1 font-heading text-lg font-bold" :class="stat.color">{{ stat.value }}</div>
                                     </div>

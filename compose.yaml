@@ -117,6 +117,15 @@ services:
             - '${PUSHER_METRICS_PORT:-9601}:9601'
         networks:
             - sail
+    landingpage:
+        image: 'nginx:alpine'
+        ports:
+            - '${LANDING_PORT:-9080}:80'
+        volumes:
+            - './landingpage:/usr/share/nginx/html:ro'
+        networks:
+            - sail
+        restart: unless-stopped
 networks:
     sail:
         driver: bridge
