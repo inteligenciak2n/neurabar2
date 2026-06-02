@@ -17,5 +17,15 @@
     "Actions": "Acciones",
     "Pay": "Pagar",
     "Order": "Pedido",
-    "Channel": "Canal"
+    "Channel": "Canal",
+    "Corporation Dashboard": "Panel de control corporativo",
+    "Current": "Actual",
+    "Active": "Activo",
+    "Add Venue": "Añadir lugar",
+    "Edit": "Editar",
+    "Attendances today": "Asistencia en la actualidad",
+    "Platform Dashboard": "Panel de control de plataforma",
+    "Total Corporations": "Total de sociedades",
+    "Inactive": "Inactivo",
+    "MRR": "MRR"
 }

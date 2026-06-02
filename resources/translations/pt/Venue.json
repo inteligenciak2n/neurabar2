@@ -22,5 +22,10 @@
     "ZIP Code": "Código postal",
     "Used in the public guest QR code URL.": "Usado na URL do código QR do convidado público.",
     "Save Changes": "Salvar alterações",
-    "Require service location on orders": "Exigir local de serviço nos pedidos"
+    "Require service location on orders": "Exigir local de serviço nos pedidos",
+    "Longitude": "Longitude",
+    "Require guest geolocation to place orders": "Exigir a geolocalização do hóspede para fazer pedidos",
+    "Latitude": "Latitude",
+    "Geolocation": "Geolocalização",
+    "Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m.": "Os hóspedes serão questionados sobre sua localização ao acessarem por meio do código QR. Só permita pedidos quando estiver dentro de 200 m."
 }

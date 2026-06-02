@@ -18,5 +18,11 @@
     "Service Locations": "Locais de serviço",
     "bar": "barra",
     "Edit": "Editar",
-    "Edit Location": "Editar localização"
+    "Edit Location": "Editar localização",
+    "Generate QR": "Gerar QR",
+    "Default Channel": "Canal padrão",
+    "— None —": "— Nenhum —",
+    "PDF QR": "PDF QR",
+    "Regenerate QR": "Regenere o QR",
+    "View Hub": "Exibir hub"
 }

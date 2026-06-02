@@ -1,3 +1,7 @@
 {
-    "Item ready to serve": "Artículo listo para servir"
+    "Item ready to serve": "Artículo listo para servir",
+    "Register payment of": "Registrar el pago de",
+    "and close this attendance?": "y cerrar esta asistencia?",
+    "An error occurred. Please try again.": "Se ha producido un error. Por favor, inténtelo de nuevo.",
+    "Delete this plan?": "¿Eliminar este plan?"
 }
