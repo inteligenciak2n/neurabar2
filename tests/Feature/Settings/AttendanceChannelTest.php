@@ -5,12 +5,12 @@ namespace Tests\Feature\Settings;
 use App\Enums\UserRole;
 use App\Models\Settings\AttendanceChannel;
 use App\Models\Tenant\Venue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class AttendanceChannelTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_owner_can_list_attendance_channels(): void
     {

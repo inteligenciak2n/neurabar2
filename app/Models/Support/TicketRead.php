@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TicketRead extends Model
 {
-    protected $connection = 'support';
+    protected $connection = 'saas';
 
     protected $table = 'support_ticket_reads';
 

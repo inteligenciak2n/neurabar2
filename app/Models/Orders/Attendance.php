@@ -4,6 +4,7 @@ namespace App\Models\Orders;
 
 use App\Concerns\BelongsToVenue;
 use App\Enums\AttendanceStatus;
+use App\Models\Concerns\HasOperationalConnection;
 use App\Models\Payment\Payment;
 use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\ServiceLocation;
@@ -20,6 +21,7 @@ class Attendance extends Model
 {
     use BelongsToVenue;
     use HasFactory;
+    use HasOperationalConnection;
     use HasUuids;
 
     protected $fillable = [

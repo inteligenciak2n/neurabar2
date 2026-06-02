@@ -14,13 +14,13 @@ use App\Models\Orders\OrderItem;
 use App\Models\Settings\KitchenStation;
 use App\Models\Settings\PreparationStatus;
 use App\Models\Tenant\Venue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class KdsTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_kds_index_returns_correct_page(): void
     {

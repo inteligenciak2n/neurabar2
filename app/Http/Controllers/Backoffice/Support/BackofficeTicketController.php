@@ -28,7 +28,7 @@ class BackofficeTicketController extends Controller
     {
         $filters = $request->only(['status', 'priority', 'assigned_to', 'search']);
 
-        $tickets = Ticket::on('support')
+        $tickets = Ticket::on('saas')
             ->with('category')
             ->when(isset($filters['status']), fn ($q) => $q->where('status', $filters['status']))
             ->when(isset($filters['priority']), fn ($q) => $q->where('priority', $filters['priority']))
@@ -73,7 +73,7 @@ class BackofficeTicketController extends Controller
             'tickets' => $tickets,
             'users' => $users,
             'agents' => $agents,
-            'categories' => TicketCategory::on('support')->where('active', true)->get(['id', 'name']),
+            'categories' => TicketCategory::on('saas')->where('active', true)->get(['id', 'name']),
             'statuses' => TicketStatus::cases(),
             'priorities' => TicketPriority::cases(),
             'filters' => $filters,
@@ -85,7 +85,7 @@ class BackofficeTicketController extends Controller
         /** @var User $agent */
         $agent = $request->user();
 
-        $ticket = Ticket::on('support')
+        $ticket = Ticket::on('saas')
             ->where('id', $ticketId)
             ->with(['category', 'messages.attachments', 'rating'])
             ->firstOrFail();
@@ -103,7 +103,7 @@ class BackofficeTicketController extends Controller
             'ticketUser' => $ticketUser,
             'assignedAgent' => $assignedAgent,
             'agents' => $agents,
-            'categories' => TicketCategory::on('support')->where('active', true)->get(['id', 'name']),
+            'categories' => TicketCategory::on('saas')->where('active', true)->get(['id', 'name']),
             'statuses' => TicketStatus::cases(),
             'priorities' => TicketPriority::cases(),
         ]);
@@ -111,7 +111,7 @@ class BackofficeTicketController extends Controller
 
     public function update(string $ticketId, UpdateTicketRequest $request, UpdateTicketStatusAction $statusAction, AssignTicketAction $assignAction): RedirectResponse
     {
-        $ticket = Ticket::on('support')->where('id', $ticketId)->firstOrFail();
+        $ticket = Ticket::on('saas')->where('id', $ticketId)->firstOrFail();
 
         if ($request->validated('status') !== null) {
             $newStatus = TicketStatus::from($request->validated('status'));
@@ -138,7 +138,7 @@ class BackofficeTicketController extends Controller
         /** @var User $agent */
         $agent = $request->user();
 
-        $ticket = Ticket::on('support')->where('id', $ticketId)->firstOrFail();
+        $ticket = Ticket::on('saas')->where('id', $ticketId)->firstOrFail();
 
         $action->execute($ticket, $agent, $request);
 

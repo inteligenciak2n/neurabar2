@@ -3,6 +3,7 @@
 namespace App\Models\Settings;
 
 use App\Concerns\BelongsToVenue;
+use App\Models\Concerns\HasOperationalConnection;
 use App\Models\Orders\Attendance;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,6 +14,7 @@ class AttendanceChannel extends Model
 {
     use BelongsToVenue;
     use HasFactory;
+    use HasOperationalConnection;
     use HasUuids;
 
     protected $fillable = [

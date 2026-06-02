@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('attendance_channels', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('venue_id')->constrained()->cascadeOnDelete();
+            $table->uuid('venue_id')->index();
             $table->string('name');
             $table->boolean('is_trackable')->default(true);
             $table->boolean('requires_customer_identifier')->default(false);

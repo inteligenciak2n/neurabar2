@@ -8,12 +8,12 @@ use App\Models\Menu\Menu;
 use App\Models\Menu\Product;
 use App\Models\Settings\KitchenStation;
 use App\Models\Tenant\Venue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class ProductTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_owner_can_create_product(): void
     {

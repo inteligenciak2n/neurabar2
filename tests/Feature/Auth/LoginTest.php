@@ -5,12 +5,12 @@ namespace Tests\Feature\Auth;
 use App\Enums\UserRole;
 use App\Models\Tenant\Venue;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class LoginTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_user_can_login_with_valid_credentials(): void
     {

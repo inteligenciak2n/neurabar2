@@ -4,12 +4,12 @@ namespace Tests\Feature\Platform;
 
 use App\Enums\ProfileEnum;
 use App\Models\Tenant\PlanCatalog;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class PlanTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_backoffice_user_can_view_plans(): void
     {

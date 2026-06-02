@@ -4,12 +4,12 @@ namespace Tests\Feature\Platform;
 
 use App\Enums\ProfileEnum;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_backoffice_dashboard_requires_authentication(): void
     {

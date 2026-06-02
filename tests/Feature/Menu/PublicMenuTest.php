@@ -6,12 +6,12 @@ use App\Models\Menu\Category;
 use App\Models\Menu\Menu;
 use App\Models\Menu\Product;
 use App\Models\Tenant\Venue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class PublicMenuTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     private function makeToken(Venue $venue): string
     {

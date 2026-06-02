@@ -9,12 +9,12 @@ use App\Models\Menu\Menu;
 use App\Models\Menu\Product;
 use App\Models\Orders\Attendance;
 use App\Models\Tenant\Venue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class ComboTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_owner_can_create_combo(): void
     {

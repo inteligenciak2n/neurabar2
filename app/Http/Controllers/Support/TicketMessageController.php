@@ -18,7 +18,7 @@ class TicketMessageController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $ticket = Ticket::on('support')->where('id', $ticketId)->firstOrFail();
+        $ticket = Ticket::on('saas')->where('id', $ticketId)->firstOrFail();
 
         abort_unless($ticket->user_id === $user->id, 403);
 

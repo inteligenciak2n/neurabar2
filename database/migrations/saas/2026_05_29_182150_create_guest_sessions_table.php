@@ -14,9 +14,10 @@ return new class extends Migration
         Schema::create('guest_sessions', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('venue_id')->constrained()->cascadeOnDelete();
-            $table->foreignUuid('service_location_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignUuid('attendance_channel_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignUuid('attendance_id')->nullable()->constrained()->nullOnDelete();
+            // FKs para tabelas operacionais não podem ser declaradas no banco saas (cross-database)
+            $table->uuid('service_location_id')->nullable();
+            $table->uuid('attendance_channel_id')->nullable();
+            $table->uuid('attendance_id')->nullable();
             $table->string('guest_token')->unique();
             $table->string('pin')->nullable();
             $table->boolean('geolocation_verified')->default(false);

@@ -4,12 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\Tenant\Corporation;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class NoVenueTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_user_without_venue_is_redirected_to_no_venue_page(): void
     {

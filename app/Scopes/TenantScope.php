@@ -10,6 +10,10 @@ class TenantScope implements Scope
 {
     /**
      * Apply the scope to a given Eloquent query builder.
+     *
+     * Não aplica filtro quando:
+     * - Não há tenant no container (contexto de console/queue sem venue)
+     * - O tenant é dedicado (banco exclusivo — todas as linhas já pertencem ao tenant)
      */
     public function apply(Builder $builder, Model $model): void
     {
@@ -20,6 +24,12 @@ class TenantScope implements Scope
         $tenant = app('tenant');
 
         if ($tenant === null) {
+            return;
+        }
+
+        // Bancos dedicados não precisam de filtro por venue_id —
+        // o banco inteiro pertence à corporation do tenant.
+        if (app()->bound('operational_is_dedicated') && app('operational_is_dedicated') === true) {
             return;
         }
 

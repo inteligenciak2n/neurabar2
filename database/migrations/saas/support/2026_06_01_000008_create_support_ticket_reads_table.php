@@ -6,11 +6,11 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    protected $connection = 'support';
+    protected $connection = 'saas';
 
     public function up(): void
     {
-        Schema::connection('support')->create('support_ticket_reads', function (Blueprint $table) {
+        Schema::connection('saas')->create('support_ticket_reads', function (Blueprint $table) {
             $table->uuid('ticket_id');
             $table->uuid('reader_id');
             $table->string('reader_type'); // 'user' | 'platform_user'
@@ -27,6 +27,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::connection('support')->dropIfExists('support_ticket_reads');
+        Schema::connection('saas')->dropIfExists('support_ticket_reads');
     }
 };

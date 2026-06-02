@@ -5,13 +5,13 @@ namespace Tests\Feature\Platform;
 use App\Enums\ProfileEnum;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\PlanCatalog;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class CorporationTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_backoffice_user_can_list_corporations(): void
     {

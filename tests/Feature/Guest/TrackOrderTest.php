@@ -8,12 +8,12 @@ use App\Models\Orders\OrderItem;
 use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\PreparationStatus;
 use App\Models\Tenant\Venue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class TrackOrderTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_guest_can_view_order_tracking_page(): void
     {

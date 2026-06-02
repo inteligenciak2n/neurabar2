@@ -19,7 +19,7 @@ return new class extends Migration
             $table->decimal('service_fee_total', 10, 2);
             $table->decimal('grand_total', 10, 2);
             $table->integer('party_size')->nullable();
-            $table->foreignUuid('created_by')->constrained('users');
+            $table->uuid('created_by')->nullable();
             $table->timestamps();
         });
     }

@@ -3,6 +3,7 @@
 namespace App\Models\Orders;
 
 use App\Enums\OrderStatus;
+use App\Models\Concerns\HasOperationalConnection;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Order extends Model
 {
     use HasFactory;
+    use HasOperationalConnection;
     use HasUuids;
 
     protected $fillable = [

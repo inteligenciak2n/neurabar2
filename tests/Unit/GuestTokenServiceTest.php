@@ -4,14 +4,14 @@ namespace Tests\Unit;
 
 use App\Models\Tenant\Venue;
 use App\Services\GuestTokenService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class GuestTokenServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     private GuestTokenService $service;
 

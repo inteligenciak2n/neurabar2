@@ -13,14 +13,14 @@ return new class extends Migration
     {
         Schema::create('attendances', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('venue_id')->constrained()->cascadeOnDelete();
+            $table->uuid('venue_id')->index();
             $table->foreignUuid('service_location_id')->nullable()->constrained()->nullOnDelete();
             $table->string('customer_identifier')->nullable();
             $table->uuid('attendance_channel_id')->nullable();
             $table->string('status')->default('open');
             $table->integer('party_size')->nullable();
             $table->text('notes')->nullable();
-            $table->foreignUuid('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->uuid('created_by')->nullable();
             $table->timestamp('closed_at')->nullable();
             $table->timestamps();
         });

@@ -4,6 +4,7 @@ namespace App\Http\Requests\Menu;
 
 use App\Models\Menu\Menu;
 use App\Models\Menu\Product;
+use App\Models\Menu\ProductVariation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -35,7 +36,7 @@ class StoreComboRequest extends FormRequest
             'active' => ['boolean'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'uuid', Rule::in($productIds)],
-            'items.*.variation_id' => ['nullable', 'uuid', 'exists:product_variations,id'],
+            'items.*.variation_id' => ['nullable', 'uuid', Rule::exists(ProductVariation::class, 'id')],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
         ];
     }

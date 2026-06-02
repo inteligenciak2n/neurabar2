@@ -14,6 +14,8 @@ class VenueInvitation extends Model
     use HasFactory;
     use HasUuids;
 
+    protected $connection = 'saas';
+
     protected $fillable = [
         'email',
         'venue_id',

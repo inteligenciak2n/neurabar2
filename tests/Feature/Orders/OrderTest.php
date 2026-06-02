@@ -11,13 +11,13 @@ use App\Models\Menu\ModifierOption;
 use App\Models\Menu\Product;
 use App\Models\Orders\Attendance;
 use App\Models\Tenant\Venue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class OrderTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_attendant_can_place_order(): void
     {

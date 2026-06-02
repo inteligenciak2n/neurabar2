@@ -5,13 +5,13 @@ namespace Tests\Feature\Guest;
 use App\Events\Orders\GuestSignaled;
 use App\Models\GuestSession;
 use App\Models\Tenant\Venue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class GuestSignalTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     private function makeToken(Venue $venue): string
     {

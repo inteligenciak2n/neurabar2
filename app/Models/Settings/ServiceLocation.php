@@ -4,6 +4,7 @@ namespace App\Models\Settings;
 
 use App\Concerns\BelongsToVenue;
 use App\Enums\ServiceLocationType;
+use App\Models\Concerns\HasOperationalConnection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +14,7 @@ class ServiceLocation extends Model
 {
     use BelongsToVenue;
     use HasFactory;
+    use HasOperationalConnection;
     use HasUuids;
 
     protected $fillable = [

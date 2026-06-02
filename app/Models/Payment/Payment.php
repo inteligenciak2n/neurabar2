@@ -2,6 +2,7 @@
 
 namespace App\Models\Payment;
 
+use App\Models\Concerns\HasOperationalConnection;
 use App\Models\Orders\Attendance;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,6 +16,7 @@ use Illuminate\Support\Carbon;
 class Payment extends Model
 {
     use HasFactory;
+    use HasOperationalConnection;
     use HasUuids;
 
     protected $fillable = [

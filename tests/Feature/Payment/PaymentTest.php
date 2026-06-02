@@ -13,12 +13,12 @@ use App\Models\Payment\Payment;
 use App\Models\Settings\VenueSettings;
 use App\Models\Tenant\Venue;
 use App\Services\Payment\PaymentService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class PaymentTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     private function createAttendanceWithItems(Venue $venue, float $itemPrice = 50.00, int $partySize = 2): Attendance
     {

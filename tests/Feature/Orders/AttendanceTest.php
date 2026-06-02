@@ -6,12 +6,12 @@ use App\Enums\UserRole;
 use App\Models\Orders\Attendance;
 use App\Models\Settings\AttendanceChannel;
 use App\Models\Tenant\Venue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class AttendanceTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_attendant_can_open_attendance(): void
     {

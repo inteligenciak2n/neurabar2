@@ -29,10 +29,12 @@ class UpdateProductRequest extends FormRequest
             ->pluck('id')
             ->all();
 
+        $operationalConnection = app()->bound('operational_connection') ? app('operational_connection') : 'operation_default_1';
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0'],
-            'category_id' => ['required', 'uuid', Rule::exists('menu_categories', 'id')->whereIn('menu_id', $menuIds)],
+            'category_id' => ['required', 'uuid', Rule::exists("{$operationalConnection}.menu_categories", 'id')->whereIn('menu_id', $menuIds)],
             'kitchen_station_id' => ['nullable', 'uuid', Rule::in($stationIds)],
             'description' => ['nullable', 'string', 'max:1000'],
             'image_url' => ['nullable', 'string', 'max:2048'],

@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 
 class UserVenue extends Pivot
 {
+    protected $connection = 'saas';
+
     public $incrementing = false;
 
     protected $table = 'user_venue';

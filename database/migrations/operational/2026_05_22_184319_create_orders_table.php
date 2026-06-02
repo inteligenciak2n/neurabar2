@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('venue_settings', function (Blueprint $table): void {
+        Schema::create('orders', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('venue_id')->unique()->constrained()->cascadeOnDelete();
-            $table->decimal('cover_charge', 10, 2)->default(10.00);
-            $table->decimal('service_fee_percent', 5, 2)->default(10.00);
-            $table->integer('table_count')->default(30);
+            $table->foreignUuid('attendance_id')->constrained()->cascadeOnDelete();
+            $table->integer('order_number');
+            $table->string('status')->default('open');
+            $table->text('notes')->nullable();
+            $table->uuid('created_by')->nullable();
             $table->timestamps();
         });
     }
@@ -26,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('venue_settings');
+        Schema::dropIfExists('orders');
     }
 };

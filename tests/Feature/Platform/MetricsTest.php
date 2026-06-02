@@ -5,12 +5,12 @@ namespace Tests\Feature\Platform;
 use App\Enums\ProfileEnum;
 use App\Models\Tenant\Corporation;
 use App\Services\Platform\MetricsService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class MetricsTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_mrr_is_sum_of_active_corporations_with_valid_plan(): void
     {

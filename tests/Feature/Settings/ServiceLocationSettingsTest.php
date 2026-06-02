@@ -6,12 +6,12 @@ use App\Enums\ServiceLocationType;
 use App\Enums\UserRole;
 use App\Models\Settings\ServiceLocation;
 use App\Models\Tenant\Venue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class ServiceLocationSettingsTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_owner_can_list_service_locations(): void
     {

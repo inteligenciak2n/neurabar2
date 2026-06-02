@@ -14,7 +14,7 @@ class TicketRatingController extends Controller
     {
         $user = $request->user();
 
-        $ticket = Ticket::on('support')->where('id', $ticketId)->firstOrFail();
+        $ticket = Ticket::on('saas')->where('id', $ticketId)->firstOrFail();
 
         $action->execute($ticket, $user->id, $request);
 

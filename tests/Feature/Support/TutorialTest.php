@@ -7,32 +7,17 @@ use App\Enums\UserRole;
 use App\Models\Support\Tutorial;
 use App\Models\Support\TutorialCategory;
 use App\Models\Tenant\Venue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class TutorialTest extends TestCase
 {
-    use RefreshDatabase;
-
-    protected static bool $supportMigrated = false;
+    use RefreshAllDatabases;
 
     protected function setUp(): void
     {
         parent::setUp();
-
-        if (! static::$supportMigrated) {
-            Artisan::call('migrate', [
-                '--path' => 'database/migrations/support',
-                '--database' => 'support',
-                '--force' => true,
-            ]);
-            static::$supportMigrated = true;
-        }
-
-        \DB::connection('support')->table('support_tutorials')->truncate();
-        \DB::connection('support')->table('support_tutorial_categories')->truncate();
     }
 
     public function test_guest_can_view_published_tutorials(): void
@@ -77,7 +62,7 @@ class TutorialTest extends TestCase
             'position' => 1,
         ])->assertRedirect();
 
-        $this->assertEquals(1, Tutorial::on('support')->where('title', 'New Tutorial')->count());
+        $this->assertEquals(1, Tutorial::on('saas')->where('title', 'New Tutorial')->count());
     }
 
     public function test_backoffice_agent_can_update_tutorial(): void

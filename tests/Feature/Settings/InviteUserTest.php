@@ -7,13 +7,13 @@ use App\Mail\VenueInvitationMail;
 use App\Models\Tenant\Venue;
 use App\Models\User;
 use App\Models\VenueInvitation;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class InviteUserTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_creating_user_with_existing_email_sends_invitation(): void
     {

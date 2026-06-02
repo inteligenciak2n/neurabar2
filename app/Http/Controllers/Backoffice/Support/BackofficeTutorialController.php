@@ -17,7 +17,7 @@ class BackofficeTutorialController extends Controller
 {
     public function index(): Response
     {
-        $tutorials = Tutorial::on('support')
+        $tutorials = Tutorial::on('saas')
             ->with('category')
             ->orderBy('position')
             ->orderBy('created_at', 'desc')
@@ -25,14 +25,14 @@ class BackofficeTutorialController extends Controller
 
         return Inertia::render('Backoffice/Support/Tutorials/Index', [
             'tutorials' => $tutorials,
-            'categories' => TutorialCategory::on('support')->where('active', true)->orderBy('position')->get(['id', 'name']),
+            'categories' => TutorialCategory::on('saas')->where('active', true)->orderBy('position')->get(['id', 'name']),
         ]);
     }
 
     public function create(): Response
     {
         return Inertia::render('Backoffice/Support/Tutorials/Form', [
-            'categories' => TutorialCategory::on('support')->where('active', true)->orderBy('position')->get(['id', 'name']),
+            'categories' => TutorialCategory::on('saas')->where('active', true)->orderBy('position')->get(['id', 'name']),
         ]);
     }
 
@@ -46,17 +46,17 @@ class BackofficeTutorialController extends Controller
 
     public function edit(string $tutorialId): Response
     {
-        $tutorial = Tutorial::on('support')->where('id', $tutorialId)->with('category')->firstOrFail();
+        $tutorial = Tutorial::on('saas')->where('id', $tutorialId)->with('category')->firstOrFail();
 
         return Inertia::render('Backoffice/Support/Tutorials/Form', [
             'tutorial' => $tutorial,
-            'categories' => TutorialCategory::on('support')->where('active', true)->orderBy('position')->get(['id', 'name']),
+            'categories' => TutorialCategory::on('saas')->where('active', true)->orderBy('position')->get(['id', 'name']),
         ]);
     }
 
     public function update(string $tutorialId, UpdateTutorialRequest $request, ManageTutorialAction $action): RedirectResponse
     {
-        $tutorial = Tutorial::on('support')->where('id', $tutorialId)->firstOrFail();
+        $tutorial = Tutorial::on('saas')->where('id', $tutorialId)->firstOrFail();
 
         $action->update($tutorial, $request);
 
@@ -65,7 +65,7 @@ class BackofficeTutorialController extends Controller
 
     public function destroy(string $tutorialId): RedirectResponse
     {
-        $tutorial = Tutorial::on('support')->where('id', $tutorialId)->firstOrFail();
+        $tutorial = Tutorial::on('saas')->where('id', $tutorialId)->firstOrFail();
 
         if ($tutorial->featured_image) {
             Storage::disk('public')->delete($tutorial->featured_image);
@@ -79,7 +79,7 @@ class BackofficeTutorialController extends Controller
 
     public function togglePublished(string $tutorialId, ManageTutorialAction $action): RedirectResponse
     {
-        $tutorial = Tutorial::on('support')->where('id', $tutorialId)->firstOrFail();
+        $tutorial = Tutorial::on('saas')->where('id', $tutorialId)->firstOrFail();
 
         if ($tutorial->published) {
             $action->unpublish($tutorial);

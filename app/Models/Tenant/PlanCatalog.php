@@ -12,6 +12,8 @@ class PlanCatalog extends Model
     use HasFactory;
     use HasUuids;
 
+    protected $connection = 'saas';
+
     protected $fillable = [
         'code',
         'name',
@@ -19,6 +21,7 @@ class PlanCatalog extends Model
         'sort_order',
         'monthly_price',
         'active',
+        'plan_type',
     ];
 
     protected function casts(): array
@@ -27,6 +30,8 @@ class PlanCatalog extends Model
             'active' => 'boolean',
             'monthly_price' => 'decimal:2',
             'sort_order' => 'integer',
+            // Futuro: usar plan_type para resolver conexão automaticamente em TenantConnectionResolver
+            // 'shared' => banco compartilhado, 'dedicated' => banco dedicado
         ];
     }
 

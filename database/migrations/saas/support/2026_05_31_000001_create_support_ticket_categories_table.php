@@ -6,25 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
+    protected $connection = 'saas';
+
     public function up(): void
     {
-        Schema::create('menus', function (Blueprint $table): void {
+        Schema::connection('saas')->create('support_ticket_categories', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('venue_id')->constrained()->cascadeOnDelete();
             $table->string('name');
+            $table->string('description')->nullable();
+            $table->string('icon')->nullable();
             $table->boolean('active')->default(true);
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('menus');
+        Schema::connection('saas')->dropIfExists('support_ticket_categories');
     }
 };

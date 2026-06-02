@@ -14,7 +14,7 @@ class Tutorial extends Model
     use HasFactory;
     use HasUuids;
 
-    protected $connection = 'support';
+    protected $connection = 'saas';
 
     protected $table = 'support_tutorials';
 
@@ -52,7 +52,7 @@ class Tutorial extends Model
     public static function generateSlug(string $title): string
     {
         $slug = Str::slug($title);
-        $count = static::on('support')->where('slug', 'like', "{$slug}%")->count();
+        $count = static::on('saas')->where('slug', 'like', "{$slug}%")->count();
 
         return $count > 0 ? "{$slug}-{$count}" : $slug;
     }

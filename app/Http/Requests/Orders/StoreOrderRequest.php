@@ -72,7 +72,11 @@ class StoreOrderRequest extends FormRequest
             ->pluck('id');
 
         // Map product_id -> [required modifier_group_ids] via pivot
-        $this->productRequiredModifierGroupIds = \Illuminate\Support\Facades\DB::table('product_modifier_group')
+        $operationalConnection = app()->bound('operational_connection')
+            ? app('operational_connection')
+            : 'operation_default_1';
+
+        $this->productRequiredModifierGroupIds = DB::connection($operationalConnection)->table('product_modifier_group')
             ->join('modifier_groups', 'modifier_groups.id', '=', 'product_modifier_group.modifier_group_id')
             ->where('modifier_groups.venue_id', $venue->id)
             ->where('modifier_groups.required', true)

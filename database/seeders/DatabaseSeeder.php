@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
         //adiciona defaults da aplicação, como planos, estações, status, etc
         $this->call([
             PlanCatalogsSeeder::class,
+            SupportDatabaseSeeder::class,
         ]);
 
         $action = new CreateNewUserPlatform();

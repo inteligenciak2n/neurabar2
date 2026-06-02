@@ -11,13 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('combos', function (Blueprint $table): void {
+        Schema::create('venue_settings', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('venue_id')->constrained()->cascadeOnDelete();
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->decimal('price', 10, 2);
-            $table->boolean('active')->default(true);
+            $table->uuid('venue_id')->unique();
+            $table->decimal('cover_charge', 10, 2)->default(10.00);
+            $table->decimal('service_fee_percent', 5, 2)->default(10.00);
+            $table->integer('table_count')->default(30);
             $table->timestamps();
         });
     }
@@ -27,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('combos');
+        Schema::dropIfExists('venue_settings');
     }
 };

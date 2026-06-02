@@ -6,12 +6,12 @@ use App\Enums\UserRole;
 use App\Models\Orders\Attendance;
 use App\Models\Payment\Payment;
 use App\Models\Tenant\Venue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class DashboardTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_dashboard_renders_correct_component(): void
     {

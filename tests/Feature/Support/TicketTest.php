@@ -10,38 +10,19 @@ use App\Models\Support\TicketMessage;
 use App\Models\Support\TicketRead;
 use App\Models\Tenant\Venue;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class TicketTest extends TestCase
 {
-    use RefreshDatabase;
-
-    protected static bool $supportMigrated = false;
+    use RefreshAllDatabases;
 
     protected function setUp(): void
     {
         parent::setUp();
-
-        if (! static::$supportMigrated) {
-            Artisan::call('migrate', [
-                '--path' => 'database/migrations/support',
-                '--database' => 'support',
-                '--force' => true,
-            ]);
-            static::$supportMigrated = true;
-        }
-
-        \DB::connection('support')->table('support_ticket_attachments')->truncate();
-        \DB::connection('support')->table('support_ticket_ratings')->truncate();
-        \DB::connection('support')->table('support_ticket_reads')->truncate();
-        \DB::connection('support')->table('support_ticket_messages')->truncate();
-        \DB::connection('support')->table('support_tickets')->truncate();
-        \DB::connection('support')->table('support_ticket_categories')->truncate();
     }
 
     private function makeAuthUser(): User
@@ -91,8 +72,8 @@ class TicketTest extends TestCase
         ]);
 
         $response->assertRedirect();
-        $this->assertEquals(1, Ticket::on('support')->where('user_id', $user->id)->count());
-        $this->assertEquals(1, TicketMessage::on('support')->count());
+        $this->assertEquals(1, Ticket::on('saas')->where('user_id', $user->id)->count());
+        $this->assertEquals(1, TicketMessage::on('saas')->count());
     }
 
     public function test_user_can_open_ticket_with_attachment(): void
@@ -112,7 +93,7 @@ class TicketTest extends TestCase
             ],
         ])->assertRedirect();
 
-        $ticket = Ticket::on('support')->where('user_id', $user->id)->first();
+        $ticket = Ticket::on('saas')->where('user_id', $user->id)->first();
         $this->assertEquals(1, $ticket->messages->first()->attachments->count());
     }
 
@@ -130,7 +111,7 @@ class TicketTest extends TestCase
             'body' => 'First message',
         ]);
 
-        $ticket = Ticket::on('support')->where('user_id', $user->id)->first();
+        $ticket = Ticket::on('saas')->where('user_id', $user->id)->first();
 
         $this->post(route('support.tickets.messages.store', $ticket->id), [
             'body' => 'Follow-up reply',
@@ -145,7 +126,7 @@ class TicketTest extends TestCase
 
         $otherUser = User::factory()->create(['active' => true]);
         $category = TicketCategory::create(['name' => 'Geral', 'active' => true]);
-        $ticket = Ticket::on('support')->create([
+        $ticket = Ticket::on('saas')->create([
             'user_id' => $otherUser->id,
             'category_id' => $category->id,
             'subject' => 'Other ticket',
@@ -167,7 +148,7 @@ class TicketTest extends TestCase
         $user = $this->makeAuthUser();
         $category = TicketCategory::create(['name' => 'Geral', 'active' => true]);
 
-        $ticket = Ticket::on('support')->create([
+        $ticket = Ticket::on('saas')->create([
             'user_id' => $user->id,
             'category_id' => $category->id,
             'subject' => 'Close test',
@@ -185,7 +166,7 @@ class TicketTest extends TestCase
         $user = $this->makeAuthUser();
         $category = TicketCategory::create(['name' => 'Geral', 'active' => true]);
 
-        $ticket = Ticket::on('support')->create([
+        $ticket = Ticket::on('saas')->create([
             'user_id' => $user->id,
             'category_id' => $category->id,
             'subject' => 'Rating test',
@@ -207,7 +188,7 @@ class TicketTest extends TestCase
         $user = $this->makeAuthUser();
         $category = TicketCategory::create(['name' => 'Geral', 'active' => true]);
 
-        $ticket = Ticket::on('support')->create([
+        $ticket = Ticket::on('saas')->create([
             'user_id' => $user->id,
             'category_id' => $category->id,
             'subject' => 'Rating test open',
@@ -231,7 +212,7 @@ class TicketTest extends TestCase
             'body' => 'Initial message',
         ]);
 
-        $ticket = Ticket::on('support')->where('user_id', $user->id)->first();
+        $ticket = Ticket::on('saas')->where('user_id', $user->id)->first();
 
         $response = $this->get(route('support.tickets.index'));
 
@@ -249,7 +230,7 @@ class TicketTest extends TestCase
         $user = $this->makeAuthUser();
         $category = TicketCategory::create(['name' => 'Geral', 'active' => true]);
 
-        $ticket = Ticket::on('support')->create([
+        $ticket = Ticket::on('saas')->create([
             'user_id' => $user->id,
             'category_id' => $category->id,
             'subject' => 'Mark read test',
@@ -258,7 +239,7 @@ class TicketTest extends TestCase
         ]);
 
         // Simulate an agent message (platform_user author_type)
-        TicketMessage::on('support')->create([
+        TicketMessage::on('saas')->create([
             'ticket_id' => $ticket->id,
             'author_id' => (string) \Str::uuid(),
             'author_type' => 'platform_user',
@@ -281,7 +262,7 @@ class TicketTest extends TestCase
         $user = $this->makeAuthUser();
         $category = TicketCategory::create(['name' => 'Geral', 'active' => true]);
 
-        $ticket = Ticket::on('support')->create([
+        $ticket = Ticket::on('saas')->create([
             'user_id' => $user->id,
             'category_id' => $category->id,
             'subject' => 'Reply marks read test',

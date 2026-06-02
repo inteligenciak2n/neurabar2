@@ -6,12 +6,12 @@ use App\Enums\UserRole;
 use App\Models\Menu\Category;
 use App\Models\Menu\Menu;
 use App\Models\Tenant\Venue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class CategoryTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_owner_can_list_categories(): void
     {

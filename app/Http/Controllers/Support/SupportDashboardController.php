@@ -7,8 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Support\Ticket;
 use App\Models\Support\TicketRead;
 use App\Models\Support\TutorialCategory;
-use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,7 +18,7 @@ class SupportDashboardController extends Controller
     {
         $user = $request->user();
 
-        $openTickets = Ticket::on('support')
+        $openTickets = Ticket::on('saas')
             ->forUser($user->id)
             ->open()
             ->with('category')
@@ -27,7 +27,7 @@ class SupportDashboardController extends Controller
             ->get();
         $openTickets = $this->attachUnreadCount($openTickets, $user->id);
 
-        $recentlyResolved = Ticket::on('support')
+        $recentlyResolved = Ticket::on('saas')
             ->forUser($user->id)
             ->where('status', 'resolved')
             ->with(['category', 'rating'])
@@ -35,7 +35,7 @@ class SupportDashboardController extends Controller
             ->limit(3)
             ->get();
 
-        $tutorialCategories = TutorialCategory::on('support')
+        $tutorialCategories = TutorialCategory::on('saas')
             ->where('active', true)
             ->with(['publishedTutorials' => fn ($q) => $q->select('id', 'category_id', 'title', 'slug', 'summary')->orderBy('position')->limit(4)])
             ->orderBy('position')
@@ -48,7 +48,7 @@ class SupportDashboardController extends Controller
         ]);
     }
 
-    private function attachUnreadCount( EloquentCollection $tickets, string $userId)
+    private function attachUnreadCount(EloquentCollection $tickets, string $userId)
     {
         $ticketIds = $tickets->pluck('id');
         $reads = TicketRead::whereIn('ticket_id', $ticketIds)
@@ -73,5 +73,5 @@ class SupportDashboardController extends Controller
         });
 
         return $tickets;
-    }   
+    }
 }

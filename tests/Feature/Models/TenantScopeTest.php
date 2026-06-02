@@ -6,12 +6,12 @@ use App\Enums\AttendanceStatus;
 use App\Models\Orders\Attendance;
 use App\Models\Settings\KitchenStation;
 use App\Models\Tenant\Venue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class TenantScopeTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_tenant_scope_filters_records_by_venue(): void
     {

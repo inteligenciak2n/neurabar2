@@ -12,7 +12,7 @@ class TutorialCategory extends Model
     use HasFactory;
     use HasUuids;
 
-    protected $connection = 'support';
+    protected $connection = 'saas';
 
     protected $table = 'support_tutorial_categories';
 

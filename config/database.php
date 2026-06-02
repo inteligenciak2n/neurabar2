@@ -17,7 +17,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'saas'),
 
     /*
     |--------------------------------------------------------------------------
@@ -99,20 +99,77 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
-        'support' => [
+        /*
+        |--------------------------------------------------------------------------
+        | SaaS Central Database (users, corporations, venues, billing)
+        |--------------------------------------------------------------------------
+        */
+        'saas' => [
             'driver' => 'pgsql',
-            'url' => env('DB_SUPPORT_URL'),
-            'host' => env('DB_SUPPORT_HOST', '127.0.0.1'),
-            'port' => env('DB_SUPPORT_PORT', '5432'),
-            'database' => env('DB_SUPPORT_DATABASE', 'laravel_support'),
-            'username' => env('DB_SUPPORT_USERNAME', 'root'),
-            'password' => env('DB_SUPPORT_PASSWORD', ''),
-            'charset' => env('DB_SUPPORT_CHARSET', 'utf8'),
+            'host' => env('DB_SAAS_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('DB_SAAS_PORT', env('DB_PORT', '5432')),
+            'database' => env('DB_SAAS_DATABASE', 'laravel_saas'),
+            'username' => env('DB_SAAS_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('DB_SAAS_PASSWORD', env('DB_PASSWORD', '')),
+            'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => env('DB_SUPPORT_SSLMODE', 'prefer'),
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Operational Shared Database #1 (small tenants share this pool)
+        |--------------------------------------------------------------------------
+        | All tables must have a `venue_id` column.
+        | TenantScope automatically filters by venue_id on shared connections.
+        */
+        'operation_default_1' => [
+            'driver' => 'pgsql',
+            'host' => env('DB_OP_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('DB_OP_PORT', env('DB_PORT', '5432')),
+            'database' => env('DB_OP_DEFAULT_1_DATABASE', 'operation_default_1'),
+            'username' => env('DB_OP_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('DB_OP_PASSWORD', env('DB_PASSWORD', '')),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+        ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Operational Shared Database #2 (overflow pool)
+        |--------------------------------------------------------------------------
+        */
+        'operation_default_2' => [
+            'driver' => 'pgsql',
+            'host' => env('DB_OP_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('DB_OP_PORT', env('DB_PORT', '5432')),
+            'database' => env('DB_OP_DEFAULT_2_DATABASE', 'operation_default_2'),
+            'username' => env('DB_OP_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('DB_OP_PASSWORD', env('DB_PASSWORD', '')),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+        ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Dedicated Tenant Connections (large tenants — created dynamically)
+        |--------------------------------------------------------------------------
+        | These connections are NOT defined statically here. They are registered
+        | at runtime by TenantConnectionResolver::resolve() using config()->set().
+        | The pattern is: operation_tenant_{corporation_id}
+        |
+        | All dedicated connections share the same host/credentials as the shared
+        | pools, differing only in the database name.
+        |--------------------------------------------------------------------------
+        */
 
         'sqlsrv' => [
             'driver' => 'sqlsrv',

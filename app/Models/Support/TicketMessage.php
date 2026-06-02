@@ -14,7 +14,7 @@ class TicketMessage extends Model
     use HasFactory;
     use HasUuids;
 
-    protected $connection = 'support';
+    protected $connection = 'saas';
 
     protected $table = 'support_ticket_messages';
 

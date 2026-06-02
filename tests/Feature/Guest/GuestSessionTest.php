@@ -4,12 +4,12 @@ namespace Tests\Feature\Guest;
 
 use App\Models\GuestSession;
 use App\Models\Tenant\Venue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class GuestSessionTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     private function makeToken(Venue $venue): string
     {

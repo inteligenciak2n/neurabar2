@@ -11,13 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('orders', function (Blueprint $table): void {
+        Schema::create('service_locations', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('attendance_id')->constrained()->cascadeOnDelete();
-            $table->integer('order_number');
-            $table->string('status')->default('open');
-            $table->text('notes')->nullable();
-            $table->foreignUuid('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->uuid('venue_id')->index();
+            $table->string('name');
+            $table->string('type')->default('table');
+            $table->boolean('active')->default(true);
             $table->timestamps();
         });
     }
@@ -27,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('orders');
+        Schema::dropIfExists('service_locations');
     }
 };

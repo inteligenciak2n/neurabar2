@@ -14,6 +14,8 @@ class Corporation extends Model
     use HasFactory;
     use HasUuids;
 
+    protected $connection = 'saas';
+
     protected $fillable = [
         'owner_id',
         'name',
@@ -27,6 +29,7 @@ class Corporation extends Model
         'plan_end_date',
         'active',
         'self_connection',
+        'is_dedicated',
     ];
 
     protected $hidden = [
@@ -39,6 +42,7 @@ class Corporation extends Model
             'plan_start_date' => 'date',
             'plan_end_date' => 'date',
             'active' => 'boolean',
+            'is_dedicated' => 'boolean',
             'subscription_value' => 'decimal:2',
         ];
     }

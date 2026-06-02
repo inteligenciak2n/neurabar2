@@ -9,6 +9,7 @@ use App\Models\Settings\KitchenStation;
 use App\Models\Settings\PreparationStatus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -48,7 +49,11 @@ class KdsController
     public function updateItemStatus(Request $request, OrderItem $item, UpdateItemStatusAction $action): RedirectResponse
     {
         $validated = $request->validate([
-            'preparation_status_id' => ['required', 'string', 'exists:preparation_statuses,id'],
+            'preparation_status_id' => [
+                'required',
+                'string',
+                Rule::exists(PreparationStatus::class, 'id'),
+            ],
         ]);
 
         $item->load('order.attendance');

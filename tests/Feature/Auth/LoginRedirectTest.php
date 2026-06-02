@@ -4,12 +4,12 @@ namespace Tests\Feature\Auth;
 
 use App\Enums\ProfileEnum;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class LoginRedirectTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_client_user_is_redirected_to_dashboard_after_login(): void
     {

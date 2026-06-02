@@ -4,12 +4,12 @@ namespace Tests\Feature\Corporation;
 
 use App\Enums\UserRole;
 use App\Models\Tenant\Venue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class CorporationDashboardTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     public function test_owner_can_view_corporation_dashboard(): void
     {

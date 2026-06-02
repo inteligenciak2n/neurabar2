@@ -8,7 +8,6 @@ use App\Models\Support\TicketAttachment;
 use App\Models\Support\Tutorial;
 use App\Models\Support\TutorialCategory;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
@@ -17,7 +16,7 @@ class TutorialController extends Controller
 {
     public function index(): InertiaResponse
     {
-        $categories = TutorialCategory::on('support')
+        $categories = TutorialCategory::on('saas')
             ->where('active', true)
             ->with(['publishedTutorials' => fn ($q) => $q->select('id', 'category_id', 'title', 'slug', 'summary', 'featured_image', 'position')->orderBy('position')])
             ->orderBy('position')
@@ -30,13 +29,13 @@ class TutorialController extends Controller
 
     public function show(string $slug): InertiaResponse
     {
-        $tutorial = Tutorial::on('support')
+        $tutorial = Tutorial::on('saas')
             ->published()
             ->with('category')
             ->where('slug', $slug)
             ->firstOrFail();
 
-        $related = Tutorial::on('support')
+        $related = Tutorial::on('saas')
             ->published()
             ->where('category_id', $tutorial->category_id)
             ->where('id', '!=', $tutorial->id)
@@ -52,12 +51,12 @@ class TutorialController extends Controller
 
     public function attachment(Request $request, string $attachmentId)
     {
-        $attachment = TicketAttachment::on('support')
+        $attachment = TicketAttachment::on('saas')
             ->where('id', $attachmentId)
             ->firstOrFail();
 
         $user = $request->user();
-        $ticket = Ticket::on('support')
+        $ticket = Ticket::on('saas')
             ->where('id', function ($query) use ($attachment) {
                 $query->select('ticket_id')
                     ->from('support_ticket_messages')

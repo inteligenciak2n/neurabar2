@@ -24,7 +24,7 @@ class TicketController extends Controller
     {
         $user = $request->user();
 
-        $tickets = Ticket::on('support')
+        $tickets = Ticket::on('saas')
             ->forUser($user->id)
             ->with(['category', 'rating'])
             ->latest()
@@ -60,7 +60,7 @@ class TicketController extends Controller
 
     public function create(Request $request): Response
     {
-        $categories = TicketCategory::on('support')
+        $categories = TicketCategory::on('saas')
             ->where('active', true)
             ->orderBy('name')
             ->get(['id', 'name', 'description', 'icon']);
@@ -85,7 +85,7 @@ class TicketController extends Controller
     {
         $user = $request->user();
 
-        $ticket = Ticket::on('support')
+        $ticket = Ticket::on('saas')
             ->where('id', $ticketId)
             ->with([
                 'category',
@@ -109,7 +109,7 @@ class TicketController extends Controller
     {
         $user = $request->user();
 
-        $ticket = Ticket::on('support')->where('id', $ticketId)->firstOrFail();
+        $ticket = Ticket::on('saas')->where('id', $ticketId)->firstOrFail();
 
         abort_unless($ticket->user_id === $user->id, 403);
 

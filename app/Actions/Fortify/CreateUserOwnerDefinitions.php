@@ -22,16 +22,28 @@ class CreateUserOwnerDefinitions
 {
     public function handle(User $user): void
     {
+        $operationalConnection = 'operation_default_1';
+
         DB::beginTransaction();
-        $venue = $this->createCorporationAndVenue($user);
-        $menu = $this->createMenu($venue);
-        $this->createProductCategories($menu);
-        $this->createServiceLocations($venue);
-        $this->createUserAttendant($venue, $user);
-        DB::commit();
+        DB::connection($operationalConnection)->beginTransaction();
+
+        try {
+            $venue = $this->createCorporationAndVenue($user, $operationalConnection);
+            $menu = $this->createMenu($venue);
+            $this->createProductCategories($menu);
+            $this->createServiceLocations($venue);
+            $this->createUserAttendant($venue, $user);
+
+            DB::commit();
+            DB::connection($operationalConnection)->commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            DB::connection($operationalConnection)->rollBack();
+            throw $e;
+        }
     }
 
-    private function createCorporationAndVenue(User $user): Venue
+    private function createCorporationAndVenue(User $user, string $operationalConnection): Venue
     {
         $plan = PlanCatalog::firstOrCreate(
             ['code' => 'pro'],
@@ -48,6 +60,8 @@ class CreateUserOwnerDefinitions
             'plan_name' => $plan->name,
             'subscription_value' => $plan->monthly_price,
             'active' => true,
+            'self_connection' => $operationalConnection,
+            'is_dedicated' => false,
         ]);
 
         $venue = Venue::create([
@@ -61,6 +75,10 @@ class CreateUserOwnerDefinitions
             'timezone' => 'America/Sao_Paulo',
             'active' => true,
         ]);
+
+        // Registra o contexto operacional para que HasOperationalConnection use a conexão correta
+        app()->instance('operational_connection', $operationalConnection);
+        app()->instance('tenant', $venue);
 
         VenueSettings::create([
             'venue_id' => $venue->id,

@@ -2,6 +2,7 @@
 
 namespace App\Models\Orders;
 
+use App\Models\Concerns\HasOperationalConnection;
 use App\Models\Menu\Combo;
 use App\Models\Menu\Product;
 use App\Models\Menu\ProductVariation;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class OrderItem extends Model
 {
     use HasFactory;
+    use HasOperationalConnection;
     use HasUuids;
 
     protected $fillable = [

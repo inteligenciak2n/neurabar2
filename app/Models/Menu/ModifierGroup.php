@@ -3,6 +3,7 @@
 namespace App\Models\Menu;
 
 use App\Concerns\BelongsToVenue;
+use App\Models\Concerns\HasOperationalConnection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +14,7 @@ class ModifierGroup extends Model
 {
     use BelongsToVenue;
     use HasFactory;
+    use HasOperationalConnection;
     use HasUuids;
 
     protected $fillable = [

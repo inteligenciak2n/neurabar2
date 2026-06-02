@@ -3,6 +3,7 @@
 namespace App\Models\Settings;
 
 use App\Concerns\BelongsToVenue;
+use App\Models\Concerns\HasOperationalConnection;
 use App\Models\Menu\Product;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -14,6 +15,7 @@ class KitchenStation extends Model
 {
     use BelongsToVenue;
     use HasFactory;
+    use HasOperationalConnection;
     use HasUuids;
 
     protected $fillable = [

@@ -2,6 +2,7 @@
 
 namespace App\Models\Orders;
 
+use App\Models\Concerns\HasOperationalConnection;
 use App\Models\Menu\ModifierOption;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class OrderItemModifier extends Model
 {
     use HasFactory;
+    use HasOperationalConnection;
     use HasUuids;
 
     protected $fillable = [

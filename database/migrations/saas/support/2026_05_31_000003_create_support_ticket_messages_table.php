@@ -6,11 +6,11 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    protected $connection = 'support';
+    protected $connection = 'saas';
 
     public function up(): void
     {
-        Schema::connection('support')->create('support_ticket_messages', function (Blueprint $table): void {
+        Schema::connection('saas')->create('support_ticket_messages', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('ticket_id')->constrained('support_tickets')->cascadeOnDelete();
             $table->uuid('author_id');
@@ -25,6 +25,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::connection('support')->dropIfExists('support_ticket_messages');
+        Schema::connection('saas')->dropIfExists('support_ticket_messages');
     }
 };

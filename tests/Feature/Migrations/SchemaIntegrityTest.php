@@ -2,14 +2,14 @@
 
 namespace Tests\Feature\Migrations;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class SchemaIntegrityTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshAllDatabases;
 
     /**
      * @return array<string, list<string>>
@@ -48,11 +48,14 @@ class SchemaIntegrityTest extends TestCase
     #[DataProvider('tableColumnsProvider')]
     public function test_table_has_expected_columns(string $table, array $columns): void
     {
-        $this->assertTrue(Schema::hasTable($table), "Table [{$table}] does not exist.");
+        $connection = $this->resolveConnectionForTable($table) ?? 'saas';
+        $schema = Schema::connection($connection);
+
+        $this->assertTrue($schema->hasTable($table), "Table [{$table}] does not exist.");
 
         foreach ($columns as $column) {
             $this->assertTrue(
-                Schema::hasColumn($table, $column),
+                $schema->hasColumn($table, $column),
                 "Table [{$table}] is missing column [{$column}]."
             );
         }

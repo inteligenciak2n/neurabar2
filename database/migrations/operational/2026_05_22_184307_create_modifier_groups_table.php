@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('modifier_groups', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('venue_id')->constrained()->cascadeOnDelete();
+            $table->uuid('venue_id')->index();
             $table->string('name');
             $table->boolean('required')->default(false);
             $table->boolean('multiple_selection')->default(false);

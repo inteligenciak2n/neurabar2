@@ -6,22 +6,27 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    protected $connection = 'support';
-
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        Schema::connection('support')->create('support_ticket_categories', function (Blueprint $table): void {
+        Schema::create('combos', function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->uuid('venue_id')->index();
             $table->string('name');
-            $table->string('description')->nullable();
-            $table->string('icon')->nullable();
+            $table->text('description')->nullable();
+            $table->decimal('price', 10, 2);
             $table->boolean('active')->default(true);
             $table->timestamps();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Schema::connection('support')->dropIfExists('support_ticket_categories');
+        Schema::dropIfExists('combos');
     }
 };
