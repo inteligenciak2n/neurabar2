@@ -76,16 +76,6 @@ services:
             - sail
         restart: unless-stopped
 
-    landingpage:
-        image: 'nginx:alpine'
-        ports:
-            - '127.0.0.1:${LANDING_PORT:-9080}:80'
-        volumes:
-            - './landingpage:/usr/share/nginx/html:ro'
-        networks:
-            - sail
-        restart: unless-stopped
-
 networks:
     sail:
         driver: bridge

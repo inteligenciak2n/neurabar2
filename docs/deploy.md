@@ -81,7 +81,6 @@ APP_URL=https://app.neurabar.com
 LANDING_PAGE_URL=https://neurabar.com
 
 APP_PORT=9090
-LANDING_PORT=9080
 
 # PostgreSQL externo (RDS)
 DB_CONNECTION=saas
@@ -169,12 +168,11 @@ server {
     listen 80;
     server_name neurabar.com www.neurabar.com;
 
+    root /var/www/neurabar/landingpage;
+    index index.html;
+
     location / {
-        proxy_pass         http://127.0.0.1:9080;
-        proxy_set_header   Host              $host;
-        proxy_set_header   X-Real-IP         $remote_addr;
-        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header   X-Forwarded-Proto $scheme;
+        try_files $uri $uri/ /index.html;
     }
 }
 
@@ -274,12 +272,11 @@ server {
     include             /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
 
+    root /var/www/neurabar/landingpage;
+    index index.html;
+
     location / {
-        proxy_pass         http://127.0.0.1:9080;
-        proxy_set_header   Host              $host;
-        proxy_set_header   X-Real-IP         $remote_addr;
-        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header   X-Forwarded-Proto $scheme;
+        try_files $uri $uri/ /index.html;
     }
 }
 
@@ -364,7 +361,7 @@ docker compose -f compose.prod.yaml up -d --scale queue=3
 Internet
   │
   ├── neurabar.com / www.neurabar.com
-  │       └── Nginx :443 (HTTPS) ──► container landingpage :9080
+  │       └── Nginx :443 (HTTPS) ──► /var/www/neurabar/landingpage/ (estático)
   │
   └── app.neurabar.com
           ├── Nginx :443 (HTTPS) ──► container app :9090  (Laravel)
