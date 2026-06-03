@@ -371,14 +371,14 @@ Internet
 ```
 
 
-# 1. Buildar a imagem de assets (só da primeira vez, ou quando o frontend mudar)
-docker build -f Dockerfile.frontend -t neurabar/assets:latest \
-  --build-arg APP_URL=https://app.neurabar.com \
-  --build-arg VITE_PUSHER_APP_KEY="your_key" \
-  --build-arg VITE_PUSHER_HOST=app.neurabar.com \
-  --build-arg VITE_PUSHER_PORT=443 \
-  --build-arg VITE_PUSHER_SCHEME=https \
-  .
+# 1. Parar tudo
+docker compose -f compose.prod.yaml down
 
-# 2. Buildar e subir o app (sem recompilar o frontend)
-docker compose -f compose.prod.yaml up -d --build
+# 2. Buildar o frontend (sem subir containers)
+docker compose -f compose.prod.yaml build --no-cache frontend
+
+# 3. Buildar o backend (sem subir containers)
+docker compose -f compose.prod.yaml build --no-cache app
+
+# 4. Subir tudo (sem rebuild — usa as imagens já buildadas)
+docker compose -f compose.prod.yaml up -d
