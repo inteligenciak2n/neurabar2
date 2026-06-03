@@ -1,3 +1,6 @@
+# ARG global — deve vir antes de qualquer FROM para poder ser usado em FROM
+ARG ASSETS_IMAGE=neurabar/assets:latest
+
 # ── Stage 1: PHP dependencies ────────────────────────────────────────────────
 FROM composer:2 AS composer-deps
 
@@ -22,7 +25,6 @@ RUN composer install \
 #
 # Para fazer apenas deploy de backend (frontend já compilado):
 #   docker compose -f compose.prod.yaml up -d --build app
-ARG ASSETS_IMAGE=neurabar/assets:latest
 FROM ${ASSETS_IMAGE} AS assets
 
 # ── Stage 3: PHP Application ──────────────────────────────────────────────────
