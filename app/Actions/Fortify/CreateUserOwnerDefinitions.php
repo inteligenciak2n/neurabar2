@@ -186,6 +186,14 @@ class CreateUserOwnerDefinitions
             ],
         ];
 
+        $combo = [
+            'X-Bacon',
+            'Batata Frita',
+            'Refrigerante Lata',            
+        ];
+
+        $productsCombo = [];
+
         foreach ($categories as $categoryData) {
             $products = $categoryData['products'];
             unset($categoryData['products']);
@@ -198,7 +206,7 @@ class CreateUserOwnerDefinitions
             ]);
 
             foreach ($products as $productData) {
-                Product::create([
+                $product = Product::create([
                     'category_id' => $category->id,
                     'name' => $productData['name'],
                     'description' => $productData['description'],
@@ -207,6 +215,9 @@ class CreateUserOwnerDefinitions
                     'available_for_delivery' => true,
                     'kitchen_station_id' => $productData['station_id'],
                 ]);
+                if (in_array($productData['name'], $combo)) {
+                    $productsCombo[$productData['name']] = $product;
+                }
             }
         }
 
@@ -232,9 +243,9 @@ class CreateUserOwnerDefinitions
         ]);
 
         $combo->items()->createMany([
-            ['product_id' => Product::where('name', 'X-Bacon')->where('venue_id', $menu->venue_id)->first()->id, 'quantity' => 1],
-            ['product_id' => Product::where('name', 'Batata Frita')->where('venue_id', $menu->venue_id)->first()->id, 'quantity' => 1],
-            ['product_id' => Product::where('name', 'Refrigerante Lata')->where('venue_id', $menu->venue_id)->first()->id, 'quantity' => 1],
+            ['product_id' => $productsCombo['X-Bacon']->id, 'quantity' => 1],
+            ['product_id' => $productsCombo['Batata Frita']->id, 'quantity' => 1],
+            ['product_id' => $productsCombo['Refrigerante Lata']->id, 'quantity' => 1],
         ]);
 
     }
