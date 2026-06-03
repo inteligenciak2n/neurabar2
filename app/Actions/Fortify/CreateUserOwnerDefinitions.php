@@ -218,9 +218,9 @@ class CreateUserOwnerDefinitions
         ]);
 
         $modifier->options()->createMany([
-            ['name' => 'Cheddar', 'price' => 2.00],
-            ['name' => 'Mussarela', 'price' => 1.50],
-            ['name' => 'Gorgonzola', 'price' => 3.00],
+            ['name' => 'Cheddar', 'extra_price' => 2.00],
+            ['name' => 'Mussarela', 'extra_price' => 1.50],
+            ['name' => 'Gorgonzola', 'extra_price' => 3.00],
         ]);
 
         $combo = Combo::create([

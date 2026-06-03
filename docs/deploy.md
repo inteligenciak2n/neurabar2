@@ -224,7 +224,7 @@ sudo certbot --nginx \
     -d app.neurabar.com \
     --non-interactive \
     --agree-tos \
-    --email seu@email.com \
+    --email contato@neurabar.com \
     --redirect
 ```
 
