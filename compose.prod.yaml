@@ -1,9 +1,32 @@
 # Docker Compose — Produção
 # PostgreSQL: RDS externo (configurado via .env)
 # Redis: local (container)
-# Assets: compilados durante o `docker compose up --build` (multi-stage Dockerfile.prod)
+#
+# Build do frontend (separado do backend para evitar OOM em instâncias pequenas):
+#   docker compose -f compose.prod.yaml build --no-cache frontend
+#   docker compose -f compose.prod.yaml up -d --build app
+#
+# Build só do backend (frontend já compilado):
+#   docker compose -f compose.prod.yaml up -d --build app
 
 services:
+    frontend:
+        build:
+            context: '.'
+            dockerfile: 'Dockerfile.frontend'
+            args:
+                APP_URL: '${APP_URL}'
+                VITE_APP_NAME: '${APP_NAME}'
+                VITE_PUSHER_APP_KEY: '${PUSHER_APP_KEY}'
+                VITE_PUSHER_HOST: '${VITE_PUSHER_HOST}'
+                VITE_PUSHER_PORT: '${VITE_PUSHER_PORT}'
+                VITE_PUSHER_SCHEME: '${VITE_PUSHER_SCHEME}'
+        image: 'neurabar/assets:latest'
+        profiles: ['frontend']
+        command: ['true']
+        networks:
+            - sail
+
     app:
         build:
             context: '.'
