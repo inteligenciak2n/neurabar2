@@ -369,3 +369,16 @@ Internet
           │               └── Nginx :443 (WSS→WS) ──► container soketi :6001
           └── Todos os requests HTTP :80 → redirect 301 HTTPS
 ```
+
+
+# 1. Buildar a imagem de assets (só da primeira vez, ou quando o frontend mudar)
+docker build -f Dockerfile.frontend -t neurabar/assets:latest \
+  --build-arg APP_URL=https://app.neurabar.com \
+  --build-arg VITE_PUSHER_APP_KEY="your_key" \
+  --build-arg VITE_PUSHER_HOST=app.neurabar.com \
+  --build-arg VITE_PUSHER_PORT=443 \
+  --build-arg VITE_PUSHER_SCHEME=https \
+  .
+
+# 2. Buildar e subir o app (sem recompilar o frontend)
+docker compose -f compose.prod.yaml up -d --build
