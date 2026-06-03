@@ -1,4 +1,4 @@
-# ── Stage 1: PHP dependencies (necessário antes do Vite por causa do Ziggy) ──
+# ── Stage 1: PHP dependencies ────────────────────────────────────────────────
 FROM composer:2 AS composer-deps
 
 WORKDIR /app
@@ -14,41 +14,16 @@ RUN composer install \
     --no-scripts \
     --ignore-platform-reqs
 
-# ── Stage 2: Build frontend assets ───────────────────────────────────────────
-FROM node:20-alpine AS assets
-
-# VITE_ vars são incorporadas no JS compilado (não são segredos).
-# Passe via --build-arg ou defina em compose.prod.yaml > build.args
-ARG APP_URL=https://app.neurabar.com
-ARG VITE_APP_NAME=NeuraBar
-ARG VITE_PUSHER_APP_KEY=""
-ARG VITE_PUSHER_HOST=""
-ARG VITE_PUSHER_PORT=443
-ARG VITE_PUSHER_SCHEME=https
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci
-
-COPY . .
-
-# O resources/js/app.js importa Ziggy de ../../vendor/tightenco/ziggy.
-# Copiamos apenas o pacote necessário do stage anterior para não inflar a imagem.
-COPY --from=composer-deps /app/vendor/tightenco ./vendor/tightenco
-
-# laravel-vite-plugin lê o .env em tempo de build para APP_URL e VITE_*
-RUN echo "APP_URL=${APP_URL}" > .env \
-    && echo "VITE_APP_NAME=${VITE_APP_NAME}" >> .env \
-    && echo "VITE_PUSHER_APP_KEY=${VITE_PUSHER_APP_KEY}" >> .env \
-    && echo "VITE_PUSHER_HOST=${VITE_PUSHER_HOST}" >> .env \
-    && echo "VITE_PUSHER_PORT=${VITE_PUSHER_PORT}" >> .env \
-    && echo "VITE_PUSHER_SCHEME=${VITE_PUSHER_SCHEME}" >> .env
-
-# Aumenta heap do Node para evitar OOM em builds com Vite + Vue + Tailwind
-ENV NODE_OPTIONS="--max-old-space-size=2048"
-
-RUN npm run build
+# ── Stage 2: Assets pré-compilados ────────────────────────────────────────────
+# Para buildar o frontend separadamente:
+#   docker build -f Dockerfile.frontend -t neurabar/assets:latest \
+#     --build-arg VITE_PUSHER_APP_KEY=... . \
+#     && docker compose -f compose.prod.yaml up -d --build app
+#
+# Para fazer apenas deploy de backend (frontend já compilado):
+#   docker compose -f compose.prod.yaml up -d --build app
+ARG ASSETS_IMAGE=neurabar/assets:latest
+FROM ${ASSETS_IMAGE} AS assets
 
 # ── Stage 3: PHP Application ──────────────────────────────────────────────────
 FROM php:8.2-apache
