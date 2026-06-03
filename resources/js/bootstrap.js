@@ -10,6 +10,7 @@ window.Pusher = Pusher;
 window.Echo = new Echo({
     broadcaster: 'pusher',
     key: import.meta.env.VITE_PUSHER_APP_KEY,
+    cluster: 'mt1', // obrigatório pelo pusher-js v8+; ignorado quando wsHost está definido
     wsHost: import.meta.env.VITE_PUSHER_HOST,
     wsPort: import.meta.env.VITE_PUSHER_PORT ?? 443,
     wssPort: import.meta.env.VITE_PUSHER_PORT ?? 443,
