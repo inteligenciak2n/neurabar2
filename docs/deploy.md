@@ -341,7 +341,7 @@ docker compose -f compose.prod.yaml restart app
 git pull origin main
 docker compose -f compose.prod.yaml exec app php artisan down
 docker compose -f compose.prod.yaml up -d --build app queue
-docker compose -f compose.prod.yaml exec app php artisan migrate --force
+docker compose -f compose.prod.yaml exec app php artisan db:migrate-all --force
 docker compose -f compose.prod.yaml exec app php artisan optimize
 docker compose -f compose.prod.yaml exec app php artisan view:cache
 docker compose -f compose.prod.yaml exec app php artisan up
