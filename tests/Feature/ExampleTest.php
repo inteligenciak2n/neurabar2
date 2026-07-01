@@ -14,6 +14,12 @@ class ExampleTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        $response->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Welcome')
+                ->has('canLogin')
+                ->has('canRegister')
+            )
+            ->assertSee('6 motivos que compensam o investimento', false);
     }
 }

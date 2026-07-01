@@ -83,7 +83,12 @@
           {
             "@type": "Question",
             "name": "Funciona no celular do garçom?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Sim, a interface é responsiva e funciona em qualquer dispositivo moderno." }
+            "acceptedAnswer": { "@type": "Answer", "text": "Sim, a interface se adapta a qualquer tamanho de tela. Funciona em qualquer smartphone, tablet ou computador moderno com acesso à internet." }
+          },
+          {
+            "@type": "Question",
+            "name": "Preciso comprar tablet, monitor ou algo do tipo?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Não precisa. Inicialmente, basta um computador ou notebook e um celular para enviar os pedidos. Recomendamos um monitor de TV ou de computador na cozinha ou nos setores de produção." }
           },
           {
             "@type": "Question",
@@ -313,20 +318,20 @@
     .hero__badge {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.625rem;
       border: 1px solid var(--primary-30);
       background: var(--primary-10);
       border-radius: 9999px;
-      padding: 0.375rem 1rem;
+      padding: 0.5rem 1.25rem;
       margin-bottom: 1.5rem;
     }
     .hero__badge-dot {
-      width: 0.375rem; height: 0.375rem;
+      width: 0.5rem; height: 0.5rem;
       border-radius: 50%;
       background: var(--primary);
       animation: pulse 2s infinite;
     }
-    .hero__badge span { font-size: 0.75rem; font-weight: 500; color: var(--primary); }
+    .hero__badge span { font-size: 1rem; font-weight: 500; color: var(--primary); }
     @keyframes pulse {
       0%,100% { opacity: 1; }
       50%      { opacity: 0.4; }
@@ -346,13 +351,44 @@
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
+    .hero__title .hero__title-blue {
+      color: var(--primary);
+    }
     .hero__sub {
       font-size: 1.125rem;
       line-height: 1.75;
       color: rgba(255,255,255,0.7);
       max-width: 42rem;
-      margin: 0 auto 2.5rem;
+      margin: 0 auto 1.25rem;
     }
+    .hero__list {
+      list-style: none;
+      max-width: 42rem;
+      margin: 0 auto 2.5rem;
+      padding: 0;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+    }
+    .hero__list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.625rem;
+      font-size: 1rem;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.7);
+    }
+    .hero__list li::before {
+      content: '';
+      flex-shrink: 0;
+      width: 0.375rem;
+      height: 0.375rem;
+      margin-top: 0.55rem;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+    .hero__list strong { color: rgba(255,255,255,0.9); font-weight: 600; }
     .hero__actions {
       display: flex;
       flex-direction: column;
@@ -515,6 +551,31 @@
       color: var(--ocean-deep);
     }
     .feature-desc { font-size: 0.875rem; line-height: 1.65; color: var(--muted-fg); }
+    .feature-list {
+      list-style: none;
+      margin: 0.75rem 0 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+    }
+    .feature-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      color: var(--muted-fg);
+    }
+    .feature-list li::before {
+      content: '';
+      flex-shrink: 0;
+      width: 0.3125rem;
+      height: 0.3125rem;
+      margin-top: 0.45rem;
+      border-radius: 50%;
+      background: var(--primary);
+    }
 
     /* ===== How it works ===== */
     .how {
@@ -525,16 +586,29 @@
     .how .section-title { color: #fff; }
     .how__grid {
       display: grid;
-      gap: 2rem;
+      gap: 1.5rem;
       margin-top: 4rem;
+      align-items: stretch;
     }
-    @media (min-width: 768px) { .how__grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 768px) { .how__grid { grid-template-columns: repeat(3, 1fr); gap: 1.25rem; } }
     .step {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      text-align: center;
+      align-items: stretch;
+      text-align: left;
       position: relative;
+      height: 100%;
+      padding: 1.5rem 1.25rem 1.75rem;
+      border-radius: 1.25rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.04);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    .step:hover {
+      border-color: var(--primary-30);
+      background: rgba(255, 255, 255, 0.06);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
     }
     .step:not(:last-child)::after {
       display: none;
@@ -544,15 +618,18 @@
         content: '';
         display: block;
         position: absolute;
-        top: 2rem;
+        top: 3.5rem;
         left: 50%;
-        width: 100%;
+        width: calc(100% + 1.25rem);
         height: 2px;
         background: linear-gradient(to right, var(--primary-30), transparent);
+        z-index: 2;
+        pointer-events: none;
       }
     }
     .step__number {
-      position: relative; z-index: 1;
+      position: relative; z-index: 3;
+      align-self: center;
       width: 4rem; height: 4rem;
       border-radius: 1rem;
       border: 1px solid var(--primary-30);
@@ -562,6 +639,7 @@
       font-weight: 700;
       font-size: 1.25rem;
       color: var(--primary);
+      flex-shrink: 0;
     }
     .step__title {
       font-family: var(--font-heading);
@@ -569,8 +647,129 @@
       font-size: 1.125rem;
       color: #fff;
       margin-top: 1rem;
+      width: 100%;
+      text-align: center;
     }
     .step__desc { font-size: 0.875rem; line-height: 1.65; color: rgba(255,255,255,0.55); margin-top: 0.5rem; }
+    .step__list {
+      list-style: none;
+      margin: 0.75rem 0 0;
+      padding: 0;
+      display: block;
+      width: 100%;
+      text-align: left;
+    }
+    .step__list > li:not(.step__list-item--group) {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: rgba(255,255,255,0.55);
+    }
+    .step__list > li:not(.step__list-item--group)::before {
+      content: '';
+      flex-shrink: 0;
+      width: 0.3125rem;
+      height: 0.3125rem;
+      margin-top: 0.45rem;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+    .step__list > li + li { margin-top: 0.375rem; }
+    .step__list-item--group {
+      display: block;
+      position: relative;
+      padding-left: 0.75rem;
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: rgba(255,255,255,0.55);
+    }
+    .step__list-item--group::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.5rem;
+      width: 0.3125rem;
+      height: 0.3125rem;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+    .step__list--nested {
+      list-style: none;
+      margin: 0.875rem 0 0;
+      padding: 0;
+      display: block;
+      width: 100%;
+    }
+    .step__list--nested li {
+      display: block;
+      position: relative;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.48);
+      padding-left: 0.875rem;
+    }
+    .step__list--nested li + li { margin-top: 0.5rem; }
+    .step__list--nested li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.5rem;
+      width: 0.25rem;
+      height: 0.25rem;
+      border-radius: 50%;
+      background: hsl(199, 70%, 62%);
+    }
+
+    /* ===== Ideal use ===== */
+    .ideal-use {
+      background: var(--surface);
+      padding: 5rem 0;
+    }
+    @media (min-width: 1024px) { .ideal-use { padding: 6rem 0; } }
+    .ideal-use__grid {
+      display: grid;
+      gap: 1.25rem;
+      margin-top: 3rem;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 640px) { .ideal-use__grid { grid-template-columns: repeat(2, 1fr); } }
+    .ideal-use-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      height: 100%;
+      padding: 1.5rem 1.25rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--muted);
+      box-shadow: var(--shadow-card);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .ideal-use-card:hover {
+      border-color: var(--primary-30);
+      box-shadow: var(--shadow-ocean);
+    }
+    .ideal-use-card__number {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 0.875rem;
+      letter-spacing: 0.05em;
+      color: var(--primary);
+    }
+    .ideal-use-card__title {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: 1.0625rem;
+      line-height: 1.35;
+      color: var(--ocean-deep);
+    }
+    .ideal-use-card__text {
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: var(--muted-fg);
+    }
 
     /* ===== Pricing ===== */
     .pricing { padding: 5rem 0; }
@@ -679,6 +878,84 @@
     .skeleton-bar {
       border-radius: 9999px;
       background: var(--border);
+    }
+
+    /* ===== Reasons ===== */
+    .reasons {
+      background: var(--ocean-deep);
+      padding: 5rem 0;
+    }
+    @media (min-width: 1024px) { .reasons { padding: 6rem 0; } }
+    .reasons .section-title { color: #fff; }
+    .reasons__grid {
+      display: grid;
+      gap: 1.25rem;
+      margin-top: 3rem;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 640px) { .reasons__grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1024px) { .reasons__grid { grid-template-columns: repeat(3, 1fr); } }
+    .reason-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      height: 100%;
+      padding: 1.5rem 1.25rem;
+      border-radius: 1.25rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.04);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    .reason-card:hover {
+      border-color: var(--primary-30);
+      background: rgba(255, 255, 255, 0.06);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+    }
+    .reason-card__number {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 0.875rem;
+      letter-spacing: 0.05em;
+      color: var(--primary);
+    }
+    .reason-card__title {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: 1rem;
+      line-height: 1.35;
+      color: #fff;
+    }
+    .reason-card__text {
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: rgba(255, 255, 255, 0.55);
+    }
+    .reason-card__list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+    }
+    .reason-card__list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: rgba(255, 255, 255, 0.55);
+      text-align: left;
+    }
+    .reason-card__list li::before {
+      content: '';
+      flex-shrink: 0;
+      width: 0.3125rem;
+      height: 0.3125rem;
+      margin-top: 0.45rem;
+      border-radius: 50%;
+      background: var(--primary);
     }
 
     /* ===== Testimonials ===== */
@@ -837,13 +1114,19 @@
         </div>
 
         <h1 class="hero__title" id="hero-heading">
-          Gerencie seu bar ou restaurante<br>com
-          <span class="gradient"> inteligência</span>
+          Agilize seu atendimento<br>para <span class="hero__title-blue">Bares e Restaurantes</span><br>com
+          <span class="gradient"> Inteligência</span>
         </h1>
 
-        <p class="hero__sub">
-          Cardápio digital, pedidos em tempo real, KDS para cozinha, controle de pagamentos e muito mais — tudo em uma plataforma moderna e fácil de usar.
-        </p>
+        <p class="hero__sub">Tudo que você precisa para agilizar sua operação:</p>
+
+        <ul class="hero__list">
+          <li><strong>Cardápio digital:</strong> mais uma opção para clientes no salão ou no delivery</li>
+          <li><strong>Empilhamento de pedidos:</strong> envio para monitores ou impressoras</li>
+          <li><strong>Setorização de trabalho:</strong> monte seus setores (cozinha, bar, churrasqueira, etc.)</li>
+          <li><strong>Controle de pagamentos:</strong> divisão de contas e muito mais</li>
+          <li><strong>Sistema simplificado:</strong> fácil, ágil e barato</li>
+        </ul>
 
         <div class="hero__actions">
           <a href="https://app.neurabar.com/register" class="btn-primary">
@@ -927,8 +1210,8 @@
     <div class="container">
       <div class="text-center">
         <p class="section-label">Funcionalidades</p>
-        <h2 class="section-title mt-2" id="features-heading">Tudo que seu estabelecimento precisa</h2>
-        <p class="section-sub mt-4">Uma plataforma completa, do cardápio ao fechamento. Sem integrações complicadas, sem mensalidades surpresa.</p>
+        <h2 class="section-title mt-2" id="features-heading">Mais agilidade e economia para seu estabelecimento</h2>
+        <p class="section-sub mt-4">Cardápio digital com opção de delivery.<br>Empilhamento de pedidos e KDS (Kitchen Display System).</p>
       </div>
 
       <div class="features__grid" role="list">
@@ -941,7 +1224,13 @@
           </div>
           <div>
             <h3 class="feature-title">Cardápio Digital Completo</h3>
-            <p class="feature-desc">Crie menus com categorias, produtos, variações de preço e modificadores. Atualize em tempo real sem reimprimir nada.</p>
+            <ul class="feature-list">
+              <li>Acesso por QR Code</li>
+              <li>Acesso para delivery</li>
+              <li>Edição simples e rápida</li>
+              <li>Fotos dos produtos (opcional)</li>
+              <li>Combos, modificadores e variações de tamanho</li>
+            </ul>
           </div>
         </article>
 
@@ -953,7 +1242,12 @@
           </div>
           <div>
             <h3 class="feature-title">Pedidos em Tempo Real</h3>
-            <p class="feature-desc">Atendentes anotam pedidos pelo tablet ou celular. Tudo cai automaticamente na cozinha via WebSocket.</p>
+            <ul class="feature-list">
+              <li>Envio para monitor e/ou impressora</li>
+              <li>Separação por setores da cozinha</li>
+              <li>Pedidos lançados pelo celular</li>
+              <li>Tela de gerenciamento de setores</li>
+            </ul>
           </div>
         </article>
 
@@ -964,8 +1258,13 @@
             </svg>
           </div>
           <div>
-            <h3 class="feature-title">KDS — Tela de Cozinha</h3>
-            <p class="feature-desc">A cozinha acompanha cada pedido em tempo real, com status de preparo e alertas de prioridade.</p>
+            <h3 class="feature-title">KDS — Tela de Cozinha (Kitchen Display System)</h3>
+            <ul class="feature-list">
+              <li>Acompanhamento por tempo, setor e produto</li>
+              <li>Setorização (ex.: confeitaria, cozinha, bebidas)</li>
+              <li>Interface organizada e eficiente</li>
+              <li>Atualização em tempo real para mais agilidade</li>
+            </ul>
           </div>
         </article>
 
@@ -976,8 +1275,13 @@
             </svg>
           </div>
           <div>
-            <h3 class="feature-title">Pagamentos e Fechamento</h3>
-            <p class="feature-desc">Divida a conta, registre pagamentos por método e feche atendimentos com total controle financeiro.</p>
+            <h3 class="feature-title">Pagamento e Fechamento</h3>
+            <ul class="feature-list">
+              <li>Fechamento parcial</li>
+              <li>Divisão de contas</li>
+              <li>Taxas de couvert e de atendimento</li>
+              <li>Fechamento por mesa e/ou comanda (opcional)</li>
+            </ul>
           </div>
         </article>
 
@@ -988,8 +1292,12 @@
             </svg>
           </div>
           <div>
-            <h3 class="feature-title">QR Code para a Mesa</h3>
-            <p class="feature-desc">O cliente escaneia, visualiza o cardápio, faz pedidos e chama o garçom — tudo pelo próprio celular.</p>
+            <h3 class="feature-title">QR Code na Mesa</h3>
+            <ul class="feature-list">
+              <li>Acesso ao cardápio digital</li>
+              <li>Solicitação de atendimento pelo cliente</li>
+              <li>Rápido, fácil e econômico</li>
+            </ul>
           </div>
         </article>
 
@@ -1001,7 +1309,10 @@
           </div>
           <div>
             <h3 class="feature-title">Multi-unidades</h3>
-            <p class="feature-desc">Gerencie várias filiais de uma única conta. Cada venue com seu cardápio, equipe e configurações independentes.</p>
+            <ul class="feature-list">
+              <li>Gerencie várias unidades</li>
+              <li>Painel centralizado para todas as filiais</li>
+            </ul>
           </div>
         </article>
 
@@ -1021,18 +1332,70 @@
         <div class="step" role="listitem">
           <div class="step__number" aria-hidden="true">01</div>
           <h3 class="step__title">Crie sua conta</h3>
-          <p class="step__desc">Cadastro gratuito em menos de 2 minutos. Sem cartão de crédito.</p>
+          <ul class="step__list">
+            <li>Cadastro gratuito em menos de 2 minutos</li>
+            <li>Sem cartão de crédito</li>
+            <li>Sem cobranças inesperadas</li>
+          </ul>
         </div>
         <div class="step" role="listitem">
           <div class="step__number" aria-hidden="true">02</div>
           <h3 class="step__title">Configure seu estabelecimento</h3>
-          <p class="step__desc">Adicione seu cardápio, equipe, mesas e locais de atendimento.</p>
+          <ul class="step__list">
+            <li class="step__list-item--group">
+              Adicione o cardápio
+              <ul class="step__list--nested">
+                <li>Itens pré-cadastrados (opcional)</li>
+                <li>Solicite o cadastro do cardápio por um terceirizado (opcional)</li>
+              </ul>
+            </li>
+            <li>Configure as mesas (adicione quantas precisar)</li>
+            <li>Configure locais de atendimento (varanda, palco, etc.)</li>
+          </ul>
         </div>
         <div class="step" role="listitem">
           <div class="step__number" aria-hidden="true">03</div>
           <h3 class="step__title">Comece a atender</h3>
-          <p class="step__desc">Abra atendimentos, anote pedidos e acompanhe tudo em tempo real.</p>
+          <ul class="step__list">
+            <li>Abra atendimentos</li>
+            <li>Registre pedidos</li>
+            <li>Acompanhe tudo em tempo real</li>
+          </ul>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== IDEAL USE ===== -->
+  <section id="uso-ideal" class="ideal-use" aria-labelledby="ideal-use-heading">
+    <div class="container">
+      <div class="text-center">
+        <p class="section-label">Operação enxuta</p>
+        <h2 class="section-title mt-2" id="ideal-use-heading">Como foi idealizado para usar o programa?</h2>
+        <p class="section-sub mt-4">Para funcionar do modo mais enxuto possível</p>
+      </div>
+
+      <div class="ideal-use__grid" role="list">
+        <article class="ideal-use-card" role="listitem">
+          <span class="ideal-use-card__number" aria-hidden="true">01</span>
+          <h3 class="ideal-use-card__title">Gerente no computador</h3>
+          <p class="ideal-use-card__text">Com o computador aberto, monitora toda a operação e realiza o fechamento das mesas.</p>
+        </article>
+        <article class="ideal-use-card" role="listitem">
+          <span class="ideal-use-card__number" aria-hidden="true">02</span>
+          <h3 class="ideal-use-card__title">Monitor na cozinha</h3>
+          <p class="ideal-use-card__text">Exibe os pedidos novos; a cozinha libera os pedidos quando ficam prontos para entrega.</p>
+        </article>
+        <article class="ideal-use-card" role="listitem">
+          <span class="ideal-use-card__number" aria-hidden="true">03</span>
+          <h3 class="ideal-use-card__title">Garçom com celular</h3>
+          <p class="ideal-use-card__text">Registra os pedidos pelo NeuraBar com o celular na mão.</p>
+        </article>
+        <article class="ideal-use-card" role="listitem">
+          <span class="ideal-use-card__number" aria-hidden="true">04</span>
+          <h3 class="ideal-use-card__title">Entrega dos pedidos</h3>
+          <p class="ideal-use-card__text">O garçom ou o gerente leva os pedidos prontos até as mesas.</p>
+        </article>
       </div>
     </div>
   </section>
@@ -1063,6 +1426,78 @@
           <div class="skeleton-bar" style="height:0.75rem;width:10rem"></div>
           <div class="skeleton-bar" style="height:2rem;width:8rem;margin-top:1.5rem"></div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== REASONS ===== -->
+  <section id="motivos" class="reasons" aria-labelledby="reasons-heading">
+    <div class="container">
+      <div class="text-center">
+        <p class="section-label">Por que investir</p>
+        <h2 class="section-title" id="reasons-heading">6 motivos que compensam o investimento</h2>
+      </div>
+
+      <div class="reasons__grid" role="list">
+        <article class="reason-card" role="listitem">
+          <span class="reason-card__number" aria-hidden="true">01</span>
+          <h3 class="reason-card__title">Menos erros e retrabalho</h3>
+          <ul class="reason-card__list">
+            <li>Menos erros nos pedidos</li>
+            <li>Menos pedidos esquecidos</li>
+            <li>Gerencie pedidos em tempo real por atendente</li>
+            <li>Garçons não perdem tempo indo à cozinha levar pedidos</li>
+          </ul>
+        </article>
+        <article class="reason-card" role="listitem">
+          <span class="reason-card__number" aria-hidden="true">02</span>
+          <h3 class="reason-card__title">Atendimento mais ágil</h3>
+          <ul class="reason-card__list">
+            <li>Empilhamento automático de pedidos</li>
+            <li>KDS (Kitchen Display System): monitor de pedidos por setor</li>
+            <li>Visualize a demanda de produção e aloque a equipe com facilidade</li>
+          </ul>
+        </article>
+        <article class="reason-card" role="listitem">
+          <span class="reason-card__number" aria-hidden="true">03</span>
+          <h3 class="reason-card__title">Delivery próprio</h3>
+          <ul class="reason-card__list">
+            <li>Cardápio exclusivo para delivery</li>
+            <li>Sem taxa por pedido</li>
+            <li>Com poucos pedidos, a economia nas comissões pode superar o valor da mensalidade</li>
+          </ul>
+        </article>
+        <article class="reason-card" role="listitem">
+          <span class="reason-card__number" aria-hidden="true">04</span>
+          <h3 class="reason-card__title">Relatórios</h3>
+          <ul class="reason-card__list">
+            <li>Pedidos do dia</li>
+            <li>Faturamento</li>
+            <li>Atendimentos por garçom</li>
+            <li>Demanda por setor (cozinha, drinks, etc.)</li>
+            <li>Resultados visíveis e previsíveis, com menos dor de cabeça</li>
+          </ul>
+        </article>
+        <article class="reason-card" role="listitem">
+          <span class="reason-card__number" aria-hidden="true">05</span>
+          <h3 class="reason-card__title">Comece sem risco</h3>
+          <ul class="reason-card__list">
+            <li>14 dias grátis para testar</li>
+            <li>Sem cartão de crédito no período de teste</li>
+            <li>Sem cobranças inesperadas</li>
+          </ul>
+        </article>
+        <article class="reason-card" role="listitem">
+          <span class="reason-card__number" aria-hidden="true">06</span>
+          <h3 class="reason-card__title">Garçom vendedor</h3>
+          <ul class="reason-card__list">
+            <li>Transforme seu garçom em vendedor dos melhores pratos da casa</li>
+            <li>Mais tempo disponível junto aos clientes</li>
+            <li>Oriente novos clientes sobre o que pedir</li>
+            <li>Valorize o atendimento aos clientes da casa</li>
+            <li>De mesa em mesa, sem ir à cozinha — pedidos pelo celular, mais vendas e entregas</li>
+          </ul>
+        </article>
       </div>
     </div>
   </section>
@@ -1114,7 +1549,7 @@
             <svg viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
             <svg viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
           </div>
-          <blockquote class="testimonial-quote">"O QR code na mesa reduziu erros nos pedidos e melhorou muito a experiência do cliente."</blockquote>
+          <blockquote class="testimonial-quote">"O QR Code na mesa reduziu erros nos pedidos e melhorou muito a experiência do cliente."</blockquote>
           <footer>
             <p class="testimonial-author">Rafael T.</p>
             <p class="testimonial-role">Proprietário, Bar do Zé</p>
@@ -1139,7 +1574,11 @@
         </details>
         <details>
           <summary>Funciona no celular do garçom?</summary>
-          <p class="faq-answer">Sim, a interface é totalmente responsiva e funciona em qualquer smartphone, tablet ou computador moderno com acesso ao navegador.</p>
+          <p class="faq-answer">Sim, a interface se adapta a qualquer tamanho de tela. Funciona em qualquer smartphone, tablet ou computador moderno com acesso à internet.</p>
+        </details>
+        <details>
+          <summary>Preciso comprar tablet, monitor ou algo do tipo?</summary>
+          <p class="faq-answer">Não precisa. Inicialmente, basta um computador ou notebook e um celular para enviar os pedidos. Recomendamos um monitor de TV ou de computador na cozinha ou nos setores de produção.</p>
         </details>
         <details>
           <summary>Preciso instalar algum aplicativo?</summary>
@@ -1151,7 +1590,7 @@
         </details>
         <details>
           <summary>Como funciona o suporte técnico?</summary>
-          <p class="faq-answer">Oferecemos suporte via e-mail em todos os planos. O plano Pro inclui suporte prioritário e o Enterprise conta com onboarding dedicado e SLA garantido.</p>
+          <p class="faq-answer">Oferecemos suporte via e-mail em todos os planos. O plano Pro inclui atendimento prioritário e o Enterprise conta com onboarding dedicado e prazo de resposta garantido em contrato.</p>
         </details>
         <details>
           <summary>Posso cancelar a qualquer momento?</summary>
