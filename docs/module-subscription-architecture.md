@@ -1,6 +1,6 @@
 # Arquitetura de Módulos, Subscriptions e Permissionamento de Tenants
 
-**Versão:** 1.0 · **Data:** 17 de julho de 2026
+**Versão:** 1.1 · **Data:** 18 de julho de 2026
 
 > Modelo de produto SaaS para o NeuraBar: como funcionalidades são empacotadas em módulos contratáveis, como o acesso é isolado por tenant, como a cobrança reflete número de venues, volume de uso e personalização de preços, e como o rastreio de afiliados permeia cadastros, assinaturas e pagamentos.
 
@@ -134,6 +134,7 @@ Registra o contrato comercial da corporation, o modo de faturamento e a configur
 | `started_at` | datetime | Início da vigência |
 | `ended_at` | datetime nullable | Fim da vigência |
 | `trial_ends_at` | datetime nullable | Fim do trial |
+| `grace_period_days` | tinyint default 3 | Dias de tolerância após expiração do trial ou vencimento antes do bloqueio (configurável por corporation na plataforma) |
 | `currency` | varchar default 'BRL' | |
 
 ```php
@@ -147,13 +148,14 @@ class CorporationSubscription extends Model
 
     protected $fillable = [
         'corporation_id', 'plan_catalog_id', 'affiliate_code_id', 'billing_mode',
-        'status', 'billing_day', 'started_at', 'ended_at', 'trial_ends_at', 'currency',
+        'status', 'billing_day', 'grace_period_days', 'started_at', 'ended_at', 'trial_ends_at', 'currency',
     ];
 
     protected function casts(): array
     {
         return [
             'billing_day' => 'integer',
+            'grace_period_days' => 'integer',
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
             'trial_ends_at' => 'datetime',
@@ -451,38 +453,26 @@ class AffiliateCode extends Model
 }
 ```
 
-### 2.9 Matrix de Permissões por Módulo (`module_role_permissions`)
+### 2.9 Controle de Acesso por Role e Módulo
 
-Personaliza quais roles operacionais têm acesso a quais ações dentro de cada módulo. Se não houver registro, usa `required_roles` do catálogo.
+O controle de quais roles operacionais têm acesso a cada módulo é definido **diretamente nas definições de rota**, via composição de `RequireModule` + `RequireRole`. Não há tabela separada de permissões por módulo — a abordagem declarativa nas rotas é suficiente para o nível de granularidade atual.
 
-| Coluna | Tipo | Descrição |
-|---|---|---|
-| `id` | UUID PK | |
-| `corporation_id` | UUID FK nullable | Se null, aplica a todas as corporations (default do produto). |
-| `module_code` | varchar | |
-| `role` | varchar | Valor de `UserRole` operacional |
-| `permissions` | json | Array de abilities (`view`, `create`, `update`, `delete`, `configure`, `operate`) |
+**Por quê essa decisão?**
+- Módulos afetam apenas usuários do tipo **client** (`Owner`, `GeneralManager`, `SectionManager`, `Attendant`, `Cashier`).
+- Os perfis já estão definidos no enum `UserRole` e o middleware `RequireRole` já implementa a verificação.
+- O campo `required_roles` no `ModuleCatalog` serve apenas como documentação do mapeamento padrão — não é consumido por código de acesso.
+- Permissões mais granulares podem ser adicionadas futuramente ajustando as definições de rota sem mudança estrutural de banco.
+
+**Convenção:** cada módulo define, em seus grupos de rota, quais roles têm acesso a cada operação:
 
 ```php
-// app/Models/Tenant/ModuleRolePermission.php
-class ModuleRolePermission extends Model
-{
-    use HasFactory;
-    use HasUuids;
+// KDS — operadores e gestores
+Route::middleware(['tenant', 'module:kds', 'role:owner,general_manager,section_manager,attendant'])
+    ->prefix('kitchen/kds')->group(function () { ... });
 
-    protected $connection = 'saas';
-
-    protected $fillable = [
-        'corporation_id', 'module_code', 'role', 'permissions',
-    ];
-
-    protected function casts(): array
-    {
-        return [
-            'permissions' => 'array',
-        ];
-    }
-}
+// Dashboard Financeiro — restrito a gestores
+Route::middleware(['tenant', 'module:financial_dashboard', 'role:owner,general_manager'])
+    ->prefix('financial')->group(function () { ... });
 ```
 
 ---
@@ -677,7 +667,7 @@ class User extends Authenticatable
 {
     // ...
 
-    public function canAccessModule(ModuleCode $module, ?string $ability = null): bool
+    public function canAccessModule(ModuleCode $module): bool
     {
         $venue = $this->currentVenue;
 
@@ -695,28 +685,8 @@ class User extends Authenticatable
             return false;
         }
 
-        // 3. Role permite o acesso?
-        $role = $this->currentVenueRole()?->value;
-
-        if (! $role) {
-            return false;
-        }
-
-        $permission = ModuleRolePermission::query()
-            ->where('module_code', $module->value)
-            ->where(fn ($q) => $q->whereNull('corporation_id')->orWhere('corporation_id', $venue->corporation_id))
-            ->where('role', $role)
-            ->first();
-
-        $permissions = $permission?->permissions
-            ?? ModuleCatalog::where('code', $module->value)->value('required_roles')
-            ?? [];
-
-        if ($ability === null) {
-            return ! empty($permissions);
-        }
-
-        return in_array($ability, $permissions, true);
+        // Verificação de role é feita pelo middleware RequireRole nas rotas
+        return true;
     }
 }
 ```
@@ -730,9 +700,9 @@ class User extends Authenticatable
 O acesso a uma funcionalidade é decidido em quatro níveis:
 
 1. **Tenant ativo** — `SetVenueContext` garante que o usuário pertence à venue.
-2. **Subscription em dia** — `BillingStatusService` verifica se a venue (ou a corporation, no modo unificado) está adimplente.
+2. **Subscription em dia** — `BillingStatusService` verifica se a venue (ou a corporation, no modo unificado) está adimplente, respeitando o grace period configurado.
 3. **Módulo contratado** — `RequireModule` middleware garante que a venue tem o módulo ativo.
-4. **Role operacional** — `RequireRole` middleware garante que o papel do usuário na venue permite a ação.
+4. **Role operacional** — `RequireRole` middleware garante que o papel do usuário na venue permite a operação. Os roles permitidos são definidos declarativamente nos grupos de rota de cada módulo — não há tabela de permissões separada.
 
 ### 5.2 Middleware `RequireModule`
 
@@ -783,6 +753,11 @@ class RequireModule
 // app/Services/Billing/BillingStatusService.php
 class BillingStatusService
 {
+    /**
+     * Bloqueia acesso apenas nos status Suspended e Canceled.
+     * PastDue mantém o acesso durante o grace period configurado em
+     * CorporationSubscription.grace_period_days (padrão: 3 dias).
+     */
     public static function isBlocked(Venue $venue): bool
     {
         $corporation = $venue->corporation;
@@ -864,21 +839,20 @@ Route::middleware(['tenant', 'module:direct_waiter'])
     });
 ```
 
-### 5.4 Gate para actions e policies
+### 5.4 Verificação Manual em Controllers e Actions
+
+Quando é necessário verificar acesso a um módulo fora de uma rota protegida (ex.: em jobs, actions de plataforma ou lógica condicional em controllers), use diretamente `User::canAccessModule()` ou o `BillingStatusService`:
 
 ```php
-// app/Providers/AuthServiceProvider.php ou bootstrap/app.php
-Gate::define('module-access', function (User $user, string $moduleCode, ?string $ability = null): bool {
-    $module = ModuleCode::tryFrom($moduleCode);
+// Em controllers — verificar módulo + billing sem middleware
+if (! $request->user()->canAccessModule(ModuleCode::Kds)) {
+    abort(403);
+}
 
-    return $module && $user->canAccessModule($module, $ability);
-});
-```
-
-Uso em controllers/actions:
-
-```php
-$this->authorize('module-access', ['kds', 'operate']);
+// Em jobs/actions de plataforma — verificar apenas billing
+if (BillingStatusService::isBlocked($venue)) {
+    // skip ou log, não lancar exceção em processo assíncrono
+}
 ```
 
 ---
@@ -1085,6 +1059,42 @@ public function calculateCorporation(Corporation $corporation, string $period): 
 }
 ```
 
+### 6.6 Alinhamento de Período com `billing_day`
+
+O campo `billing_day` define o dia do mês em que a fatura vence, mas **não altera a janela de medição** dos registros de uso. Por decisão de simplicidade operacional, `VenueUsageRecord.period` sempre usa o **mês calendário** (`YYYY-MM`), independentemente do `billing_day`.
+
+O `billing_day` afeta apenas:
+- A data de vencimento exibida na fatura (`due_date = YYYY-MM-{billing_day}`).
+- O prazo de disparo das notificações de inadimplência.
+
+> **Implicação:** se uma venue tem `billing_day = 20`, a fatura de julho (período `2026-07`) vence em `2026-07-20`. O uso de julho inteiro (01–31) é medido e cobrado nessa fatura.
+
+### 6.7 Proration ao Adicionar ou Remover Módulo
+
+Na Fase 1, o `SubscriptionCalculator` **não calcula proration** — módulos ativados ou desativados no meio do ciclo são cobrados ou isentos pelo mês inteiro.
+
+Regras práticas adotadas:
+- **Ativação no meio do mês:** cobrar mês inteiro na próxima fatura. O cliente é notificado no ato da ativação.
+- **Desativação no meio do mês:** sem crédito proporcional; o módulo permanece ativo até o fim do ciclo.
+- **Proration futura:** pode ser implementada adicionando `activated_at` e `deactivated_at` ao `VenueModule` e calculando dias proporcionais no `SubscriptionCalculator`.
+
+### 6.8 Idempotência do `SubscriptionCalculator`
+
+O `calculateVenue` deve verificar se a fatura do período já foi **finalizada** antes de recalcular, evitando sobrescrita de faturas já pagas:
+
+```php
+// Verificar antes de calcular
+$invoice = VenueInvoice::where('venue_id', $venue->id)
+    ->where('period', $period)
+    ->first();
+
+if ($invoice?->is_finalized) {
+    return; // fatura já fechada, não recalcular
+}
+```
+
+O campo `is_finalized` (boolean, default `false`) existe em `venue_invoices` e `corporation_invoices`. Uma fatura só é finalizada quando o job de billing muda o status para `paid` ou `overdue`.
+
 ---
 
 ## 7. Frontend e Inertia.js
@@ -1155,6 +1165,64 @@ const { hasModule } = useModules();
 
 ## 8. Ciclo de Vida de Módulos e Subscriptions
 
+### 8.0 Ciclo de Vida da Subscription e Trial
+
+#### Criação da Corporation
+
+Ao criar uma `Corporation`, o sistema automaticamente cria a `CorporationSubscription` e as `VenueSubscription`(s) iniciais com `status = trial`:
+
+```php
+// Disparado ao concluir o registro do cliente
+CorporationSubscription::create([
+    'corporation_id' => $corporation->id,
+    'status' => SubscriptionStatus::Trial,
+    'billing_mode' => BillingMode::PerVenue, // padrão
+    'billing_day' => 1,
+    'grace_period_days' => config('billing.grace_period_days', 3),
+    'started_at' => now(),
+    'trial_ends_at' => now()->addDays(config('billing.trial_days', 14)),
+]);
+```
+
+#### Transições de Status
+
+```
+trial ──(trial_ends_at atingido)──► past_due ──(grace expirado)──► suspended
+  │                                                                     │
+  └──(pagamento confirmado)──────────────────────────────► active ◄────────
+                                                              │
+                                                   (fatura vencida)
+                                                              │
+                                                           past_due ──(grace)─► suspended
+                                                              │
+                                                   (cancelamento)
+                                                              │
+                                                           canceled
+```
+
+| Transição | Gatilho | Responsável |
+|---|---|---|
+| `trial → past_due` | `trial_ends_at` atingida sem pagamento | Job `ExpireTrialsJob` (diário) |
+| `past_due → suspended` | `grace_period_days` expirado sem pagamento | Job `SuspendOverdueSubscriptionsJob` (diário) |
+| `past_due → active` | pagamento confirmado | Webhook do gateway → `ActivateSubscriptionAction` |
+| `suspended → active` | pagamento confirmado após suspensão | Webhook do gateway → `ActivateSubscriptionAction` |
+| `active → past_due` | fatura vencida sem pagamento | Job `MarkInvoicesOverdueJob` (diário) |
+| `* → canceled` | cancelamento explícito via plataforma | `CancelSubscriptionAction` |
+
+#### Grace Period
+
+O `grace_period_days` (padrão: `3`, configurável por corporation na plataforma via `config('billing.grace_period_days')`) define quantos dias o cliente permanece em `past_due` — com acesso mantido — antes de ser movido para `suspended`.
+
+```
+trial_ends_at         trial_ends_at + grace_period_days
+      ▼                          ▼
+  ────┼──────────────────────────┼──────────────►
+      │   status = past_due      │
+      │   acesso mantido         │ → suspended (acesso bloqueado)
+```
+
+> Durante `past_due`, o `BillingStatusService.isBlocked()` retorna `false` — o acesso ao sistema **não é bloqueado**. Isso evita interrupção abrupta para clientes com atraso curto.
+
 ### 8.1 Habilitar módulo na corporation
 
 Antes de qualquer venue usar um módulo, ele precisa estar habilitado no nível corporate com o preço unitário negociado.
@@ -1223,7 +1291,10 @@ class ActivateVenueModuleAction
             ]
         );
 
-        // 4. Invalida cache de conexão/módulos da venue
+        // 4. Invalida cache Redis de módulos ativos da venue
+        // TenantConnectionResolver usa Redis; a invalidação força re-consulta no próximo request.
+        // Nota: workers em queue também precisam dessa invalidação — garantir que o
+        // TenantConnectionResolver use cache com tags Redis para permitir invalidação cross-process.
         app(TenantConnectionResolver::class)->invalidate($venue);
 
         return $venueModule;
@@ -1364,16 +1435,23 @@ Plataforma cria/altera subscription
 |---|---|---|
 | `id` | UUID PK | |
 | `venue_id` | UUID FK | |
+| `venue_subscription_id` | UUID FK | → `venue_subscriptions.id` (snapshot da subscription que gerou a fatura) |
 | `corporation_invoice_id` | UUID FK nullable | Vincula à fatura unificada, quando aplicável |
 | `affiliate_code_id` | UUID FK nullable | → `affiliate_codes.id` (código que originou a receita) |
 | `period` | varchar | YYYY-MM |
+| `due_date` | date | Data de vencimento (`YYYY-MM-{billing_day}`) |
 | `status` | varchar | `open`, `paid`, `canceled`, `overdue` |
+| `is_finalized` | boolean default false | Impede recálculo após fechamento (paid / overdue) |
 | `base_value` | decimal | Plano base da venue |
 | `modules_value` | decimal | Soma dos módulos ativos |
 | `metered_value` | decimal | Volume excedente |
 | `dedicated_surcharge` | decimal | Surcharge de infra dedicada |
-| `total_value` | decimal | |
+| `discount_value` | decimal default 0 | Descontos aplicados (bundle, negociação) |
+| `total_value` | decimal | `base + modules + metered + surcharge − discount` |
+| `gateway_payment_id` | varchar nullable | ID do pagamento no gateway externo |
 | `paid_at` | datetime nullable | |
+
+> `venue_invoices` usa `SoftDeletes` — registros financeiros não são deletados fisicamente.
 
 #### `corporation_invoices`
 
@@ -1381,17 +1459,43 @@ Plataforma cria/altera subscription
 |---|---|---|
 | `id` | UUID PK | |
 | `corporation_id` | UUID FK | |
+| `corporation_subscription_id` | UUID FK | → `corporation_subscriptions.id` |
 | `affiliate_code_id` | UUID FK nullable | → `affiliate_codes.id` (código que originou a receita) |
 | `period` | varchar | YYYY-MM |
+| `due_date` | date | Data de vencimento |
 | `status` | varchar | `open`, `paid`, `canceled`, `overdue` |
+| `is_finalized` | boolean default false | Impede recálculo após fechamento |
 | `base_value` | decimal | Soma das bases |
 | `modules_value` | decimal | Soma dos módulos |
 | `metered_value` | decimal | Soma dos excedentes |
 | `dedicated_surcharge` | decimal | Soma dos surcharges |
+| `discount_value` | decimal default 0 | Descontos aplicados |
 | `total_value` | decimal | |
+| `gateway_payment_id` | varchar nullable | ID do pagamento no gateway externo |
 | `paid_at` | datetime nullable | |
 
+> `corporation_invoices` usa `SoftDeletes` — registros financeiros não são deletados fisicamente.
+
 > No modo `per_venue`, cada `venue_invoices` é uma cobrança independente. No modo `unified`, a `corporation_invoices` agrupa as `venue_invoices` vinculadas, mas os bloqueios seguem a `corporation_invoices` (pagamento único).
+
+#### `payment_attempts`
+
+Registra cada tentativa de cobrança no gateway, garantindo rastreabilidade e idempotência no processamento de webhooks.
+
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| `id` | UUID PK | |
+| `invoice_type` | varchar | `venue` ou `corporation` |
+| `invoice_id` | UUID | ID da fatura (polimórfico) |
+| `gateway` | varchar | Nome do gateway (ex.: `stripe`, `pagar_me`) |
+| `gateway_payment_id` | varchar nullable | ID único no gateway — usado para idempotência do webhook |
+| `amount` | decimal(10,2) | Valor cobrado |
+| `status` | varchar | `pending`, `succeeded`, `failed`, `refunded` |
+| `payload` | json nullable | Payload do webhook recebido |
+| `attempted_at` | datetime | |
+| `succeeded_at` | datetime nullable | |
+| `failed_at` | datetime nullable | |
+| `failure_reason` | text nullable | Mensagem de erro do gateway |
 
 ---
 
@@ -1408,7 +1512,6 @@ Plataforma cria/altera subscription
 2. **Catálogo de Módulos**
    - CRUD de `ModuleCatalog`
    - CRUD de `ModuleUsageTier` por módulo (incluído + excedente)
-   - CRUD de `ModuleRolePermission` padrão
 
 3. **Corporations / Modules**
    - Habilitar/desabilitar módulos na corporation (preço unitário)
@@ -1421,7 +1524,15 @@ Plataforma cria/altera subscription
    - Limite vs. excedente por venue
    - Projeção de fatura (unificada e por venue)
 
-5. **Afiliados (futuro)**
+5. **Notificações de Billing**
+   - Aviso de trial expirando (D-7, D-1)
+   - Confirmação de módulo ativado/desativado
+   - Aviso de fatura gerada com data de vencimento
+   - Aviso de fatura vencida (entra em grace period)
+   - Aviso de suspensão iminente (grace period a vencer em D-1)
+   - Confirmação de pagamento recebido
+
+6. **Afiliados (futuro)**
    - CRUD de `AffiliateCode` (código fixo, nome, email, status)
    - Vincular `affiliate_code_id` em corporations, venues, subscriptions e faturas
    - Relatórios simples via queries diretas: novos cadastros, faturamento de indicados, etc.
@@ -1439,10 +1550,63 @@ Plataforma cria/altera subscription
 7. **Limite de volume é por venue** — mesmo no modo `unified`, o cálculo de excedente nunca agrega venues.
 8. **Rotinas de billing rodam fora do request do cliente** — use queues para não bloquear operações.
 9. **Rastreio de afiliado é opt-in e não obrigatório** — todos os pontos de vínculo (`affiliate_code_id`) são nullable para não quebrar o fluxo comercial atual.
+10. **`affiliate_code_id` só pode ser definido com código `active`** — ao vincular um afiliado em qualquer entidade, validar `AffiliateCode.status = 'active'` no nível da Action.
+11. **`venue_modules` e `corporation_modules` exigem unique constraints compostos** — `UNIQUE(venue_id, module_code)` e `UNIQUE(corporation_id, module_code)` para evitar duplicatas sob concorrência nos `updateOrCreate` das actions.
+12. **`venue_usage_records` exige unique constraint** — `UNIQUE(venue_id, module_code, period)` para evitar dupla contagem em jobs paralelos.
+13. **Cache Redis de módulos usa tags** — o `TenantConnectionResolver` deve usar `Cache::tags(['venue', $venue->id])` para permitir invalidação cross-process (workers de queue inclusos).
 
 ---
 
-## 13. Rastreio de Afiliados (base para futuro)
+## 13. Modelos de Cobrança Avançados
+
+### 13.1 Bundle Discount (desconto por profundidade de adoção)
+
+Corporations que contratam múltiplos módulos pagos recebem desconto automático sobre o total de módulos na fatura. O desconto é armazenado como `discount_value` nas tabelas de fatura e calculado pelo `SubscriptionCalculator`.
+
+| Módulos pagos ativos | Desconto sobre `modules_value` |
+|---|---|
+| 1–2 | 0% |
+| 3–5 | 10% |
+| 6+ | 20% |
+
+O campo `bundle_discount_pct decimal(5,2)` pode ser armazenado em `CorporationSubscription` para negociação customizada via plataforma, sobrescrevendo a tabela-padrão acima.
+
+### 13.2 Ciclo Anual com Desconto
+
+Campos adicionais sugeridos em `CorporationSubscription`:
+- `billing_period enum('monthly', 'annual')` — padrão `monthly`
+- `annual_discount_pct decimal(5,2)` — desconto aplicado ao valor anual (sugestão: equivalente a 2 meses gratis ≈16%)
+
+No ciclo anual, a fatura pode ser gerada mensalmente debitando de um saldo pré-pago, ou emitida uma única vez no período anual.
+
+> **Implementação futura.** A infraestrutura de `billing_period` não será implementada na Fase 1. Registrado aqui para guiar decisões de schema sem retrabalho.
+
+### 13.3 Freemium com Tier Gratuito
+
+O modelo de tiers já suporta um tier 0 com `flat_price = 0`, o que permite módulos gratuitos até determinado volume sem alteração estrutural. Exemplo:
+
+```php
+// KDS — gratuito até 100 pedidos/mês (sem mensalidade mínima)
+ModuleUsageTier::create([
+    'module_code' => ModuleCode::Kds->value,
+    'min_quantity' => 0,
+    'max_quantity' => 100,
+    'included_quantity' => 100,
+    'price_per_unit' => 0.00,
+    'flat_price' => 0.00,
+    'overage_price_per_unit' => 0.00,
+]);
+```
+
+Isso permite criar uma estratégia de **freemium por volume** a qualquer momento, apenas inserindo o tier zero no seeder/backoffice.
+
+### 13.4 Pay-as-you-go Puro
+
+> **Ideia futura.** Modelo sem mensalidade mínima, cobrando apenas por volume usado. Atrativo para venues pequenas/sazonais, mas inviável economicamente na fase atual por exigir ajuste rápido de capacidade de servidor e ausência de receita recorrente previsível. Registrado como referência para uma fase futura de expansão de mercado.
+
+---
+
+## 14. Rastreio de Afiliados (base para futuro)
 
 ### 13.1 Visão geral
 
@@ -1520,22 +1684,27 @@ $venueSubscription = VenueSubscription::create([
 
 ---
 
-## 14. Plano de Implementação Incremental
+## 15. Plano de Implementação Incremental
 
 ### Fase 1 — Fundação (semana 1)
-- [ ] Criar migrations: `module_catalogs`, `corporation_subscriptions`, `venue_subscriptions`, `corporation_modules`, `venue_modules`, `module_usage_tiers`, `module_role_permissions`, `venue_usage_records`, `venue_invoices`, `corporation_invoices`, `affiliate_codes`.
+- [ ] Criar migrations: `module_catalogs`, `corporation_subscriptions`, `venue_subscriptions`, `corporation_modules`, `venue_modules`, `module_usage_tiers`, `venue_usage_records`, `venue_invoices`, `corporation_invoices`, `payment_attempts`, `affiliate_codes`.
 - [ ] Adicionar `affiliate_code_id` nas migrations de `corporations`, `venues`, `corporation_subscriptions`, `venue_subscriptions`, `venue_invoices` e `corporation_invoices`.
+- [ ] Adicionar `grace_period_days`, `is_finalized`, `due_date`, `venue_subscription_id`, `corporation_subscription_id`, `gateway_payment_id`, `discount_value` nas migrations correspondentes.
+- [ ] Garantir unique constraints compostos: `UNIQUE(venue_id, module_code)` em `venue_modules`; `UNIQUE(corporation_id, module_code)` em `corporation_modules`; `UNIQUE(venue_id, module_code, period)` em `venue_usage_records`.
 - [ ] Criar Enums: `BillingMode`, `ModuleCode`, `ModuleBillingType`, `ModuleStatus`, `SubscriptionStatus`, `AffiliateCodeStatus`.
-- [ ] Criar Models e relacionamentos.
+- [ ] Criar Models e relacionamentos (com `SoftDeletes` em `VenueInvoice` e `CorporationInvoice`).
 - [ ] Criar seeders para módulos base e pagos e para códigos de afiliado de exemplo.
 - [ ] Criar middleware `RequireModule` e registrar alias `module`.
+- [ ] Criar `CorporationSubscription` automaticamente ao criar `Corporation` (trial, `billing.trial_days` dias, grace period configurável).
 
 ### Fase 2 — Permissionamento e Status Financeiro (semana 2)
 - [ ] Adicionar `hasActiveModule()` e `activeModules()` em `Corporation` / `Venue`.
-- [ ] Criar `BillingStatusService` e integrar ao `RequireModule`.
-- [ ] Adicionar `canAccessModule()` em `User`.
-- [ ] Criar Gate `module-access`.
-- [ ] Proteger rotas existentes (`menu`, `kitchen`, `orders/take`, etc.).
+- [ ] Criar `BillingStatusService` (bloqueia em `suspended` e `canceled`; `past_due` mantém acesso durante grace period).
+- [ ] Integrar `BillingStatusService` ao `RequireModule`.
+- [ ] Adicionar `canAccessModule()` em `User` (sem ModuleRolePermission — role verificado pelo `RequireRole` nas rotas).
+- [ ] Proteger rotas existentes (`menu`, `kitchen`, `orders/take`, etc.) com `module:` + `role:` conforme convenção da seção 2.9.
+- [ ] Criar jobs `ExpireTrialsJob` e `SuspendOverdueSubscriptionsJob` e registrar no scheduler (diário).
+- [ ] Criar job `MarkInvoicesOverdueJob` para marcar faturas vencidas.
 - [ ] Adicionar `tenant.modules` nas shared props do Inertia.
 - [ ] Criar composable `useModules()` no Vue.
 
@@ -1565,7 +1734,7 @@ $venueSubscription = VenueSubscription::create([
 
 ---
 
-## 14. Referência de Arquivos
+## 16. Referência de Arquivos
 
 | Arquivo | Responsabilidade |
 |---|---|
@@ -1575,25 +1744,28 @@ $venueSubscription = VenueSubscription::create([
 | `app/Enums/ModuleStatus.php` | Status do módulo contratado |
 | `app/Enums/SubscriptionStatus.php` | Status da subscription |
 | `app/Models/Tenant/ModuleCatalog.php` | Catálogo de produtos |
-| `app/Models/Tenant/CorporationSubscription.php` | Subscription da corporation (billing_mode) |
+| `app/Models/Tenant/CorporationSubscription.php` | Subscription da corporation (billing_mode, grace_period_days) |
 | `app/Models/Tenant/VenueSubscription.php` | Subscription de faturamento por venue |
 | `app/Models/Tenant/CorporationModule.php` | Módulos habilitados na corporation (preço unitário) |
 | `app/Models/Tenant/VenueModule.php` | Módulos ativos por venue |
 | `app/Models/Tenant/ModuleUsageTier.php` | Faixas de preço, limite incluso e excedente |
 | `app/Models/Tenant/VenueUsageRecord.php` | Consumo mensal por venue |
-| `app/Models/Tenant/ModuleRolePermission.php` | Permissões por módulo/role |
-| `app/Models/Tenant/VenueInvoice.php` | Fatura por venue |
-| `app/Models/Tenant/CorporationInvoice.php` | Fatura unificada da corporation |
+| `app/Models/Tenant/VenueInvoice.php` | Fatura por venue (SoftDeletes) |
+| `app/Models/Tenant/CorporationInvoice.php` | Fatura unificada da corporation (SoftDeletes) |
+| `app/Models/Tenant/PaymentAttempt.php` | Tentativas de cobrança e webhooks do gateway |
 | `app/Models/Tenant/AffiliateCode.php` | Código fixo de afiliado para rastreio |
 | `app/Enums/AffiliateCodeStatus.php` | Status do código de afiliado |
 | `app/Http/Middleware/RequireModule.php` | Middleware de bloqueio por módulo + status financeiro |
-| `app/Services/Module/ModuleAccessService.php` | Verifica acesso do usuário a módulo/ability |
-| `app/Services/Billing/BillingStatusService.php` | Resolve bloqueio conforme `billing_mode` |
-| `app/Services/Billing/SubscriptionCalculator.php` | Calcula fatura mensal |
+| `app/Services/Billing/BillingStatusService.php` | Resolve bloqueio conforme `billing_mode` e grace period |
+| `app/Services/Billing/SubscriptionCalculator.php` | Calcula fatura mensal (com idempotência por `is_finalized`) |
 | `app/Actions/Platform/EnableCorporateModuleAction.php` | Habilita módulo na corporation |
-| `app/Actions/Platform/ActivateVenueModuleAction.php` | Ativa módulo em uma venue |
-| `app/Actions/Platform/DeactivateVenueModuleAction.php` | Remove módulo de uma venue |
+| `app/Actions/Platform/ActivateVenueModuleAction.php` | Ativa módulo em uma venue (invalida cache Redis) |
+| `app/Actions/Platform/DeactivateVenueModuleAction.php` | Remove módulo de uma venue (invalida cache Redis) |
 | `app/Actions/Platform/DisableCorporateModuleAction.php` | Desabilita módulo na corporation |
-| `app/Providers/AuthServiceProvider.php` | Gate `module-access` |
+| `app/Actions/Platform/ActivateSubscriptionAction.php` | Ativa subscription via webhook de pagamento |
+| `app/Actions/Platform/CancelSubscriptionAction.php` | Cancela subscription explicitamente via plataforma |
+| `app/Jobs/ExpireTrialsJob.php` | Transiciona trials expirados para `past_due` (scheduler diário) |
+| `app/Jobs/SuspendOverdueSubscriptionsJob.php` | Suspende subscriptions após grace period expirado (scheduler diário) |
+| `app/Jobs/MarkInvoicesOverdueJob.php` | Marca faturas vencidas sem pagamento (scheduler diário) |
 | `app/Http/Middleware/HandleInertiaRequests.php` | Shared prop `tenant.modules` |
 | `resources/js/composables/useModules.ts` | Helper Vue para módulos |
