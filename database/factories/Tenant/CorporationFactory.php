@@ -3,7 +3,6 @@
 namespace Database\Factories\Tenant;
 
 use App\Models\Tenant\Corporation;
-use App\Models\Tenant\PlanCatalog;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -23,10 +22,9 @@ class CorporationFactory extends Factory
             'tax_id' => fake()->numerify('##.###.###/####-##'),
             'email' => fake()->companyEmail(),
             'contact_phone' => fake()->phoneNumber(),
-            'plan_catalog_id' => PlanCatalog::factory(),
-            'plan_name' => 'Pro',
-            'subscription_value' => 199.00,
             'active' => true,
+            'self_connection' => 'operation_default_1',
+            'is_dedicated' => false,
         ];
     }
 }

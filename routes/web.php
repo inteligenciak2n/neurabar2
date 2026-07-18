@@ -95,10 +95,10 @@ Route::middleware([
     'verified',
     'tenant',
 ])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard')->middleware('module:menu');
 
     // Menu — edit routes restricted to managers; products page accessible by all
-    Route::prefix('menu')->name('menu.')->middleware(['role:owner,general_manager'])->group(function () {
+    Route::prefix('menu')->name('menu.')->middleware(['module:menu', 'role:owner,general_manager'])->group(function () {
         Route::get('/', [CategoryController::class, 'index'])->name('index');
         Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
         Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
@@ -134,7 +134,7 @@ Route::middleware([
     });
 
     // Attendances
-    Route::prefix('attendances')->name('attendances.')->group(function () {
+    Route::prefix('attendances')->name('attendances.')->middleware('module:menu')->group(function () {
         Route::get('/', [AttendanceController::class, 'index'])->name('index');
         Route::post('/', [AttendanceController::class, 'store'])->name('store');
         Route::get('/{attendance}', [AttendanceController::class, 'show'])->name('show');
@@ -144,22 +144,22 @@ Route::middleware([
     });
 
     // Order Taker
-    Route::get('/orders/take/{attendance}', [OrderController::class, 'create'])->name('orders.take');
+    Route::get('/orders/take/{attendance}', [OrderController::class, 'create'])->name('orders.take')->middleware('module:taker');
 
     // Kitchen KDS
-    Route::prefix('kitchen')->name('kitchen.')->group(function () {
+    Route::prefix('kitchen')->name('kitchen.')->middleware('module:kds')->group(function () {
         Route::get('/kds', [KdsController::class, 'index'])->name('kds');
         Route::put('/items/{item}/status', [KdsController::class, 'updateItemStatus'])->name('items.status');
     });
 
     // Payment
-    Route::prefix('payment')->name('payment.')->group(function () {
+    Route::prefix('payment')->name('payment.')->middleware('module:menu')->group(function () {
         Route::get('/{attendance}', [PaymentController::class, 'show'])->name('show');
         Route::post('/{attendance}', [PaymentController::class, 'store'])->name('store');
     });
 
     // Support — available to all authenticated users with a venue context
-    Route::prefix('support')->name('support.')->group(function () {
+    Route::prefix('support')->name('support.')->middleware('module:menu')->group(function () {
         Route::get('/', [SupportDashboardController::class, 'index'])->name('dashboard');
 
         Route::prefix('tickets')->name('tickets.')->group(function () {
@@ -181,7 +181,7 @@ Route::middleware([
     });
 
     // Settings — owner or general manager only
-    Route::prefix('settings')->name('settings.')->middleware(['role:owner,general_manager'])->group(function () {
+    Route::prefix('settings')->name('settings.')->middleware(['module:menu', 'role:owner,general_manager'])->group(function () {
         Route::get('/', fn () => Inertia::render('Settings/Index'))->name('index');
 
         Route::get('/venue', [VenueController::class, 'edit'])->name('venue');
@@ -225,6 +225,7 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
     'tenant',
+    'module:menu',
     'role:owner,general_manager',
 ])->prefix('corporation')->name('corporation.')->group(function () {
     Route::get('/dashboard', [CorporationDashboardController::class, 'index'])->name('dashboard');

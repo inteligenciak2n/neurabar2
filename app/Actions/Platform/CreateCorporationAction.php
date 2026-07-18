@@ -3,17 +3,18 @@
 namespace App\Actions\Platform;
 
 use App\Actions\Corporation\CreateVenueAction;
-use App\Enums\UserRole;
+use App\Actions\Fortify\CreateNewUser;
 use App\Jobs\Platform\SendWelcomeEmailJob;
 use App\Models\Tenant\Corporation;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class CreateCorporationAction
 {
-    public function __construct(private readonly CreateVenueAction $createVenueAction) {}
+    public function __construct(
+        private readonly CreateVenueAction $createVenueAction,
+        private readonly CreateNewUser $createNewUser,
+    ) {}
 
     public function execute(array $data): Corporation
     {
@@ -26,7 +27,7 @@ class CreateCorporationAction
                 'active' => true,
             ]);
 
-            $venue = $this->createVenueAction->execute($corporation, [
+            $this->createVenueAction->execute($corporation, [
                 'name' => $data['name'],
                 'city' => $data['city'] ?? null,
                 'state' => $data['state'] ?? null,
@@ -35,13 +36,12 @@ class CreateCorporationAction
 
             $temporaryPassword = Str::random(12);
 
-            $owner = User::create([
+            $owner = $this->createNewUser->create([
                 'name' => $data['owner_name'],
                 'email' => $data['owner_email'],
-                'password' => Hash::make($temporaryPassword),
-                'role' => UserRole::Owner,
-                'corporation_id' => $corporation->id,
-                'venue_id' => $venue->id,
+                'password' => $temporaryPassword,
+                'password_confirmation' => $temporaryPassword,
+                'terms' => true,
             ]);
 
             SendWelcomeEmailJob::dispatch($corporation, $owner, $temporaryPassword);

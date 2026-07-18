@@ -2,7 +2,11 @@
 
 namespace App\Actions\Fortify;
 
+use App\Enums\BillingMode;
+use App\Enums\ModuleCode;
+use App\Enums\ModuleStatus;
 use App\Enums\ServiceLocationType;
+use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Models\Menu\Category;
 use App\Models\Menu\Combo;
@@ -15,8 +19,11 @@ use App\Models\Settings\PreparationStatus;
 use App\Models\Settings\ServiceLocation;
 use App\Models\Settings\VenueSettings;
 use App\Models\Tenant\Corporation;
+use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\PlanCatalog;
 use App\Models\Tenant\Venue;
+use App\Models\Tenant\VenueModule;
+use App\Models\Tenant\VenueSubscription;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -49,7 +56,7 @@ class CreateUserOwnerDefinitions
     {
         $plan = PlanCatalog::firstOrCreate(
             ['code' => 'pro'],
-            ['name' => 'Pro', 'monthly_price' => 99.90, 'active' => true]
+            ['name' => 'Pro', 'monthly_price' => 99.90, 'active' => true, 'plan_type' => 'shared']
         );
 
         $corporation = Corporation::create([
@@ -58,12 +65,21 @@ class CreateUserOwnerDefinitions
             'name' => 'Test Corp',
             'email' => 'corp@test.com',
             'contact_phone' => '11999990000',
-            'plan_catalog_id' => $plan->id,
-            'plan_name' => $plan->name,
-            'subscription_value' => $plan->monthly_price,
             'active' => true,
             'self_connection' => $operationalConnection,
             'is_dedicated' => false,
+        ]);
+
+        $corporationSubscription = CorporationSubscription::create([
+            'corporation_id' => $corporation->id,
+            'plan_catalog_id' => $plan->id,
+            'billing_mode' => BillingMode::PerVenue,
+            'status' => SubscriptionStatus::Trial,
+            'billing_day' => config('billing.default_billing_day', 1),
+            'grace_period_days' => config('billing.grace_period_days', 3),
+            'started_at' => now(),
+            'trial_ends_at' => now()->addDays(config('billing.trial_days', 14)),
+            'currency' => config('billing.currency', 'BRL'),
         ]);
 
         $venue = Venue::create([
@@ -76,6 +92,25 @@ class CreateUserOwnerDefinitions
             'state' => 'SP',
             'timezone' => 'America/Sao_Paulo',
             'active' => true,
+        ]);
+
+        VenueSubscription::create([
+            'venue_id' => $venue->id,
+            'corporation_subscription_id' => $corporationSubscription->id,
+            'plan_catalog_id' => $plan->id,
+            'status' => SubscriptionStatus::Trial,
+            'base_value' => $plan->monthly_price,
+            'total_value' => $plan->monthly_price,
+            'started_at' => now(),
+            'trial_ends_at' => $corporationSubscription->trial_ends_at,
+        ]);
+
+        VenueModule::create([
+            'venue_id' => $venue->id,
+            'module_code' => ModuleCode::Menu->value,
+            'status' => ModuleStatus::Active,
+            'quantity' => 1,
+            'started_at' => now(),
         ]);
 
         // Registra o contexto operacional para que HasOperationalConnection use a conexão correta
@@ -189,7 +224,7 @@ class CreateUserOwnerDefinitions
         $combo = [
             'X-Bacon',
             'Batata Frita',
-            'Refrigerante Lata',            
+            'Refrigerante Lata',
         ];
 
         $productsCombo = [];
@@ -223,7 +258,7 @@ class CreateUserOwnerDefinitions
 
         $modifier = ModifierGroup::create([
             'venue_id' => $menu->venue_id,
-            'name' => "Queijo Extra",
+            'name' => 'Queijo Extra',
             'required' => false,
             'multiple_selection' => true,
         ]);

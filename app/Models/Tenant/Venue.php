@@ -2,6 +2,8 @@
 
 namespace App\Models\Tenant;
 
+use App\Enums\ModuleStatus;
+use App\Enums\SubscriptionStatus;
 use App\Models\Menu\Menu;
 use App\Models\Orders\Attendance;
 use App\Models\Settings\AttendanceChannel;
@@ -11,6 +13,7 @@ use App\Models\Settings\ServiceLocation;
 use App\Models\Settings\VenueSettings;
 use App\Models\User;
 use App\Models\UserVenue;
+use App\Services\VenueModuleCache;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Collection;
 
 class Venue extends Model
 {
@@ -119,6 +123,41 @@ class Venue extends Model
     public function attendanceChannels(): HasMany
     {
         return $this->hasMany(AttendanceChannel::class)->orderBy('sort_order');
+    }
+
+    public function subscription(): HasOne
+    {
+        return $this->hasOne(VenueSubscription::class)
+            ->whereIn('status', [SubscriptionStatus::Active, SubscriptionStatus::Trial, SubscriptionStatus::PastDue])
+            ->latest('started_at');
+    }
+
+    public function modules(): HasMany
+    {
+        return $this->hasMany(VenueModule::class);
+    }
+
+    public function activeModules(): array
+    {
+        return VenueModuleCache::remember($this, function (): array {
+            return $this->modules()
+                ->whereIn('status', [ModuleStatus::Active, ModuleStatus::Trial])
+                ->where(function ($query): void {
+                    $query->whereNull('ended_at')->orWhere('ended_at', '>=', now());
+                })
+                ->pluck('module_code')
+                ->all();
+        });
+    }
+
+    public function activeModuleCodes(): Collection
+    {
+        return collect($this->activeModules());
+    }
+
+    public function usageRecords(): HasMany
+    {
+        return $this->hasMany(VenueUsageRecord::class);
     }
 
     public function menus(): HasMany

@@ -12,13 +12,15 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
 
-        //adiciona defaults da aplicação, como planos, estações, status, etc
+        // adiciona defaults da aplicação, como planos, estações, status, etc
         $this->call([
             PlanCatalogsSeeder::class,
+            ModuleCatalogsSeeder::class,
+            AffiliateCodesSeeder::class,
             SupportDatabaseSeeder::class,
         ]);
 
-        $action = new CreateNewUserPlatform();
+        $action = new CreateNewUserPlatform;
         $action->create([
             'name' => 'Rodrigo Admin',
             'email' => 'rdgo.serafim@gmail.com',
@@ -29,7 +31,7 @@ class DatabaseSeeder extends Seeder
             'active' => true,
         ]);
 
-        $action = new CreateNewUser();
+        $action = new CreateNewUser;
         $action->create([
             'name' => 'Jose Owner',
             'email' => 'jose.owner@test.com',

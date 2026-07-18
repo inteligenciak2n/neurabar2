@@ -16,8 +16,11 @@ class PlanAssignmentController extends Controller
         $validated = $request->validate([
             'plan_catalog_id' => ['required', 'uuid', 'exists:plan_catalogs,id'],
             'subscription_value' => ['required', 'numeric', 'min:0'],
-            'plan_start_date' => ['required', 'date'],
-            'plan_end_date' => ['nullable', 'date', 'after:plan_start_date'],
+            'billing_mode' => ['required', 'in:per_venue,unified'],
+            'billing_day' => ['required', 'integer', 'min:1', 'max:28'],
+            'grace_period_days' => ['required', 'integer', 'min:0', 'max:30'],
+            'started_at' => ['required', 'date'],
+            'trial_ends_at' => ['nullable', 'date', 'after_or_equal:started_at'],
         ]);
 
         $plan = PlanCatalog::findOrFail($validated['plan_catalog_id']);

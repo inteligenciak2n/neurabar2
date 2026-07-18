@@ -4,10 +4,12 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Enums\ModuleCode;
 use App\Enums\ProfileEnum;
 use App\Enums\UserRole;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\Venue;
+use App\Services\Billing\BillingStatusService;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -131,5 +133,24 @@ class User extends Authenticatable
             session(['locale' => $this->lang]);
             app()->setLocale($this->lang);
         }
+    }
+
+    public function canAccessModule(ModuleCode $module): bool
+    {
+        $venue = $this->currentVenue;
+
+        if (! $venue) {
+            return false;
+        }
+
+        if (! in_array($module->value, $venue->activeModules(), true)) {
+            return false;
+        }
+
+        if (BillingStatusService::isBlocked($venue)) {
+            return false;
+        }
+
+        return true;
     }
 }

@@ -6,8 +6,28 @@
 
 ---
 
-## 1. Visão Geral
+## Progresso de Implementação
 
+**Status atual:** Fases 1 e 2 concluídas em 18 de julho de 2026.
+
+- **Fase 1 — Fundação:** migrations, enums, models, seeders, factories, criação automática de `CorporationSubscription`/`VenueSubscription` e módulo `menu` default em toda venue.
+- **Fase 2 — Permissionamento e Status Financeiro:** middleware `RequireModule`, `BillingStatusService`, cache de módulos (`VenueModuleCache`), proteção de rotas operacionais com `module:`, jobs diários (`ExpireTrialsJob`, `SuspendOverdueSubscriptionsJob`, `MarkInvoicesOverdueJob`), shared prop `tenant.modules` e composable Vue `useModules.ts`.
+- **Actions de gestão comercial:** `EnableCorporateModuleAction`, `DisableCorporateModuleAction`, `ActivateVenueModuleAction`, `DeactivateVenueModuleAction`.
+- **Testes:** cobertura de feature para `BillingStatusService`, jobs de billing, `RequireModule` e ativação de módulos.
+- **Ajustes de schema:** ordem das migrations corrigida para satisfazer foreign keys; `venue_subscription_id` em `venue_invoices` tornou-se nullable para suportar faturas de agrupamento.
+
+Decisões arquiteturais consolidadas no arquivo [tech-plan.md](tech-plan.md).
+
+Pontos de atenção ativos:
+- `PlanCatalog` existente é reutilizado como pacote base por venue.
+- Campos legacy de `corporations` (`plan_catalog_id`, `plan_name`, `subscription_value`, `plan_start_date`, `plan_end_date`) foram removidos.
+- Cardápio (`menu`) é criado como `VenueModule` default em toda venue.
+- Cache de módulos ativos usa Redis com invalidação futura nas actions.
+- Integração com Asaas será tratada em fase posterior; Fases 1 e 2 preparam schema e jobs.
+
+---
+
+## 1. Visão Geral
 O NeuraBar é um SaaS multi-tenant onde uma `Corporation` pode ter uma ou mais `Venue`s. Os módulos são contratados pela `Corporation`, mas a **cobrança é sempre proporcional à quantidade de venues**. Cada venue pode ter módulos ativos independentes, mas o preço unitário é negociado no nível corporate.
 
 A `Corporation` define ainda o **modo de faturamento** (`billing_mode`):

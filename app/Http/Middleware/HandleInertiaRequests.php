@@ -74,6 +74,26 @@ class HandleInertiaRequests extends Middleware
                         ->map(fn ($v) => ['id' => $v->id, 'name' => $v->name, 'role' => $v->pivot->role instanceof UserRole ? $v->pivot->role->value : $v->pivot->role])
                         ->toArray();
                 },
+                'tenant' => function () use ($request): ?array {
+                    $user = $request->user();
+
+                    if (! $user instanceof User) {
+                        return null;
+                    }
+
+                    $venue = $user->activeVenue();
+
+                    if (! $venue) {
+                        return null;
+                    }
+
+                    return [
+                        'id' => $venue->id,
+                        'name' => $venue->name,
+                        'modules' => $venue->activeModules(),
+                        'role' => $user->currentVenueRole()?->value,
+                    ];
+                },
             ],
             'venue_switched' => fn () => $request->session()->pull('venue_switched', false),
             'language' => TranslationService::getLanguagesDefinitions($request),

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RequireModule;
 use App\Http\Middleware\RequirePlatformProfile;
 use App\Http\Middleware\RequirePlatformRole;
 use App\Http\Middleware\RequireRole;
@@ -34,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'tenant' => SetVenueContext::class,
             'role' => RequireRole::class,
+            'module' => RequireModule::class,
             'platform_profile' => RequirePlatformProfile::class,
             'platform_role' => RequirePlatformRole::class,
         ]);
