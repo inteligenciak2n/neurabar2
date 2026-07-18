@@ -57,6 +57,13 @@ class ModuleActivationActionsTest extends TestCase
     public function test_activate_venue_module_action_activates_module(): void
     {
         $venue = Venue::factory()->create();
+        $corporation = $venue->corporation;
+
+        CorporationModule::factory()->create([
+            'corporation_id' => $corporation->id,
+            'module_code' => ModuleCode::Kds->value,
+            'status' => ModuleStatus::Active,
+        ]);
 
         $action = new ActivateVenueModuleAction;
         $module = $action->execute($venue, ModuleCode::Kds->value, 2);

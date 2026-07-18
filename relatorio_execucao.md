@@ -19,18 +19,35 @@
 - [x] Escrever testes de feature para billing, jobs, middleware e actions de módulos.
 - [x] Atualizar `TestCase::loginAs` para garantir subscription e módulo `menu` default em testes operacionais.
 - [x] Atualizar `docs/module-subscription-architecture.md` com progresso concluído.
+- [x] Corrigir `CreateCorporationAction` para criar owner manualmente, vincular `owner_id` e evitar duplicação de corporation/venue.
+- [x] Corrigir `CorporationController` para carregar `subscription.planCatalog` em vez de `planCatalog` removido.
+- [x] Atualizar `AssignPlanToCorporationAction` para aplicar todos os campos validados e criar `VenueSubscription` quando necessário.
+- [x] Invalidar `VenueModuleCache` nas actions de ativação/desativação de módulos.
+- [x] Validar `ModuleCode` e `CorporationModule` em `ActivateVenueModuleAction`.
+- [x] Adicionar verificação de `CorporationModule` no middleware `RequireModule`.
+- [x] Considerar `ended_at` em `BillingStatusService` e relações `subscription()` de `Corporation` e `Venue`.
+- [x] Corrigir `SuspendOverdueSubscriptionsJob` para usar `grace_period_days` da `CorporationSubscription` ao suspender `VenueSubscription`.
+- [x] Separar `overdue` de `is_finalized` em `MarkInvoicesOverdueJob`.
+- [x] Atualizar `MetricsService`, frontend (`Edit.vue`, `Index.vue`) e testes antigos para não referenciar campos removidos de `corporations`.
+- [x] Atualizar `SchemaIntegrityTest` para refletir schema atual.
 - [x] Rodar `vendor/bin/sail bin pint --dirty --format agent` com sucesso.
 
 ## Cobertura de Testes
-- **Cobertura final:** foco em feature tests das Fases 1 e 2.
-- **Testes criados:** 16 testes de feature (nenhum unitário adicional necessário).
+- **Cobertura final:** suite completa de feature + unit tests.
+- **Testes criados/atualizados:** 16+ testes de feature (Fases 1 e 2) + testes antigos ajustados.
   - `tests/Feature/Billing/BillingStatusServiceTest.php`
   - `tests/Feature/Billing/Jobs/ExpireTrialsJobTest.php`
   - `tests/Feature/Billing/Jobs/SuspendOverdueSubscriptionsJobTest.php`
   - `tests/Feature/Billing/Jobs/MarkInvoicesOverdueJobTest.php`
   - `tests/Feature/Module/RequireModuleMiddlewareTest.php`
   - `tests/Feature/Module/ModuleActivationActionsTest.php`
-- **Resultado:** 16 passed (22 assertions).
+  - `tests/Feature/Platform/CorporationTest.php` (atualizado)
+  - `tests/Feature/Platform/MetricsTest.php` (atualizado)
+  - `tests/Feature/Platform/PlanTest.php` (atualizado)
+  - `tests/Feature/Auth/TenantContextTest.php` (atualizado)
+  - `tests/Feature/Kitchen/KdsTest.php` (atualizado)
+  - `tests/Feature/Migrations/SchemaIntegrityTest.php` (atualizado)
+- **Resultado final:** 268 passed, 7 skipped, 786 assertions.
 
 ## Arquivos Modificados
 ### Criados
@@ -94,30 +111,43 @@
 - `tests/Feature/Module/RequireModuleMiddlewareTest.php`
 
 ### Modificados
+- `app/Actions/Corporation/ActivateVenueModuleAction.php`
 - `app/Actions/Corporation/CreateVenueAction.php`
+- `app/Actions/Corporation/DeactivateVenueModuleAction.php`
 - `app/Actions/Fortify/CreateUserOwnerDefinitions.php`
 - `app/Actions/Platform/AssignPlanToCorporationAction.php`
 - `app/Actions/Platform/CreateCorporationAction.php`
+- `app/Http/Controllers/Platform/CorporationController.php`
 - `app/Http/Controllers/Platform/PlanAssignmentController.php`
 - `app/Http/Middleware/HandleInertiaRequests.php`
+- `app/Http/Middleware/RequireModule.php`
+- `app/Jobs/Billing/MarkInvoicesOverdueJob.php`
+- `app/Jobs/Billing/SuspendOverdueSubscriptionsJob.php`
 - `app/Models/Tenant/Corporation.php`
+- `app/Models/Tenant/CorporationSubscription.php`
 - `app/Models/Tenant/Venue.php`
 - `app/Models/User.php`
+- `app/Services/Billing/BillingStatusService.php`
+- `app/Services/Platform/MetricsService.php`
 - `bootstrap/app.php`
 - `database/factories/Tenant/CorporationFactory.php`
 - `database/factories/Tenant/VenueFactory.php`
 - `database/seeders/DatabaseSeeder.php`
 - `docs/module-subscription-architecture.md`
+- `resources/js/Pages/Platform/Corporations/Edit.vue`
+- `resources/js/Pages/Platform/Corporations/Index.vue`
 - `routes/console.php`
 - `routes/web.php`
 - `tests/TestCase.php`
 
 ## Padrões Aplicados
 - **Repository / Service Layer:** `BillingStatusService` centraliza regras de bloqueio financeiro.
-- **Middleware Pipeline:** `RequireModule` compõe verificação de tenant, billing e módulo ativo.
-- **Cache Invalidation Pattern:** `VenueModuleCache` com chave por venue (invalidação a ser acoplada nas actions na próxima fase).
+- **Middleware Pipeline:** `RequireModule` compõe verificação de tenant, billing, `CorporationModule` e `VenueModule` ativos.
+- **Cache Invalidation Pattern:** `VenueModuleCache` é invalidado em todas as actions de ativação/desativação de módulos.
 - **State Machine:** jobs diários executam transições determinísticas de `SubscriptionStatus`.
 - **Soft Deletes em Faturas:** `VenueInvoice` e `CorporationInvoice` usam `SoftDeletes`.
+- **Validação Explícita:** `ActivateVenueModuleAction` valida `ModuleCode` e presença do módulo no plano da corporation.
+- **Atomicidade:** `AssignPlanToCorporationAction` e `CreateCorporationAction` operam dentro de transações de banco.
 
 ## Decisões Arquiteturais Seguidas
 - Reutilização do `PlanCatalog` existente como pacote base por venue.
@@ -126,6 +156,10 @@
 - Cache de módulos ativos por venue via Redis.
 - Aplicação antecipada de `module:` nas rotas operacionais na Fase 2.
 - Integração com Asaas adiada para fase futura; schema e jobs preparados.
+- Criação de owner via `User::create` direto na `CreateCorporationAction`, sem disparar `CreateUserOwnerDefinitions`, evitando duplicação de corporation/venue.
+- `CorporationController` expõe `subscription.planCatalog` para o frontend, removendo dependência de campos legacy.
+- `BillingStatusService` considera `ended_at` tanto em modo unificado quanto per-venue.
+- `AssignPlanToCorporationAction` cria `VenueSubscription` para venues sem subscription quando um plano é atribuído.
 
 ## Overrides do Desenvolvedor
 - Nenhum override registrado nesta execução.
@@ -135,12 +169,18 @@
 - **Migration duplicada:** `add_affiliate_code_id_to_subscriptions_and_invoices_table` duplicava colunas já presentes nas criações das tabelas. Resolvido removendo-a.
 - **`venue_subscription_id` not null:** impedia faturas de agrupamento sem subscription vinculada. Resolvido tornando nullable.
 - **`CreateUserOwnerDefinitions.php` truncado:** arquivo havia ficado incompleto durante edições anteriores. Resolvido restaurando do git e reaplicando mudanças do novo modelo.
-- **Testes existentes quebrados por `module:menu`:** `TestCase::loginAs` foi atualizado para garantir subscription ativa e módulo `menu` default, refletindo o estado real de uma venue.
+- **Testes existentes quebrados por `module:menu`:** `TestCase::loginAs` foi atualizado para garantir subscription ativa, `CorporationModule` e `VenueModule` `menu` default, refletindo o estado real de uma venue.
+- **Regressão em `CreateCorporationAction`:** uso de `CreateNewUser` disparava `CreateUserOwnerDefinitions`, criando corporation/venue duplicadas. Resolvido criando owner manualmente e vinculando `owner_id`.
+- **Campos legacy no frontend e testes:** `plan_catalog_id`, `subscription_value`, `plan_start_date`, `plan_end_date` foram removidos de `corporations`. Frontend e testes antigos foram atualizados para usar `subscription`.
+- **Cache de módulos não invalidado:** `VenueModuleCache::forget()` passou a ser chamado nas actions de ativação/desativação.
+- **Testes com `--env=testing`:** o flag `--env=testing` carregava `.env` com `APP_ENV=local`, fazendo CSRF falhar. Suite deve ser executada sem esse flag (phpunit.xml já define `APP_ENV=testing`).
 
 ## Orientações para Code Review
 - Validar se a ordem das migrations não quebra em ambientes já existentes (como não há produção, `db:migrate-all --fresh --seed` é aceitável).
-- Revisar `BillingStatusService::isBlocked` para garantir que `past_due` nunca bloqueia e que `unified`/`per_venue` estão corretos.
-- Verificar se `module:` foi aplicado em todas as rotas do apêndice do tech-plan.
+- Revisar `BillingStatusService::isBlocked` para garantir que `past_due` nunca bloqueia, que `ended_at` é considerado e que `unified`/`per_venue` estão corretos.
+- Verificar se `module:` foi aplicado em todas as rotas do apêndice do tech-plan e se `/kitchen/monitor` permanece público conforme necessidade de negócio.
 - Confirmar que `CreateUserOwnerDefinitions`, `CreateVenueAction` e `CreateCorporationAction` criam subscription + módulo `menu` consistentemente.
-- Checar se `VenueModuleCache` precisa de invalidação explícita nas actions de ativação/desativação na Fase 3.
-- Rodar suite completa de testes e investigar falhas pré-existentes em `Support/TicketTest`, `Settings/VenueTest`, `Settings/VenueSettingsTest` e `Settings/InviteUserTest`, que parecem independentes das Fases 1 e 2.
+- Validar que `VenueModuleCache` é invalidado em todas as actions de ativação/desativação de módulos.
+- Revisar `ActivateVenueModuleAction` para garantir que a validação de `CorporationModule` não impede fluxos legítimos de ativação.
+- Rodar suite completa de testes com `vendor/bin/sail artisan test` (sem `--env=testing`).
+- Atenção: `RefreshAllDatabases` pode deixar resíduos entre testes quando operações escapam da transação (ex: jobs sync). O MetricsTest foi tornado robusto a isso, mas um refactor futuro do trait pode ser necessário.

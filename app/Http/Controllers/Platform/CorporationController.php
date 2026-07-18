@@ -17,7 +17,7 @@ class CorporationController extends Controller
     {
         $corporations = Corporation::query()
             ->when(request('search'), fn ($q, $s) => $q->where('name', 'like', "%{$s}%")->orWhere('email', 'like', "%{$s}%"))
-            ->with('planCatalog:id,name')
+            ->with(['subscription.planCatalog:id,name'])
             ->paginate(20)
             ->withQueryString();
 
@@ -42,7 +42,7 @@ class CorporationController extends Controller
 
     public function edit(Corporation $corporation): Response
     {
-        $corporation->load('planCatalog:id,name', 'venues:id,name,active,corporation_id');
+        $corporation->load('subscription.planCatalog:id,name', 'venues:id,name,active,corporation_id');
 
         return Inertia::render('Platform/Corporations/Edit', [
             'corporation' => $corporation,

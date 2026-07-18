@@ -7,6 +7,7 @@ use App\Enums\ModuleStatus;
 use App\Enums\ProfileEnum;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
+use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueModule;
@@ -67,6 +68,14 @@ abstract class TestCase extends BaseTestCase
                 'venue_id' => $venue->id,
                 'corporation_subscription_id' => $subscription->id,
                 'status' => SubscriptionStatus::Active,
+            ]);
+        }
+
+        if (! $venue->corporation->modules()->where('module_code', ModuleCode::Menu->value)->exists()) {
+            CorporationModule::factory()->create([
+                'corporation_id' => $venue->corporation_id,
+                'module_code' => ModuleCode::Menu->value,
+                'status' => ModuleStatus::Active,
             ]);
         }
 

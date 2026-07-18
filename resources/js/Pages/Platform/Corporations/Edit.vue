@@ -16,10 +16,13 @@ const form = useForm({
 });
 
 const planForm = useForm({
-    plan_catalog_id: props.corporation.plan_catalog_id ?? '',
-    subscription_value: props.corporation.subscription_value ?? '',
-    plan_start_date: props.corporation.plan_start_date ?? '',
-    plan_end_date: props.corporation.plan_end_date ?? '',
+    plan_catalog_id: props.corporation.subscription?.plan_catalog_id ?? '',
+    subscription_value: props.corporation.subscription?.base_value ?? '',
+    billing_mode: props.corporation.subscription?.billing_mode ?? 'per_venue',
+    billing_day: props.corporation.subscription?.billing_day ?? 1,
+    grace_period_days: props.corporation.subscription?.grace_period_days ?? 3,
+    started_at: props.corporation.subscription?.started_at ?? '',
+    trial_ends_at: props.corporation.subscription?.trial_ends_at ?? '',
 });
 
 const submit = () => {
@@ -85,12 +88,27 @@ const submitPlan = () => {
                         <input v-model="planForm.subscription_value" type="number" step="0.01" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Plan Start Date') }}</label>
-                        <input v-model="planForm.plan_start_date" type="date" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Billing Mode') }}</label>
+                        <select v-model="planForm.billing_mode" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
+                            <option value="per_venue">{{ __('Per Venue') }}</option>
+                            <option value="unified">{{ __('Unified') }}</option>
+                        </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Plan End Date') }}</label>
-                        <input v-model="planForm.plan_end_date" type="date" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Billing Day') }}</label>
+                        <input v-model="planForm.billing_day" type="number" min="1" max="28" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Grace Period (days)') }}</label>
+                        <input v-model="planForm.grace_period_days" type="number" min="0" max="30" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Plan Start Date') }}</label>
+                        <input v-model="planForm.started_at" type="date" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Trial Ends At') }}</label>
+                        <input v-model="planForm.trial_ends_at" type="date" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
                     </div>
                 </div>
                 <div class="flex justify-end">

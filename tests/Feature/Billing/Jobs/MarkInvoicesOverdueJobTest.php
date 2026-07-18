@@ -29,7 +29,7 @@ class MarkInvoicesOverdueJobTest extends TestCase
         $this->assertDatabaseHas('venue_invoices', [
             'id' => $invoice->id,
             'status' => 'overdue',
-            'is_finalized' => true,
+            'is_finalized' => false,
         ]);
     }
 
@@ -49,7 +49,7 @@ class MarkInvoicesOverdueJobTest extends TestCase
         $this->assertDatabaseHas('corporation_invoices', [
             'id' => $invoice->id,
             'status' => 'overdue',
-            'is_finalized' => true,
+            'is_finalized' => false,
         ]);
     }
 }

@@ -23,10 +23,16 @@ class RequireModule
             abort(403, 'Acesso suspenso por questões de faturamento.');
         }
 
+        $corporation = $venue->corporation;
+
+        if (! $corporation?->hasActiveModule($module)) {
+            abort(403, 'Este módulo não está contratado para esta conta.');
+        }
+
         $activeModules = $venue->activeModules();
 
         if (! in_array($module->value, $activeModules, true)) {
-            abort(403, 'Este módulo não está contratado para esta conta.');
+            abort(403, 'Este módulo não está ativo para esta unidade.');
         }
 
         foreach ($module->dependsOn() as $dependency) {

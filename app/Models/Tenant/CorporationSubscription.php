@@ -38,4 +38,9 @@ class CorporationSubscription extends Model
     {
         return $this->belongsTo(Corporation::class);
     }
+
+    public function planCatalog(): BelongsTo
+    {
+        return $this->belongsTo(PlanCatalog::class);
+    }
 }

@@ -59,7 +59,15 @@ class Corporation extends Model
     {
         return $this->hasOne(CorporationSubscription::class)
             ->whereIn('status', [SubscriptionStatus::Active, SubscriptionStatus::Trial, SubscriptionStatus::PastDue])
+            ->where(function ($query): void {
+                $query->whereNull('ended_at')->orWhere('ended_at', '>=', now());
+            })
             ->latest('started_at');
+    }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(CorporationSubscription::class);
     }
 
     public function modules(): HasMany

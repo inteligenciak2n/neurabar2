@@ -28,7 +28,7 @@ class BillingStatusService
             return in_array($corporation->subscription->status, [
                 SubscriptionStatus::Suspended,
                 SubscriptionStatus::Canceled,
-            ], true);
+            ], true) || self::isEnded($corporation->subscription->ended_at);
         }
 
         $venueSubscription = $venue->subscription;
@@ -40,7 +40,12 @@ class BillingStatusService
         return in_array($venueSubscription->status, [
             SubscriptionStatus::Suspended,
             SubscriptionStatus::Canceled,
-        ], true);
+        ], true) || self::isEnded($venueSubscription->ended_at);
+    }
+
+    private static function isEnded(?\DateTimeInterface $endedAt): bool
+    {
+        return $endedAt !== null && $endedAt <= now();
     }
 
     /**

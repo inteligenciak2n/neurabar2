@@ -50,13 +50,17 @@ class CorporationTest extends TestCase
         $this->put(route('platform.corporations.plan', $corporation->id), [
             'plan_catalog_id' => $plan->id,
             'subscription_value' => 299.00,
-            'plan_start_date' => today()->toDateString(),
-            'plan_end_date' => today()->addYear()->toDateString(),
+            'billing_mode' => 'per_venue',
+            'billing_day' => 10,
+            'grace_period_days' => 5,
+            'started_at' => today()->toDateString(),
+            'trial_ends_at' => today()->addDays(14)->toDateString(),
         ])->assertRedirect();
 
-        $this->assertDatabaseHas('corporations', [
-            'id' => $corporation->id,
+        $this->assertDatabaseHas('corporation_subscriptions', [
+            'corporation_id' => $corporation->id,
             'plan_catalog_id' => $plan->id,
+            'billing_mode' => 'per_venue',
         ]);
     }
 

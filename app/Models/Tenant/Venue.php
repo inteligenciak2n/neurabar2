@@ -129,6 +129,9 @@ class Venue extends Model
     {
         return $this->hasOne(VenueSubscription::class)
             ->whereIn('status', [SubscriptionStatus::Active, SubscriptionStatus::Trial, SubscriptionStatus::PastDue])
+            ->where(function ($query): void {
+                $query->whereNull('ended_at')->orWhere('ended_at', '>=', now());
+            })
             ->latest('started_at');
     }
 

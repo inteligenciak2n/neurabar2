@@ -22,13 +22,11 @@ class MarkInvoicesOverdueJob implements ShouldQueue
         VenueInvoice::query()
             ->where('status', 'open')
             ->where('due_date', '<', today())
-            ->where('is_finalized', false)
-            ->update(['status' => 'overdue', 'is_finalized' => true]);
+            ->update(['status' => 'overdue']);
 
         CorporationInvoice::query()
             ->where('status', 'open')
             ->where('due_date', '<', today())
-            ->where('is_finalized', false)
-            ->update(['status' => 'overdue', 'is_finalized' => true]);
+            ->update(['status' => 'overdue']);
     }
 }

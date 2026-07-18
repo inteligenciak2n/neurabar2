@@ -53,9 +53,10 @@ Route::get('/', function () {
 
 // Public guest routes — no auth required
 Route::middleware('throttle:60,1')->group(function () {
-    Route::get('/kitchen/monitor', [KdsController::class, 'monitor'])->name('kitchen.monitor');
     Route::get('/order/{order}/track', [TrackOrderController::class, 'show'])->name('orders.track');
 });
+
+Route::get('/kitchen/monitor', [KdsController::class, 'monitor'])->name('kitchen.monitor');
 
 // Guest Hub — QR-code-based visitor flow
 Route::prefix('g/{token}')->name('guest.')->group(function () {

@@ -18,7 +18,7 @@ class SchemaIntegrityTest extends TestCase
     {
         return [
             'venues' => ['venues', ['id', 'corporation_id', 'name', 'active', 'timezone']],
-            'corporations' => ['corporations', ['id', 'owner_id', 'name', 'tax_id', 'plan_catalog_id', 'active', 'self_connection']],
+            'corporations' => ['corporations', ['id', 'owner_id', 'name', 'tax_id', 'active', 'self_connection']],
             'user_venue' => ['user_venue', ['user_id', 'venue_id', 'role']],
             'venue_invitations' => ['venue_invitations', ['id', 'email', 'venue_id', 'role', 'token', 'expires_at']],
             'plan_catalogs' => ['plan_catalogs', ['id', 'code', 'name', 'monthly_price', 'active']],
