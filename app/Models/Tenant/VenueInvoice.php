@@ -2,9 +2,12 @@
 
 namespace App\Models\Tenant;
 
+use App\Enums\InvoiceStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class VenueInvoice extends Model
@@ -27,6 +30,7 @@ class VenueInvoice extends Model
         return [
             'due_date' => 'date',
             'is_finalized' => 'boolean',
+            'status' => InvoiceStatus::class,
             'base_value' => 'decimal:2',
             'modules_value' => 'decimal:2',
             'metered_value' => 'decimal:2',
@@ -35,5 +39,22 @@ class VenueInvoice extends Model
             'total_value' => 'decimal:2',
             'paid_at' => 'datetime',
         ];
+    }
+
+    public function venue(): BelongsTo
+    {
+        return $this->belongsTo(Venue::class);
+    }
+
+    public function corporation(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            Corporation::class,
+            Venue::class,
+            'id',
+            'id',
+            'venue_id',
+            'corporation_id'
+        );
     }
 }

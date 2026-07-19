@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             PlanCatalogsSeeder::class,
             ModuleCatalogsSeeder::class,
+            ModuleUsageTiersSeeder::class,
             AffiliateCodesSeeder::class,
             SupportDatabaseSeeder::class,
         ]);

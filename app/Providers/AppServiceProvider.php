@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Enums\UserRole;
 use App\Events\Orders\OrderPlaced;
+use App\Listeners\Billing\RecordOrderModuleUsage;
 use App\Listeners\Kitchen\BroadcastNewOrderByStation;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -29,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Event::listen(OrderPlaced::class, BroadcastNewOrderByStation::class);
+        Event::listen(OrderPlaced::class, RecordOrderModuleUsage::class);
 
         RateLimiter::for('call-waiter', function (Request $request) {
             $slug = $request->route('slug', '');

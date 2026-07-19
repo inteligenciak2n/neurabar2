@@ -33,4 +33,9 @@ class VenueModule extends Model
     {
         return $this->belongsTo(Venue::class);
     }
+
+    public function catalog(): BelongsTo
+    {
+        return $this->belongsTo(ModuleCatalog::class, 'module_code', 'code');
+    }
 }

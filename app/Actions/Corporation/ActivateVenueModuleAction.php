@@ -6,12 +6,15 @@ use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueModule;
+use App\Services\Billing\SubscriptionCalculator;
 use App\Services\VenueModuleCache;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class ActivateVenueModuleAction
 {
+    public function __construct(private readonly SubscriptionCalculator $calculator) {}
+
     public function execute(Venue $venue, string $moduleCode, int $quantity = 1): VenueModule
     {
         $code = ModuleCode::tryFrom($moduleCode);
@@ -36,6 +39,7 @@ class ActivateVenueModuleAction
             $module->ended_at = null;
             $module->save();
 
+            $this->calculator->calculateVenue($venue, now()->format('Y-m'));
             VenueModuleCache::forget($venue);
 
             return $module;

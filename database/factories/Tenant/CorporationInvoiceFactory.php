@@ -4,6 +4,7 @@ namespace Database\Factories\Tenant;
 
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationInvoice;
+use App\Models\Tenant\CorporationSubscription;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -15,9 +16,13 @@ class CorporationInvoiceFactory extends Factory
 
     public function definition(): array
     {
+        $corporation = Corporation::factory()->create();
+
         return [
-            'corporation_id' => Corporation::factory(),
-            'corporation_subscription_id' => null,
+            'corporation_id' => $corporation->id,
+            'corporation_subscription_id' => CorporationSubscription::factory()->create([
+                'corporation_id' => $corporation->id,
+            ])->id,
             'affiliate_code_id' => null,
             'period' => now()->format('Y-m'),
             'due_date' => now()->addDays(7),

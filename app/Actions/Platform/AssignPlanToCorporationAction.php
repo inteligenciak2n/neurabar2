@@ -8,11 +8,14 @@ use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\PlanCatalog;
 use App\Models\Tenant\VenueSubscription;
+use App\Services\Billing\SubscriptionCalculator;
 use App\Services\VenueModuleCache;
 use Illuminate\Support\Facades\DB;
 
 class AssignPlanToCorporationAction
 {
+    public function __construct(private readonly SubscriptionCalculator $calculator) {}
+
     public function execute(Corporation $corporation, PlanCatalog $plan, array $data): void
     {
         DB::transaction(function () use ($corporation, $plan, $data): void {
@@ -82,6 +85,8 @@ class AssignPlanToCorporationAction
 
                 VenueModuleCache::forget($venue);
             }
+
+            $this->calculator->calculateCorporation($corporation, now()->format('Y-m'));
         });
     }
 }

@@ -2,9 +2,11 @@
 
 namespace App\Models\Tenant;
 
+use App\Enums\InvoiceStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CorporationInvoice extends Model
@@ -27,6 +29,7 @@ class CorporationInvoice extends Model
         return [
             'due_date' => 'date',
             'is_finalized' => 'boolean',
+            'status' => InvoiceStatus::class,
             'base_value' => 'decimal:2',
             'modules_value' => 'decimal:2',
             'metered_value' => 'decimal:2',
@@ -35,5 +38,10 @@ class CorporationInvoice extends Model
             'total_value' => 'decimal:2',
             'paid_at' => 'datetime',
         ];
+    }
+
+    public function corporation(): BelongsTo
+    {
+        return $this->belongsTo(Corporation::class);
     }
 }

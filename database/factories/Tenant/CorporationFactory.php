@@ -3,6 +3,7 @@
 namespace Database\Factories\Tenant;
 
 use App\Models\Tenant\Corporation;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,6 +19,7 @@ class CorporationFactory extends Factory
     public function definition(): array
     {
         return [
+            'owner_id' => User::factory(),
             'name' => fake()->company(),
             'tax_id' => fake()->numerify('##.###.###/####-##'),
             'email' => fake()->companyEmail(),

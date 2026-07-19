@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Enums\UserRole;
 use App\Models\User;
+use App\Services\Billing\BillingStatusService;
 use App\Services\Languages\TranslationService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -92,6 +93,7 @@ class HandleInertiaRequests extends Middleware
                         'name' => $venue->name,
                         'modules' => $venue->activeModules(),
                         'role' => $user->currentVenueRole()?->value,
+                        'blocked' => BillingStatusService::isBlocked($venue),
                     ];
                 },
             ],

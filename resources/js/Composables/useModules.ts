@@ -6,6 +6,7 @@ export interface Tenant {
   name: string;
   modules: string[];
   role: string | null;
+  blocked: boolean;
 }
 
 export function useModules() {
@@ -17,7 +18,7 @@ export function useModules() {
 
   const hasModule = (code: string): boolean => modules.value.includes(code);
 
-  const isBlocked = computed<boolean>(() => modules.value.length === 0);
+  const isBlocked = computed<boolean>(() => tenant.value?.blocked ?? false);
 
   return {
     tenant,
