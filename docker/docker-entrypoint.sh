@@ -21,12 +21,5 @@ if [ -d "/var/www/html/storage" ]; then
     export TMP=/var/www/html/storage/tmp
 fi
 
-# Limpa cache de views para evitar problemas
-if [ -f "/var/www/html/artisan" ]; then
-    echo "Limpando cache de views..."
-    php /var/www/html/artisan view:clear 2>/dev/null || true
-    php /var/www/html/artisan cache:clear 2>/dev/null || true
-fi
-
 # Executa o comando original
 exec "$@"
