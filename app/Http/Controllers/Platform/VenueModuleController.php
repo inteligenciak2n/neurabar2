@@ -17,6 +17,8 @@ class VenueModuleController extends Controller
 {
     public function index(Corporation $corporation, Venue $venue): Response
     {
+        $this->ensureVenueBelongsToCorporation($corporation, $venue);
+
         $modules = VenueModule::query()
             ->where('venue_id', $venue->id)
             ->with('catalog:id,code,name,base_monthly_price')
@@ -36,6 +38,8 @@ class VenueModuleController extends Controller
         Venue $venue,
         ActivateVenueModuleAction $action,
     ): RedirectResponse {
+        $this->ensureVenueBelongsToCorporation($corporation, $venue);
+
         $validated = $request->validated();
 
         $action->execute(
@@ -53,8 +57,17 @@ class VenueModuleController extends Controller
         VenueModule $module,
         DeactivateVenueModuleAction $action,
     ): RedirectResponse {
+        $this->ensureVenueBelongsToCorporation($corporation, $venue);
+
         $action->execute($venue, $module->module_code);
 
         return back()->with('success', 'Módulo desativado no venue com sucesso.');
+    }
+
+    private function ensureVenueBelongsToCorporation(Corporation $corporation, Venue $venue): void
+    {
+        if ($venue->corporation_id !== $corporation->id) {
+            abort(404);
+        }
     }
 }

@@ -7,9 +7,6 @@ use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
-use App\Models\Settings\KitchenStation;
-use App\Models\Settings\PreparationStatus;
-use App\Models\Settings\VenueSettings;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\PlanCatalog;
@@ -76,22 +73,7 @@ class CreateVenueAction
             'started_at' => now(),
         ]);
 
-        VenueSettings::create(['venue_id' => $venue->id]);
-
-        KitchenStation::insert([
-            ['id' => (string) Str::uuid(), 'venue_id' => $venue->id, 'name' => 'Kitchen', 'created_at' => now(), 'updated_at' => now()],
-            ['id' => (string) Str::uuid(), 'venue_id' => $venue->id, 'name' => 'Bar', 'created_at' => now(), 'updated_at' => now()],
-        ]);
-
-        $statuses = [
-            ['name' => 'Pending', 'color' => '#94a3b8', 'sort_order' => 1, 'show_to_customer' => false, 'is_final' => false, 'is_initial' => true],
-            ['name' => 'In Progress', 'color' => '#f59e0b', 'sort_order' => 2, 'show_to_customer' => true, 'is_final' => false, 'is_initial' => false],
-            ['name' => 'Ready', 'color' => '#22c55e', 'sort_order' => 3, 'show_to_customer' => true, 'is_final' => true, 'is_initial' => false],
-        ];
-
-        foreach ($statuses as $status) {
-            PreparationStatus::create(['venue_id' => $venue->id, ...$status]);
-        }
+        (new CreateVenueDefaultsAction)->execute($venue);
 
         if ($corporation->owner_id) {
             $venue->users()->attach($corporation->owner_id, ['role' => UserRole::Owner->value]);

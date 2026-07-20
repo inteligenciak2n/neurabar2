@@ -6,6 +6,7 @@ use App\Enums\SubscriptionStatus;
 use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\VenueSubscription;
 use App\Notifications\Billing\TrialExpired;
+use App\Services\Billing\BillingStatusService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -30,16 +31,32 @@ class ExpireTrialsJob implements ShouldQueue
         foreach ($corporationSubscriptions as $subscription) {
             $subscription->update(['status' => SubscriptionStatus::PastDue->value]);
 
-            $owner = $subscription->corporation?->owner;
+            $corporation = $subscription->corporation;
 
-            if ($owner) {
-                Notification::send($owner, new TrialExpired($subscription->corporation));
+            if ($corporation) {
+                foreach ($corporation->venues as $venue) {
+                    BillingStatusService::flushBlockedCache($venue);
+                }
+
+                $owner = $corporation->owner;
+
+                if ($owner) {
+                    Notification::send($owner, new TrialExpired($corporation));
+                }
             }
         }
 
-        VenueSubscription::query()
+        $venueSubscriptions = VenueSubscription::query()
             ->where('status', SubscriptionStatus::Trial->value)
             ->where('trial_ends_at', '<=', now())
-            ->update(['status' => SubscriptionStatus::PastDue->value]);
+            ->get();
+
+        foreach ($venueSubscriptions as $venueSubscription) {
+            $venueSubscription->update(['status' => SubscriptionStatus::PastDue->value]);
+
+            if ($venueSubscription->venue) {
+                BillingStatusService::flushBlockedCache($venueSubscription->venue);
+            }
+        }
     }
 }

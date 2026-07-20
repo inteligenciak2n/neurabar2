@@ -2,6 +2,7 @@
 
 namespace App\Actions\Fortify;
 
+use App\Actions\Corporation\CreateVenueDefaultsAction;
 use App\Enums\BillingMode;
 use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
@@ -13,11 +14,8 @@ use App\Models\Menu\Combo;
 use App\Models\Menu\Menu;
 use App\Models\Menu\ModifierGroup;
 use App\Models\Menu\Product;
-use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\KitchenStation;
-use App\Models\Settings\PreparationStatus;
 use App\Models\Settings\ServiceLocation;
-use App\Models\Settings\VenueSettings;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\PlanCatalog;
@@ -117,42 +115,11 @@ class CreateUserOwnerDefinitions
         app()->instance('operational_connection', $operationalConnection);
         app()->instance('tenant', $venue);
 
-        VenueSettings::create([
-            'venue_id' => $venue->id,
+        (new CreateVenueDefaultsAction)->execute($venue, [
             'cover_charge' => 10.00,
             'service_fee_percent' => 10.00,
             'table_count' => 30,
         ]);
-
-        foreach (['Cozinha', 'Bar'] as $i => $stationName) {
-            KitchenStation::create([
-                'venue_id' => $venue->id,
-                'name' => $stationName,
-                'sort_order' => $i + 1,
-                'active' => true,
-            ]);
-        }
-
-        $statuses = [
-            ['name' => 'Pendente', 'color' => '#94a3b8', 'sort_order' => 1, 'show_to_customer' => false, 'is_final' => false, 'is_initial' => true],
-            ['name' => 'Em Preparo', 'color' => '#f59e0b', 'sort_order' => 2, 'show_to_customer' => true, 'is_final' => false, 'is_initial' => false],
-            ['name' => 'Pronto', 'color' => '#22c55e', 'sort_order' => 3, 'show_to_customer' => true, 'is_final' => true, 'is_initial' => false],
-        ];
-
-        foreach ($statuses as $status) {
-            PreparationStatus::create(array_merge($status, ['venue_id' => $venue->id]));
-        }
-
-        $attedance_channels = [
-            ['name' => 'Mesa', 'sort_order' => 1],
-            ['name' => 'Balcão', 'sort_order' => 2],
-            ['name' => 'Delivery', 'sort_order' => 3],
-            ['name' => 'Retirada', 'sort_order' => 4],
-        ];
-
-        foreach ($attedance_channels as $channel) {
-            AttendanceChannel::create(array_merge($channel, ['venue_id' => $venue->id, 'active' => true]));
-        }
 
         $venue->users()->attach($user->id, ['role' => UserRole::Owner->value]);
 

@@ -12,9 +12,9 @@ use App\Models\Tenant\VenueUsageRecord;
 class SubscriptionCalculator
 {
     /**
-     * @return array<string, float>
+     * @return array<string, float>|null
      */
-    public function calculateVenue(Venue $venue, string $period): array
+    public function calculateVenue(Venue $venue, string $period): ?array
     {
         $subscription = $venue->subscription;
 
@@ -23,7 +23,7 @@ class SubscriptionCalculator
         }
 
         if ($this->hasFinalizedInvoice($venue, $period)) {
-            return $this->emptyResult();
+            return null;
         }
 
         $base = (float) $subscription->base_value;
@@ -57,8 +57,9 @@ class SubscriptionCalculator
         $grandTotal = 0.0;
 
         foreach ($corporation->venues as $venue) {
-            $venueTotals[$venue->id] = $this->calculateVenue($venue, $period);
-            $grandTotal += $venueTotals[$venue->id]['total'];
+            $calculated = $this->calculateVenue($venue, $period);
+            $venueTotals[$venue->id] = $calculated ?? $this->emptyResult();
+            $grandTotal += $calculated['total'] ?? 0.0;
         }
 
         return [

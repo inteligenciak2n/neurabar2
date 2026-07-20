@@ -4,9 +4,12 @@ namespace App\Services\Billing;
 
 use App\Enums\SubscriptionStatus;
 use App\Models\Tenant\Venue;
+use Illuminate\Support\Facades\Cache;
 
 class BillingStatusService
 {
+    private const CACHE_TTL_SECONDS = 60;
+
     /**
      * Determina se o acesso de uma venue está bloqueado por questões de faturamento.
      *
@@ -18,29 +21,45 @@ class BillingStatusService
      */
     public static function isBlocked(Venue $venue): bool
     {
-        $corporation = $venue->corporation;
+        return Cache::remember(
+            self::cacheKey($venue),
+            self::CACHE_TTL_SECONDS,
+            function () use ($venue): bool {
+                $corporation = $venue->corporation;
 
-        if (! $corporation?->subscription) {
-            return true;
-        }
+                if (! $corporation?->subscription) {
+                    return true;
+                }
 
-        if ($corporation->isBillingUnified()) {
-            return in_array($corporation->subscription->status, [
-                SubscriptionStatus::Suspended,
-                SubscriptionStatus::Canceled,
-            ], true) || self::isEnded($corporation->subscription->ended_at);
-        }
+                if ($corporation->isBillingUnified()) {
+                    return in_array($corporation->subscription->status, [
+                        SubscriptionStatus::Suspended,
+                        SubscriptionStatus::Canceled,
+                    ], true) || self::isEnded($corporation->subscription->ended_at);
+                }
 
-        $venueSubscription = $venue->subscription;
+                $venueSubscription = $venue->subscription;
 
-        if (! $venueSubscription) {
-            return true;
-        }
+                if (! $venueSubscription) {
+                    return true;
+                }
 
-        return in_array($venueSubscription->status, [
-            SubscriptionStatus::Suspended,
-            SubscriptionStatus::Canceled,
-        ], true) || self::isEnded($venueSubscription->ended_at);
+                return in_array($venueSubscription->status, [
+                    SubscriptionStatus::Suspended,
+                    SubscriptionStatus::Canceled,
+                ], true) || self::isEnded($venueSubscription->ended_at);
+            }
+        );
+    }
+
+    public static function flushBlockedCache(Venue $venue): void
+    {
+        Cache::forget(self::cacheKey($venue));
+    }
+
+    private static function cacheKey(Venue $venue): string
+    {
+        return "billing.blocked.{$venue->id}";
     }
 
     private static function isEnded(?\DateTimeInterface $endedAt): bool

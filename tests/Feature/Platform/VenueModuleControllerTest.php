@@ -5,6 +5,7 @@ namespace Tests\Feature\Platform;
 use App\Enums\ModuleBillingType;
 use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
+use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\ModuleCatalog;
 use App\Models\Tenant\Venue;
@@ -87,5 +88,31 @@ class VenueModuleControllerTest extends TestCase
             'id' => $module->id,
             'status' => ModuleStatus::Inactive->value,
         ]);
+    }
+
+    public function test_cannot_access_venue_module_from_different_corporation(): void
+    {
+        $user = User::factory()->create(['profile' => 'super_admin']);
+        $venue = Venue::factory()->create();
+        $otherCorporation = Corporation::factory()->create();
+        $module = VenueModule::factory()->create([
+            'venue_id' => $venue->id,
+            'module_code' => ModuleCode::Kds->value,
+            'status' => ModuleStatus::Active,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('platform.corporations.venues.modules.index', [$otherCorporation, $venue]))
+            ->assertNotFound();
+
+        $this->actingAs($user)
+            ->post(route('platform.corporations.venues.modules.store', [$otherCorporation, $venue]), [
+                'module_code' => ModuleCode::Kds->value,
+            ])
+            ->assertNotFound();
+
+        $this->actingAs($user)
+            ->delete(route('platform.corporations.venues.modules.destroy', [$otherCorporation, $venue, $module]))
+            ->assertNotFound();
     }
 }

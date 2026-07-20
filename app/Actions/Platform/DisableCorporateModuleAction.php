@@ -7,6 +7,7 @@ use App\Enums\ModuleStatus;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationModule;
 use App\Services\Billing\SubscriptionCalculator;
+use App\Services\VenueModuleCache;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -32,6 +33,10 @@ class DisableCorporateModuleAction
                 ]);
 
             $this->calculator->calculateCorporation($corporation, now()->format('Y-m'));
+
+            foreach ($corporation->venues as $venue) {
+                VenueModuleCache::forget($venue);
+            }
         });
     }
 }

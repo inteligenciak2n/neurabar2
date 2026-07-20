@@ -127,7 +127,30 @@ class SubscriptionCalculatorTest extends TestCase
 
         $result = $this->calculator->calculateVenue($venue, '2026-07');
 
-        $this->assertEqualsWithDelta(0.0, $result['total'], 0.01);
+        $this->assertNull($result);
+    }
+
+    public function test_calculate_venue_does_not_update_subscription_when_invoice_finalized(): void
+    {
+        $venue = $this->createVenueWithSubscription(baseValue: 100.00);
+        VenueInvoice::factory()->create([
+            'venue_id' => $venue->id,
+            'period' => '2026-07',
+            'is_finalized' => true,
+            'status' => InvoiceStatus::Paid,
+            'base_value' => 100.00,
+            'total_value' => 100.00,
+        ]);
+
+        $this->calculator->calculateVenue($venue, '2026-07');
+
+        $this->assertDatabaseHas('venue_subscriptions', [
+            'id' => $venue->subscription->id,
+            'base_value' => 100.00,
+            'modules_value' => 0.0,
+            'metered_value' => 0.0,
+            'total_value' => 100.00,
+        ]);
     }
 
     public function test_calculate_corporation_unified(): void

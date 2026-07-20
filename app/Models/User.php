@@ -143,12 +143,26 @@ class User extends Authenticatable
             return false;
         }
 
-        if (! in_array($module->value, $venue->activeModules(), true)) {
+        if (BillingStatusService::isBlocked($venue)) {
             return false;
         }
 
-        if (BillingStatusService::isBlocked($venue)) {
+        $corporation = $venue->corporation;
+
+        if (! $corporation?->hasActiveModule($module)) {
             return false;
+        }
+
+        $activeModules = $venue->activeModules();
+
+        if (! in_array($module->value, $activeModules, true)) {
+            return false;
+        }
+
+        foreach ($module->dependsOn() as $dependency) {
+            if (! in_array($dependency->value, $activeModules, true)) {
+                return false;
+            }
         }
 
         return true;

@@ -28,16 +28,13 @@ class GenerateInvoicesJob implements ShouldQueue
 
     public function handle(SubscriptionCalculator $calculator): void
     {
-        $subscriptions = CorporationSubscription::query()
+        CorporationSubscription::query()
             ->whereIn('status', [SubscriptionStatus::Active, SubscriptionStatus::Trial, SubscriptionStatus::PastDue])
             ->where(function ($query): void {
                 $query->whereNull('ended_at')->orWhere('ended_at', '>=', now());
             })
-            ->get();
-
-        foreach ($subscriptions as $subscription) {
-            $this->generateForSubscription($subscription, $calculator);
-        }
+            ->cursor()
+            ->each(fn (CorporationSubscription $subscription) => $this->generateForSubscription($subscription, $calculator));
     }
 
     private function generateForSubscription(CorporationSubscription $subscription, SubscriptionCalculator $calculator): void
@@ -54,21 +51,43 @@ class GenerateInvoicesJob implements ShouldQueue
         $corporationModules = 0.0;
         $corporationMetered = 0.0;
         $corporationDedicated = 0.0;
+        $venueInvoices = [];
 
         foreach ($corporation->venues as $venue) {
             $calculated = $calculator->calculateVenue($venue, $this->period);
+
+            if ($calculated === null) {
+                $existingInvoice = VenueInvoice::query()
+                    ->where('venue_id', $venue->id)
+                    ->where('period', $this->period)
+                    ->first();
+
+                if ($existingInvoice) {
+                    $venueInvoices[] = $existingInvoice;
+
+                    if ($isUnified) {
+                        $corporationBase += (float) $existingInvoice->base_value;
+                        $corporationModules += (float) $existingInvoice->modules_value;
+                        $corporationMetered += (float) $existingInvoice->metered_value;
+                        $corporationDedicated += (float) $existingInvoice->dedicated_surcharge;
+                        $corporationTotal += (float) $existingInvoice->total_value;
+                    }
+                }
+
+                continue;
+            }
 
             $invoice = VenueInvoice::updateOrCreate(
                 [
                     'venue_id' => $venue->id,
                     'period' => $this->period,
+                    'is_finalized' => false,
                 ],
                 [
                     'venue_subscription_id' => $venue->subscription?->id,
                     'affiliate_code_id' => $venue->subscription?->affiliate_code_id,
                     'due_date' => $this->resolveDueDate($subscription),
                     'status' => InvoiceStatus::Open,
-                    'is_finalized' => false,
                     'base_value' => $calculated['base'],
                     'modules_value' => $calculated['modules'],
                     'metered_value' => $calculated['metered'],
@@ -78,12 +97,18 @@ class GenerateInvoicesJob implements ShouldQueue
                 ]
             );
 
+            $venueInvoices[] = $invoice;
+
             if ($isUnified) {
                 $corporationBase += $calculated['base'];
                 $corporationModules += $calculated['modules'];
                 $corporationMetered += $calculated['metered'];
                 $corporationDedicated += $calculated['dedicated_surcharge'];
                 $corporationTotal += $calculated['total'];
+            }
+
+            if ($invoice->wasRecentlyCreated && ! $isUnified) {
+                $this->notifyOwner($invoice);
             }
         }
 
@@ -92,13 +117,13 @@ class GenerateInvoicesJob implements ShouldQueue
                 [
                     'corporation_id' => $corporation->id,
                     'period' => $this->period,
+                    'is_finalized' => false,
                 ],
                 [
                     'corporation_subscription_id' => $subscription->id,
                     'affiliate_code_id' => $subscription->affiliate_code_id,
                     'due_date' => $this->resolveDueDate($subscription),
                     'status' => InvoiceStatus::Open,
-                    'is_finalized' => false,
                     'base_value' => $corporationBase,
                     'modules_value' => $corporationModules,
                     'metered_value' => $corporationMetered,
@@ -107,6 +132,14 @@ class GenerateInvoicesJob implements ShouldQueue
                     'total_value' => $corporationTotal,
                 ]
             );
+
+            if ($corporationInvoice->wasRecentlyCreated || ! $corporationInvoice->wasRecentlyCreated) {
+                foreach ($venueInvoices as $venueInvoice) {
+                    if ($venueInvoice->corporation_invoice_id === null) {
+                        $venueInvoice->update(['corporation_invoice_id' => $corporationInvoice->id]);
+                    }
+                }
+            }
 
             if ($corporationInvoice->wasRecentlyCreated) {
                 $this->notifyOwner($corporationInvoice);

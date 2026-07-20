@@ -17,7 +17,6 @@ class RecordOrderModuleUsage
             return;
         }
 
-        RecordModuleUsageJob::dispatch($venueId, ModuleCode::Kds->value);
         RecordModuleUsageJob::dispatch($venueId, ModuleCode::Taker->value);
         RecordModuleUsageJob::dispatch($venueId, ModuleCode::DirectPrint->value);
     }

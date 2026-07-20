@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant\CorporationInvoice;
 use App\Models\Tenant\VenueInvoice;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -39,8 +40,10 @@ class InvoiceController extends Controller
         ]);
     }
 
-    public function show(string $invoice): Response
+    public function show(Request $request, string $invoice): Response
     {
+        Gate::authorize('view-invoice');
+
         $corporationInvoice = CorporationInvoice::with('corporation:id,name,email')->find($invoice);
 
         if ($corporationInvoice) {

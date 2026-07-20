@@ -20,7 +20,7 @@ class RecordOrderModuleUsageTest extends TestCase
 
         (new RecordOrderModuleUsage)->handle(new OrderPlaced($order));
 
-        foreach ([ModuleCode::Kds, ModuleCode::Taker, ModuleCode::DirectPrint] as $code) {
+        foreach ([ModuleCode::Taker, ModuleCode::DirectPrint] as $code) {
             $this->assertDatabaseHas('venue_usage_records', [
                 'venue_id' => $order->attendance->venue_id,
                 'module_code' => $code->value,

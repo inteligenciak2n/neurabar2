@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Platform;
 
+use App\Enums\ProfileEnum;
 use App\Models\Tenant\CorporationInvoice;
 use App\Models\Tenant\VenueInvoice;
 use App\Models\User;
@@ -71,5 +72,35 @@ class InvoiceControllerTest extends TestCase
             ->component('Platform/Invoices/Show')
             ->where('invoice.id', $invoice->id)
         );
+    }
+
+    public function test_finance_user_can_show_invoice(): void
+    {
+        $user = User::factory()->create(['profile' => ProfileEnum::Finance]);
+        $invoice = CorporationInvoice::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('platform.invoices.show', $invoice))
+            ->assertOk();
+    }
+
+    public function test_read_only_user_can_show_invoice(): void
+    {
+        $user = User::factory()->create(['profile' => ProfileEnum::ReadOnly]);
+        $invoice = VenueInvoice::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('platform.invoices.show', $invoice))
+            ->assertOk();
+    }
+
+    public function test_registration_user_cannot_show_invoice(): void
+    {
+        $user = User::factory()->create(['profile' => ProfileEnum::Registration]);
+        $invoice = CorporationInvoice::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('platform.invoices.show', $invoice))
+            ->assertForbidden();
     }
 }

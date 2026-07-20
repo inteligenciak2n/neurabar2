@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Tenant;
 
+use App\Enums\InvoiceStatus;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationInvoice;
 use App\Models\Tenant\CorporationSubscription;
@@ -26,7 +27,7 @@ class CorporationInvoiceFactory extends Factory
             'affiliate_code_id' => null,
             'period' => now()->format('Y-m'),
             'due_date' => now()->addDays(7),
-            'status' => 'open',
+            'status' => InvoiceStatus::Open,
             'is_finalized' => false,
             'base_value' => 0,
             'modules_value' => 0,
