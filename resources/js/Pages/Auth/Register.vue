@@ -9,11 +9,19 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import CustomHead from '@/Components/CustomHead.vue';
 
+const props = defineProps({
+    plans: {
+        type: Array,
+        default: () => [],
+    },
+});
+
 const form = useForm({
     name: '',
     email: '',
     password: '',
     password_confirmation: '',
+    plan_catalog_id: props.plans.length > 0 ? props.plans[0].id : '',
     terms: false,
 });
 
@@ -58,6 +66,21 @@ const submit = () => {
                     autocomplete="username"
                 />
                 <InputError class="mt-2" :message="form.errors.email" />
+            </div>
+
+            <div v-if="plans.length > 0" class="mt-4">
+                <InputLabel for="plan_catalog_id" :value="__('Plan')" />
+                <select
+                    id="plan_catalog_id"
+                    v-model="form.plan_catalog_id"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                    required
+                >
+                    <option v-for="plan in plans" :key="plan.id" :value="plan.id">
+                        {{ plan.name }} — {{ plan.monthly_price }}
+                    </option>
+                </select>
+                <InputError class="mt-2" :message="form.errors.plan_catalog_id" />
             </div>
 
             <div class="mt-4">

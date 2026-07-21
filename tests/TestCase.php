@@ -59,14 +59,18 @@ abstract class TestCase extends BaseTestCase
     protected function ensureVenueHasSubscriptionAndMenu(Venue $venue): void
     {
         if (! $venue->corporation->subscription) {
+            $plan = \App\Models\Tenant\PlanCatalog::factory()->create();
+
             $subscription = CorporationSubscription::factory()->create([
                 'corporation_id' => $venue->corporation_id,
+                'plan_catalog_id' => $plan->id,
                 'status' => SubscriptionStatus::Active,
             ]);
 
             VenueSubscription::factory()->create([
                 'venue_id' => $venue->id,
                 'corporation_subscription_id' => $subscription->id,
+                'plan_catalog_id' => $plan->id,
                 'status' => SubscriptionStatus::Active,
             ]);
         }

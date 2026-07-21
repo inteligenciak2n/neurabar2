@@ -2,7 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Enums\BillingMode;
+use App\Enums\SubscriptionStatus;
 use App\Models\Tenant\Corporation;
+use App\Models\Tenant\CorporationSubscription;
+use App\Models\Tenant\PlanCatalog;
 use App\Models\User;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
@@ -37,7 +41,15 @@ class NoVenueTest extends TestCase
 
     public function test_owner_can_create_first_venue_from_no_venue_page(): void
     {
+        $plan = PlanCatalog::factory()->create();
         $corporation = Corporation::factory()->create();
+        CorporationSubscription::factory()->create([
+            'corporation_id' => $corporation->id,
+            'plan_catalog_id' => $plan->id,
+            'billing_mode' => BillingMode::PerVenue,
+            'status' => SubscriptionStatus::Active,
+        ]);
+
         $user = User::factory()->create([
             'current_venue_id' => null,
             'active' => true,

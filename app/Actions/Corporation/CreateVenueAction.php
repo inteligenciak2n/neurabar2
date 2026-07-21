@@ -2,10 +2,8 @@
 
 namespace App\Actions\Corporation;
 
-use App\Enums\BillingMode;
 use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
-use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationSubscription;
@@ -13,12 +11,31 @@ use App\Models\Tenant\PlanCatalog;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueModule;
 use App\Models\Tenant\VenueSubscription;
+use App\Services\Billing\SubscriptionCalculator;
+use App\Services\VenueModuleCache;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 class CreateVenueAction
 {
+    public function __construct(
+        private readonly SubscriptionCalculator $calculator,
+    ) {}
+
     public function execute(Corporation $corporation, array $data): Venue
     {
+        $corporationSubscription = $corporation->subscription;
+
+        if (! $corporationSubscription) {
+            throw new InvalidArgumentException('A corporation não possui uma assinatura ativa para criar venues.');
+        }
+
+        $plan = $corporationSubscription->planCatalog;
+
+        if (! $plan) {
+            throw new InvalidArgumentException('A assinatura da corporation não possui um plano associado.');
+        }
+
         $slug = Str::slug($data['name']).'-'.Str::lower(Str::random(6));
 
         $venue = Venue::create([
@@ -27,32 +44,6 @@ class CreateVenueAction
             'call_waiter_slug' => $slug,
             'active' => true,
         ]);
-
-        $corporationSubscription = $corporation->subscription;
-
-        if (! $corporationSubscription) {
-            $plan = PlanCatalog::firstOrCreate(
-                ['code' => 'pro'],
-                ['name' => 'Pro', 'monthly_price' => 99.90, 'active' => true, 'plan_type' => 'shared']
-            );
-
-            $corporationSubscription = CorporationSubscription::create([
-                'corporation_id' => $corporation->id,
-                'plan_catalog_id' => $plan->id,
-                'billing_mode' => BillingMode::PerVenue,
-                'status' => SubscriptionStatus::Trial,
-                'billing_day' => config('billing.default_billing_day', 1),
-                'grace_period_days' => config('billing.grace_period_days', 3),
-                'started_at' => now(),
-                'trial_ends_at' => now()->addDays(config('billing.trial_days', 14)),
-                'currency' => config('billing.currency', 'BRL'),
-            ]);
-        }
-
-        $plan = $corporationSubscription->planCatalog ?? PlanCatalog::firstOrCreate(
-            ['code' => 'pro'],
-            ['name' => 'Pro', 'monthly_price' => 99.90, 'active' => true, 'plan_type' => 'shared']
-        );
 
         VenueSubscription::create([
             'venue_id' => $venue->id,
@@ -65,20 +56,58 @@ class CreateVenueAction
             'trial_ends_at' => $corporationSubscription->trial_ends_at,
         ]);
 
-        VenueModule::create([
-            'venue_id' => $venue->id,
-            'module_code' => ModuleCode::Menu->value,
-            'status' => ModuleStatus::Active,
-            'quantity' => 1,
-            'started_at' => now(),
-        ]);
-
         (new CreateVenueDefaultsAction)->execute($venue);
+
+        $this->propagateCorporateModules($corporation, $venue);
 
         if ($corporation->owner_id) {
             $venue->users()->attach($corporation->owner_id, ['role' => UserRole::Owner->value]);
         }
 
         return $venue;
+    }
+
+    private function propagateCorporateModules(Corporation $corporation, Venue $venue): void
+    {
+        $now = now();
+        $hasModules = false;
+
+        foreach ($corporation->activeModules as $module) {
+            VenueModule::firstOrCreate(
+                [
+                    'venue_id' => $venue->id,
+                    'module_code' => $module->module_code,
+                ],
+                [
+                    'status' => $module->status,
+                    'quantity' => 1,
+                    'started_at' => $now,
+                ]
+            );
+
+            $hasModules = true;
+        }
+
+        // Garante o módulo base mesmo que a corporation ainda não tenha módulos ativos.
+        $menuExists = VenueModule::where('venue_id', $venue->id)
+            ->where('module_code', ModuleCode::Menu->value)
+            ->exists();
+
+        if (! $menuExists) {
+            VenueModule::create([
+                'venue_id' => $venue->id,
+                'module_code' => ModuleCode::Menu->value,
+                'status' => ModuleStatus::Active,
+                'quantity' => 1,
+                'started_at' => $now,
+            ]);
+
+            $hasModules = true;
+        }
+
+        if ($hasModules) {
+            $this->calculator->calculateVenue($venue, $now->format('Y-m'));
+            VenueModuleCache::forget($venue);
+        }
     }
 }

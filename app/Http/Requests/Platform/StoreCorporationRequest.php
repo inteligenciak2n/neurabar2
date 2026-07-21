@@ -24,6 +24,7 @@ class StoreCorporationRequest extends FormRequest
             'timezone' => ['required', 'string', 'max:50'],
             'owner_name' => ['required', 'string', 'max:255'],
             'owner_email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'plan_catalog_id' => ['nullable', 'uuid', 'exists:plan_catalogs,id'],
         ];
     }
 }

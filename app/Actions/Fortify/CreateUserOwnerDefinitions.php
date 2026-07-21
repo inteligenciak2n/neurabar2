@@ -3,9 +3,8 @@
 namespace App\Actions\Fortify;
 
 use App\Actions\Corporation\CreateVenueDefaultsAction;
+use App\Actions\Corporation\ProvisionPlanModulesAction;
 use App\Enums\BillingMode;
-use App\Enums\ModuleCode;
-use App\Enums\ModuleStatus;
 use App\Enums\ServiceLocationType;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
@@ -20,14 +19,13 @@ use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\PlanCatalog;
 use App\Models\Tenant\Venue;
-use App\Models\Tenant\VenueModule;
 use App\Models\Tenant\VenueSubscription;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class CreateUserOwnerDefinitions
 {
-    public function handle(User $user): void
+    public function handle(User $user, ?PlanCatalog $plan = null): void
     {
         $operationalConnection = 'operation_default_1';
 
@@ -35,7 +33,7 @@ class CreateUserOwnerDefinitions
         DB::connection($operationalConnection)->beginTransaction();
 
         try {
-            $venue = $this->createCorporationAndVenue($user, $operationalConnection);
+            $venue = $this->createCorporationAndVenue($user, $operationalConnection, $plan);
             $menu = $this->createMenu($venue);
             $this->createProductCategories($menu);
             $this->createServiceLocations($venue);
@@ -50,11 +48,16 @@ class CreateUserOwnerDefinitions
         }
     }
 
-    private function createCorporationAndVenue(User $user, string $operationalConnection): Venue
+    private function createCorporationAndVenue(User $user, string $operationalConnection, ?PlanCatalog $plan = null): Venue
     {
-        $plan = PlanCatalog::firstOrCreate(
-            ['code' => 'pro'],
-            ['name' => 'Pro', 'monthly_price' => 99.90, 'active' => true, 'plan_type' => 'shared']
+        $plan ??= PlanCatalog::firstOrCreate(
+            ['code' => config('billing.default_plan_code', 'pro')],
+            [
+                'name' => 'Pro',
+                'monthly_price' => 99.90,
+                'active' => true,
+                'plan_type' => 'shared',
+            ]
         );
 
         $corporation = Corporation::create([
@@ -103,14 +106,6 @@ class CreateUserOwnerDefinitions
             'trial_ends_at' => $corporationSubscription->trial_ends_at,
         ]);
 
-        VenueModule::create([
-            'venue_id' => $venue->id,
-            'module_code' => ModuleCode::Menu->value,
-            'status' => ModuleStatus::Active,
-            'quantity' => 1,
-            'started_at' => now(),
-        ]);
-
         // Registra o contexto operacional para que HasOperationalConnection use a conexão correta
         app()->instance('operational_connection', $operationalConnection);
         app()->instance('tenant', $venue);
@@ -120,6 +115,8 @@ class CreateUserOwnerDefinitions
             'service_fee_percent' => 10.00,
             'table_count' => 30,
         ]);
+
+        app(ProvisionPlanModulesAction::class)->execute($corporation, $venue, $plan);
 
         $venue->users()->attach($user->id, ['role' => UserRole::Owner->value]);
 

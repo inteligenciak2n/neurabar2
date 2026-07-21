@@ -23,7 +23,16 @@ class PlanCatalogFactory extends Factory
             'description' => fake()->sentence(),
             'sort_order' => fake()->numberBetween(1, 10),
             'monthly_price' => fake()->randomFloat(2, 49, 999),
+            'included_modules' => [],
             'active' => true,
         ];
+    }
+
+    /**
+     * @param  array<int, string>  $codes
+     */
+    public function withModules(array $codes): static
+    {
+        return $this->state(['included_modules' => $codes]);
     }
 }

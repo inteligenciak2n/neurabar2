@@ -20,6 +20,7 @@ class PlanCatalog extends Model
         'description',
         'sort_order',
         'monthly_price',
+        'included_modules',
         'active',
         'plan_type',
     ];
@@ -30,9 +31,18 @@ class PlanCatalog extends Model
             'active' => 'boolean',
             'monthly_price' => 'decimal:2',
             'sort_order' => 'integer',
+            'included_modules' => 'array',
             // Futuro: usar plan_type para resolver conexão automaticamente em TenantConnectionResolver
             // 'shared' => banco compartilhado, 'dedicated' => banco dedicado
         ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function includedModuleCodes(): array
+    {
+        return array_filter($this->included_modules ?? []);
     }
 
     public function corporations(): HasMany

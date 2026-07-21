@@ -3,9 +3,13 @@
 namespace App\Actions\Platform;
 
 use App\Actions\Corporation\CreateVenueAction;
+use App\Enums\BillingMode;
 use App\Enums\ProfileEnum;
+use App\Enums\SubscriptionStatus;
 use App\Jobs\Platform\SendWelcomeEmailJob;
 use App\Models\Tenant\Corporation;
+use App\Models\Tenant\CorporationSubscription;
+use App\Models\Tenant\PlanCatalog;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -38,6 +42,30 @@ class CreateCorporationAction
                 'email' => $data['email'],
                 'contact_phone' => $data['contact_phone'] ?? null,
                 'active' => true,
+            ]);
+
+            $plan = isset($data['plan_catalog_id'])
+                ? PlanCatalog::find($data['plan_catalog_id'])
+                : PlanCatalog::firstOrCreate(
+                    ['code' => config('billing.default_plan_code', 'pro')],
+                    [
+                        'name' => 'Pro',
+                        'monthly_price' => 99.90,
+                        'active' => true,
+                        'plan_type' => 'shared',
+                    ]
+                );
+
+            CorporationSubscription::create([
+                'corporation_id' => $corporation->id,
+                'plan_catalog_id' => $plan?->id,
+                'billing_mode' => BillingMode::PerVenue,
+                'status' => SubscriptionStatus::Trial,
+                'billing_day' => config('billing.default_billing_day', 1),
+                'grace_period_days' => config('billing.grace_period_days', 3),
+                'started_at' => now(),
+                'trial_ends_at' => now()->addDays(config('billing.trial_days', 14)),
+                'currency' => config('billing.currency', 'BRL'),
             ]);
 
             $venue = $this->createVenueAction->execute($corporation, [

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\ModuleCode;
 use App\Models\Tenant\PlanCatalog;
 use Illuminate\Database\Seeder;
 
@@ -16,6 +17,9 @@ class PlanCatalogsSeeder extends Seeder
                 'description' => 'Plano básico para pequenos estabelecimentos.',
                 'sort_order' => 1,
                 'monthly_price' => 99.00,
+                'included_modules' => [
+                    ModuleCode::Menu->value,
+                ],
                 'active' => true,
             ],
             [
@@ -24,6 +28,13 @@ class PlanCatalogsSeeder extends Seeder
                 'description' => 'Plano intermediário com recursos avançados.',
                 'sort_order' => 2,
                 'monthly_price' => 199.00,
+                'included_modules' => [
+                    ModuleCode::Menu->value,
+                    ModuleCode::Kds->value,
+                    ModuleCode::Taker->value,
+                    ModuleCode::DirectWaiter->value,
+                    ModuleCode::Delivery->value,
+                ],
                 'active' => true,
             ],
             [
@@ -32,6 +43,18 @@ class PlanCatalogsSeeder extends Seeder
                 'description' => 'Plano completo para redes e grupos.',
                 'sort_order' => 3,
                 'monthly_price' => 499.00,
+                'included_modules' => [
+                    ModuleCode::Menu->value,
+                    ModuleCode::Kds->value,
+                    ModuleCode::Taker->value,
+                    ModuleCode::DirectWaiter->value,
+                    ModuleCode::Delivery->value,
+                    ModuleCode::ProductionDashboard->value,
+                    ModuleCode::FinancialDashboard->value,
+                    ModuleCode::DirectPrint->value,
+                    ModuleCode::FiscalNote->value,
+                    ModuleCode::VoiceCommand->value,
+                ],
                 'active' => true,
             ],
         ];

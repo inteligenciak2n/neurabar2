@@ -5,6 +5,7 @@ namespace Tests\Feature\Platform;
 use App\Enums\ProfileEnum;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\PlanCatalog;
+use Database\Seeders\PlanCatalogsSeeder;
 use Illuminate\Support\Facades\Mail;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
@@ -12,6 +13,13 @@ use Tests\TestCase;
 class CorporationTest extends TestCase
 {
     use RefreshAllDatabases;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(PlanCatalogsSeeder::class);
+    }
 
     public function test_backoffice_user_can_list_corporations(): void
     {
