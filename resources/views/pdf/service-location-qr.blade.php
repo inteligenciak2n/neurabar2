@@ -111,8 +111,6 @@
 
         <hr class="divider" />
 
-        <p class="url">{{ $hubUrl }}</p>
-
         <p class="powered" style="margin-top: 12px;">Powered by NeuraBar</p>
     </div>
 </body>

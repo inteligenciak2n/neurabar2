@@ -28,6 +28,8 @@ class Venue extends Model
     use HasFactory;
     use HasUuids;
 
+    protected $connection = 'saas';
+
     protected $fillable = [
         'corporation_id',
         'name',
