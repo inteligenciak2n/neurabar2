@@ -12,6 +12,8 @@ use App\Listeners\Billing\RecordOrderModuleUsage;
 use App\Listeners\Billing\RecordSignalUsage;
 use App\Listeners\Kitchen\BroadcastNewOrderByStation;
 use App\Models\User;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -38,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(OrderPlaced::class, RecordOrderModuleUsage::class);
         Event::listen(ItemStatusUpdated::class, RecordKdsUsage::class);
         Event::listen(GuestSignaled::class, RecordSignalUsage::class);
+        Event::listen(Registered::class, SendEmailVerificationNotification::class);
 
         RateLimiter::for('call-waiter', function (Request $request) {
             $slug = $request->route('slug', '');

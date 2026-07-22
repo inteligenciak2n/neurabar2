@@ -15,6 +15,7 @@ Route::get('/', function () {
 Route::get('/kitchen/monitor', [KdsController::class, 'monitor'])->name('kitchen.monitor');
 
 require __DIR__.'/web/guest.php';
+require __DIR__.'/web/onboarding.php';
 require __DIR__.'/web/operational.php';
 require __DIR__.'/web/corporation.php';
 require __DIR__.'/web/platform.php';

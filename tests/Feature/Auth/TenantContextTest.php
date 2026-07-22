@@ -63,6 +63,7 @@ class TenantContextTest extends TestCase
         $user = User::factory()->create([
             'current_venue_id' => null,
             'active' => true,
+            'onboarding_completed_at' => now(),
         ]);
 
         $this->actingAs($user)

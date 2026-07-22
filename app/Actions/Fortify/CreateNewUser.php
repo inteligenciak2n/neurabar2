@@ -3,12 +3,10 @@
 namespace App\Actions\Fortify;
 
 use App\Enums\ProfileEnum;
-use App\Models\Tenant\PlanCatalog;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
-use Laravel\Jetstream\Jetstream;
 
 class CreateNewUser implements CreatesNewUsers
 {
@@ -25,30 +23,15 @@ class CreateNewUser implements CreatesNewUsers
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => $input['password'] ? $this->passwordRules() : 'nullable',
-            'plan_catalog_id' => ['nullable', 'uuid', 'exists:plan_catalogs,id'],
-            'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature() ? ['accepted', 'required'] : '',
         ])->validate();
 
-        $input['profile'] = ProfileEnum::Client->value;
-
-        $user = User::create([
+        return User::create([
             'name' => $input['name'],
             'email' => $input['email'],
-            'profile' => $input['profile'],
+            'profile' => ProfileEnum::Client->value,
             'password' => Hash::make($this->resolvePassword($input['password'] ?? null)),
             'active' => true,
         ]);
-
-        if (isset($input['profile']) && in_array($input['profile'], ProfileEnum::operationalProfiles())) {
-            $plan = isset($input['plan_catalog_id'])
-                ? PlanCatalog::find($input['plan_catalog_id'])
-                : null;
-
-            $action = app(CreateUserOwnerDefinitions::class);
-            $action->handle($user, $plan);
-        }
-
-        return $user;
     }
 
     private function resolvePassword(?string $password = null): string

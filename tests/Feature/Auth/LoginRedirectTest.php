@@ -16,6 +16,7 @@ class LoginRedirectTest extends TestCase
         User::factory()->create([
             'email' => 'client@test.com',
             'profile' => ProfileEnum::Client,
+            'onboarding_completed_at' => now(),
         ]);
 
         $response = $this->post('/login', [

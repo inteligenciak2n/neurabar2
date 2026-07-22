@@ -2,7 +2,6 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import AuthenticationCard from '@/Components/AuthenticationCard.vue';
 import AuthenticationCardLogo from '@/Components/AuthenticationCardLogo.vue';
-import Checkbox from '@/Components/Checkbox.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -10,20 +9,11 @@ import TextInput from '@/Components/TextInput.vue';
 import CustomHead from '@/Components/CustomHead.vue';
 import { ref, computed } from 'vue';
 
-const props = defineProps({
-    plans: {
-        type: Array,
-        default: () => [],
-    },
-});
-
 const form = useForm({
     name: '',
     email: '',
     password: '',
     password_confirmation: '',
-    plan_catalog_id: props.plans.length > 2 ? props.plans[1].id : '',
-    terms: false,
 });
 
 const showPassword = ref(false);
@@ -112,51 +102,6 @@ const submit = () => {
                 <InputError class="mt-1.5" :message="form.errors.email" />
             </div>
 
-            <!-- Plan Selection Cards -->
-            <div v-if="plans.length > 0" class="mt-5">
-                <InputLabel :value="__('Choose your plan')" class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2" />
-                <div class="space-y-2">
-                    <label
-                        v-for="(plan, idx) in plans"
-                        :key="plan.id"
-                        :class="[
-                            'relative flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all duration-200',
-                            form.plan_catalog_id === plan.id
-                                ? 'border-gray-900 dark:border-white bg-gray-50 dark:bg-gray-800/50'
-                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                        ]"
-                    >
-                        <div :class="[
-                            'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors',
-                            form.plan_catalog_id === plan.id
-                                ? 'border-gray-900 dark:border-white'
-                                : 'border-gray-300 dark:border-gray-600'
-                        ]">
-                            <div v-if="form.plan_catalog_id === plan.id" class="w-2.5 h-2.5 rounded-full bg-gray-900 dark:bg-white" />
-                        </div>
-                        <input
-                            type="radio"
-                            :value="plan.id"
-                            v-model="form.plan_catalog_id"
-                            class="sr-only"
-                        />
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2">
-                                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ plan.name }}</span>
-                                <span v-if="idx === 1" class="px-2 py-0.5 text-[10px] font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full">
-                                    {{ __('Popular') }}
-                                </span>
-                            </div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{ plan.description || plan.name }}</p>
-                        </div>
-                        <span class="text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">
-                            {{ plan.monthly_price }}
-                        </span>
-                    </label>
-                </div>
-                <InputError class="mt-1.5" :message="form.errors.plan_catalog_id" />
-            </div>
-
             <!-- Password -->
             <div class="mt-5">
                 <InputLabel for="password" :value="__('Password')" class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5" />
@@ -222,20 +167,6 @@ const submit = () => {
                     </button>
                 </div>
                 <InputError class="mt-1.5" :message="form.errors.password_confirmation" />
-            </div>
-
-            <!-- Terms -->
-            <div v-if="$page.props.jetstream.hasTermsAndPrivacyPolicyFeature" class="mt-5">
-                <label class="flex items-start gap-3 cursor-pointer">
-                    <Checkbox id="terms" v-model:checked="form.terms" name="terms" required class="mt-0.5" />
-                    <span class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                        {{ __('I agree to the') }}
-                        <a target="_blank" :href="route('terms.show')" class="underline text-gray-900 dark:text-white hover:text-gray-700 dark:hover:text-gray-200 transition-colors">{{ __('Terms of Service') }}</a>
-                        {{ __('and') }}
-                        <a target="_blank" :href="route('policy.show')" class="underline text-gray-900 dark:text-white hover:text-gray-700 dark:hover:text-gray-200 transition-colors">{{ __('Privacy Policy') }}</a>
-                    </span>
-                </label>
-                <InputError class="mt-1.5" :message="form.errors.terms" />
             </div>
 
             <!-- Actions -->

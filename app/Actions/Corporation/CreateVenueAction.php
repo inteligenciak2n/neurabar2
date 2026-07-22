@@ -6,8 +6,6 @@ use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
 use App\Enums\UserRole;
 use App\Models\Tenant\Corporation;
-use App\Models\Tenant\CorporationSubscription;
-use App\Models\Tenant\PlanCatalog;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueModule;
 use App\Models\Tenant\VenueSubscription;
@@ -32,10 +30,6 @@ class CreateVenueAction
 
         $plan = $corporationSubscription->planCatalog;
 
-        if (! $plan) {
-            throw new InvalidArgumentException('A assinatura da corporation não possui um plano associado.');
-        }
-
         $slug = Str::slug($data['name']).'-'.Str::lower(Str::random(6));
 
         $venue = Venue::create([
@@ -48,10 +42,10 @@ class CreateVenueAction
         VenueSubscription::create([
             'venue_id' => $venue->id,
             'corporation_subscription_id' => $corporationSubscription->id,
-            'plan_catalog_id' => $plan->id,
+            'plan_catalog_id' => $plan?->id,
             'status' => $corporationSubscription->status,
-            'base_value' => $plan->monthly_price,
-            'total_value' => $plan->monthly_price,
+            'base_value' => $plan?->monthly_price ?? 0,
+            'total_value' => $plan?->monthly_price ?? 0,
             'started_at' => now(),
             'trial_ends_at' => $corporationSubscription->trial_ends_at,
         ]);

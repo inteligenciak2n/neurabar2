@@ -35,7 +35,7 @@ class EmailVerificationTest extends TestCase
 
         Event::fake();
 
-        $user = User::factory()->unverified()->create();
+        $user = User::factory()->unverified()->create(['onboarding_completed_at' => now()]);
 
         $verificationUrl = URL::temporarySignedRoute(
             'verification.verify',

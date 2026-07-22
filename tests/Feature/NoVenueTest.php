@@ -20,6 +20,7 @@ class NoVenueTest extends TestCase
         $user = User::factory()->create([
             'current_venue_id' => null,
             'active' => true,
+            'onboarding_completed_at' => now(),
         ]);
 
         $this->actingAs($user)
@@ -32,11 +33,25 @@ class NoVenueTest extends TestCase
         $user = User::factory()->create([
             'current_venue_id' => null,
             'active' => true,
+            'onboarding_completed_at' => now(),
         ]);
 
         $this->actingAs($user)
             ->get(route('no-venue.index'))
             ->assertOk();
+    }
+
+    public function test_user_without_completed_onboarding_is_redirected_to_onboarding_wizard(): void
+    {
+        $user = User::factory()->create([
+            'current_venue_id' => null,
+            'active' => true,
+            'onboarding_completed_at' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertRedirect(route('onboarding.subscription.create'));
     }
 
     public function test_owner_can_create_first_venue_from_no_venue_page(): void
@@ -53,6 +68,7 @@ class NoVenueTest extends TestCase
         $user = User::factory()->create([
             'current_venue_id' => null,
             'active' => true,
+            'onboarding_completed_at' => now(),
         ]);
         $corporation->update(['owner_id' => $user->id]);
 

@@ -19,6 +19,7 @@ class CorporationSubscription extends Model
     protected $fillable = [
         'corporation_id', 'plan_catalog_id', 'affiliate_code_id', 'billing_mode',
         'status', 'billing_day', 'grace_period_days', 'started_at', 'ended_at', 'trial_ends_at', 'currency',
+        'terms_accepted_at',
     ];
 
     protected function casts(): array
@@ -29,6 +30,7 @@ class CorporationSubscription extends Model
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
             'trial_ends_at' => 'datetime',
+            'terms_accepted_at' => 'datetime',
             'billing_mode' => BillingMode::class,
             'status' => SubscriptionStatus::class,
         ];
