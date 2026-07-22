@@ -20,19 +20,13 @@ use App\Models\Tenant\VenueModule;
 use App\Models\Tenant\VenueSubscription;
 use App\Notifications\Billing\InvoiceGenerated;
 use App\Services\Billing\SubscriptionCalculator;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class GenerateInvoicesJobTest extends TestCase
 {
-    use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->artisan('db:migrate-all --fresh --force');
-    }
+    use RefreshAllDatabases;
 
     public function test_generates_venue_invoice_for_active_subscription(): void
     {

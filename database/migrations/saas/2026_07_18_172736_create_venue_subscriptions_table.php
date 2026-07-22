@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignUuid('corporation_subscription_id')->constrained('corporation_subscriptions')->cascadeOnDelete();
             $table->foreignUuid('plan_catalog_id')->nullable()->constrained('plan_catalogs')->nullOnDelete();
             $table->foreignUuid('affiliate_code_id')->nullable()->constrained('affiliate_codes')->nullOnDelete();
-            $table->string('status')->default('trial');
+            $table->enum('status', \App\Enums\SubscriptionStatus::values())->default('trial');
             $table->decimal('base_value', 10, 2)->default(0);
             $table->decimal('modules_value', 10, 2)->default(0);
             $table->decimal('metered_value', 10, 2)->default(0);

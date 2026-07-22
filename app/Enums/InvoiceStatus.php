@@ -32,10 +32,19 @@ enum InvoiceStatus: string
             return false;
         }
 
-        if ($this->isFinalized()) {
-            return false;
-        }
+        return in_array($status, $this->allowedTransitions(), true);
+    }
 
-        return true;
+    /**
+     * @return list<self>
+     */
+    private function allowedTransitions(): array
+    {
+        return match ($this) {
+            self::Open => [self::Overdue, self::Paid, self::Canceled],
+            self::Overdue => [self::Paid, self::Canceled],
+            self::Paid => [self::Refunded],
+            default => [],
+        };
     }
 }

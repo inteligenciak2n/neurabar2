@@ -3,5 +3,10 @@
     "Register payment of": "Register payment of",
     "and close this attendance?": "and close this attendance?",
     "An error occurred. Please try again.": "An error occurred. Please try again.",
-    "Delete this plan?": "Delete this plan?"
+    "Delete this plan?": "Delete this plan?",
+    "Corporation updated successfully": "Corporation updated successfully",
+    "Module enabled successfully for venue": "Module enabled successfully for venue",
+    "Failed to create invoice": "Failed to create invoice",
+    "Invoice created successfully": "Invoice created successfully",
+    "Invoice status updated successfully": "Invoice status updated successfully"
 }

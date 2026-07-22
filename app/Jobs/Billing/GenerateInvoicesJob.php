@@ -5,6 +5,7 @@ namespace App\Jobs\Billing;
 use App\Enums\BillingMode;
 use App\Enums\InvoiceStatus;
 use App\Enums\SubscriptionStatus;
+use App\Models\Tenant\CorporationDiscount;
 use App\Models\Tenant\CorporationInvoice;
 use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\VenueInvoice;
@@ -77,6 +78,10 @@ class GenerateInvoicesJob implements ShouldQueue
                 continue;
             }
 
+            $discount = $isUnified ? null : $this->resolveDiscount($corporation);
+            $discountValue = $this->calculateDiscountValue($calculated['total'], $discount);
+            $venueTotal = max(0, $calculated['total'] - $discountValue);
+
             $invoice = VenueInvoice::updateOrCreate(
                 [
                     'venue_id' => $venue->id,
@@ -92,8 +97,8 @@ class GenerateInvoicesJob implements ShouldQueue
                     'modules_value' => $calculated['modules'],
                     'metered_value' => $calculated['metered'],
                     'dedicated_surcharge' => $calculated['dedicated_surcharge'],
-                    'discount_value' => 0,
-                    'total_value' => $calculated['total'],
+                    'discount_value' => $discountValue,
+                    'total_value' => $venueTotal,
                 ]
             );
 
@@ -104,7 +109,7 @@ class GenerateInvoicesJob implements ShouldQueue
                 $corporationModules += $calculated['modules'];
                 $corporationMetered += $calculated['metered'];
                 $corporationDedicated += $calculated['dedicated_surcharge'];
-                $corporationTotal += $calculated['total'];
+                $corporationTotal += $venueTotal;
             }
 
             if ($invoice->wasRecentlyCreated && ! $isUnified) {
@@ -113,6 +118,10 @@ class GenerateInvoicesJob implements ShouldQueue
         }
 
         if ($isUnified) {
+            $corporateDiscount = $this->resolveDiscount($corporation);
+            $corporateDiscountValue = $this->calculateDiscountValue($corporationTotal, $corporateDiscount);
+            $finalTotal = max(0, $corporationTotal - $corporateDiscountValue);
+
             $corporationInvoice = CorporationInvoice::updateOrCreate(
                 [
                     'corporation_id' => $corporation->id,
@@ -128,16 +137,14 @@ class GenerateInvoicesJob implements ShouldQueue
                     'modules_value' => $corporationModules,
                     'metered_value' => $corporationMetered,
                     'dedicated_surcharge' => $corporationDedicated,
-                    'discount_value' => 0,
-                    'total_value' => $corporationTotal,
+                    'discount_value' => $corporateDiscountValue,
+                    'total_value' => $finalTotal,
                 ]
             );
 
-            if ($corporationInvoice->wasRecentlyCreated || ! $corporationInvoice->wasRecentlyCreated) {
-                foreach ($venueInvoices as $venueInvoice) {
-                    if ($venueInvoice->corporation_invoice_id === null) {
-                        $venueInvoice->update(['corporation_invoice_id' => $corporationInvoice->id]);
-                    }
+            foreach ($venueInvoices as $venueInvoice) {
+                if ($venueInvoice->corporation_invoice_id === null) {
+                    $venueInvoice->update(['corporation_invoice_id' => $corporationInvoice->id]);
                 }
             }
 
@@ -154,6 +161,52 @@ class GenerateInvoicesJob implements ShouldQueue
         if ($owner) {
             Notification::send($owner, new InvoiceGenerated($invoice));
         }
+    }
+
+    /**
+     * @return array{type: string, value: float, months_used: int}|null
+     */
+    private function resolveDiscount(\App\Models\Tenant\Corporation $corporation): ?array
+    {
+        $discount = CorporationDiscount::query()
+            ->where('corporation_id', $corporation->id)
+            ->activeForPeriod($this->period)
+            ->orderByDesc('created_at')
+            ->first();
+
+        if (! $discount) {
+            return null;
+        }
+
+        $monthsUsed = \App\Models\Tenant\CorporationInvoice::query()
+            ->where('corporation_id', $corporation->id)
+            ->where('period', '>=', $discount->valid_from->format('Y-m'))
+            ->where('period', '<=', $this->period)
+            ->where('discount_value', '>', 0)
+            ->count();
+
+        if ($discount->max_months !== null && $monthsUsed >= $discount->max_months) {
+            return null;
+        }
+
+        return [
+            'type' => $discount->type,
+            'value' => (float) $discount->value,
+            'months_used' => $monthsUsed,
+        ];
+    }
+
+    private function calculateDiscountValue(float $total, ?array $discount): float
+    {
+        if (! $discount) {
+            return 0.0;
+        }
+
+        if ($discount['type'] === 'percentage') {
+            return round($total * ($discount['value'] / 100), 2);
+        }
+
+        return min($discount['value'], $total);
     }
 
     private function resolveDueDate(CorporationSubscription $subscription): string

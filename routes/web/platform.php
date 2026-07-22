@@ -5,8 +5,11 @@ use App\Http\Controllers\Backoffice\Support\BackofficeTutorialController;
 use App\Http\Controllers\Platform\CorporationController as PlatformCorporationController;
 use App\Http\Controllers\Platform\CorporationModuleController;
 use App\Http\Controllers\Platform\DashboardController as PlatformDashboardController;
+use App\Http\Controllers\Platform\CorporationDiscountController;
 use App\Http\Controllers\Platform\InvoiceController;
+use App\Http\Controllers\Platform\ManualInvoiceController;
 use App\Http\Controllers\Platform\PlanAssignmentController;
+use App\Http\Controllers\Platform\SubscriptionController;
 use App\Http\Controllers\Platform\PlanCatalogController;
 use App\Http\Controllers\Platform\PlatformUserController;
 use App\Http\Controllers\Platform\VenueModuleController;
@@ -22,9 +25,17 @@ Route::prefix($platformPath)->name('platform.')->group(function () {
         Route::get('/corporations', [PlatformCorporationController::class, 'index'])->name('corporations.index');
         Route::get('/corporations/create', [PlatformCorporationController::class, 'create'])->name('corporations.create');
         Route::post('/corporations', [PlatformCorporationController::class, 'store'])->name('corporations.store');
-        Route::get('/corporations/{corporation}/edit', [PlatformCorporationController::class, 'edit'])->name('corporations.edit');
-        Route::put('/corporations/{corporation}', [PlatformCorporationController::class, 'update'])->name('corporations.update');
-        Route::put('/corporations/{corporation}/plan', [PlanAssignmentController::class, 'update'])->name('corporations.plan');
+
+        Route::middleware(['platform_role:super_admin,finance'])->group(function () {
+            Route::get('/corporations/{corporation}/edit', [PlatformCorporationController::class, 'edit'])->name('corporations.edit');
+            Route::put('/corporations/{corporation}', [PlatformCorporationController::class, 'update'])->name('corporations.update');
+            Route::put('/corporations/{corporation}/plan', [PlanAssignmentController::class, 'update'])->name('corporations.plan');
+            Route::put('/corporations/{corporation}/subscription', [SubscriptionController::class, 'update'])->name('corporations.subscription.update');
+            Route::post('/corporations/{corporation}/discounts', [CorporationDiscountController::class, 'store'])->name('corporations.discounts.store');
+            Route::delete('/corporations/{corporation}/discounts/{discount}', [CorporationDiscountController::class, 'destroy'])->name('corporations.discounts.destroy');
+            Route::post('/corporations/{corporation}/invoices', [ManualInvoiceController::class, 'store'])->name('corporations.invoices.store');
+            Route::put('/corporations/{corporation}/invoices/{invoice}/status', [ManualInvoiceController::class, 'updateStatus'])->name('corporations.invoices.status');
+        });
 
         Route::get('/corporations/{corporation}/modules', [CorporationModuleController::class, 'index'])->name('corporations.modules.index');
         Route::post('/corporations/{corporation}/modules', [CorporationModuleController::class, 'store'])->name('corporations.modules.store');

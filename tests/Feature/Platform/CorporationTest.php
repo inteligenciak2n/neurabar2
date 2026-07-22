@@ -48,9 +48,9 @@ class CorporationTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'john@test.com']);
     }
 
-    public function test_backoffice_user_can_assign_plan(): void
+    public function test_super_admin_can_assign_plan(): void
     {
-        $this->loginAsPlatformUser(ProfileEnum::Registration);
+        $this->loginAsPlatformUser(ProfileEnum::SuperAdmin);
 
         $corporation = Corporation::factory()->create();
         $plan = PlanCatalog::factory()->create(['monthly_price' => 299.00]);

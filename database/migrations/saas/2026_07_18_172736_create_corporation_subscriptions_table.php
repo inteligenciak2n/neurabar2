@@ -15,8 +15,8 @@ return new class extends Migration
             $table->foreignUuid('corporation_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('plan_catalog_id')->nullable()->constrained('plan_catalogs')->nullOnDelete();
             $table->foreignUuid('affiliate_code_id')->nullable()->constrained('affiliate_codes')->nullOnDelete();
-            $table->string('billing_mode')->default('per_venue');
-            $table->string('status')->default('trial');
+            $table->enum('billing_mode', \App\Enums\BillingMode::values())->default('per_venue');
+            $table->enum('status', \App\Enums\SubscriptionStatus::values())->default('trial');
             $table->tinyInteger('billing_day')->default(1);
             $table->tinyInteger('grace_period_days')->default(3);
             $table->timestamp('started_at');

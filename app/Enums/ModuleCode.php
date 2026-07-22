@@ -41,4 +41,17 @@ enum ModuleCode: string
             self::VoiceCommand => 'Comando por Voz',
         };
     }
+
+    public function toArray(): array
+    {
+        return [
+            'value' => $this->value,
+            'label' => $this->label(),
+        ];
+    }
+
+    public static function all(): array
+    {
+        return array_map(fn (self $module) => $module->toArray(), self::cases());
+    }
 }

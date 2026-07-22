@@ -95,4 +95,14 @@ class Corporation extends Model
     {
         return $this->subscription?->billing_mode === BillingMode::Unified;
     }
+
+    public function discounts(): HasMany
+    {
+        return $this->hasMany(CorporationDiscount::class);
+    }
+
+    public function affiliate(): BelongsTo
+    {
+        return $this->belongsTo(AffiliateCode::class, 'affiliate_code_id');
+    }
 }

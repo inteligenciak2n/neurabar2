@@ -42,10 +42,44 @@ class CorporationController extends Controller
 
     public function edit(Corporation $corporation): Response
     {
-        $corporation->load('subscription.planCatalog:id,name', 'venues:id,name,active,corporation_id');
+        $corporation->load([
+            'subscription.planCatalog:id,name,included_modules',
+            'venues.subscription',
+            'venues.modules.catalog:id,code,name,base_monthly_price',
+            'modules.catalog:id,code,name,base_monthly_price',
+            'discounts',
+            'affiliate:id,code,name,email',
+            'owner:id,name,email',
+        ]);
+
+        $invoices = \App\Models\Tenant\CorporationInvoice::query()
+            ->where('corporation_id', $corporation->id)
+            ->withSum('venueInvoices as venue_total', 'total_value')
+            ->orderByDesc('period')
+            ->limit(50)
+            ->get();
+
+        $venueInvoices = \App\Models\Tenant\VenueInvoice::query()
+            ->whereIn('venue_id', $corporation->venues->pluck('id'))
+            ->with('venue:id,name')
+            ->orderByDesc('period')
+            ->limit(50)
+            ->get();
+
+        $plans = \App\Models\Tenant\PlanCatalog::query()
+            ->where('active', true)
+            ->select('id', 'name', 'monthly_price', 'included_modules')
+            ->get();
 
         return Inertia::render('Platform/Corporations/Edit', [
             'corporation' => $corporation,
+            'plans' => $plans,
+            'invoices' => $invoices,
+            'venueInvoices' => $venueInvoices,
+            'moduleCatalog' => \App\Enums\ModuleCode::all(),
+            'subscriptionStatuses' => array_map(fn ($s) => ['value' => $s->value, 'label' => $s->label()], \App\Enums\SubscriptionStatus::cases()),
+            'billingModes' => array_map(fn ($m) => ['value' => $m->value, 'label' => $m->label()], \App\Enums\BillingMode::cases()),
+            'invoiceStatuses' => array_map(fn ($s) => ['value' => $s->value, 'label' => $s->label()], \App\Enums\InvoiceStatus::cases()),
         ]);
     }
 
