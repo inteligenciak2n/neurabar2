@@ -3,5 +3,10 @@
     "Register payment of": "Registre o pagamento de",
     "and close this attendance?": "e encerrar esse atendimento?",
     "An error occurred. Please try again.": "Ocorreu um erro. Por favor, tente novamente.",
-    "Delete this plan?": "Excluir esse plano?"
+    "Delete this plan?": "Excluir esse plano?",
+    "Corporation updated successfully": "Corporação atualizada com sucesso",
+    "Module enabled successfully for venue": "Módulo habilitado com sucesso para o local",
+    "Failed to create invoice": "Falha ao criar fatura",
+    "Invoice created successfully": "Fatura criada com sucesso",
+    "Invoice status updated successfully": "Status da fatura atualizado com sucesso"
 }
