@@ -5,6 +5,7 @@ namespace App\Jobs\Billing;
 use App\Models\Tenant\VenueUsageRecord;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
@@ -26,18 +27,22 @@ class RecordModuleUsageJob implements ShouldQueue
     {
         $period = now()->format('Y-m');
 
-        $record = VenueUsageRecord::firstOrNew(
-            [
-                'venue_id' => $this->venueId,
-                'module_code' => $this->moduleCode,
-                'period' => $period,
-            ],
-            [
-                'quantity' => 0,
-            ]
-        );
+        $attributes = [
+            'venue_id' => $this->venueId,
+            'module_code' => $this->moduleCode,
+            'period' => $period,
+        ];
 
-        $record->quantity += $this->quantity;
-        $record->save();
+        try {
+            $record = VenueUsageRecord::firstOrCreate($attributes, ['quantity' => 0]);
+        } catch (QueryException) {
+            // Outro worker criou o registro concorrentemente (unique constraint em
+            // venue_id/module_code/period). Recupera a linha já existente.
+            $record = VenueUsageRecord::query()->where($attributes)->firstOrFail();
+        }
+
+        // increment() executa "quantity = quantity + ?" atomicamente no banco,
+        // evitando lost update quando múltiplos workers processam o mesmo período.
+        $record->increment('quantity', $this->quantity);
     }
 }

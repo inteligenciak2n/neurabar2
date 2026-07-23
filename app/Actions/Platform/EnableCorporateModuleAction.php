@@ -8,6 +8,7 @@ use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\ModuleCatalog;
 use App\Services\Billing\SubscriptionCalculator;
+use App\Services\CorporationModuleCache;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -46,6 +47,7 @@ class EnableCorporateModuleAction
             $module->save();
 
             $this->calculator->calculateCorporation($corporation, now()->format('Y-m'));
+            CorporationModuleCache::forget($corporation);
 
             return $module;
         });

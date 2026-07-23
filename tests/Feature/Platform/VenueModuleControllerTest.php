@@ -5,6 +5,7 @@ namespace Tests\Feature\Platform;
 use App\Enums\ModuleBillingType;
 use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
+use App\Enums\ProfileEnum;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\ModuleCatalog;
@@ -114,5 +115,56 @@ class VenueModuleControllerTest extends TestCase
         $this->actingAs($user)
             ->delete(route('platform.corporations.venues.modules.destroy', [$otherCorporation, $venue, $module]))
             ->assertNotFound();
+    }
+
+    public function test_registration_user_cannot_activate_module_for_venue(): void
+    {
+        $user = User::factory()->create(['profile' => ProfileEnum::Registration]);
+        $venue = Venue::factory()->create();
+        $corporation = $venue->corporation;
+        ModuleCatalog::updateOrCreate(
+            ['code' => ModuleCode::Kds->value],
+            [
+                'name' => ModuleCode::Kds->label(),
+                'billing_type' => ModuleBillingType::Hybrid,
+                'base_monthly_price' => 49.90,
+                'active' => true,
+            ]
+        );
+        CorporationModule::factory()->create([
+            'corporation_id' => $corporation->id,
+            'module_code' => ModuleCode::Kds->value,
+            'status' => ModuleStatus::Active,
+        ]);
+
+        $response = $this->actingAs($user)->post(route('platform.corporations.venues.modules.store', [$corporation, $venue]), [
+            'module_code' => ModuleCode::Kds->value,
+            'quantity' => 2,
+        ]);
+
+        $response->assertForbidden();
+        $this->assertDatabaseMissing('venue_modules', [
+            'venue_id' => $venue->id,
+            'module_code' => ModuleCode::Kds->value,
+        ]);
+    }
+
+    public function test_read_only_user_cannot_deactivate_module_for_venue(): void
+    {
+        $user = User::factory()->create(['profile' => ProfileEnum::ReadOnly]);
+        $venue = Venue::factory()->create();
+        $module = VenueModule::factory()->create([
+            'venue_id' => $venue->id,
+            'module_code' => ModuleCode::Kds->value,
+            'status' => ModuleStatus::Active,
+        ]);
+
+        $response = $this->actingAs($user)->delete(route('platform.corporations.venues.modules.destroy', [$venue->corporation, $venue, $module]));
+
+        $response->assertForbidden();
+        $this->assertDatabaseHas('venue_modules', [
+            'id' => $module->id,
+            'status' => ModuleStatus::Active->value,
+        ]);
     }
 }

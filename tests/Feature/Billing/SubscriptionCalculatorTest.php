@@ -103,6 +103,21 @@ class SubscriptionCalculatorTest extends TestCase
         $this->assertEqualsWithDelta(119.90, $result['total'], 0.01);
     }
 
+    public function test_calculate_venue_with_metered_overage_does_not_double_charge_included_quantity(): void
+    {
+        $venue = $this->createVenueWithSubscription(baseValue: 50.00);
+        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 49.90);
+        $this->createUsageTier(ModuleCode::Kds, includedQuantity: 500, overagePricePerUnit: 0.10, pricePerUnit: 0.05);
+        $this->createUsageRecord($venue, ModuleCode::Kds, '2026-07', quantity: 700);
+
+        $result = $this->calculator->calculateVenue($venue, '2026-07');
+
+        // Esperado: 500 unidades inclusas * 0.05 (base) + 200 unidades excedentes * 0.10 (overage) = 25 + 20 = 45.
+        // Antes da correção, o cálculo cobrava price_per_unit sobre as 700 unidades (35) mais o excedente (20) = 55.
+        $this->assertEqualsWithDelta(45.00, $result['metered'], 0.01);
+        $this->assertEqualsWithDelta(144.90, $result['total'], 0.01);
+    }
+
     public function test_calculate_venue_with_dedicated_surcharge(): void
     {
         $venue = $this->createVenueWithSubscription(baseValue: 50.00, dedicatedSurcharge: 25.00);
@@ -234,14 +249,14 @@ class SubscriptionCalculatorTest extends TestCase
         ]);
     }
 
-    private function createUsageTier(ModuleCode $code, int $includedQuantity, float $overagePricePerUnit = 0.0): void
+    private function createUsageTier(ModuleCode $code, int $includedQuantity, float $overagePricePerUnit = 0.0, float $pricePerUnit = 0.0): void
     {
         ModuleUsageTier::create([
             'module_code' => $code->value,
             'min_quantity' => 0,
             'max_quantity' => null,
             'included_quantity' => $includedQuantity,
-            'price_per_unit' => 0.00,
+            'price_per_unit' => $pricePerUnit,
             'overage_price_per_unit' => $overagePricePerUnit,
         ]);
     }

@@ -15,6 +15,8 @@ class InvoiceController extends Controller
 {
     public function index(Request $request): Response
     {
+        Gate::authorize('view-invoice');
+
         $period = $request->input('period', now()->format('Y-m'));
 
         $corporationInvoices = CorporationInvoice::query()

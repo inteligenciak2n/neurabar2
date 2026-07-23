@@ -11,6 +11,7 @@ use App\Models\Tenant\PlanCatalog;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueModule;
 use App\Services\Billing\SubscriptionCalculator;
+use App\Services\CorporationModuleCache;
 use App\Services\VenueModuleCache;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -62,6 +63,7 @@ class ProvisionPlanModulesAction
 
             $this->calculator->calculateVenue($venue, $now->format('Y-m'));
             VenueModuleCache::forget($venue);
+            CorporationModuleCache::forget($corporation);
         });
     }
 

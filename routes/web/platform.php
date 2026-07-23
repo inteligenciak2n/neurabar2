@@ -3,15 +3,15 @@
 use App\Http\Controllers\Backoffice\Support\BackofficeTicketController;
 use App\Http\Controllers\Backoffice\Support\BackofficeTutorialController;
 use App\Http\Controllers\Platform\CorporationController as PlatformCorporationController;
+use App\Http\Controllers\Platform\CorporationDiscountController;
 use App\Http\Controllers\Platform\CorporationModuleController;
 use App\Http\Controllers\Platform\DashboardController as PlatformDashboardController;
-use App\Http\Controllers\Platform\CorporationDiscountController;
 use App\Http\Controllers\Platform\InvoiceController;
 use App\Http\Controllers\Platform\ManualInvoiceController;
 use App\Http\Controllers\Platform\PlanAssignmentController;
-use App\Http\Controllers\Platform\SubscriptionController;
 use App\Http\Controllers\Platform\PlanCatalogController;
 use App\Http\Controllers\Platform\PlatformUserController;
+use App\Http\Controllers\Platform\SubscriptionController;
 use App\Http\Controllers\Platform\VenueModuleController;
 use Illuminate\Support\Facades\Route;
 
@@ -35,15 +35,15 @@ Route::prefix($platformPath)->name('platform.')->group(function () {
             Route::delete('/corporations/{corporation}/discounts/{discount}', [CorporationDiscountController::class, 'destroy'])->name('corporations.discounts.destroy');
             Route::post('/corporations/{corporation}/invoices', [ManualInvoiceController::class, 'store'])->name('corporations.invoices.store');
             Route::put('/corporations/{corporation}/invoices/{invoice}/status', [ManualInvoiceController::class, 'updateStatus'])->name('corporations.invoices.status');
+
+            Route::get('/corporations/{corporation}/modules', [CorporationModuleController::class, 'index'])->name('corporations.modules.index');
+            Route::post('/corporations/{corporation}/modules', [CorporationModuleController::class, 'store'])->name('corporations.modules.store');
+            Route::delete('/corporations/{corporation}/modules/{module}', [CorporationModuleController::class, 'destroy'])->name('corporations.modules.destroy');
+
+            Route::get('/corporations/{corporation}/venues/{venue}/modules', [VenueModuleController::class, 'index'])->name('corporations.venues.modules.index');
+            Route::post('/corporations/{corporation}/venues/{venue}/modules', [VenueModuleController::class, 'store'])->name('corporations.venues.modules.store');
+            Route::delete('/corporations/{corporation}/venues/{venue}/modules/{module}', [VenueModuleController::class, 'destroy'])->name('corporations.venues.modules.destroy');
         });
-
-        Route::get('/corporations/{corporation}/modules', [CorporationModuleController::class, 'index'])->name('corporations.modules.index');
-        Route::post('/corporations/{corporation}/modules', [CorporationModuleController::class, 'store'])->name('corporations.modules.store');
-        Route::delete('/corporations/{corporation}/modules/{module}', [CorporationModuleController::class, 'destroy'])->name('corporations.modules.destroy');
-
-        Route::get('/corporations/{corporation}/venues/{venue}/modules', [VenueModuleController::class, 'index'])->name('corporations.venues.modules.index');
-        Route::post('/corporations/{corporation}/venues/{venue}/modules', [VenueModuleController::class, 'store'])->name('corporations.venues.modules.store');
-        Route::delete('/corporations/{corporation}/venues/{venue}/modules/{module}', [VenueModuleController::class, 'destroy'])->name('corporations.venues.modules.destroy');
 
         Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');

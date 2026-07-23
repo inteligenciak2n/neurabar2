@@ -5,6 +5,7 @@ namespace Tests\Feature\Platform;
 use App\Enums\ModuleBillingType;
 use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
+use App\Enums\ProfileEnum;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\ModuleCatalog;
@@ -79,6 +80,50 @@ class CorporationModuleControllerTest extends TestCase
         $this->assertDatabaseHas('corporation_modules', [
             'id' => $module->id,
             'status' => ModuleStatus::Inactive->value,
+        ]);
+    }
+
+    public function test_registration_user_cannot_enable_corporation_module(): void
+    {
+        $user = User::factory()->create(['profile' => ProfileEnum::Registration]);
+        $corporation = Corporation::factory()->create();
+        ModuleCatalog::updateOrCreate(
+            ['code' => ModuleCode::Kds->value],
+            [
+                'name' => ModuleCode::Kds->label(),
+                'billing_type' => ModuleBillingType::Hybrid,
+                'base_monthly_price' => 49.90,
+                'active' => true,
+            ]
+        );
+
+        $response = $this->actingAs($user)->post(route('platform.corporations.modules.store', $corporation), [
+            'module_code' => ModuleCode::Kds->value,
+        ]);
+
+        $response->assertForbidden();
+        $this->assertDatabaseMissing('corporation_modules', [
+            'corporation_id' => $corporation->id,
+            'module_code' => ModuleCode::Kds->value,
+        ]);
+    }
+
+    public function test_read_only_user_cannot_disable_corporation_module(): void
+    {
+        $user = User::factory()->create(['profile' => ProfileEnum::ReadOnly]);
+        $corporation = Corporation::factory()->create();
+        $module = CorporationModule::factory()->create([
+            'corporation_id' => $corporation->id,
+            'module_code' => ModuleCode::Kds->value,
+            'status' => ModuleStatus::Active,
+        ]);
+
+        $response = $this->actingAs($user)->delete(route('platform.corporations.modules.destroy', [$corporation, $module]));
+
+        $response->assertForbidden();
+        $this->assertDatabaseHas('corporation_modules', [
+            'id' => $module->id,
+            'status' => ModuleStatus::Active->value,
         ]);
     }
 }

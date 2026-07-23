@@ -25,6 +25,14 @@ use Illuminate\Support\Facades\DB;
 
 class CreateUserOwnerDefinitions
 {
+    /**
+     * Cria corporation, venue, subscription e dados padrão para um owner.
+     *
+     * Uso restrito a contas de desenvolvimento/seed (disparado por
+     * `CreateNewUserPlatform`, usado apenas em `DatabaseSeeder`). O fluxo real
+     * de onboarding de clientes coleta os dados reais da corporation/venue via
+     * `App\Http\Controllers\Onboarding\*` e `FinalizeOnboardingAction`.
+     */
     public function handle(User $user, ?PlanCatalog $plan = null): void
     {
         $operationalConnection = 'operation_default_1';
@@ -63,8 +71,8 @@ class CreateUserOwnerDefinitions
         $corporation = Corporation::create([
             'owner_id' => $user->id,
             'tax_id' => '00.000.000/0001-00',
-            'name' => 'Test Corp',
-            'email' => 'corp@test.com',
+            'name' => $user->name.' Corp',
+            'email' => $user->email,
             'contact_phone' => '11999990000',
             'active' => true,
             'self_connection' => $operationalConnection,

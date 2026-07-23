@@ -95,8 +95,6 @@ class SubscriptionCalculator
 
     private function calculateModules(Venue $venue): float
     {
-        $total = 0.0;
-
         $venueModules = $venue->modules()
             ->whereIn('status', [ModuleStatus::Active, ModuleStatus::Trial])
             ->where(function ($query): void {
@@ -104,34 +102,36 @@ class SubscriptionCalculator
             })
             ->get();
 
-        foreach ($venueModules as $venueModule) {
-            $unitPrice = $this->resolveModuleUnitPrice($venue, $venueModule->module_code);
+        if ($venueModules->isEmpty()) {
+            return 0.0;
+        }
 
-            if ($unitPrice === null) {
+        // Carrega todos os módulos ativos da corporation em uma única query (com o
+        // catálogo já eager-loaded) para evitar N+1 por módulo/venue durante o
+        // faturamento mensal (GenerateInvoicesJob percorre todas as venues).
+        $corporationModules = $venue->corporation
+            ?->activeModules()
+            ->with('catalog:id,code,base_monthly_price')
+            ->get()
+            ->keyBy('module_code') ?? collect();
+
+        $total = 0.0;
+
+        foreach ($venueModules as $venueModule) {
+            $corporationModule = $corporationModules->get($venueModule->module_code);
+
+            if (! $corporationModule) {
                 continue;
             }
+
+            $unitPrice = $corporationModule->custom_monthly_price !== null
+                ? (float) $corporationModule->custom_monthly_price
+                : (float) ($corporationModule->catalog?->base_monthly_price ?? 0);
 
             $total += $unitPrice * max(1, (int) $venueModule->quantity);
         }
 
         return $total;
-    }
-
-    private function resolveModuleUnitPrice(Venue $venue, string $moduleCode): ?float
-    {
-        $corporationModule = $venue->corporation?->activeModules()
-            ->where('module_code', $moduleCode)
-            ->first();
-
-        if (! $corporationModule) {
-            return null;
-        }
-
-        if ($corporationModule->custom_monthly_price !== null) {
-            return (float) $corporationModule->custom_monthly_price;
-        }
-
-        return (float) ($corporationModule->catalog?->base_monthly_price ?? 0);
     }
 
     private function calculateMetered(Venue $venue, string $period): float
@@ -162,9 +162,12 @@ class SubscriptionCalculator
         $quantity = max(0, (int) $record->quantity);
         $overageQuantity = max(0, $quantity - $included);
 
+        // price_per_unit cobra apenas as unidades dentro do limite incluso; o
+        // excedente é cobrado exclusivamente via overage_price_per_unit/overage_flat_fee
+        // logo abaixo, evitando cobrança em duplicidade das unidades excedentes.
         $basePrice = $tier->flat_price !== null
             ? (float) $tier->flat_price
-            : ((float) $tier->price_per_unit * $quantity);
+            : ((float) $tier->price_per_unit * min($quantity, $included));
 
         $overagePrice = 0.0;
 

@@ -103,4 +103,13 @@ class InvoiceControllerTest extends TestCase
             ->get(route('platform.invoices.show', $invoice))
             ->assertForbidden();
     }
+
+    public function test_registration_user_cannot_list_invoices(): void
+    {
+        $user = User::factory()->create(['profile' => ProfileEnum::Registration]);
+
+        $this->actingAs($user)
+            ->get(route('platform.invoices.index'))
+            ->assertForbidden();
+    }
 }

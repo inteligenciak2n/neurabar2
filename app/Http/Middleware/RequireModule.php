@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Enums\ModuleCode;
 use App\Services\Billing\BillingStatusService;
+use App\Services\CorporationModuleCache;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,7 +26,7 @@ class RequireModule
 
         $corporation = $venue->corporation;
 
-        if (! $corporation?->hasActiveModule($module)) {
+        if (! $corporation || ! in_array($module->value, CorporationModuleCache::remember($corporation), true)) {
             abort(403, 'Este módulo não está contratado para esta conta.');
         }
 
