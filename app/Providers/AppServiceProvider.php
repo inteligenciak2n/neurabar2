@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Contracts\Subscription\PaymentGatewayContract;
 use App\Enums\ProfileEnum;
 use App\Enums\UserRole;
 use App\Events\Kitchen\ItemStatusUpdated;
@@ -12,6 +13,7 @@ use App\Listeners\Billing\RecordOrderModuleUsage;
 use App\Listeners\Billing\RecordSignalUsage;
 use App\Listeners\Kitchen\BroadcastNewOrderByStation;
 use App\Models\User;
+use App\Services\Subscription\FakePaymentGateway;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -28,7 +30,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(
+            PaymentGatewayContract::class,
+            config('subscription.payment.gateway', FakePaymentGateway::class)
+        );
     }
 
     /**
@@ -84,6 +89,11 @@ class AppServiceProvider extends ServiceProvider
             ProfileEnum::SuperAdmin,
             ProfileEnum::Finance,
             ProfileEnum::ReadOnly,
+        ], true));
+
+        Gate::define('manage-subscription', fn (User $user) => in_array($user->currentVenueRole(), [
+            UserRole::Owner,
+            UserRole::GeneralManager,
         ], true));
     }
 }

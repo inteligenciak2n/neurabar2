@@ -58,6 +58,9 @@ class Venue extends Model
         'latitude',
         'longitude',
         'require_geolocation',
+        'billing_address_json',
+        'billing_email',
+        'billing_phone',
     ];
 
     protected $hidden = [

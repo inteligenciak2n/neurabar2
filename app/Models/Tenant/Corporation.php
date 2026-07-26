@@ -31,6 +31,9 @@ class Corporation extends Model
         'active',
         'self_connection',
         'is_dedicated',
+        'billing_address_json',
+        'billing_tax_regime',
+        'billing_state_registration',
     ];
 
     protected $hidden = [

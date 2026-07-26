@@ -24,6 +24,10 @@ use App\Http\Controllers\Settings\DashboardController;
 use App\Http\Controllers\Settings\KitchenStationController;
 use App\Http\Controllers\Settings\PreparationStatusController;
 use App\Http\Controllers\Settings\ServiceLocationController;
+use App\Http\Controllers\Settings\SubscriptionBillingAddressController;
+use App\Http\Controllers\Settings\SubscriptionController;
+use App\Http\Controllers\Settings\SubscriptionInvoiceController;
+use App\Http\Controllers\Settings\SubscriptionPaymentMethodController;
 use App\Http\Controllers\Settings\UserController;
 use App\Http\Controllers\Settings\VenueController;
 use App\Http\Controllers\Settings\VenueSettingsController;
@@ -153,6 +157,25 @@ Route::middleware([
         });
 
         Route::get('/attachments/{attachmentId}', [TutorialController::class, 'attachment'])->name('attachments.show');
+    });
+
+    // Subscription self-management — owner or general manager only
+    Route::prefix('settings/subscription')->name('settings.subscription.')->middleware(['module:menu', 'role:owner,general_manager'])->group(function () {
+        Route::get('/', [SubscriptionController::class, 'index'])->name('index');
+        Route::post('/venues/{venue}/modules', [SubscriptionController::class, 'store'])->name('modules.store');
+        Route::delete('/venues/{venue}/modules/{moduleCode}', [SubscriptionController::class, 'destroy'])->name('modules.destroy');
+
+        Route::get('/invoices', [SubscriptionInvoiceController::class, 'index'])->name('invoices.index');
+        Route::get('/invoices/{invoiceType}/{invoiceId}', [SubscriptionInvoiceController::class, 'show'])->name('invoices.show');
+        Route::post('/invoices/{invoiceType}/{invoiceId}/pay', [SubscriptionInvoiceController::class, 'pay'])->name('invoices.pay');
+
+        Route::get('/payment-methods', [SubscriptionPaymentMethodController::class, 'index'])->name('payment-methods.index');
+        Route::post('/payment-methods', [SubscriptionPaymentMethodController::class, 'store'])->name('payment-methods.store');
+        Route::post('/payment-methods/{method}/default', [SubscriptionPaymentMethodController::class, 'setDefault'])->name('payment-methods.default');
+        Route::delete('/payment-methods/{method}', [SubscriptionPaymentMethodController::class, 'destroy'])->name('payment-methods.destroy');
+
+        Route::get('/billing-address', [SubscriptionBillingAddressController::class, 'edit'])->name('billing-address.edit');
+        Route::put('/billing-address/{type}', [SubscriptionBillingAddressController::class, 'update'])->name('billing-address.update');
     });
 
     // Settings — owner or general manager only
