@@ -6,31 +6,37 @@ use App\Contracts\Subscription\PaymentGatewayContract;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentSaasMethod;
 use App\Models\Tenant\CorporationInvoice;
+use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\PaymentAttempt;
 use App\Models\Tenant\UserPaymentMethod;
 use App\Models\Tenant\VenueInvoice;
+use App\Models\Tenant\VenueSubscription;
 use App\Models\User;
+use App\Services\Billing\SubscriptionCalculator;
+use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 
 class PaymentSaasService
 {
-    public function __construct(private readonly PaymentGatewayContract $gateway) {}
+    public function __construct(
+        private readonly PaymentGatewayContract $gateway,
+        private readonly GatewayCustomerResolver $customerResolver,
+        private readonly SubscriptionCalculator $calculator,
+    ) {}
 
     /**
      * Tokenize and save a credit card for a user.
      */
     public function saveCard(User $user, array $cardData, array $billingAddress = []): UserPaymentMethod
     {
-        $customerId = $this->gateway->createCustomer([
-            'name' => $user->name,
-            'email' => $user->email,
-        ]);
+        $gatewayName = config('subscription.payment.default', 'fake');
+        $customerId = $this->customerResolver->resolve($user, $gatewayName);
 
         $token = $this->gateway->saveCard($customerId, $cardData);
 
         $method = UserPaymentMethod::create([
             'user_id' => $user->id,
-            'gateway' => config('subscription.payment.default', 'fake'),
+            'gateway' => $gatewayName,
             'gateway_token' => $token['gateway_token'],
             'brand' => $token['brand'],
             'last4' => $token['last4'],
@@ -97,7 +103,13 @@ class PaymentSaasService
     {
         $result = $this->gateway->handleWebhook($gateway, $payload);
 
-        $invoice = $this->resolveInvoice($result['invoice_type'], $result['invoice_id']);
+        if ($result['status'] === 'ignored') {
+            return $result;
+        }
+
+        $invoice = $this->resolveInvoice($result['invoice_type'], $result['invoice_id'])
+            ?? $this->resolveInvoiceByGatewayPaymentId($result['gateway_payment_id'])
+            ?? $this->mirrorSubscriptionInvoice($result);
 
         if (! $invoice) {
             throw new InvalidArgumentException('Fatura não encontrada.');
@@ -175,5 +187,127 @@ class PaymentSaasService
         return $type === 'corporation'
             ? CorporationInvoice::find($id)
             : VenueInvoice::find($id);
+    }
+
+    private function resolveInvoiceByGatewayPaymentId(string $gatewayPaymentId): VenueInvoice|CorporationInvoice|null
+    {
+        if ($gatewayPaymentId === '') {
+            return null;
+        }
+
+        return VenueInvoice::where('gateway_payment_id', $gatewayPaymentId)->first()
+            ?? CorporationInvoice::where('gateway_payment_id', $gatewayPaymentId)->first();
+    }
+
+    /**
+     * Mirror locally a charge that the gateway generated natively from a
+     * recurring subscription (no local invoice exists yet), adjusting its
+     * value to reflect the current cycle calculation (modules/usage/overage)
+     * before it gets paid/confirmed.
+     *
+     * @param  array{gateway_payment_id: string, amount: float, gateway_subscription_id: ?string, due_date: ?string}  $result
+     */
+    private function mirrorSubscriptionInvoice(array $result): VenueInvoice|CorporationInvoice|null
+    {
+        $gatewaySubscriptionId = $result['gateway_subscription_id'] ?? null;
+
+        if (! $gatewaySubscriptionId || $result['gateway_payment_id'] === '') {
+            return null;
+        }
+
+        $dueDate = $result['due_date'] ? Carbon::parse($result['due_date']) : now();
+        $period = $dueDate->format('Y-m');
+
+        $venueSubscription = VenueSubscription::where('gateway_subscription_id', $gatewaySubscriptionId)->first();
+
+        if ($venueSubscription) {
+            return $this->mirrorVenueInvoice($venueSubscription, $result, $dueDate, $period);
+        }
+
+        $corporationSubscription = CorporationSubscription::where('gateway_subscription_id', $gatewaySubscriptionId)->first();
+
+        if ($corporationSubscription) {
+            return $this->mirrorCorporationInvoice($corporationSubscription, $result, $dueDate, $period);
+        }
+
+        return null;
+    }
+
+    private function mirrorVenueInvoice(VenueSubscription $subscription, array $result, Carbon $dueDate, string $period): ?VenueInvoice
+    {
+        $venue = $subscription->venue;
+
+        if (! $venue) {
+            return null;
+        }
+
+        $calculated = $this->calculator->calculateVenue($venue, $period) ?? [
+            'base' => (float) $subscription->base_value,
+            'modules' => (float) $subscription->modules_value,
+            'metered' => (float) $subscription->metered_value,
+            'dedicated_surcharge' => (float) $subscription->dedicated_surcharge,
+            'total' => (float) $subscription->total_value,
+        ];
+
+        $this->syncGatewayValue($result, (float) $calculated['total']);
+
+        return VenueInvoice::updateOrCreate(
+            ['gateway_payment_id' => $result['gateway_payment_id']],
+            [
+                'venue_id' => $venue->id,
+                'venue_subscription_id' => $subscription->id,
+                'affiliate_code_id' => $subscription->affiliate_code_id,
+                'period' => $period,
+                'due_date' => $dueDate->toDateString(),
+                'status' => InvoiceStatus::Open,
+                'base_value' => $calculated['base'],
+                'modules_value' => $calculated['modules'],
+                'metered_value' => $calculated['metered'],
+                'dedicated_surcharge' => $calculated['dedicated_surcharge'],
+                'discount_value' => 0,
+                'total_value' => $calculated['total'],
+            ],
+        );
+    }
+
+    private function mirrorCorporationInvoice(CorporationSubscription $subscription, array $result, Carbon $dueDate, string $period): ?CorporationInvoice
+    {
+        $corporation = $subscription->corporation;
+
+        if (! $corporation) {
+            return null;
+        }
+
+        $calculated = $this->calculator->calculateCorporation($corporation, $period);
+        $total = (float) ($calculated['total'] ?? 0.0);
+
+        $this->syncGatewayValue($result, $total);
+
+        return CorporationInvoice::updateOrCreate(
+            ['gateway_payment_id' => $result['gateway_payment_id']],
+            [
+                'corporation_id' => $corporation->id,
+                'corporation_subscription_id' => $subscription->id,
+                'affiliate_code_id' => $subscription->affiliate_code_id,
+                'period' => $period,
+                'due_date' => $dueDate->toDateString(),
+                'status' => InvoiceStatus::Open,
+                'base_value' => 0,
+                'modules_value' => 0,
+                'metered_value' => 0,
+                'dedicated_surcharge' => 0,
+                'discount_value' => 0,
+                'total_value' => $total,
+            ],
+        );
+    }
+
+    private function syncGatewayValue(array $result, float $expectedValue): void
+    {
+        if (abs($expectedValue - $result['amount']) < 0.01) {
+            return;
+        }
+
+        $this->gateway->updatePaymentValue($result['gateway_payment_id'], $expectedValue);
     }
 }

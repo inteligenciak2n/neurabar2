@@ -42,4 +42,13 @@ return [
         'translate_region' => env('AWS_TRANSLATE_REGION', env('AWS_DEFAULT_REGION', 'us-east-1')),
     ],
 
+    'asaas' => [
+        'environment' => env('ASAAS_ACCESS_ENVIRONMENT', 'sandbox'),
+        'base_url' => env('ASAAS_ACCESS_ENVIRONMENT') === 'production'
+            ? 'https://api.asaas.com'
+            : 'https://api-sandbox.asaas.com',
+        'access_token' => env('ASAAS_ACCESS_TOKEN'),
+        'webhook_token' => env('ASAAS_WEBHOOK_TOKEN'),
+    ],
+
 ];

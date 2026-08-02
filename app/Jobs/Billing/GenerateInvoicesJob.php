@@ -33,6 +33,7 @@ class GenerateInvoicesJob implements ShouldQueue
     {
         CorporationSubscription::query()
             ->whereIn('status', [SubscriptionStatus::Active, SubscriptionStatus::Trial, SubscriptionStatus::PastDue])
+            ->whereNull('gateway_subscription_id')
             ->where(function ($query): void {
                 $query->whereNull('ended_at')->orWhere('ended_at', '>=', now());
             })
@@ -79,6 +80,10 @@ class GenerateInvoicesJob implements ShouldQueue
      */
     private function processVenue(Venue $venue, Corporation $corporation, CorporationSubscription $subscription, SubscriptionCalculator $calculator, bool $isUnified): ?array
     {
+        if ($venue->subscription?->isBilledByGateway()) {
+            return null;
+        }
+
         $calculated = $calculator->calculateVenue($venue, $this->period);
 
         if ($calculated === null) {

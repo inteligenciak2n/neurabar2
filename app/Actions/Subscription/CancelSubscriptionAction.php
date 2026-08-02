@@ -2,14 +2,18 @@
 
 namespace App\Actions\Subscription;
 
+use App\Contracts\Subscription\PaymentGatewayContract;
 use App\Enums\SubscriptionStatus;
 use App\Models\Tenant\Corporation;
+use App\Models\Tenant\CorporationSubscription;
 use App\Services\Billing\BillingStatusService;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class CancelSubscriptionAction
 {
+    public function __construct(private readonly PaymentGatewayContract $gateway) {}
+
     public function execute(Corporation $corporation): void
     {
         $subscription = $corporation->subscription;
@@ -21,6 +25,8 @@ class CancelSubscriptionAction
         if ($subscription->status === SubscriptionStatus::Canceled) {
             throw new InvalidArgumentException('Subscription is already canceled.');
         }
+
+        $this->cancelGatewaySubscriptions($corporation, $subscription);
 
         DB::transaction(function () use ($subscription, $corporation): void {
             $endedAt = $subscription->trial_ends_at;
@@ -47,5 +53,20 @@ class CancelSubscriptionAction
                 BillingStatusService::flushBlockedCache($venue);
             }
         });
+    }
+
+    private function cancelGatewaySubscriptions(Corporation $corporation, CorporationSubscription $subscription): void
+    {
+        if ($subscription->isBilledByGateway()) {
+            $this->gateway->cancelSubscription($subscription->gateway_subscription_id);
+        }
+
+        foreach ($corporation->venues as $venue) {
+            $venueSubscription = $venue->subscription;
+
+            if ($venueSubscription?->isBilledByGateway()) {
+                $this->gateway->cancelSubscription($venueSubscription->gateway_subscription_id);
+            }
+        }
     }
 }

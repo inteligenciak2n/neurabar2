@@ -2,11 +2,6 @@
 
 namespace App\Actions\Corporation;
 
-use App\Models\Settings\AttendanceChannel;
-use App\Models\Settings\KitchenStation;
-use App\Models\Settings\PreparationStatus;
-use App\Models\Settings\VenueSettings;
-use App\Models\Tenant\Venue;
 use App\Enums\ServiceLocationType;
 use App\Enums\UserRole;
 use App\Models\Menu\Category;
@@ -14,7 +9,12 @@ use App\Models\Menu\Combo;
 use App\Models\Menu\Menu;
 use App\Models\Menu\ModifierGroup;
 use App\Models\Menu\Product;
+use App\Models\Settings\AttendanceChannel;
+use App\Models\Settings\KitchenStation;
+use App\Models\Settings\PreparationStatus;
 use App\Models\Settings\ServiceLocation;
+use App\Models\Settings\VenueSettings;
+use App\Models\Tenant\Venue;
 use App\Models\User;
 
 class CreateVenueDefaultsAction
@@ -33,21 +33,21 @@ class CreateVenueDefaultsAction
             ]
         );
 
-        //adiciona dados padrões de cozinha, status de preparo, cardápio, categorias de produtos, canais de atendimento e localizações de serviço
-        //para que o user possa começar a usar o sistema sem precisar configurar tudo manualmente
-        
-        $this->createKitchenStations($venue);
+        // adiciona dados padrões de cozinha, status de preparo, cardápio, categorias de produtos, canais de atendimento e localizações de serviço
+        // para que o user possa começar a usar o sistema sem precisar configurar tudo manualmente
+
+        $kitchenStations = $this->createKitchenStations($venue);
 
         $this->createPreparationStatuses($venue);
 
         $menu = $this->createMenu($venue);
 
-        $this->createProductCategories($menu);
+        $this->createProductCategories($menu, $kitchenStations);
 
-        $this->createChannels($venue);
+        $channels = $this->createChannels($venue);
 
-        $this->createServiceLocations($venue);
-        
+        $this->createServiceLocations($venue, $channels);
+
         $this->createUserAttendant($venue, $venue->corporation->owner);
     }
 
@@ -67,18 +67,28 @@ class CreateVenueDefaultsAction
         }
     }
 
-    private function createKitchenStations(Venue $venue): void
+    /**
+     * @return array<string, KitchenStation>
+     */
+    private function createKitchenStations(Venue $venue): array
     {
         $stations = ['Cozinha', 'Bar'];
+        $created = [];
+
         foreach ($stations as $i => $name) {
-            KitchenStation::firstOrCreate(
+            $created[$name] = KitchenStation::firstOrCreate(
                 ['venue_id' => $venue->id, 'name' => $name],
                 ['sort_order' => $i + 1, 'active' => true]
             );
         }
+
+        return $created;
     }
 
-    private function createChannels(Venue $venue)
+    /**
+     * @return array<string, AttendanceChannel>
+     */
+    private function createChannels(Venue $venue): array
     {
         $channels = [
             ['name' => 'Mesa', 'sort_order' => 1],
@@ -87,12 +97,16 @@ class CreateVenueDefaultsAction
             ['name' => 'Retirada', 'sort_order' => 4],
         ];
 
-        foreach ($channels as $key => $channel) {
-            AttendanceChannel::firstOrCreate(
+        $created = [];
+
+        foreach ($channels as $channel) {
+            $created[$channel['name']] = AttendanceChannel::firstOrCreate(
                 ['venue_id' => $venue->id, 'name' => $channel['name']],
                 [...$channel, 'active' => true]
             );
         }
+
+        return $created;
     }
 
     private function createMenu(Venue $venue): Menu
@@ -104,10 +118,13 @@ class CreateVenueDefaultsAction
         ]);
     }
 
-    private function createProductCategories(Menu $menu): void
+    /**
+     * @param  array<string, KitchenStation>  $stations
+     */
+    private function createProductCategories(Menu $menu, array $stations): void
     {
-        $cozinha = KitchenStation::where('venue_id', $menu->venue_id)->where('name', 'Cozinha')->first();
-        $bar = KitchenStation::where('venue_id', $menu->venue_id)->where('name', 'Bar')->first();
+        $cozinha = $stations['Cozinha'];
+        $bar = $stations['Bar'];
 
         $categories = [
             [
@@ -218,15 +235,17 @@ class CreateVenueDefaultsAction
 
     }
 
-    private function createServiceLocations(Venue $venue): void
+    /**
+     * @param  array<string, AttendanceChannel>  $channels
+     */
+    private function createServiceLocations(Venue $venue, array $channels): void
     {
-        $BalcaoChannel = AttendanceChannel::where('venue_id', $venue->id)->where('name', 'Balcão')->first();
-
-        $TableChannel = AttendanceChannel::where('venue_id', $venue->id)->where('name', 'Mesa')->first();
+        $balcaoChannel = $channels['Balcão'] ?? null;
+        $tableChannel = $channels['Mesa'] ?? null;
 
         $locations = [
-            ...array_map(fn (int $n) => ['name' => "Mesa {$n}", 'type' => ServiceLocationType::Table, 'default_attendance_channel_id' => $TableChannel?->id], range(1, 3)),
-            ['name' => 'Balcão', 'type' => ServiceLocationType::Bar, 'default_attendance_channel_id' => $BalcaoChannel?->id],
+            ...array_map(fn (int $n) => ['name' => "Mesa {$n}", 'type' => ServiceLocationType::Table, 'default_attendance_channel_id' => $tableChannel?->id], range(1, 3)),
+            ['name' => 'Balcão', 'type' => ServiceLocationType::Bar, 'default_attendance_channel_id' => $balcaoChannel?->id],
             ['name' => 'Área Externa 1', 'type' => ServiceLocationType::Area, 'default_attendance_channel_id' => null],
         ];
 
@@ -246,13 +265,15 @@ class CreateVenueDefaultsAction
         $emailParts = explode('@', $owner->email);
         $attendantEmail = $emailParts[0].'+attendant@'.$emailParts[1];
 
-        $attendant = User::create([
-            'name' => 'Atendente Padrão',
-            'email' => $attendantEmail,
-            'password' => $owner->password,
-            'pin' => null,
-            'active' => true,
-        ]);
+        $attendant = User::firstOrCreate(
+            ['email' => $attendantEmail],
+            [
+                'name' => 'Atendente Padrão',
+                'password' => $owner->password,
+                'pin' => null,
+                'active' => true,
+            ]
+        );
 
         $venue->users()->attach($attendant->id, ['role' => UserRole::Attendant->value]);
 

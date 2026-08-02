@@ -223,6 +223,54 @@ class GenerateInvoicesJobTest extends TestCase
         ]);
     }
 
+    public function test_skips_corporation_subscription_billed_by_gateway(): void
+    {
+        $corporation = Corporation::factory()->create();
+        CorporationSubscription::factory()->create([
+            'corporation_id' => $corporation->id,
+            'billing_mode' => BillingMode::Unified,
+            'status' => SubscriptionStatus::Active,
+            'billing_day' => 10,
+            'gateway' => 'asaas',
+            'gateway_customer_id' => 'cus_123',
+            'gateway_subscription_id' => 'sub_123',
+        ]);
+
+        $this->createVenueForCorporation($corporation, baseValue: 50.00);
+
+        (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
+
+        $this->assertDatabaseCount('corporation_invoices', 0);
+        $this->assertDatabaseCount('venue_invoices', 0);
+    }
+
+    public function test_skips_venue_subscription_billed_by_gateway(): void
+    {
+        $corporation = Corporation::factory()->create();
+        CorporationSubscription::factory()->create([
+            'corporation_id' => $corporation->id,
+            'billing_mode' => BillingMode::PerVenue,
+            'status' => SubscriptionStatus::Active,
+            'billing_day' => 10,
+        ]);
+
+        $venue = Venue::factory()->create(['corporation_id' => $corporation->id]);
+        VenueSubscription::factory()->create([
+            'venue_id' => $venue->id,
+            'corporation_subscription_id' => $corporation->subscription->id,
+            'base_value' => 99.90,
+            'total_value' => 99.90,
+            'status' => SubscriptionStatus::Active,
+            'gateway' => 'asaas',
+            'gateway_customer_id' => 'cus_123',
+            'gateway_subscription_id' => 'sub_123',
+        ]);
+
+        (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
+
+        $this->assertDatabaseCount('venue_invoices', 0);
+    }
+
     private function createActiveVenue(float $baseValue, int $billingDay = 1): Venue
     {
         $corporation = Corporation::factory()->create();

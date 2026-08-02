@@ -12,6 +12,8 @@ class UserPaymentMethodFactory extends Factory
 
     public function definition(): array
     {
+        $expiresAt = now()->addMonths(fake()->numberBetween(6, 60));
+
         return [
             'user_id' => User::factory(),
             'gateway' => 'fake',
@@ -20,8 +22,8 @@ class UserPaymentMethodFactory extends Factory
             'last4' => fake()->numerify('####'),
             'holder_name' => fake()->name(),
             'holder_document' => fake()->numerify('###########'),
-            'expiration_month' => fake()->numberBetween(1, 12),
-            'expiration_year' => fake()->numberBetween(now()->year, now()->year + 10),
+            'expiration_month' => $expiresAt->month,
+            'expiration_year' => $expiresAt->year,
             'is_default' => false,
             'billing_address_json' => null,
         ];

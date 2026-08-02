@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use InvalidArgumentException;
 
 class SubscriptionInvoiceController extends Controller
 {
@@ -69,7 +70,11 @@ class SubscriptionInvoiceController extends Controller
             abort(403, 'Invoice not found or not accessible.');
         }
 
-        $result = $this->paymentService->charge($invoice, $request->validated());
+        try {
+            $result = $this->paymentService->charge($invoice, $request->validated());
+        } catch (InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
 
         $message = match ($result['status']) {
             'paid' => __('Payment confirmed successfully.'),

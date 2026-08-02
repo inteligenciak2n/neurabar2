@@ -5,7 +5,9 @@ namespace App\Services\Subscription;
 use App\Contracts\Subscription\PaymentGatewayContract;
 use App\Enums\PaymentSaasMethod;
 use App\Models\Tenant\CorporationInvoice;
+use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\VenueInvoice;
+use App\Models\Tenant\VenueSubscription;
 use InvalidArgumentException;
 
 class FakePaymentGateway implements PaymentGatewayContract
@@ -25,6 +27,37 @@ class FakePaymentGateway implements PaymentGatewayContract
             'brand' => $this->guessBrand($number),
             'last4' => $last4,
         ];
+    }
+
+    public function createSubscription(CorporationSubscription|VenueSubscription $subscription, array $data): array
+    {
+        $gatewaySubscriptionId = 'fake_sub_'.md5($subscription->id.now());
+
+        return [
+            'gateway_subscription_id' => $gatewaySubscriptionId,
+            'status' => 'active',
+            'next_due_date' => $data['next_due_date'] ?? now()->addMonth()->toDateString(),
+            'payload' => [
+                'subscription_id' => $subscription->id,
+                'billing_type' => $data['billing_type'] ?? null,
+                'value' => $data['value'] ?? null,
+            ],
+        ];
+    }
+
+    public function updatePaymentValue(string $gatewayPaymentId, float $newValue): void
+    {
+        // No-op: the fake gateway has no remote state to update.
+    }
+
+    public function updateSubscriptionCard(string $gatewaySubscriptionId, array $cardData): array
+    {
+        return $this->saveCard($gatewaySubscriptionId, $cardData);
+    }
+
+    public function cancelSubscription(string $gatewaySubscriptionId): void
+    {
+        // No-op: the fake gateway has no remote state to update.
     }
 
     public function chargeInvoice(VenueInvoice|CorporationInvoice $invoice, array $paymentData): array
@@ -109,6 +142,8 @@ class FakePaymentGateway implements PaymentGatewayContract
             'invoice_type' => $invoiceType,
             'invoice_id' => (string) $invoiceId,
             'amount' => $amount,
+            'gateway_subscription_id' => $payload['gateway_subscription_id'] ?? null,
+            'due_date' => $payload['due_date'] ?? null,
             'payload' => $payload,
         ];
     }

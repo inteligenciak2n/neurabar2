@@ -19,7 +19,7 @@ class CorporationSubscription extends Model
     protected $fillable = [
         'corporation_id', 'plan_catalog_id', 'affiliate_code_id', 'billing_mode',
         'status', 'billing_day', 'grace_period_days', 'started_at', 'ended_at', 'trial_ends_at', 'currency',
-        'terms_accepted_at',
+        'terms_accepted_at', 'gateway', 'gateway_customer_id', 'gateway_subscription_id',
     ];
 
     protected function casts(): array
@@ -44,5 +44,10 @@ class CorporationSubscription extends Model
     public function planCatalog(): BelongsTo
     {
         return $this->belongsTo(PlanCatalog::class);
+    }
+
+    public function isBilledByGateway(): bool
+    {
+        return $this->gateway_subscription_id !== null;
     }
 }

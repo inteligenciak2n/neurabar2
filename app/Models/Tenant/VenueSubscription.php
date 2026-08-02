@@ -18,7 +18,7 @@ class VenueSubscription extends Model
     protected $fillable = [
         'venue_id', 'corporation_subscription_id', 'plan_catalog_id', 'affiliate_code_id',
         'status', 'base_value', 'modules_value', 'metered_value', 'dedicated_surcharge', 'total_value',
-        'started_at', 'ended_at', 'trial_ends_at',
+        'started_at', 'ended_at', 'trial_ends_at', 'gateway', 'gateway_customer_id', 'gateway_subscription_id',
     ];
 
     protected function casts(): array
@@ -44,5 +44,10 @@ class VenueSubscription extends Model
     public function corporationSubscription(): BelongsTo
     {
         return $this->belongsTo(CorporationSubscription::class);
+    }
+
+    public function isBilledByGateway(): bool
+    {
+        return $this->gateway_subscription_id !== null;
     }
 }

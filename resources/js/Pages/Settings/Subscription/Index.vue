@@ -10,6 +10,7 @@ const props = defineProps({
     venues: Array,
     blocked: Boolean,
     inGracePeriod: Boolean,
+    hasPaymentMethod: Boolean,
 });
 
 const __ = useTranslate();
@@ -18,6 +19,12 @@ const cancelSubscription = () => {
     if (confirm(__('Are you sure you want to cancel your subscription? You will keep access until the end of the current billing period.'))) {
         router.post(route('settings.subscription.cancel'), {}, { preserveScroll: true });
     }
+};
+
+const activateGateway = (venueId = null) => {
+    router.post(route('settings.subscription.gateway.activate'), venueId ? { venue_id: venueId } : {}, {
+        preserveScroll: true,
+    });
 };
 
 const toggleModule = (venue, moduleCode, active) => {
@@ -95,6 +102,34 @@ const statusLabel = (status) => {
                 </dl>
             </div>
 
+            <div v-if="subscription.billing_mode === 'unified'" class="rounded-xl border border-border bg-white p-6 shadow-card">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 class="font-heading text-lg font-semibold">{{ __('Automatic Billing') }}</h2>
+                        <p class="mt-1 text-sm text-muted-foreground">
+                            <span v-if="subscription.is_billed_by_gateway" class="font-medium text-emerald-600">{{ __('Automatic billing is active.') }}</span>
+                            <span v-else-if="!hasPaymentMethod">{{ __('Add a credit card before enabling automatic billing.') }}</span>
+                            <span v-else>{{ __('Enable automatic billing with your default credit card.') }}</span>
+                        </p>
+                    </div>
+                    <Link
+                        v-if="!subscription.is_billed_by_gateway && !hasPaymentMethod"
+                        :href="route('settings.subscription.payment-methods.index')"
+                        class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                    >
+                        {{ __('Add Credit Card') }}
+                    </Link>
+                    <button
+                        v-else-if="!subscription.is_billed_by_gateway"
+                        type="button"
+                        class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                        @click="activateGateway()"
+                    >
+                        {{ __('Activate Automatic Billing') }}
+                    </button>
+                </div>
+            </div>
+
             <div class="grid gap-4 sm:grid-cols-2">
                 <Link
                     :href="route('settings.subscription.invoices.index')"
@@ -123,7 +158,23 @@ const statusLabel = (status) => {
                 <h2 class="font-heading text-lg font-semibold">{{ __('Modules by Venue') }}</h2>
                 <div class="mt-4 space-y-6">
                     <div v-for="venue in venues" :key="venue.id">
-                        <h3 class="font-medium text-ocean-deep">{{ venue.name }}</h3>
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h3 class="font-medium text-ocean-deep">{{ venue.name }}</h3>
+                            <template v-if="subscription.billing_mode === 'per_venue'">
+                                <span v-if="venue.is_billed_by_gateway" class="text-xs font-medium text-emerald-600">
+                                    {{ __('Automatic billing is active.') }}
+                                </span>
+                                <button
+                                    v-else
+                                    type="button"
+                                    class="text-xs font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                                    :disabled="!hasPaymentMethod"
+                                    @click="activateGateway(venue.id)"
+                                >
+                                    {{ __('Activate Automatic Billing') }}
+                                </button>
+                            </template>
+                        </div>
                         <div class="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                             <div
                                 v-for="module in availableModules"

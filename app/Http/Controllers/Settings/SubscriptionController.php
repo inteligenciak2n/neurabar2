@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Actions\Subscription\ActivateGatewaySubscriptionAction;
 use App\Actions\Subscription\CancelSubscriptionAction;
 use App\Actions\Subscription\SubscribeModuleAction;
 use App\Actions\Subscription\UnsubscribeModuleAction;
+use App\Enums\BillingMode;
 use App\Enums\ModuleCode;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\StoreSubscriptionModuleRequest;
@@ -41,6 +43,7 @@ class SubscriptionController extends Controller
             'venues' => $this->venuesWithModules($corporation),
             'blocked' => BillingStatusService::isBlocked($request->user()?->currentVenue),
             'inGracePeriod' => BillingStatusService::isInGracePeriod($request->user()?->currentVenue),
+            'hasPaymentMethod' => $request->user()?->paymentMethods()->exists() ?? false,
         ]);
     }
 
@@ -57,6 +60,7 @@ class SubscriptionController extends Controller
             'billing_day' => $subscription?->billing_day,
             'trial_ends_at' => $subscription?->trial_ends_at,
             'next_due_date' => $subscription ? now()->setDay($subscription->billing_day)->addMonthNoOverflow()->toDateString() : null,
+            'is_billed_by_gateway' => $subscription?->isBilledByGateway() ?? false,
         ];
     }
 
@@ -102,6 +106,7 @@ class SubscriptionController extends Controller
         return $corporation->venues()->get()->map(fn (Venue $v) => [
             'id' => $v->id,
             'name' => $v->name,
+            'is_billed_by_gateway' => $v->subscription?->isBilledByGateway() ?? false,
             'modules' => $venueModules->get($v->id, collect())->map(fn (VenueModule $m) => [
                 'code' => $m->module_code,
                 'quantity' => $m->quantity,
@@ -153,6 +158,51 @@ class SubscriptionController extends Controller
         $action->execute($corporation);
 
         return back()->with('success', __('Subscription canceled successfully.'));
+    }
+
+    public function activateGateway(Request $request, ActivateGatewaySubscriptionAction $action): RedirectResponse
+    {
+        Gate::authorize('manage-subscription');
+
+        $corporation = $this->currentCorporation($request);
+
+        if (! $corporation) {
+            abort(403, 'No corporation context found.');
+        }
+
+        $subscription = $corporation->subscription;
+
+        if (! $subscription) {
+            abort(404, 'No active subscription found.');
+        }
+
+        if ($subscription->billing_mode === BillingMode::PerVenue) {
+            $validated = $request->validate([
+                'venue_id' => ['required', 'uuid', 'exists:venues,id'],
+            ]);
+
+            $venue = Venue::findOrFail($validated['venue_id']);
+            $this->ensureVenueBelongsToCurrentCorporation($venue);
+
+            $target = $venue->subscription;
+        } else {
+            $target = $subscription;
+        }
+
+        if (! $target) {
+            abort(404, 'No subscription found for the selected venue.');
+        }
+
+        $paymentMethod = $request->user()->paymentMethods()->where('is_default', true)->first()
+            ?? $request->user()->paymentMethods()->first();
+
+        if (! $paymentMethod) {
+            return back()->with('error', __('Add a credit card before enabling automatic billing.'));
+        }
+
+        $action->execute($target, $paymentMethod);
+
+        return back()->with('success', __('Automatic billing activated successfully.'));
     }
 
     private function ensureVenueBelongsToCurrentCorporation(Venue $venue): void

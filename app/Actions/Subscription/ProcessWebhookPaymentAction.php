@@ -2,13 +2,19 @@
 
 namespace App\Actions\Subscription;
 
+use App\Enums\GatewayWebhookEventStatus;
 use App\Exceptions\Subscription\InvalidWebhookTokenException;
-use App\Services\Subscription\PaymentSaasService;
+use App\Jobs\Subscription\ProcessGatewayWebhookJob;
+use App\Models\Tenant\GatewayWebhookEvent;
+use InvalidArgumentException;
 
 class ProcessWebhookPaymentAction
 {
-    public function __construct(private readonly PaymentSaasService $paymentService) {}
-
+    /**
+     * Validate the webhook token, persist the event idempotently, and
+     * dispatch async processing. Returns immediately so the gateway
+     * receives a fast HTTP 200 response.
+     */
     public function execute(string $gateway, ?string $token, array $payload): array
     {
         $expectedToken = config('subscription.payment.webhook_token');
@@ -17,6 +23,31 @@ class ProcessWebhookPaymentAction
             throw new InvalidWebhookTokenException('Invalid webhook token.');
         }
 
-        return $this->paymentService->handleWebhook($gateway, $payload);
+        $eventId = (string) ($payload['id'] ?? $payload['gateway_payment_id'] ?? '');
+        $eventType = (string) ($payload['event'] ?? 'payment.updated');
+
+        if ($eventId === '') {
+            throw new InvalidArgumentException('Missing event id in payload.');
+        }
+
+        $event = GatewayWebhookEvent::firstOrCreate(
+            ['gateway' => $gateway, 'event_id' => $eventId],
+            [
+                'event_type' => $eventType,
+                'payload' => $payload,
+                'status' => GatewayWebhookEventStatus::Pending,
+                'received_at' => now(),
+            ],
+        );
+
+        if ($event->wasRecentlyCreated) {
+            ProcessGatewayWebhookJob::dispatch($event->id)->onQueue('payments');
+        }
+
+        return [
+            'gateway_payment_id' => $payload['gateway_payment_id'] ?? null,
+            'status' => 'queued',
+            'event_id' => $eventId,
+        ];
     }
 }

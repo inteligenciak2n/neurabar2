@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Subscription;
 
+use App\Enums\BillingMode;
 use App\Enums\InvoiceStatus;
 use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
 use App\Enums\PaymentSaasMethod;
+use App\Enums\ProfileEnum;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Models\Tenant\CorporationModule;
@@ -15,6 +17,8 @@ use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueInvoice;
 use App\Models\Tenant\VenueModule;
 use App\Models\User;
+use App\Notifications\Subscription\GatewayAccessTokenExpiringSoon;
+use Illuminate\Support\Facades\Notification;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
@@ -60,11 +64,12 @@ class PortalSubscriptionTest extends TestCase
 
     public function test_owner_can_activate_module_for_venue(): void
     {
-        $catalog = ModuleCatalog::factory()->create([
-            'code' => ModuleCode::Kds->value,
-            'active' => true,
-            'base_monthly_price' => 50,
-        ]);
+        $catalog = ModuleCatalog::firstWhere('code', ModuleCode::Kds->value)
+            ?? ModuleCatalog::factory()->create([
+                'code' => ModuleCode::Kds->value,
+                'active' => true,
+                'base_monthly_price' => 50,
+            ]);
 
         CorporationModule::factory()->create([
             'corporation_id' => $this->venue->corporation_id,
@@ -88,10 +93,11 @@ class PortalSubscriptionTest extends TestCase
 
     public function test_owner_can_deactivate_module_for_venue(): void
     {
-        $catalog = ModuleCatalog::factory()->create([
-            'code' => ModuleCode::Kds->value,
-            'active' => true,
-        ]);
+        $catalog = ModuleCatalog::firstWhere('code', ModuleCode::Kds->value)
+            ?? ModuleCatalog::factory()->create([
+                'code' => ModuleCode::Kds->value,
+                'active' => true,
+            ]);
 
         CorporationModule::factory()->create([
             'corporation_id' => $this->venue->corporation_id,
@@ -286,12 +292,81 @@ class PortalSubscriptionTest extends TestCase
         ])->assertUnauthorized();
     }
 
+    public function test_webhook_does_not_reprocess_duplicate_event(): void
+    {
+        $invoice = VenueInvoice::factory()->create([
+            'venue_id' => $this->venue->id,
+            'status' => InvoiceStatus::Open,
+            'total_value' => 150,
+            'due_date' => now()->addDays(5),
+            'period' => now()->format('Y-m'),
+        ]);
+
+        config(['subscription.payment.webhook_token' => 'test-token']);
+
+        $payload = [
+            'id' => 'evt_duplicate_1',
+            'gateway_payment_id' => 'fake_pix_123',
+            'status' => 'paid',
+            'invoice_type' => 'venue',
+            'invoice_id' => $invoice->id,
+            'amount' => 150,
+        ];
+
+        $this->postJson(route('api.webhooks.payment', 'fake'), $payload, [
+            'Authorization' => 'Bearer test-token',
+        ])->assertOk();
+
+        $this->postJson(route('api.webhooks.payment', 'fake'), $payload, [
+            'Authorization' => 'Bearer test-token',
+        ])->assertOk();
+
+        $this->assertDatabaseCount('gateway_webhook_events', 1);
+        $this->assertDatabaseHas('gateway_webhook_events', [
+            'gateway' => 'fake',
+            'event_id' => 'evt_duplicate_1',
+            'status' => 'processed',
+        ]);
+    }
+
+    public function test_webhook_notifies_admins_when_access_token_is_expiring_soon(): void
+    {
+        Notification::fake();
+
+        $admin = User::factory()->create(['profile' => ProfileEnum::SuperAdmin]);
+
+        config(['subscription.payment.webhook_token' => 'test-token']);
+
+        $this->postJson(route('api.webhooks.payment', 'asaas'), [
+            'id' => 'evt_access_token_1',
+            'event' => 'ACCESS_TOKEN_EXPIRING_SOON',
+            'dateCreated' => now()->toDateTimeString(),
+            'accessToken' => [
+                'id' => 'token-id',
+                'name' => 'Production key',
+                'projectedExpirationDateByLackOfUse' => now()->addDays(5)->toDateString(),
+            ],
+        ], [
+            'Authorization' => 'Bearer test-token',
+        ])->assertOk();
+
+        Notification::assertSentTo($admin, GatewayAccessTokenExpiringSoon::class);
+
+        $this->assertDatabaseHas('gateway_webhook_events', [
+            'gateway' => 'asaas',
+            'event_id' => 'evt_access_token_1',
+            'event_type' => 'ACCESS_TOKEN_EXPIRING_SOON',
+            'status' => 'processed',
+        ]);
+    }
+
     public function test_reactivating_module_preserves_original_started_at(): void
     {
-        $catalog = ModuleCatalog::factory()->create([
-            'code' => ModuleCode::Kds->value,
-            'active' => true,
-        ]);
+        $catalog = ModuleCatalog::firstWhere('code', ModuleCode::Kds->value)
+            ?? ModuleCatalog::factory()->create([
+                'code' => ModuleCode::Kds->value,
+                'active' => true,
+            ]);
 
         CorporationModule::factory()->create([
             'corporation_id' => $this->venue->corporation_id,
@@ -367,5 +442,74 @@ class PortalSubscriptionTest extends TestCase
         $this->assertNotNull($subscription);
         $this->assertNotNull($subscription->ended_at);
         $this->assertSame(SubscriptionStatus::Canceled->value, $subscription->status->value);
+    }
+
+    public function test_owner_can_activate_gateway_subscription_for_venue(): void
+    {
+        UserPaymentMethod::factory()->create([
+            'user_id' => $this->user->id,
+            'gateway_token' => 'fake_card_token',
+            'is_default' => true,
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('settings.subscription.gateway.activate'), [
+                'venue_id' => $this->venue->id,
+            ])
+            ->assertRedirect();
+
+        $venueSubscription = $this->venue->subscription;
+
+        $this->assertNotNull($venueSubscription);
+        $this->assertTrue($venueSubscription->isBilledByGateway());
+        $this->assertNotNull($venueSubscription->gateway_customer_id);
+    }
+
+    public function test_owner_can_activate_gateway_subscription_for_unified_corporation(): void
+    {
+        $this->venue->corporation->subscriptions()->latest('started_at')->first()
+            ->update(['billing_mode' => BillingMode::Unified]);
+
+        UserPaymentMethod::factory()->create([
+            'user_id' => $this->user->id,
+            'gateway_token' => 'fake_card_token',
+            'is_default' => true,
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('settings.subscription.gateway.activate'))
+            ->assertRedirect();
+
+        $subscription = $this->venue->corporation->subscriptions()->latest('started_at')->first();
+
+        $this->assertTrue($subscription->isBilledByGateway());
+    }
+
+    public function test_owner_cannot_activate_gateway_subscription_without_payment_method(): void
+    {
+        $this->actingAs($this->user)
+            ->post(route('settings.subscription.gateway.activate'), [
+                'venue_id' => $this->venue->id,
+            ])
+            ->assertRedirect();
+
+        $this->assertFalse($this->venue->subscription->fresh()->isBilledByGateway());
+    }
+
+    public function test_owner_cannot_activate_gateway_subscription_for_venue_of_another_corporation(): void
+    {
+        $otherVenue = Venue::factory()->create();
+
+        UserPaymentMethod::factory()->create([
+            'user_id' => $this->user->id,
+            'gateway_token' => 'fake_card_token',
+            'is_default' => true,
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('settings.subscription.gateway.activate'), [
+                'venue_id' => $otherVenue->id,
+            ])
+            ->assertForbidden();
     }
 }
