@@ -1,12 +1,13 @@
 <?php
 
 use App\Events\SocketTest;
+use App\Http\Controllers\Api\PaymentWebhookController;
+use App\Http\Controllers\TranslationsController;
 use App\Models\Tenant\PlanCatalog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\TranslationsController;
 
 Route::post('/set/translations/{page}', [TranslationsController::class, 'setTranslations'])->name('api.set.translations');
 Route::post('/set/locale', [TranslationsController::class, 'setLocale'])->name('api.set.locale');
@@ -26,10 +27,12 @@ Route::get('/plans/public', function () {
         ->header('Cache-Control', 'public, max-age=300');
 })->name('api.plans.public');
 
-
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+Route::post('/webhooks/payment/{gateway}', PaymentWebhookController::class)
+    ->name('api.webhooks.payment');
 
 Route::post('/test-event/{user}', function (User $user) {
     try {
