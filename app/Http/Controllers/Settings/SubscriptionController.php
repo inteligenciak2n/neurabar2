@@ -89,6 +89,8 @@ class SubscriptionController extends Controller
     ): RedirectResponse {
         Gate::authorize('manage-subscription');
 
+        $this->ensureVenueBelongsToCurrentCorporation($venue);
+
         $validated = $request->validated();
 
         $action->execute($venue, $validated['module_code'], $validated['quantity'] ?? 1);
@@ -104,8 +106,19 @@ class SubscriptionController extends Controller
     ): RedirectResponse {
         Gate::authorize('manage-subscription');
 
+        $this->ensureVenueBelongsToCurrentCorporation($venue);
+
         $action->execute($venue, $moduleCode);
 
         return back()->with('success', __('Module deactivated successfully.'));
+    }
+
+    private function ensureVenueBelongsToCurrentCorporation(Venue $venue): void
+    {
+        $corporation = auth()->user()?->currentVenue?->corporation;
+
+        if (! $corporation || $venue->corporation_id !== $corporation->id) {
+            abort(403, 'Venue does not belong to the current corporation.');
+        }
     }
 }

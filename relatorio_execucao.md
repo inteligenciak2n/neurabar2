@@ -61,12 +61,25 @@
 - (C) `tests/Feature/Subscription/PortalSubscriptionTest.php`
 - (C) `docs/current_feat/tech-plan_portal_autogestao_pagamento.md`
 
+### Criados (correções pós-code review)
+- (C) `app/Exceptions/Subscription/InvalidWebhookTokenException.php` – exceção específica para token de webhook inválido
+- (C) `resources/js/Pages/Settings/Subscription/InvoiceShow.vue` – página de detalhes da fatura
+- (C) `revisao_branch.md` – relatório de revisão adversarial
+
 ### Modificados
-- (M) `app/Providers/AppServiceProvider.php` – registro do bind `PaymentGatewayContract -> FakePaymentGateway`
+- (M) `app/Providers/AppServiceProvider.php` – registro do bind `PaymentGatewayContract -> FakeGateway`; proteção contra fallback em produção
 - (M) `app/Providers/AuthServiceProvider.php` – gate `manage-subscription`
 - (M) `app/Models/Tenant/Corporation.php` – campos fiscais/endereço no fillable
 - (M) `app/Models/Tenant/Venue.php` – campos fiscais/endereço no fillable
 - (M) `routes/web.php` / `routes/web/settings.php` / `routes/api.php` – rotas do portal e webhook
+
+### Modificados (correções pós-code review)
+- (M) `app/Http/Controllers/Settings/SubscriptionInvoiceController.php` – escopo de faturas por corporação (IDOR)
+- (M) `app/Http/Controllers/Settings/SubscriptionController.php` – validação de propriedade da venue (IDOR)
+- (M) `app/Actions/Subscription/ProcessWebhookPaymentAction.php` – token de webhook obrigatório
+- (M) `app/Http/Controllers/Api/PaymentWebhookController.php` – 401 para token, 400 para payload inválido
+- (M) `resources/js/Pages/Settings/Subscription/Invoices.vue` – correção de referência a `corporation`
+- (M) `tests/Feature/Subscription/PortalSubscriptionTest.php` – novos testes de segurança (IDOR e webhook)
 
 ## Padrões Aplicados
 - **Contrato para gateways:** `PaymentGatewayContract` permite trocar mock por gateway real sem alterar o serviço.

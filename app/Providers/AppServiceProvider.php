@@ -30,9 +30,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $gateway = config('subscription.payment.gateway');
+
+        if (! $gateway && ! app()->environment(['local', 'testing'])) {
+            throw new \RuntimeException('SUBSCRIPTION_PAYMENT_GATEWAY must be configured in non-local environments.');
+        }
+
         $this->app->bind(
             PaymentGatewayContract::class,
-            config('subscription.payment.gateway', FakePaymentGateway::class)
+            $gateway ?? FakePaymentGateway::class
         );
     }
 

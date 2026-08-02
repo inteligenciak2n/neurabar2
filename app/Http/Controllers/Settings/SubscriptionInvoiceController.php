@@ -63,10 +63,10 @@ class SubscriptionInvoiceController extends Controller
     {
         Gate::authorize('manage-subscription');
 
-        $invoice = $this->resolveInvoice($invoiceType, $invoiceId);
+        $invoice = $this->resolveInvoice($request, $invoiceType, $invoiceId);
 
         if (! $invoice) {
-            abort(404, 'Invoice not found.');
+            abort(403, 'Invoice not found or not accessible.');
         }
 
         $result = $this->paymentService->charge($invoice, $request->validated());
@@ -85,10 +85,10 @@ class SubscriptionInvoiceController extends Controller
     {
         Gate::authorize('manage-subscription');
 
-        $invoice = $this->resolveInvoice($invoiceType, $invoiceId);
+        $invoice = $this->resolveInvoice($request, $invoiceType, $invoiceId);
 
         if (! $invoice) {
-            abort(404, 'Invoice not found.');
+            abort(403, 'Invoice not found or not accessible.');
         }
 
         return Inertia::render('Settings/Subscription/InvoiceShow', [
@@ -97,10 +97,25 @@ class SubscriptionInvoiceController extends Controller
         ]);
     }
 
-    private function resolveInvoice(string $type, string $id): VenueInvoice|CorporationInvoice|null
+    private function resolveInvoice(Request $request, string $type, string $id): VenueInvoice|CorporationInvoice|null
     {
-        return $type === 'corporation'
-            ? CorporationInvoice::find($id)
-            : VenueInvoice::find($id);
+        $user = $request->user();
+        $corporation = $user?->currentVenue?->corporation;
+
+        if (! $corporation) {
+            return null;
+        }
+
+        if ($type === 'corporation') {
+            return CorporationInvoice::query()
+                ->where('corporation_id', $corporation->id)
+                ->find($id);
+        }
+
+        $venueIds = $corporation->venues->pluck('id');
+
+        return VenueInvoice::query()
+            ->whereIn('venue_id', $venueIds)
+            ->find($id);
     }
 }

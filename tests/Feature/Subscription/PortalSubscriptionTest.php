@@ -246,4 +246,42 @@ class PortalSubscriptionTest extends TestCase
             'billing_tax_regime' => 'Simples Nacional',
         ]);
     }
+
+    public function test_owner_cannot_pay_invoice_from_another_corporation(): void
+    {
+        $otherVenue = Venue::factory()->create();
+        $otherInvoice = VenueInvoice::factory()->create([
+            'venue_id' => $otherVenue->id,
+            'status' => InvoiceStatus::Open,
+            'total_value' => 150,
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('settings.subscription.invoices.pay', ['venue', $otherInvoice->id]), [
+                'method' => PaymentSaasMethod::Pix->value,
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_owner_cannot_activate_module_for_venue_of_another_corporation(): void
+    {
+        $otherVenue = Venue::factory()->create();
+
+        $this->actingAs($this->user)
+            ->post(route('settings.subscription.modules.store', $otherVenue), [
+                'module_code' => ModuleCode::Kds->value,
+                'quantity' => 1,
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_webhook_rejects_request_when_token_is_not_configured(): void
+    {
+        config(['subscription.payment.webhook_token' => null]);
+
+        $this->postJson(route('api.webhooks.payment', 'fake'), [
+            'gateway_payment_id' => 'fake_pix_123',
+            'status' => 'paid',
+        ])->assertUnauthorized();
+    }
 }

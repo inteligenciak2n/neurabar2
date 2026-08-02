@@ -83,7 +83,7 @@ const statusClass = (status) => {
                     <tbody>
                         <tr v-for="invoice in allInvoices" :key="invoice.id + invoice.type" class="border-b last:border-b-0">
                             <td class="py-3">{{ invoice.period }}</td>
-                            <td class="py-3">{{ invoice.venue?.name ?? corporation?.name ?? '-' }}</td>
+                            <td class="py-3">{{ invoice.venue?.name ?? invoice.corporation?.name ?? '-' }}</td>
                             <td class="py-3">{{ invoice.due_date }}</td>
                             <td class="py-3 font-medium capitalize" :class="statusClass(invoice.status)">{{ invoice.status }}</td>
                             <td class="py-3 text-right">R$ {{ parseFloat(invoice.total_value).toFixed(2) }}</td>
