@@ -113,5 +113,17 @@
     "Edit Plan": "Edit Plan",
     "Description": "Description",
     "Subscription": "Subscription",
-    "Manage modules, invoices and payment methods.": "Manage modules, invoices and payment methods."
+    "Manage modules, invoices and payment methods.": "Manage modules, invoices and payment methods.",
+    "Next Due Date": "Next Due Date",
+    "Billing Day": "Billing Day",
+    "Billing Mode": "Billing Mode",
+    "Subscription Summary": "Subscription Summary",
+    "Modules by Venue": "Modules by Venue",
+    "Invoices": "Invoices",
+    "View and pay your invoices.": "View and pay your invoices.",
+    "Per Venue": "Per Venue",
+    "Cancel Subscription": "Cancel Subscription",
+    "Billing Address": "Billing Address",
+    "Fiscal and billing address information.": "Fiscal and billing address information.",
+    "Manage saved credit cards.": "Manage saved credit cards."
 }

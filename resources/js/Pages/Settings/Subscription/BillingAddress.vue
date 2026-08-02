@@ -4,6 +4,7 @@ import { useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
 import InputError from '@/Components/InputError.vue';
+import { Link } from '@inertiajs/vue3';
 
 const props = defineProps({
     corporation: Object,
@@ -59,6 +60,12 @@ const submitVenue = () => {
         </template>
 
         <div class="rounded-xl border border-border bg-white p-6 shadow-card">
+            <Link :href="route('settings.subscription.index')" class="flex items-center text-sm text-primary hover:underline mb-3">
+                <svg class="inline-block h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                {{ __('Back') }}
+            </Link>
             <div class="flex gap-4 border-b">
                 <button
                     type="button"

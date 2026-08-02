@@ -3,6 +3,7 @@ import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import { useForm } from '@inertiajs/vue3';
 import { useTranslate } from '@/Composables/useTranslate';
 import InputError from '@/Components/InputError.vue';
+import { Link } from '@inertiajs/vue3';
 
 const props = defineProps({
     paymentMethods: Array,
@@ -34,7 +35,13 @@ const submit = () => {
         </template>
 
         <div class="space-y-6">
-            <div class="rounded-xl border border-border bg-white p-6 shadow-card">
+            <div class="rounded-xl border border-border bg-white p-6 shadow-card flex items-center gap-3">
+                <Link :href="route('settings.subscription.index')" class="flex items-center text-sm text-primary hover:underline">
+                    <svg class="inline-block h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    {{ __('Back') }}
+                </Link>
                 <h2 class="font-heading text-lg font-semibold">{{ __('Saved Cards') }}</h2>
                 <div class="mt-4 space-y-3">
                     <div v-for="method in paymentMethods" :key="method.id" class="flex items-center justify-between rounded-lg border border-border p-4">

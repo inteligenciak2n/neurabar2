@@ -8,5 +8,6 @@
     "Module enabled successfully for venue": "Module enabled successfully for venue",
     "Failed to create invoice": "Failed to create invoice",
     "Invoice created successfully": "Invoice created successfully",
-    "Invoice status updated successfully": "Invoice status updated successfully"
+    "Invoice status updated successfully": "Invoice status updated successfully",
+    "Are you sure you want to cancel your subscription? You will keep access until the end of the current billing period.": "Are you sure you want to cancel your subscription? You will keep access until the end of the current billing period."
 }
