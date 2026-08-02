@@ -3,7 +3,6 @@
 namespace App\Services\Subscription;
 
 use App\Contracts\Subscription\PaymentGatewayContract;
-use App\Enums\InvoiceStatus;
 use App\Enums\PaymentSaasMethod;
 use App\Models\Tenant\CorporationInvoice;
 use App\Models\Tenant\VenueInvoice;
@@ -117,17 +116,7 @@ class FakePaymentGateway implements PaymentGatewayContract
     private function fakeCharge(VenueInvoice|CorporationInvoice $invoice, array $paymentData): array
     {
         $gatewayPaymentId = 'fake_charge_'.md5($invoice->id.now());
-
         $status = ($paymentData['simulate_failure'] ?? false) ? 'failed' : 'paid';
-
-        if ($status === 'paid') {
-            $invoice->update([
-                'status' => InvoiceStatus::Paid,
-                'gateway_payment_id' => $gatewayPaymentId,
-                'paid_at' => now(),
-                'is_finalized' => true,
-            ]);
-        }
 
         return [
             'status' => $status,

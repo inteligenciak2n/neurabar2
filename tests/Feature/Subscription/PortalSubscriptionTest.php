@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
 use App\Enums\PaymentSaasMethod;
+use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\ModuleCatalog;
@@ -283,5 +284,88 @@ class PortalSubscriptionTest extends TestCase
             'gateway_payment_id' => 'fake_pix_123',
             'status' => 'paid',
         ])->assertUnauthorized();
+    }
+
+    public function test_reactivating_module_preserves_original_started_at(): void
+    {
+        $catalog = ModuleCatalog::factory()->create([
+            'code' => ModuleCode::Kds->value,
+            'active' => true,
+        ]);
+
+        CorporationModule::factory()->create([
+            'corporation_id' => $this->venue->corporation_id,
+            'module_code' => $catalog->code,
+            'status' => ModuleStatus::Active,
+        ]);
+
+        $originalStartedAt = now()->subDays(10);
+
+        VenueModule::factory()->create([
+            'venue_id' => $this->venue->id,
+            'module_code' => $catalog->code,
+            'status' => ModuleStatus::Inactive,
+            'started_at' => $originalStartedAt,
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('settings.subscription.modules.store', $this->venue), [
+                'module_code' => $catalog->code,
+                'quantity' => 1,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('venue_modules', [
+            'venue_id' => $this->venue->id,
+            'module_code' => $catalog->code,
+            'status' => ModuleStatus::Active->value,
+            'started_at' => $originalStartedAt->toDateTimeString(),
+        ]);
+    }
+
+    public function test_credit_card_payment_failure_is_recorded(): void
+    {
+        $method = UserPaymentMethod::factory()->create([
+            'user_id' => $this->user->id,
+            'gateway_token' => 'fake_card_token',
+            'is_default' => true,
+        ]);
+
+        $invoice = VenueInvoice::factory()->create([
+            'venue_id' => $this->venue->id,
+            'status' => InvoiceStatus::Open,
+            'total_value' => 150,
+            'due_date' => now()->addDays(5),
+            'period' => now()->format('Y-m'),
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('settings.subscription.invoices.pay', ['venue', $invoice->id]), [
+                'method' => PaymentSaasMethod::CreditCard->value,
+                'payment_method_id' => $method->id,
+                'simulate_failure' => true,
+            ])
+            ->assertRedirect();
+
+        $invoice->refresh();
+        $this->assertSame(InvoiceStatus::Open->value, $invoice->status->value);
+        $this->assertDatabaseHas('payment_attempts', [
+            'invoice_type' => 'venue',
+            'invoice_id' => $invoice->id,
+            'status' => 'failed',
+        ]);
+    }
+
+    public function test_owner_can_cancel_subscription(): void
+    {
+        $this->actingAs($this->user)
+            ->post(route('settings.subscription.cancel'))
+            ->assertRedirect();
+
+        $subscription = $this->venue->corporation->subscriptions()->latest('started_at')->first();
+
+        $this->assertNotNull($subscription);
+        $this->assertNotNull($subscription->ended_at);
+        $this->assertSame(SubscriptionStatus::Canceled->value, $subscription->status->value);
     }
 }

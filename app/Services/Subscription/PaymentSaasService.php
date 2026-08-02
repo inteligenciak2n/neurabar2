@@ -74,6 +74,15 @@ class PaymentSaasService
 
         $this->recordAttempt($invoice, $result);
 
+        if ($result['status'] === 'paid') {
+            $invoice->update([
+                'status' => InvoiceStatus::Paid,
+                'gateway_payment_id' => $result['gateway_payment_id'],
+                'paid_at' => now(),
+                'is_finalized' => true,
+            ]);
+        }
+
         return [
             'status' => $result['status'],
             'gateway_payment_id' => $result['gateway_payment_id'],
@@ -95,22 +104,30 @@ class PaymentSaasService
         }
 
         $this->recordAttempt($invoice, $result);
+        $this->updateInvoiceFromGatewayStatus($invoice, $result['status'], $result['gateway_payment_id']);
 
-        if ($result['status'] === 'paid') {
+        return $result;
+    }
+
+    private function updateInvoiceFromGatewayStatus(VenueInvoice|CorporationInvoice $invoice, string $status, string $gatewayPaymentId): void
+    {
+        if ($status === 'paid') {
             $invoice->update([
                 'status' => InvoiceStatus::Paid,
-                'gateway_payment_id' => $result['gateway_payment_id'],
+                'gateway_payment_id' => $gatewayPaymentId,
                 'paid_at' => now(),
                 'is_finalized' => true,
             ]);
-        } elseif ($result['status'] === 'refunded') {
+
+            return;
+        }
+
+        if ($status === 'refunded') {
             $invoice->update([
                 'status' => InvoiceStatus::Refunded,
                 'is_finalized' => true,
             ]);
         }
-
-        return $result;
     }
 
     private function chargeWithCard(VenueInvoice|CorporationInvoice $invoice, array $paymentData): array
@@ -134,21 +151,19 @@ class PaymentSaasService
     {
         $invoiceType = $invoice instanceof VenueInvoice ? 'venue' : 'corporation';
 
-        PaymentAttempt::updateOrCreate(
-            ['gateway_payment_id' => $result['gateway_payment_id']],
-            [
-                'invoice_type' => $invoiceType,
-                'invoice_id' => $invoice->id,
-                'gateway' => config('subscription.payment.default', 'fake'),
-                'amount' => $result['payload']['amount'] ?? (float) $invoice->total_value,
-                'status' => $result['status'],
-                'payload' => $result['payload'] ?? [],
-                'attempted_at' => now(),
-                'succeeded_at' => $result['status'] === 'paid' ? now() : null,
-                'failed_at' => in_array($result['status'], ['failed', 'expired'], true) ? now() : null,
-                'failure_reason' => $result['status'] === 'failed' ? ($result['message'] ?? 'Falha no pagamento') : null,
-            ]
-        );
+        PaymentAttempt::create([
+            'invoice_type' => $invoiceType,
+            'invoice_id' => $invoice->id,
+            'gateway' => config('subscription.payment.default', 'fake'),
+            'gateway_payment_id' => $result['gateway_payment_id'],
+            'amount' => $result['payload']['amount'] ?? (float) $invoice->total_value,
+            'status' => $result['status'],
+            'payload' => $result['payload'] ?? [],
+            'attempted_at' => now(),
+            'succeeded_at' => $result['status'] === 'paid' ? now() : null,
+            'failed_at' => in_array($result['status'], ['failed', 'expired'], true) ? now() : null,
+            'failure_reason' => $result['status'] === 'failed' ? ($result['message'] ?? 'Falha no pagamento') : null,
+        ]);
     }
 
     private function resolveInvoice(string $type, ?string $id): VenueInvoice|CorporationInvoice|null

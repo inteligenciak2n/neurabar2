@@ -14,6 +14,12 @@ const props = defineProps({
 
 const __ = useTranslate();
 
+const cancelSubscription = () => {
+    if (confirm(__('Are you sure you want to cancel your subscription? You will keep access until the end of the current billing period.'))) {
+        router.post(route('settings.subscription.cancel'), {}, { preserveScroll: true });
+    }
+};
+
 const toggleModule = (venue, moduleCode, active) => {
     if (active) {
         router.delete(route('settings.subscription.modules.destroy', { venue: venue.id, moduleCode }), {
@@ -58,7 +64,17 @@ const statusLabel = (status) => {
             </div>
 
             <div class="rounded-xl border border-border bg-white p-6 shadow-card">
-                <h2 class="font-heading text-lg font-semibold">{{ __('Subscription Summary') }}</h2>
+                <div class="flex items-start justify-between">
+                    <h2 class="font-heading text-lg font-semibold">{{ __('Subscription Summary') }}</h2>
+                    <button
+                        v-if="subscription.status !== 'canceled'"
+                        type="button"
+                        class="text-sm font-medium text-red-600 hover:underline"
+                        @click="cancelSubscription"
+                    >
+                        {{ __('Cancel Subscription') }}
+                    </button>
+                </div>
                 <dl class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <div>
                         <dt class="text-xs text-muted-foreground">{{ __('Status') }}</dt>

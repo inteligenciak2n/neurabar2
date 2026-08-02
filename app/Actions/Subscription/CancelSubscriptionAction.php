@@ -18,26 +18,28 @@ class CancelSubscriptionAction
             throw new InvalidArgumentException('No active subscription found.');
         }
 
-        if (in_array($subscription->status, [SubscriptionStatus::Canceled, SubscriptionStatus::Suspended], true)) {
-            throw new InvalidArgumentException('Subscription is already canceled or suspended.');
+        if ($subscription->status === SubscriptionStatus::Canceled) {
+            throw new InvalidArgumentException('Subscription is already canceled.');
         }
 
         DB::transaction(function () use ($subscription, $corporation): void {
-            $endedAt = $subscription->trial_ends_at ?? $subscription->ended_at;
+            $endedAt = $subscription->trial_ends_at;
 
             if ($endedAt === null || $endedAt <= now()) {
                 $endedAt = now()->endOfMonth();
             }
 
             $subscription->update([
+                'status' => SubscriptionStatus::Canceled,
                 'ended_at' => $endedAt,
             ]);
 
-            foreach ($corporation->venues as $venue) {
+            foreach ($corporation->venues()->cursor() as $venue) {
                 $venueSubscription = $venue->subscription;
 
                 if ($venueSubscription) {
                     $venueSubscription->update([
+                        'status' => SubscriptionStatus::Canceled,
                         'ended_at' => $endedAt,
                     ]);
                 }

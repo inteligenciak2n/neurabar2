@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Settings;
 
-use App\Actions\Subscription\SavePaymentMethodAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\StorePaymentMethodRequest;
 use App\Models\Tenant\UserPaymentMethod;
+use App\Services\Subscription\PaymentSaasService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -14,6 +14,8 @@ use Inertia\Response;
 
 class SubscriptionPaymentMethodController extends Controller
 {
+    public function __construct(private readonly PaymentSaasService $paymentService) {}
+
     public function index(Request $request): Response
     {
         Gate::authorize('manage-subscription');
@@ -26,13 +28,12 @@ class SubscriptionPaymentMethodController extends Controller
         ]);
     }
 
-    public function store(
-        StorePaymentMethodRequest $request,
-        SavePaymentMethodAction $action,
-    ): RedirectResponse {
+    public function store(StorePaymentMethodRequest $request): RedirectResponse
+    {
         Gate::authorize('manage-subscription');
 
-        $action->execute($request->user(), $request->validated());
+        $data = $request->validated();
+        $this->paymentService->saveCard($request->user(), $data, $data['billing_address'] ?? []);
 
         return back()->with('success', __('Payment method saved successfully.'));
     }

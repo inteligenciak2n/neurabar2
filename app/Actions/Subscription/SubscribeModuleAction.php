@@ -40,7 +40,7 @@ class SubscribeModuleAction
 
             $module->status = ModuleStatus::Active;
             $module->quantity = max(1, $quantity);
-            $module->started_at = now();
+            $module->started_at ??= now();
             $module->ended_at = null;
             $module->save();
 
