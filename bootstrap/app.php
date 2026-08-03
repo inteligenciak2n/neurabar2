@@ -23,7 +23,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->trustProxies(at: '*');
+        // Confiar em qualquer proxy permite forjar `X-Forwarded-For` e, com isso,
+        // o `remoteIp` enviado ao gateway na antifraude. Por padrão confiamos
+        // apenas nas faixas privadas onde o load balancer/reverse proxy roda.
+        $middleware->trustProxies(at: array_filter(array_map(
+            trim(...),
+            explode(',', (string) env('TRUSTED_PROXIES', '10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.1'))
+        )));
         $middleware->encryptCookies(except: ['guest_token']);
         $middleware->web(append: [
             SetLocaleMiddleware::class,
@@ -43,6 +49,17 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Sem isso o Laravel devolve os dados do cartão para a sessão (old input)
+        // em qualquer falha de validação ou exceção.
+        $exceptions->dontFlash([
+            'number',
+            'cvv',
+            'ccv',
+            'card_number',
+            'holder_document',
+            'gateway_token',
+        ]);
+
         $exceptions->renderable(function (Exception $e) {
             if ($e->getPrevious() instanceof TokenMismatchException) {
                 return redirect()->route('login');

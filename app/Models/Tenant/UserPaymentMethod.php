@@ -39,6 +39,17 @@ class UserPaymentMethod extends Model
         ];
     }
 
+    /**
+     * O controller serializa o model direto nas props do Inertia; o token do
+     * gateway e o documento do titular não podem vazar para o HTML da página.
+     *
+     * @var list<string>
+     */
+    protected $hidden = [
+        'gateway_token',
+        'holder_document',
+    ];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

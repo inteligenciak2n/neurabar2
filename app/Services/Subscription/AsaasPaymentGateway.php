@@ -12,6 +12,7 @@ use App\Models\Tenant\VenueSubscription;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 class AsaasPaymentGateway implements PaymentGatewayContract
@@ -281,7 +282,9 @@ class AsaasPaymentGateway implements PaymentGatewayContract
         return Http::baseUrl($this->baseUrl)
             ->withHeaders(['access_token' => $this->accessToken])
             ->acceptJson()
-            ->timeout(15)
+            // O Asaas recomenda timeout mínimo de 60s: a tokenização e a captura
+            // passam por antifraude e podem demorar bem mais que uma chamada REST comum.
+            ->timeout(60)
             ->connectTimeout(5);
     }
 
@@ -289,8 +292,15 @@ class AsaasPaymentGateway implements PaymentGatewayContract
     {
         if ($response->failed()) {
             $message = $response->json('errors.0.description') ?? 'Erro ao comunicar com o Asaas.';
+            $code = $response->json('errors.0.code');
 
-            throw new GatewayRequestException($message);
+            Log::error('asaas.request_failed', [
+                'status' => $response->status(),
+                'code' => $code,
+                'description' => $message,
+            ]);
+
+            throw new GatewayRequestException($message, $code === null ? null : (string) $code);
         }
 
         return $response->json() ?? [];

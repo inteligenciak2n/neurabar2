@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Exceptions\Subscription\GatewayRequestException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\StorePaymentMethodRequest;
 use App\Models\Tenant\UserPaymentMethod;
@@ -32,11 +33,15 @@ class SubscriptionPaymentMethodController extends Controller
     {
         Gate::authorize('manage-subscription');
 
-        $this->paymentService->saveCard(
-            $request->user(),
-            $request->cardData(),
-            $request->validated('billing_address', []),
-        );
+        try {
+            $this->paymentService->saveCard(
+                $request->user(),
+                $request->cardData(),
+                $request->validated('billing_address', []),
+            );
+        } catch (GatewayRequestException $exception) {
+            return back()->withErrors(['number' => $exception->userMessage()]);
+        }
 
         return back()->with('success', __('Payment method saved successfully.'));
     }

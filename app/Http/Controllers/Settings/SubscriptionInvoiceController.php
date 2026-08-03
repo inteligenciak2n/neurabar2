@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Enums\PaymentSaasMethod;
+use App\Exceptions\Subscription\GatewayRequestException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\PayInvoiceRequest;
 use App\Models\Tenant\CorporationInvoice;
@@ -74,6 +75,8 @@ class SubscriptionInvoiceController extends Controller
 
         try {
             $result = $this->paymentService->charge($invoice, $request->validated(), $request->user());
+        } catch (GatewayRequestException $exception) {
+            return back()->with('error', $exception->userMessage());
         } catch (InvalidArgumentException $exception) {
             return back()->with('error', $exception->getMessage());
         }
