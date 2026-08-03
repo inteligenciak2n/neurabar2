@@ -25,6 +25,16 @@ class ProcessGatewayWebhookJob implements ShouldQueue
 
     public function __construct(private readonly string $webhookEventId) {}
 
+    public int $tries = 5;
+
+    /**
+     * @return array<int, int>
+     */
+    public function backoff(): array
+    {
+        return [60, 300, 900, 1800, 3600];
+    }
+
     public function handle(PaymentSaasService $paymentService): void
     {
         $event = GatewayWebhookEvent::find($this->webhookEventId);

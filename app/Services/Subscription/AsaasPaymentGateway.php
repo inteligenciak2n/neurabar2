@@ -100,7 +100,13 @@ class AsaasPaymentGateway implements PaymentGatewayContract
 
     public function cancelSubscription(string $gatewaySubscriptionId): void
     {
-        $this->handle($this->client()->delete("/v3/subscriptions/{$gatewaySubscriptionId}"));
+        $response = $this->client()->delete("/v3/subscriptions/{$gatewaySubscriptionId}");
+
+        if ($response->status() === 404) {
+            return;
+        }
+
+        $this->handle($response);
     }
 
     public function chargeInvoice(VenueInvoice|CorporationInvoice $invoice, array $paymentData): array
@@ -113,19 +119,19 @@ class AsaasPaymentGateway implements PaymentGatewayContract
 
         return match ($method) {
             PaymentSaasMethod::CreditCard => $this->createOneOffPayment($invoice, 'CREDIT_CARD', $paymentData),
-            PaymentSaasMethod::Pix => $this->processPix($invoice),
-            PaymentSaasMethod::Boleto => $this->processBoleto($invoice),
+            PaymentSaasMethod::Pix => $this->processPix($invoice, $paymentData),
+            PaymentSaasMethod::Boleto => $this->processBoleto($invoice, $paymentData),
         };
     }
 
-    public function processPix(VenueInvoice|CorporationInvoice $invoice): array
+    public function processPix(VenueInvoice|CorporationInvoice $invoice, array $paymentData = []): array
     {
-        return $this->createOneOffPayment($invoice, 'PIX', []);
+        return $this->createOneOffPayment($invoice, 'PIX', $paymentData);
     }
 
-    public function processBoleto(VenueInvoice|CorporationInvoice $invoice): array
+    public function processBoleto(VenueInvoice|CorporationInvoice $invoice, array $paymentData = []): array
     {
-        return $this->createOneOffPayment($invoice, 'BOLETO', []);
+        return $this->createOneOffPayment($invoice, 'BOLETO', $paymentData);
     }
 
     public function handleWebhook(string $gateway, array $payload): array
@@ -261,7 +267,9 @@ class AsaasPaymentGateway implements PaymentGatewayContract
     {
         return Http::baseUrl($this->baseUrl)
             ->withHeaders(['access_token' => $this->accessToken])
-            ->acceptJson();
+            ->acceptJson()
+            ->timeout(15)
+            ->connectTimeout(5);
     }
 
     private function handle(Response $response): array

@@ -30,7 +30,7 @@ class PaymentSaasService
     public function saveCard(User $user, array $cardData, array $billingAddress = []): UserPaymentMethod
     {
         $gatewayName = config('subscription.payment.default', 'fake');
-        $customerId = $this->customerResolver->resolve($user, $gatewayName);
+        $customerId = $this->customerResolver->resolve($user, $gatewayName, $cardData['holder_document'] ?? null);
 
         $token = $this->gateway->saveCard($customerId, $cardData);
 
@@ -60,7 +60,7 @@ class PaymentSaasService
      *
      * @return array{status: string, gateway_payment_id: string, message: string}
      */
-    public function charge(VenueInvoice|CorporationInvoice $invoice, array $paymentData): array
+    public function charge(VenueInvoice|CorporationInvoice $invoice, array $paymentData, User $user): array
     {
         $method = PaymentSaasMethod::tryFrom($paymentData['method'] ?? '');
 
@@ -72,10 +72,12 @@ class PaymentSaasService
             throw new InvalidArgumentException('Esta fatura já foi finalizada.');
         }
 
+        $paymentData['gateway_customer_id'] = $this->resolveGatewayCustomerId($user, $invoice);
+
         $result = match ($method) {
             PaymentSaasMethod::CreditCard => $this->chargeWithCard($invoice, $paymentData),
-            PaymentSaasMethod::Pix => $this->gateway->processPix($invoice),
-            PaymentSaasMethod::Boleto => $this->gateway->processBoleto($invoice),
+            PaymentSaasMethod::Pix => $this->gateway->processPix($invoice, $paymentData),
+            PaymentSaasMethod::Boleto => $this->gateway->processBoleto($invoice, $paymentData),
         };
 
         $this->recordAttempt($invoice, $result);
@@ -157,6 +159,21 @@ class PaymentSaasService
         }
 
         return $this->gateway->chargeInvoice($invoice, $paymentData);
+    }
+
+    /**
+     * Resolve the gateway customer id to link a one-off charge to, reusing
+     * the acting user's stored document (from a previous card) or falling
+     * back to the corporation's tax id.
+     */
+    private function resolveGatewayCustomerId(User $user, VenueInvoice|CorporationInvoice $invoice): string
+    {
+        $gatewayName = config('subscription.payment.default', 'fake');
+
+        $document = $user->paymentMethods()->whereNotNull('holder_document')->value('holder_document')
+            ?? $invoice->corporation?->tax_id;
+
+        return $this->customerResolver->resolve($user, $gatewayName, $document);
     }
 
     private function recordAttempt(VenueInvoice|CorporationInvoice $invoice, array $result): void
@@ -251,6 +268,8 @@ class PaymentSaasService
 
         $this->syncGatewayValue($result, (float) $calculated['total']);
 
+        $total = $result['status'] === 'pending' ? (float) $calculated['total'] : (float) $result['amount'];
+
         return VenueInvoice::updateOrCreate(
             ['gateway_payment_id' => $result['gateway_payment_id']],
             [
@@ -265,7 +284,7 @@ class PaymentSaasService
                 'metered_value' => $calculated['metered'],
                 'dedicated_surcharge' => $calculated['dedicated_surcharge'],
                 'discount_value' => 0,
-                'total_value' => $calculated['total'],
+                'total_value' => $total,
             ],
         );
     }
@@ -279,9 +298,11 @@ class PaymentSaasService
         }
 
         $calculated = $this->calculator->calculateCorporation($corporation, $period);
-        $total = (float) ($calculated['total'] ?? 0.0);
+        $breakdown = $this->aggregateCorporationBreakdown($calculated);
 
-        $this->syncGatewayValue($result, $total);
+        $this->syncGatewayValue($result, $breakdown['total']);
+
+        $total = $result['status'] === 'pending' ? $breakdown['total'] : (float) $result['amount'];
 
         return CorporationInvoice::updateOrCreate(
             ['gateway_payment_id' => $result['gateway_payment_id']],
@@ -292,18 +313,45 @@ class PaymentSaasService
                 'period' => $period,
                 'due_date' => $dueDate->toDateString(),
                 'status' => InvoiceStatus::Open,
-                'base_value' => 0,
-                'modules_value' => 0,
-                'metered_value' => 0,
-                'dedicated_surcharge' => 0,
+                'base_value' => $breakdown['base'],
+                'modules_value' => $breakdown['modules'],
+                'metered_value' => $breakdown['metered'],
+                'dedicated_surcharge' => $breakdown['dedicated_surcharge'],
                 'discount_value' => 0,
                 'total_value' => $total,
             ],
         );
     }
 
+    /**
+     * Sum the per-venue breakdown produced by the calculator into the flat
+     * shape expected by CorporationInvoice, instead of discarding it.
+     *
+     * @param  array{venues?: array<int|string, array<string, mixed>>, total?: float}  $calculated
+     * @return array{base: float, modules: float, metered: float, dedicated_surcharge: float, total: float}
+     */
+    private function aggregateCorporationBreakdown(array $calculated): array
+    {
+        $breakdown = ['base' => 0.0, 'modules' => 0.0, 'metered' => 0.0, 'dedicated_surcharge' => 0.0];
+
+        foreach ($calculated['venues'] ?? [] as $venueTotals) {
+            $breakdown['base'] += (float) ($venueTotals['base'] ?? 0);
+            $breakdown['modules'] += (float) ($venueTotals['modules'] ?? 0);
+            $breakdown['metered'] += (float) ($venueTotals['metered'] ?? 0);
+            $breakdown['dedicated_surcharge'] += (float) ($venueTotals['dedicated_surcharge'] ?? 0);
+        }
+
+        $breakdown['total'] = (float) ($calculated['total'] ?? 0.0);
+
+        return $breakdown;
+    }
+
     private function syncGatewayValue(array $result, float $expectedValue): void
     {
+        if ($result['status'] !== 'pending') {
+            return;
+        }
+
         if (abs($expectedValue - $result['amount']) < 0.01) {
             return;
         }

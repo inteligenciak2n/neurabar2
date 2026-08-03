@@ -70,12 +70,12 @@ class FakePaymentGateway implements PaymentGatewayContract
 
         return match ($method) {
             PaymentSaasMethod::CreditCard => $this->fakeCharge($invoice, $paymentData),
-            PaymentSaasMethod::Pix => $this->processPix($invoice),
-            PaymentSaasMethod::Boleto => $this->processBoleto($invoice),
+            PaymentSaasMethod::Pix => $this->processPix($invoice, $paymentData),
+            PaymentSaasMethod::Boleto => $this->processBoleto($invoice, $paymentData),
         };
     }
 
-    public function processPix(VenueInvoice|CorporationInvoice $invoice): array
+    public function processPix(VenueInvoice|CorporationInvoice $invoice, array $paymentData = []): array
     {
         $gatewayPaymentId = 'fake_pix_'.md5($invoice->id.now());
 
@@ -95,7 +95,7 @@ class FakePaymentGateway implements PaymentGatewayContract
         ];
     }
 
-    public function processBoleto(VenueInvoice|CorporationInvoice $invoice): array
+    public function processBoleto(VenueInvoice|CorporationInvoice $invoice, array $paymentData = []): array
     {
         $gatewayPaymentId = 'fake_boleto_'.md5($invoice->id.now());
 

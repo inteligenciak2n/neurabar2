@@ -40,7 +40,7 @@ class ProcessWebhookPaymentAction
             ],
         );
 
-        if ($event->wasRecentlyCreated) {
+        if ($event->wasRecentlyCreated || in_array($event->status, [GatewayWebhookEventStatus::Pending, GatewayWebhookEventStatus::Failed], true)) {
             ProcessGatewayWebhookJob::dispatch($event->id)->onQueue('payments');
         }
 

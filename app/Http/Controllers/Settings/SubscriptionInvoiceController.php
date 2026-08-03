@@ -71,7 +71,7 @@ class SubscriptionInvoiceController extends Controller
         }
 
         try {
-            $result = $this->paymentService->charge($invoice, $request->validated());
+            $result = $this->paymentService->charge($invoice, $request->validated(), $request->user());
         } catch (InvalidArgumentException $exception) {
             return back()->with('error', $exception->getMessage());
         }

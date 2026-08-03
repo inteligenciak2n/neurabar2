@@ -8,7 +8,9 @@ use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationSubscription;
 use App\Services\Billing\BillingStatusService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
+use Throwable;
 
 class CancelSubscriptionAction
 {
@@ -26,8 +28,6 @@ class CancelSubscriptionAction
             throw new InvalidArgumentException('Subscription is already canceled.');
         }
 
-        $this->cancelGatewaySubscriptions($corporation, $subscription);
-
         DB::transaction(function () use ($subscription, $corporation): void {
             $endedAt = $subscription->trial_ends_at;
 
@@ -40,7 +40,7 @@ class CancelSubscriptionAction
                 'ended_at' => $endedAt,
             ]);
 
-            foreach ($corporation->venues()->cursor() as $venue) {
+            foreach ($corporation->venues()->with('subscription')->get() as $venue) {
                 $venueSubscription = $venue->subscription;
 
                 if ($venueSubscription) {
@@ -53,20 +53,34 @@ class CancelSubscriptionAction
                 BillingStatusService::flushBlockedCache($venue);
             }
         });
+
+        $this->cancelGatewaySubscriptions($corporation, $subscription);
     }
 
     private function cancelGatewaySubscriptions(Corporation $corporation, CorporationSubscription $subscription): void
     {
         if ($subscription->isBilledByGateway()) {
-            $this->gateway->cancelSubscription($subscription->gateway_subscription_id);
+            $this->cancelGatewaySubscriptionSafely($subscription->gateway_subscription_id);
         }
 
-        foreach ($corporation->venues as $venue) {
+        foreach ($corporation->venues()->with('subscription')->get() as $venue) {
             $venueSubscription = $venue->subscription;
 
             if ($venueSubscription?->isBilledByGateway()) {
-                $this->gateway->cancelSubscription($venueSubscription->gateway_subscription_id);
+                $this->cancelGatewaySubscriptionSafely($venueSubscription->gateway_subscription_id);
             }
+        }
+    }
+
+    private function cancelGatewaySubscriptionSafely(string $gatewaySubscriptionId): void
+    {
+        try {
+            $this->gateway->cancelSubscription($gatewaySubscriptionId);
+        } catch (Throwable $e) {
+            Log::error('Failed to cancel gateway subscription.', [
+                'gateway_subscription_id' => $gatewaySubscriptionId,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 }

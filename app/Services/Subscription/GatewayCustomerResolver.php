@@ -14,7 +14,7 @@ class GatewayCustomerResolver
      * Resolve the gateway customer id for a user, reusing a previously
      * created customer instead of creating a new one on every call.
      */
-    public function resolve(User $user, string $gatewayName): string
+    public function resolve(User $user, string $gatewayName, ?string $document = null): string
     {
         $existing = GatewayCustomer::query()
             ->where('owner_type', User::class)
@@ -29,6 +29,7 @@ class GatewayCustomerResolver
         $customerId = $this->gateway->createCustomer([
             'name' => $user->name,
             'email' => $user->email,
+            'document' => $document,
         ]);
 
         GatewayCustomer::create([

@@ -49,6 +49,8 @@ class GenerateInvoicesJob implements ShouldQueue
             return;
         }
 
+        $corporation->loadMissing('venues.subscription');
+
         $isUnified = $subscription->billing_mode === BillingMode::Unified;
         $aggregate = $this->emptyContribution();
         $venueInvoices = [];

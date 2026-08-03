@@ -48,7 +48,6 @@ return [
             ? 'https://api.asaas.com'
             : 'https://api-sandbox.asaas.com',
         'access_token' => env('ASAAS_ACCESS_TOKEN'),
-        'webhook_token' => env('ASAAS_WEBHOOK_TOKEN'),
     ],
 
 ];

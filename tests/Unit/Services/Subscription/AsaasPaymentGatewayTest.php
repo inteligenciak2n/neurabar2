@@ -196,6 +196,45 @@ class AsaasPaymentGatewayTest extends TestCase
         });
     }
 
+    public function test_process_pix_forwards_gateway_customer_id(): void
+    {
+        Http::fake([
+            '*/v3/payments' => Http::response([
+                'id' => 'pay_pix_2',
+                'status' => 'PENDING',
+                'dueDate' => '2026-09-10',
+            ], 200),
+        ]);
+
+        $invoice = new CorporationInvoice;
+        $invoice->id = 'invoice-uuid-2';
+        $invoice->total_value = 50;
+        $invoice->due_date = '2026-09-10';
+
+        $this->gateway->processPix($invoice, ['gateway_customer_id' => 'cus_000099']);
+
+        Http::assertSent(function ($request) {
+            return str($request->url())->contains('/v3/payments')
+                && $request['customer'] === 'cus_000099';
+        });
+    }
+
+    public function test_cancel_subscription_treats_not_found_as_success(): void
+    {
+        Http::fake([
+            '*/v3/subscriptions/sub_missing' => Http::response([
+                'errors' => [['code' => 'invalid_action', 'description' => 'Assinatura não encontrada.']],
+            ], 404),
+        ]);
+
+        $this->gateway->cancelSubscription('sub_missing');
+
+        Http::assertSent(function ($request) {
+            return $request->method() === 'DELETE'
+                && str($request->url())->contains('/v3/subscriptions/sub_missing');
+        });
+    }
+
     public function test_handle_webhook_maps_payment_payload(): void
     {
         $result = $this->gateway->handleWebhook('asaas', [

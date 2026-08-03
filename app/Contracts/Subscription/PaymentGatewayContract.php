@@ -67,16 +67,22 @@ interface PaymentGatewayContract
     /**
      * Generate PIX payload for an invoice.
      *
+     * $paymentData may include gateway_customer_id, resolved by the caller
+     * so the charge is linked to the correct customer in the gateway.
+     *
      * @return array{status: string, gateway_payment_id: string, qr_code: string, qr_code_image: string|null, expires_at: string, message: string, payload: array<string, mixed>}
      */
-    public function processPix(VenueInvoice|CorporationInvoice $invoice): array;
+    public function processPix(VenueInvoice|CorporationInvoice $invoice, array $paymentData = []): array;
 
     /**
      * Generate boleto payload for an invoice.
      *
+     * $paymentData may include gateway_customer_id, resolved by the caller
+     * so the charge is linked to the correct customer in the gateway.
+     *
      * @return array{status: string, gateway_payment_id: string, boleto_url: string, barcode: string, due_date: string, message: string, payload: array<string, mixed>}
      */
-    public function processBoleto(VenueInvoice|CorporationInvoice $invoice): array;
+    public function processBoleto(VenueInvoice|CorporationInvoice $invoice, array $paymentData = []): array;
 
     /**
      * Handle an incoming webhook payload.
