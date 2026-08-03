@@ -28,7 +28,7 @@
     "Service Request": "Solicitud de servicio",
     "e.g. Table 5 or John": "por ejemplo, Tabla 5 o John",
     "Counter": "Contador",
-    "Identifier (table\/name)": "Identificador (tabla\/nombre)",
+    "Identifier (table/name)": "Identificador (tabla/nombre)",
     "Party Size": "Tamaño de fiesta",
     "Enter any additional notes": "Introduzca cualquier nota adicional",
     "Cancel": "Cancelar",
@@ -102,7 +102,7 @@
     "Plan Catalog": "Catálogo de planes",
     "New Plan": "Nuevo plan",
     "Code": "Código",
-    "Price\/mo": "Precio\/mes",
+    "Price/mo": "Precio/mes",
     "Platform Users": "Usuarios de la plataforma",
     "New User": "Nuevo usuario",
     "Role": "Rol",
@@ -111,5 +111,9 @@
     "New Platform User": "Nuevo usuario de la plataforma",
     "Monthly Price": "Precio mensual",
     "Edit Plan": "Editar plan",
-    "Description": "Descripción"
+    "Description": "Descripción",
+    "Trial": "Prueba",
+    "Past due": "Vencida",
+    "Suspended": "Suspendida",
+    "Canceled": "Cancelada"
 }

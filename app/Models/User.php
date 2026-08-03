@@ -8,7 +8,7 @@ use App\Enums\UserRole;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\UserPaymentMethod;
 use App\Models\Tenant\Venue;
-use App\Services\Billing\BillingStatusService;
+use App\Services\Billing\ModuleAccessService;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -144,34 +144,6 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function canAccessModule(ModuleCode $module): bool
     {
-        $venue = $this->currentVenue;
-
-        if (! $venue) {
-            return false;
-        }
-
-        if (BillingStatusService::isBlocked($venue)) {
-            return false;
-        }
-
-        $corporation = $venue->corporation;
-
-        if (! $corporation?->hasActiveModule($module)) {
-            return false;
-        }
-
-        $activeModules = $venue->activeModules();
-
-        if (! in_array($module->value, $activeModules, true)) {
-            return false;
-        }
-
-        foreach ($module->dependsOn() as $dependency) {
-            if (! in_array($dependency->value, $activeModules, true)) {
-                return false;
-            }
-        }
-
-        return true;
+        return app(ModuleAccessService::class)->allows($this->currentVenue, $module);
     }
 }

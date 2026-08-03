@@ -1,0 +1,15 @@
+{
+    "This module": "Este módulo",
+    "The :module module is not part of your plan yet": "El módulo :module aún no forma parte de su plan",
+    "The :module module is not enabled for this venue": "El módulo :module no está activo para esta venue",
+    "The :module module needs another module first": "El módulo :module depende de otro módulo",
+    "This module is unavailable": "Este módulo no está disponible",
+    "Enable it in your subscription and start using it right away. Billing is prorated, so you only pay for the days you use.": "Actívelo en su suscripción y empiece a usarlo de inmediato. El cobro es proporcional, así que solo paga por los días usados.",
+    "Your account already has this module. Turn it on for this venue in the subscription screen.": "Su cuenta ya tiene este módulo. Actívelo para esta venue en la pantalla de suscripción.",
+    "Enable the required module below and this one becomes available immediately.": "Active el módulo requerido abajo y este quedará disponible de inmediato.",
+    "Module unavailable": "Módulo no disponible",
+    "Required module:": "Módulo requerido:",
+    "Manage subscription": "Gestionar suscripción",
+    "Ask an account owner to enable this module.": "Pida a un responsable de la cuenta que active este módulo.",
+    "Back to dashboard": "Volver al panel"
+}

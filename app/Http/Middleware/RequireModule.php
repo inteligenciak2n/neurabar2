@@ -2,46 +2,52 @@
 
 namespace App\Http\Middleware;
 
-use App\Enums\ModuleCode;
-use App\Services\Billing\BillingStatusService;
-use App\Services\CorporationModuleCache;
+use App\Enums\ModuleAccessReason;
+use App\Models\Tenant\Venue;
+use App\Services\Billing\ModuleAccessService;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 class RequireModule
 {
+    public function __construct(private readonly ModuleAccessService $moduleAccess) {}
+
     public function handle(Request $request, Closure $next, string $moduleCode): Response
     {
         $venue = app('tenant');
-        $module = ModuleCode::tryFrom($moduleCode);
+        $result = $this->moduleAccess->check($venue instanceof Venue ? $venue : null, $moduleCode);
 
-        if (! $venue || ! $module) {
-            abort(403, 'Módulo não disponível.');
+        if ($result->allowed) {
+            return $next($request);
         }
 
-        if (BillingStatusService::isBlocked($venue)) {
-            abort(403, 'Acesso suspenso por questões de faturamento.');
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $result->message(),
+                'reason' => $result->reason->value,
+            ], 403);
         }
 
-        $corporation = $venue->corporation;
-
-        if (! $corporation || ! in_array($module->value, CorporationModuleCache::remember($corporation), true)) {
-            abort(403, 'Este módulo não está contratado para esta conta.');
+        // Inadimplência tem tela própria — e é justamente onde o cliente
+        // consegue pagar. Abortar com 403 aqui era o que produzia o lockout.
+        if ($result->reason === ModuleAccessReason::BillingBlocked) {
+            return redirect()
+                ->route('settings.subscription.index')
+                ->with('billing_blocked', $result->message());
         }
 
-        $activeModules = $venue->activeModules();
-
-        if (! in_array($module->value, $activeModules, true)) {
-            abort(403, 'Este módulo não está ativo para esta unidade.');
+        // Módulo não contratado/ativo é o momento de maior intenção de compra:
+        // servimos um paywall com upsell em vez de um 403 cru.
+        if ($result->reason->isUpsellOpportunity()) {
+            return Inertia::render('Errors/ModuleLocked', [
+                'access' => $result->toArray(),
+                'canManageSubscription' => Gate::allows('manage-subscription'),
+            ])->toResponse($request)->setStatusCode(403);
         }
 
-        foreach ($module->dependsOn() as $dependency) {
-            if (! in_array($dependency->value, $activeModules, true)) {
-                abort(403, "Dependência não atendida: {$dependency->label()}.");
-            }
-        }
-
-        return $next($request);
+        abort(403, $result->message());
     }
 }

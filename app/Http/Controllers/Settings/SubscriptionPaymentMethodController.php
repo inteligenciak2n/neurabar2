@@ -43,11 +43,7 @@ class SubscriptionPaymentMethodController extends Controller
 
     public function setDefault(Request $request, UserPaymentMethod $method): RedirectResponse
     {
-        Gate::authorize('manage-subscription');
-
-        if ($method->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        Gate::authorize('update', $method);
 
         $method->setAsDefault();
 
@@ -56,11 +52,7 @@ class SubscriptionPaymentMethodController extends Controller
 
     public function destroy(Request $request, UserPaymentMethod $method): RedirectResponse
     {
-        Gate::authorize('manage-subscription');
-
-        if ($method->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        Gate::authorize('delete', $method);
 
         $method->delete();
 

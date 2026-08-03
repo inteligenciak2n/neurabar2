@@ -119,12 +119,9 @@ class SubscriptionController extends Controller
         Venue $venue,
         SubscribeModuleAction $action,
     ): RedirectResponse {
-        Gate::authorize('manage-subscription');
-
-        $this->ensureVenueBelongsToCurrentCorporation($venue);
+        Gate::authorize('manageSubscription', $venue);
 
         $validated = $request->validated();
-
         $action->execute($venue, $validated['module_code'], $validated['quantity'] ?? 1);
 
         return back()->with('success', __('Module activated successfully.'));
@@ -136,9 +133,7 @@ class SubscriptionController extends Controller
         string $moduleCode,
         UnsubscribeModuleAction $action,
     ): RedirectResponse {
-        Gate::authorize('manage-subscription');
-
-        $this->ensureVenueBelongsToCurrentCorporation($venue);
+        Gate::authorize('manageSubscription', $venue);
 
         $action->execute($venue, $moduleCode);
 
@@ -182,7 +177,7 @@ class SubscriptionController extends Controller
             ]);
 
             $venue = Venue::findOrFail($validated['venue_id']);
-            $this->ensureVenueBelongsToCurrentCorporation($venue);
+            Gate::authorize('manageSubscription', $venue);
 
             $target = $venue->subscription;
         } else {
@@ -203,14 +198,5 @@ class SubscriptionController extends Controller
         $action->execute($target, $paymentMethod);
 
         return back()->with('success', __('Automatic billing activated successfully.'));
-    }
-
-    private function ensureVenueBelongsToCurrentCorporation(Venue $venue): void
-    {
-        $corporation = auth()->user()?->currentVenue?->corporation;
-
-        if (! $corporation || $venue->corporation_id !== $corporation->id) {
-            abort(403, 'Venue does not belong to the current corporation.');
-        }
     }
 }

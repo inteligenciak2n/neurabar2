@@ -1,11 +1,12 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import { Link, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
+import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 
 const props = defineProps({
-    subscription: Object,
-    corporation: Object,
+    subscription: Object,    corporation: Object,
     availableModules: Array,
     venues: Array,
     blocked: Boolean,
@@ -15,44 +16,75 @@ const props = defineProps({
 
 const __ = useTranslate();
 
-const cancelSubscription = () => {
-    if (confirm(__('Are you sure you want to cancel your subscription? You will keep access until the end of the current billing period.'))) {
-        router.post(route('settings.subscription.cancel'), {}, { preserveScroll: true });
-    }
-};
+const confirmingCancellation = ref(false);
+const canceling = ref(false);
+const activatingGateway = ref(false);
+const pendingModuleKey = ref(null);
 
-const activateGateway = (venueId = null) => {
-    router.post(route('settings.subscription.gateway.activate'), venueId ? { venue_id: venueId } : {}, {
+const cancelSubscription = () => {
+    if (canceling.value) {
+        return;
+    }
+
+    canceling.value = true;
+
+    router.post(route('settings.subscription.cancel'), {}, {
         preserveScroll: true,
+        onFinish: () => {
+            canceling.value = false;
+            confirmingCancellation.value = false;
+        },
     });
 };
 
-const toggleModule = (venue, moduleCode, active) => {
-    if (active) {
-        router.delete(route('settings.subscription.modules.destroy', { venue: venue.id, moduleCode }), {
-            preserveScroll: true,
-        });
-    } else {
-        router.post(route('settings.subscription.modules.store', { venue: venue.id }), {
-            module_code: moduleCode,
-            quantity: 1,
-        }, {
-            preserveScroll: true,
-        });
+const activateGateway = (venueId = null) => {
+    if (activatingGateway.value) {
+        return;
     }
+
+    activatingGateway.value = true;
+
+    router.post(route('settings.subscription.gateway.activate'), venueId ? { venue_id: venueId } : {}, {
+        preserveScroll: true,
+        onFinish: () => (activatingGateway.value = false),
+    });
 };
 
-const statusLabel = (status) => {
-    const labels = {
-        trial: 'Trial',
-        active: 'Ativa',
-        past_due: 'Atrasada',
-        suspended: 'Suspensa',
-        canceled: 'Cancelada',
+const hasModule = (venue, moduleCode) => venue.modules.some((m) => m.code === moduleCode);
+
+const toggleModule = (venue, moduleCode) => {
+    const key = `${venue.id}:${moduleCode}`;
+
+    if (pendingModuleKey.value) {
+        return;
+    }
+
+    pendingModuleKey.value = key;
+
+    const options = {
+        preserveScroll: true,
+        onFinish: () => (pendingModuleKey.value = null),
     };
 
-    return labels[status] ?? status;
+    if (hasModule(venue, moduleCode)) {
+        router.delete(route('settings.subscription.modules.destroy', { venue: venue.id, moduleCode }), options);
+
+        return;
+    }
+
+    router.post(route('settings.subscription.modules.store', { venue: venue.id }), {
+        module_code: moduleCode,
+        quantity: 1,
+    }, options);
 };
+
+const statusLabel = (status) => ({
+    trial: __('Trial'),
+    active: __('Active'),
+    past_due: __('Past due'),
+    suspended: __('Suspended'),
+    canceled: __('Canceled'),
+}[status] ?? status);
 </script>
 
 <template>
@@ -77,7 +109,7 @@ const statusLabel = (status) => {
                         v-if="subscription.status !== 'canceled'"
                         type="button"
                         class="text-sm font-medium text-red-600 hover:underline"
-                        @click="cancelSubscription"
+                        @click="confirmingCancellation = true"
                     >
                         {{ __('Cancel Subscription') }}
                     </button>
@@ -180,7 +212,7 @@ const statusLabel = (status) => {
                                 v-for="module in availableModules"
                                 :key="module.code"
                                 class="rounded-lg border p-4"
-                                :class="venue.modules.some(m => m.code === module.code) ? 'border-primary bg-ocean-light/30' : 'border-border'"
+                                :class="hasModule(venue, module.code) ? 'border-primary bg-ocean-light/30' : 'border-border'"
                             >
                                 <div class="flex items-start justify-between">
                                     <div>
@@ -189,14 +221,17 @@ const statusLabel = (status) => {
                                     </div>
                                     <button
                                         type="button"
-                                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                                        :class="venue.modules.some(m => m.code === module.code) ? 'bg-primary' : 'bg-gray-200'"
-                                        :disabled="blocked"
-                                        @click="toggleModule(venue, module.code, venue.modules.some(m => m.code === module.code))"
+                                        role="switch"
+                                        :aria-checked="hasModule(venue, module.code)"
+                                        :aria-label="`${module.name} — ${venue.name}`"
+                                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        :class="hasModule(venue, module.code) ? 'bg-primary' : 'bg-gray-200'"
+                                        :disabled="blocked || pendingModuleKey !== null"
+                                        @click="toggleModule(venue, module.code)"
                                     >
                                         <span
                                             class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-                                            :class="venue.modules.some(m => m.code === module.code) ? 'translate-x-6' : 'translate-x-1'"
+                                            :class="hasModule(venue, module.code) ? 'translate-x-6' : 'translate-x-1'"
                                         />
                                     </button>
                                 </div>
@@ -206,5 +241,16 @@ const statusLabel = (status) => {
                 </div>
             </div>
         </div>
+
+        <AppConfirmModal
+            :show="confirmingCancellation"
+            :title="__('Cancel Subscription')"
+            :message="__('Are you sure you want to cancel your subscription? You will keep access until the end of the current billing period.')"
+            :confirm-label="__('Cancel Subscription')"
+            variant="destructive"
+            :loading="canceling"
+            @confirm="cancelSubscription"
+            @cancel="confirmingCancellation = false"
+        />
     </SettingsLayout>
 </template>

@@ -1,6 +1,7 @@
 <script setup>
 import Modal from '@/Components/Modal.vue';
 import AppButton from '@/Components/AppButton.vue';
+import { useTranslate } from '@/Composables/useTranslate';
 
 const props = defineProps({
     show: {
@@ -31,6 +32,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['confirm', 'cancel']);
+
+const __ = useTranslate();
 </script>
 
 <template>
@@ -41,7 +44,7 @@ const emit = defineEmits(['confirm', 'cancel']);
 
             <div class="mt-6 flex items-center justify-end gap-3">
                 <AppButton variant="ghost" :disabled="loading" @click="emit('cancel')">
-                    Cancel
+                    {{ __('Cancel') }}
                 </AppButton>
                 <AppButton :variant="variant" :loading="loading" @click="emit('confirm')">
                     {{ confirmLabel }}

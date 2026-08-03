@@ -131,6 +131,51 @@ class SubscriptionCalculatorTest extends TestCase
         $this->assertEqualsWithDelta(99.90, $result['total'], 0.01);
     }
 
+    public function test_module_activated_mid_period_is_charged_proportionally(): void
+    {
+        $venue = $this->createVenueWithSubscription(baseValue: 0.0);
+        // Ativo de 17/07 a 31/07 = 15 dos 31 dias de julho.
+        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 31.00, startedAt: '2026-07-17');
+
+        $result = $this->calculator->calculateVenue($venue, '2026-07');
+
+        $this->assertEqualsWithDelta(15.00, $result['modules'], 0.01);
+    }
+
+    public function test_module_canceled_mid_period_is_still_charged_for_the_days_used(): void
+    {
+        $venue = $this->createVenueWithSubscription(baseValue: 0.0);
+        // Sem proration este cenário — ativar dia 2 e cancelar dia 28 — nunca
+        // era faturado: o módulo já saía da janela de módulos ativos.
+        $this->enableModuleForVenue(
+            $venue,
+            ModuleCode::Kds,
+            basePrice: 31.00,
+            startedAt: '2026-07-02',
+            endedAt: '2026-07-28',
+        );
+
+        $result = $this->calculator->calculateVenue($venue, '2026-07');
+
+        $this->assertEqualsWithDelta(27.00, $result['modules'], 0.01);
+    }
+
+    public function test_module_outside_the_period_is_not_charged(): void
+    {
+        $venue = $this->createVenueWithSubscription(baseValue: 0.0);
+        $this->enableModuleForVenue(
+            $venue,
+            ModuleCode::Kds,
+            basePrice: 31.00,
+            startedAt: '2026-05-01',
+            endedAt: '2026-06-30',
+        );
+
+        $result = $this->calculator->calculateVenue($venue, '2026-07');
+
+        $this->assertEqualsWithDelta(0.0, $result['modules'], 0.01);
+    }
+
     public function test_calculate_venue_with_metered_overage_does_not_double_charge_included_quantity(): void
     {
         $venue = $this->createVenueWithSubscription(baseValue: 50.00);
@@ -244,8 +289,14 @@ class SubscriptionCalculatorTest extends TestCase
         return $venue->fresh();
     }
 
-    private function enableModuleForVenue(Venue $venue, ModuleCode $code, float $basePrice, ?float $customPrice = null): void
-    {
+    private function enableModuleForVenue(
+        Venue $venue,
+        ModuleCode $code,
+        float $basePrice,
+        ?float $customPrice = null,
+        string $startedAt = '2026-06-01',
+        ?string $endedAt = null,
+    ): void {
         ModuleCatalog::firstOrCreate(
             ['code' => $code->value],
             [
@@ -266,14 +317,16 @@ class SubscriptionCalculatorTest extends TestCase
             [
                 'status' => ModuleStatus::Active,
                 'custom_monthly_price' => $customPrice,
-                'started_at' => now(),
+                'started_at' => '2026-01-01',
             ]
         );
 
         VenueModule::factory()->create([
             'venue_id' => $venue->id,
             'module_code' => $code->value,
-            'status' => ModuleStatus::Active,
+            'status' => $endedAt === null ? ModuleStatus::Active : ModuleStatus::Inactive,
+            'started_at' => $startedAt,
+            'ended_at' => $endedAt,
         ]);
     }
 

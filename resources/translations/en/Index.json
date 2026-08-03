@@ -28,7 +28,7 @@
     "Service Request": "Service Request",
     "e.g. Table 5 or John": "e.g. Table 5 or John",
     "Counter": "Counter",
-    "Identifier (table\/name)": "Identifier (table\/name)",
+    "Identifier (table/name)": "Identifier (table/name)",
     "Party Size": "Party Size",
     "Enter any additional notes": "Enter any additional notes",
     "Cancel": "Cancel",
@@ -102,7 +102,7 @@
     "Plan Catalog": "Plan Catalog",
     "New Plan": "New Plan",
     "Code": "Code",
-    "Price\/mo": "Price\/mo",
+    "Price/mo": "Price/mo",
     "Platform Users": "Platform Users",
     "New User": "New User",
     "Role": "Role",
@@ -125,5 +125,9 @@
     "Cancel Subscription": "Cancel Subscription",
     "Billing Address": "Billing Address",
     "Fiscal and billing address information.": "Fiscal and billing address information.",
-    "Manage saved credit cards.": "Manage saved credit cards."
+    "Manage saved credit cards.": "Manage saved credit cards.",
+    "Trial": "Trial",
+    "Past due": "Past due",
+    "Suspended": "Suspended",
+    "Canceled": "Canceled"
 }

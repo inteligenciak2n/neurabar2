@@ -1465,3 +1465,54 @@ Gate 1 concluído. **447 passed, 4 skipped, 0 failed** · Pint OK.
 Gate 2 (UX, paywall/upsell, proração, N+1, policies, design system) segue fora de escopo — avise se quiser seguir.
 
 Fez alterações.
+
+Read [](file:///home/rodrigo/workplace/inteligenciakn2/neurabar2/tests/Feature/Module/RequireModuleMiddlewareTest.php#55-55), lines 55 to 82
+
+Lista de tarefas pendentes atualizada
+
+Replacing 3 lines with 5 lines in [](file:///home/rodrigo/workplace/inteligenciakn2/neurabar2/tests/Feature/Module/RequireModuleMiddlewareTest.php)
+
+
+```
+
+```
+
+
+Ran terminal command: vendor/bin/sail artisan test --compact 2>&1 | tail -15
+
+Suíte verde. Agora Pint: 
+
+Ran terminal command: vendor/bin/sail bin pint --dirty --format agent 2>&1 | tail -20
+
+Ran terminal command: rm -f /tmp/.noop /tmp/.noop2; vendor/bin/sail artisan test --compact tests/Feature/Billing tests/Feature/Module 2>&1 | tail -8
+
+Created memory file [](file:///home/rodrigo/.config/Code/User/workspaceStorage/ea65ade0a3ac20d60ab4cee05f9bdc64/GitHub.copilot-chat/memory-tool/memories/MThjOGNmNGYtZTYxOS00OTAxLTk5YTctYjRmN2MzOTlhOTdl/gate2-fixes-plan.md)
+
+Deleted memory [](file:///home/rodrigo/.config/Code/User/workspaceStorage/ea65ade0a3ac20d60ab4cee05f9bdc64/GitHub.copilot-chat/memory-tool/memories/MThjOGNmNGYtZTYxOS00OTAxLTk5YTctYjRmN2MzOTlhOTdl/gate2-fixes-plan.md)
+
+Created memory file [](file:///home/rodrigo/.config/Code/User/workspaceStorage/ea65ade0a3ac20d60ab4cee05f9bdc64/GitHub.copilot-chat/memory-tool/memories/MThjOGNmNGYtZTYxOS00OTAxLTk5YTctYjRmN2MzOTlhOTdl/gate2-fixes-plan.md)
+
+Gate 2 concluído. Resumo do que entrou nesta última leva:
+
+**A-01 — Autorização consolidada em Policies**
+- Criadas em Tenant: `VenuePolicy@manageSubscription`, `VenueInvoicePolicy`, `CorporationInvoicePolicy`, `UserPaymentMethodPolicy` (cartão é pessoal — nem o owner mexe no cartão de outro).
+- Removido o helper privado `ensureVenueBelongsToCurrentCorporation` e os `abort_unless` inline dos controllers de assinatura, faturas e cartões.
+
+**U-05 — i18n**
+- Criados `pt/` e `es/` para BillingAddress, Corporation, Invoices, PaymentMethods, SettingsLayout, Subscription, VerifyEmail + novos `ModuleLocked` e `AppConfirmModal` nos 3 idiomas.
+- `en/Corporation.json` e `en/Subscription.json` deixaram de devolver português.
+- `AppLayout.json` completado com as chaves dos módulos e "Modules".
+
+**U-06 / U-07 / U-08 / A-06 / U-04 — UI**
+- PaymentMethods.vue: design system, `id`/`for`/`autocomplete`/`aria-*` em todos os campos e `AppConfirmModal` antes de remover cartão.
+- BillingAddress.vue: formulários data-driven, abas com `role="tab"`, a11y completa.
+- Invoices.vue: modal nativo (`Modal.vue`, com ESC e focus trap) e **paginação real** — dois paginadores independentes (`venue_page`/`corporation_page`) em vez de descartar `links`.
+- Index.vue: `confirm()` nativo trocado por `AppConfirmModal`, guardas de duplo submit e `role="switch"`/`aria-checked` nos toggles.
+
+**Correção relevante de B-05:** a proration estava sobrescrevendo `venue_subscriptions.modules_value` com valor proporcional ao dia. Agora a assinatura guarda o **valor recorrente cheio** e só o valor **faturado** é proporcional.
+
+Validação: **450 passed, 4 skipped, 0 failed**; Pint OK.
+
+Falta você rodar `vendor/bin/sail npm run build` — Node não está disponível fora do container aqui.
+
+Fez alterações.

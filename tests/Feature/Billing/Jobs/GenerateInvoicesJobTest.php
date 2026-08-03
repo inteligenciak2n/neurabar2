@@ -328,7 +328,7 @@ class GenerateInvoicesJobTest extends TestCase
             ],
             [
                 'status' => ModuleStatus::Active,
-                'started_at' => now(),
+                'started_at' => '2026-01-01',
             ]
         );
 
@@ -336,6 +336,7 @@ class GenerateInvoicesJobTest extends TestCase
             'venue_id' => $venue->id,
             'module_code' => $code->value,
             'status' => ModuleStatus::Active,
+            'started_at' => '2026-01-01',
         ]);
     }
 }

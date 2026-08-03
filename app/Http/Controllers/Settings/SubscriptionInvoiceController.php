@@ -38,14 +38,14 @@ class SubscriptionInvoiceController extends Controller
             ->with('venue:id,name')
             ->orderByDesc('period')
             ->orderByDesc('due_date')
-            ->paginate(20)
+            ->paginate(20, ['*'], 'venue_page')
             ->withQueryString();
 
         $corporationInvoices = CorporationInvoice::query()
             ->where('corporation_id', $corporation->id)
             ->orderByDesc('period')
             ->orderByDesc('due_date')
-            ->paginate(20)
+            ->paginate(20, ['*'], 'corporation_page')
             ->withQueryString();
 
         return Inertia::render('Settings/Subscription/Invoices', [
@@ -69,6 +69,8 @@ class SubscriptionInvoiceController extends Controller
         if (! $invoice) {
             abort(403, 'Invoice not found or not accessible.');
         }
+
+        Gate::authorize('pay', $invoice);
 
         try {
             $result = $this->paymentService->charge($invoice, $request->validated(), $request->user());
@@ -95,6 +97,8 @@ class SubscriptionInvoiceController extends Controller
         if (! $invoice) {
             abort(403, 'Invoice not found or not accessible.');
         }
+
+        Gate::authorize('view', $invoice);
 
         return Inertia::render('Settings/Subscription/InvoiceShow', [
             'invoice' => $invoice->load('venue:id,name'),

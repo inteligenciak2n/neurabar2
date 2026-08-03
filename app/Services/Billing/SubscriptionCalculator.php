@@ -4,11 +4,15 @@ namespace App\Services\Billing;
 
 use App\Enums\ModuleStatus;
 use App\Models\Tenant\Corporation;
+use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\ModuleUsageTier;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueInvoice;
+use App\Models\Tenant\VenueModule;
 use App\Models\Tenant\VenueUsageRecord;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 class SubscriptionCalculator
 {
@@ -42,17 +46,19 @@ class SubscriptionCalculator
         $usagePeriod ??= self::usagePeriodFor($period);
 
         $base = (float) $subscription->base_value;
-        $billableModules = $this->resolveBillableModules($venue);
-        $modulesValue = $billableModules['value'];
-        $metered = $this->calculateMetered($venue, $usagePeriod, $billableModules['codes']);
+        $modulesValue = $this->calculateModules($venue, $period, prorate: true);
+        $recurringModulesValue = $this->calculateModules($venue, $period, prorate: false);
+        $metered = $this->calculateMetered($venue, $usagePeriod, $this->contractedModuleCodes($venue, $usagePeriod));
         $dedicatedSurcharge = (float) ($subscription->dedicated_surcharge ?? 0);
 
         $total = $base + $modulesValue + $metered + $dedicatedSurcharge;
 
+        // A assinatura guarda a mensalidade cheia (valor recorrente contratado);
+        // a proration vale só para o que será faturado neste período.
         $subscription->update([
-            'modules_value' => $modulesValue,
+            'modules_value' => $recurringModulesValue,
             'metered_value' => $metered,
-            'total_value' => $total,
+            'total_value' => $base + $recurringModulesValue + $metered + $dedicatedSurcharge,
         ]);
 
         return [
@@ -112,36 +118,24 @@ class SubscriptionCalculator
     }
 
     /**
-     * Preço das mensalidades de módulo e, junto, a lista de códigos efetivamente
-     * contratados — usada para impedir que consumo medido de um módulo nunca
-     * contratado (ou já cancelado) gere cobrança de excedente.
-     *
-     * @return array{value: float, codes: list<string>}
+     * Mensalidade dos módulos do período, proporcional aos dias de vigência.
+     * Sem proration, um módulo ativado no dia 2 e cancelado no dia 28 nunca era
+     * faturado — exploit trivial e repetível todo mês.
      */
-    private function resolveBillableModules(Venue $venue): array
+    private function calculateModules(Venue $venue, string $period, bool $prorate): float
     {
-        $venueModules = $venue->modules()
-            ->whereIn('status', [ModuleStatus::Active, ModuleStatus::Trial])
-            ->where(function ($query): void {
-                $query->whereNull('ended_at')->orWhere('ended_at', '>=', now());
-            })
-            ->get();
+        [$periodStart, $periodEnd] = self::periodBounds($period);
+        $daysInPeriod = $periodStart->daysInMonth;
+
+        $venueModules = $this->modulesOverlapping($venue, $periodStart, $periodEnd);
 
         if ($venueModules->isEmpty()) {
-            return ['value' => 0.0, 'codes' => []];
+            return 0.0;
         }
 
-        // Carrega todos os módulos ativos da corporation em uma única query (com o
-        // catálogo já eager-loaded) para evitar N+1 por módulo/venue durante o
-        // faturamento mensal (GenerateInvoicesJob percorre todas as venues).
-        $corporationModules = $venue->corporation
-            ?->activeModules()
-            ->with('catalog:id,code,base_monthly_price')
-            ->get()
-            ->keyBy('module_code') ?? collect();
+        $corporationModules = $this->corporationModulesOverlapping($venue, $periodStart, $periodEnd);
 
         $total = 0.0;
-        $codes = [];
 
         foreach ($venueModules as $venueModule) {
             $corporationModule = $corporationModules->get($venueModule->module_code);
@@ -150,16 +144,129 @@ class SubscriptionCalculator
                 continue;
             }
 
-            $codes[] = (string) $venueModule->module_code;
+            // O valor recorrente reflete só o que segue vigente; o proporcional
+            // ainda cobra os dias usados por módulos encerrados no período.
+            if (! $prorate && ($venueModule->ended_at !== null || $corporationModule->ended_at !== null)) {
+                continue;
+            }
+
+            $factor = $prorate
+                ? $this->overlapFactor($venueModule, $periodStart, $periodEnd, $daysInPeriod)
+                    * $this->overlapFactor($corporationModule, $periodStart, $periodEnd, $daysInPeriod)
+                : 1.0;
+
+            if ($factor <= 0.0) {
+                continue;
+            }
 
             $unitPrice = $corporationModule->custom_monthly_price !== null
                 ? (float) $corporationModule->custom_monthly_price
                 : (float) ($corporationModule->catalog?->base_monthly_price ?? 0);
 
-            $total += $unitPrice * max(1, (int) $venueModule->quantity);
+            $total += $unitPrice * max(1, (int) $venueModule->quantity) * $factor;
         }
 
-        return ['value' => $total, 'codes' => array_values(array_unique($codes))];
+        return round($total, 2);
+    }
+
+    /**
+     * Códigos de módulo vigentes em algum momento do período. Impede que consumo
+     * medido de um módulo nunca contratado gere cobrança de excedente.
+     *
+     * @return list<string>
+     */
+    private function contractedModuleCodes(Venue $venue, string $period): array
+    {
+        [$periodStart, $periodEnd] = self::periodBounds($period);
+
+        $corporationModules = $this->corporationModulesOverlapping($venue, $periodStart, $periodEnd);
+
+        return $this->modulesOverlapping($venue, $periodStart, $periodEnd)
+            ->pluck('module_code')
+            ->unique()
+            ->filter(fn (string $code): bool => $corporationModules->has($code))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    private static function periodBounds(string $period): array
+    {
+        $start = Carbon::parse($period.'-01')->startOfMonth();
+
+        return [$start, $start->copy()->endOfMonth()];
+    }
+
+    /**
+     * Assinaturas de módulo da venue cuja vigência intersecta o período. Módulos
+     * já encerrados entram — é justamente o que a proration precisa cobrar.
+     *
+     * @return Collection<int, VenueModule>
+     */
+    private function modulesOverlapping(Venue $venue, Carbon $periodStart, Carbon $periodEnd): Collection
+    {
+        return $venue->modules()
+            ->where(function ($query): void {
+                $query->whereIn('status', [ModuleStatus::Active, ModuleStatus::Trial])
+                    ->orWhereNotNull('ended_at');
+            })
+            ->where('started_at', '<=', $periodEnd)
+            ->where(function ($query) use ($periodStart): void {
+                $query->whereNull('ended_at')->orWhere('ended_at', '>=', $periodStart);
+            })
+            ->get();
+    }
+
+    /**
+     * Uma única query com o catálogo já eager-loaded, para evitar N+1 por
+     * módulo/venue durante o faturamento mensal.
+     *
+     * @return Collection<string, CorporationModule>
+     */
+    private function corporationModulesOverlapping(Venue $venue, Carbon $periodStart, Carbon $periodEnd): Collection
+    {
+        $corporation = $venue->corporation;
+
+        if (! $corporation) {
+            return collect();
+        }
+
+        return $corporation->modules()
+            ->where(function ($query): void {
+                $query->whereIn('status', [ModuleStatus::Active, ModuleStatus::Trial])
+                    ->orWhereNotNull('ended_at');
+            })
+            ->where('started_at', '<=', $periodEnd)
+            ->where(function ($query) use ($periodStart): void {
+                $query->whereNull('ended_at')->orWhere('ended_at', '>=', $periodStart);
+            })
+            ->with('catalog:id,code,base_monthly_price')
+            ->get()
+            ->keyBy('module_code');
+    }
+
+    /**
+     * Fração do período em que o módulo esteve vigente (dias inclusivos).
+     */
+    private function overlapFactor(Model $module, Carbon $periodStart, Carbon $periodEnd, int $daysInPeriod): float
+    {
+        $start = $module->started_at !== null && $module->started_at->greaterThan($periodStart)
+            ? $module->started_at->copy()->startOfDay()
+            : $periodStart->copy();
+
+        $end = $module->ended_at !== null && $module->ended_at->lessThan($periodEnd)
+            ? $module->ended_at->copy()->endOfDay()
+            : $periodEnd->copy();
+
+        if ($end->lessThan($start)) {
+            return 0.0;
+        }
+
+        $activeDays = $start->startOfDay()->diffInDays($end->startOfDay()) + 1;
+
+        return min(1.0, $activeDays / $daysInPeriod);
     }
 
     /**

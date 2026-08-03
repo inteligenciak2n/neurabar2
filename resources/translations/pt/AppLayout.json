@@ -17,5 +17,14 @@
     "Corporation Admin": "Administrador da corporação",
     "Section Manager": "Gerente de Seção",
     "Management": "Gestão",
-    "Support": "Suporte"
+    "Support": "Suporte",
+    "API Tokens": "Tokens de API",
+    "Modules": "Módulos",
+    "Delivery": "Delivery",
+    "Production": "Produção",
+    "Finance": "Financeiro",
+    "Fiscal Note": "Nota Fiscal",
+    "Voice Command": "Comando de Voz",
+    "Direct Waiter": "Garçom Direto",
+    "Direct Print": "Impressão Direta"
 }

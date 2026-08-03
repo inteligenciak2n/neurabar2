@@ -76,6 +76,8 @@ class RequireModuleMiddlewareTest extends TestCase
         $venue->corporation->subscription->update(['status' => SubscriptionStatus::Suspended]);
         $venue->subscription->update(['status' => SubscriptionStatus::Suspended]);
 
-        $this->get(route('dashboard'))->assertForbidden();
+        $this->get(route('dashboard'))
+            ->assertRedirect(route('settings.subscription.index'))
+            ->assertSessionHas('billing_blocked');
     }
 }

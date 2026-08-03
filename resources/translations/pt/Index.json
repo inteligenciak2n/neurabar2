@@ -28,7 +28,7 @@
     "Service Request": "Solicitação de serviço",
     "e.g. Table 5 or John": "por exemplo, Mesa 5 ou John",
     "Counter": "Balcão",
-    "Identifier (table\/name)": "Identificador (Mesa\/nome)",
+    "Identifier (table/name)": "Identificador (Mesa/nome)",
     "Party Size": "Número de pessoas",
     "Enter any additional notes": "Insira alguma nota adicional",
     "Cancel": "Cancelar",
@@ -102,7 +102,7 @@
     "Plan Catalog": "Catálogo de planos",
     "New Plan": "Novo plano",
     "Code": "Código",
-    "Price\/mo": "Preço\/mês",
+    "Price/mo": "Preço/mês",
     "Platform Users": "Usuários da plataforma",
     "New User": "Novo usuário",
     "Role": "Função",
@@ -111,5 +111,9 @@
     "New Platform User": "Novo usuário da plataforma",
     "Monthly Price": "Preço mensal",
     "Edit Plan": "Editar plano",
-    "Description": "Descrição"
+    "Description": "Descrição",
+    "Trial": "Teste",
+    "Past due": "Atrasada",
+    "Suspended": "Suspensa",
+    "Canceled": "Cancelada"
 }

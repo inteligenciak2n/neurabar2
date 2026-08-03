@@ -1,10 +1,13 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
-import { useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Link, useForm } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
+import AppButton from '@/Components/AppButton.vue';
+import AppCard from '@/Components/AppCard.vue';
 import InputError from '@/Components/InputError.vue';
-import { Link } from '@inertiajs/vue3';
+import InputLabel from '@/Components/InputLabel.vue';
+import TextInput from '@/Components/TextInput.vue';
 
 const props = defineProps({
     corporation: Object,
@@ -40,13 +43,44 @@ const venueForm = useForm({
     billing_phone: props.venue.billing_phone ?? '',
 });
 
+const addressFields = () => [
+    { name: 'street', label: __('Street'), autocomplete: 'address-line1', wide: true },
+    { name: 'number', label: __('Number'), autocomplete: 'address-line2' },
+    { name: 'complement', label: __('Complement'), autocomplete: 'address-line3' },
+    { name: 'neighborhood', label: __('Neighborhood'), autocomplete: 'address-level3' },
+    { name: 'city', label: __('City'), autocomplete: 'address-level2' },
+    { name: 'state', label: __('State'), autocomplete: 'address-level1' },
+    { name: 'zip_code', label: __('ZIP Code'), autocomplete: 'postal-code' },
+    { name: 'country', label: __('Country'), autocomplete: 'country-name' },
+];
+
+const corporationFields = computed(() => [
+    ...addressFields(),
+    { name: 'billing_tax_regime', label: __('Tax Regime') },
+    { name: 'billing_state_registration', label: __('State Registration') },
+]);
+
+const venueFields = computed(() => [
+    ...addressFields(),
+    { name: 'billing_email', label: __('Billing Email'), type: 'email', autocomplete: 'email' },
+    { name: 'billing_phone', label: __('Billing Phone'), type: 'tel', autocomplete: 'tel' },
+]);
+
 const submitCorporation = () => {
+    if (corporationForm.processing) {
+        return;
+    }
+
     corporationForm.put(route('settings.subscription.billing-address.update', 'corporation'), {
         preserveScroll: true,
     });
 };
 
 const submitVenue = () => {
+    if (venueForm.processing) {
+        return;
+    }
+
     venueForm.put(route('settings.subscription.billing-address.update', 'venue'), {
         preserveScroll: true,
     });
@@ -59,16 +93,20 @@ const submitVenue = () => {
             <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Billing Address') }}</h1>
         </template>
 
-        <div class="rounded-xl border border-border bg-white p-6 shadow-card">
+        <AppCard>
             <Link :href="route('settings.subscription.index')" class="flex items-center text-sm text-primary hover:underline mb-3">
-                <svg class="inline-block h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg class="inline-block h-4 w-4 mr-1" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                 </svg>
                 {{ __('Back') }}
             </Link>
-            <div class="flex gap-4 border-b">
+            <div class="flex gap-4 border-b" role="tablist">
                 <button
+                    id="billing-tab-corporation"
                     type="button"
+                    role="tab"
+                    aria-controls="billing-panel-corporation"
+                    :aria-selected="activeTab === 'corporation'"
                     class="pb-2 text-sm font-medium"
                     :class="activeTab === 'corporation' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'"
                     @click="activeTab = 'corporation'"
@@ -76,7 +114,11 @@ const submitVenue = () => {
                     {{ corporation.name }}
                 </button>
                 <button
+                    id="billing-tab-venue"
                     type="button"
+                    role="tab"
+                    aria-controls="billing-panel-venue"
+                    :aria-selected="activeTab === 'venue'"
                     class="pb-2 text-sm font-medium"
                     :class="activeTab === 'venue' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'"
                     @click="activeTab = 'venue'"
@@ -85,102 +127,61 @@ const submitVenue = () => {
                 </button>
             </div>
 
-            <form v-if="activeTab === 'corporation'" class="mt-4 grid gap-4 sm:grid-cols-2" @submit.prevent="submitCorporation">
-                <div class="sm:col-span-2">
-                    <label class="block text-sm font-medium">{{ __('Street') }}</label>
-                    <input v-model="corporationForm.street" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                    <InputError :message="corporationForm.errors.street" />
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('Number') }}</label>
-                    <input v-model="corporationForm.number" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('Complement') }}</label>
-                    <input v-model="corporationForm.complement" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('Neighborhood') }}</label>
-                    <input v-model="corporationForm.neighborhood" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('City') }}</label>
-                    <input v-model="corporationForm.city" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('State') }}</label>
-                    <input v-model="corporationForm.state" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('ZIP Code') }}</label>
-                    <input v-model="corporationForm.zip_code" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('Country') }}</label>
-                    <input v-model="corporationForm.country" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('Tax Regime') }}</label>
-                    <input v-model="corporationForm.billing_tax_regime" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('State Registration') }}</label>
-                    <input v-model="corporationForm.billing_state_registration" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
+            <form
+                v-if="activeTab === 'corporation'"
+                id="billing-panel-corporation"
+                role="tabpanel"
+                aria-labelledby="billing-tab-corporation"
+                class="mt-4 grid gap-4 sm:grid-cols-2"
+                @submit.prevent="submitCorporation"
+            >
+                <div v-for="field in corporationFields" :key="field.name" :class="field.wide ? 'sm:col-span-2' : ''">
+                    <InputLabel :for="`corporation-${field.name}`" :value="field.label" />
+                    <TextInput
+                        :id="`corporation-${field.name}`"
+                        v-model="corporationForm[field.name]"
+                        :type="field.type ?? 'text'"
+                        :autocomplete="field.autocomplete"
+                        class="mt-1 block w-full"
+                        :aria-invalid="corporationForm.errors[field.name] ? 'true' : undefined"
+                        :aria-describedby="corporationForm.errors[field.name] ? `corporation-${field.name}-error` : undefined"
+                    />
+                    <InputError :id="`corporation-${field.name}-error`" :message="corporationForm.errors[field.name]" />
                 </div>
                 <div class="sm:col-span-2">
-                    <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm text-white" :disabled="corporationForm.processing">
+                    <AppButton type="submit" :loading="corporationForm.processing" :disabled="corporationForm.processing">
                         {{ __('Save') }}
-                    </button>
+                    </AppButton>
                 </div>
             </form>
 
-            <form v-else class="mt-4 grid gap-4 sm:grid-cols-2" @submit.prevent="submitVenue">
-                <div class="sm:col-span-2">
-                    <label class="block text-sm font-medium">{{ __('Street') }}</label>
-                    <input v-model="venueForm.street" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('Number') }}</label>
-                    <input v-model="venueForm.number" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('Complement') }}</label>
-                    <input v-model="venueForm.complement" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('Neighborhood') }}</label>
-                    <input v-model="venueForm.neighborhood" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('City') }}</label>
-                    <input v-model="venueForm.city" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('State') }}</label>
-                    <input v-model="venueForm.state" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('ZIP Code') }}</label>
-                    <input v-model="venueForm.zip_code" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('Country') }}</label>
-                    <input v-model="venueForm.country" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('Billing Email') }}</label>
-                    <input v-model="venueForm.billing_email" type="email" class="mt-1 block w-full rounded-md border-border shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">{{ __('Billing Phone') }}</label>
-                    <input v-model="venueForm.billing_phone" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
+            <form
+                v-else
+                id="billing-panel-venue"
+                role="tabpanel"
+                aria-labelledby="billing-tab-venue"
+                class="mt-4 grid gap-4 sm:grid-cols-2"
+                @submit.prevent="submitVenue"
+            >
+                <div v-for="field in venueFields" :key="field.name" :class="field.wide ? 'sm:col-span-2' : ''">
+                    <InputLabel :for="`venue-${field.name}`" :value="field.label" />
+                    <TextInput
+                        :id="`venue-${field.name}`"
+                        v-model="venueForm[field.name]"
+                        :type="field.type ?? 'text'"
+                        :autocomplete="field.autocomplete"
+                        class="mt-1 block w-full"
+                        :aria-invalid="venueForm.errors[field.name] ? 'true' : undefined"
+                        :aria-describedby="venueForm.errors[field.name] ? `venue-${field.name}-error` : undefined"
+                    />
+                    <InputError :id="`venue-${field.name}-error`" :message="venueForm.errors[field.name]" />
                 </div>
                 <div class="sm:col-span-2">
-                    <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm text-white" :disabled="venueForm.processing">
+                    <AppButton type="submit" :loading="venueForm.processing" :disabled="venueForm.processing">
                         {{ __('Save') }}
-                    </button>
+                    </AppButton>
                 </div>
             </form>
-        </div>
+        </AppCard>
     </SettingsLayout>
 </template>
