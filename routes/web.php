@@ -12,7 +12,12 @@ Route::get('/', function () {
     // ]);
 })->name('welcome');
 
-Route::get('/kitchen/monitor', [KdsController::class, 'monitor'])->name('kitchen.monitor');
+// Public customer-facing order display. The `venue` query param drives the
+// query, so the URL must be signed — otherwise anyone could enumerate venue
+// ids and read another tenant's open orders.
+Route::get('/kitchen/monitor', [KdsController::class, 'monitor'])
+    ->middleware(['signed', 'throttle:60,1'])
+    ->name('kitchen.monitor');
 
 require __DIR__.'/web/guest.php';
 require __DIR__.'/web/onboarding.php';

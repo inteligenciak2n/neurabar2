@@ -58,6 +58,16 @@ interface PaymentGatewayContract
     public function cancelSubscription(string $gatewaySubscriptionId): void;
 
     /**
+     * Consultar o status atual de uma cobrança no gateway.
+     *
+     * Usado pela reconciliação diária para corrigir divergências causadas por
+     * webhooks perdidos. Retorna null quando a cobrança não existe mais.
+     *
+     * @return 'paid'|'overdue'|'refunded'|'pending'|null
+     */
+    public function fetchPaymentStatus(string $gatewayPaymentId): ?string;
+
+    /**
      * Charge an invoice using the provided payment data.
      *
      * @return array{status: string, gateway_payment_id: string, message: string, payload: array<string, mixed>}

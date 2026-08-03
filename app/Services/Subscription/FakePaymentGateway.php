@@ -60,6 +60,12 @@ class FakePaymentGateway implements PaymentGatewayContract
         // No-op: the fake gateway has no remote state to update.
     }
 
+    public function fetchPaymentStatus(string $gatewayPaymentId): ?string
+    {
+        // The fake gateway keeps no remote state: nothing ever diverges.
+        return null;
+    }
+
     public function chargeInvoice(VenueInvoice|CorporationInvoice $invoice, array $paymentData): array
     {
         $method = PaymentSaasMethod::tryFrom($paymentData['method'] ?? '');

@@ -9,16 +9,15 @@ use Illuminate\Support\Facades\Hash;
 
 class UpdateUserAction
 {
-    /** @var list<UserRole> */
-    private const RESTRICTED_ROLES = [UserRole::SuperAdmin, UserRole::CorporationAdmin];
-
     public function execute(User $user, UpdateUserRequest $request): User
     {
         $data = $request->validated();
 
         if (isset($data['role'])) {
+            // Venue settings may only assign operational roles; platform roles
+            // would grant backoffice access to a tenant user.
             abort_if(
-                in_array(UserRole::from($data['role']), self::RESTRICTED_ROLES, true),
+                UserRole::from($data['role'])->isPlatform(),
                 403,
                 'Cannot assign this role from venue settings.'
             );

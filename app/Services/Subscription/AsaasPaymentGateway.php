@@ -109,6 +109,19 @@ class AsaasPaymentGateway implements PaymentGatewayContract
         $this->handle($response);
     }
 
+    public function fetchPaymentStatus(string $gatewayPaymentId): ?string
+    {
+        $response = $this->client()->get("/v3/payments/{$gatewayPaymentId}");
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        $result = $this->handle($response);
+
+        return $this->mapPaymentStatus((string) ($result['status'] ?? ''));
+    }
+
     public function chargeInvoice(VenueInvoice|CorporationInvoice $invoice, array $paymentData): array
     {
         $method = PaymentSaasMethod::tryFrom($paymentData['method'] ?? '');

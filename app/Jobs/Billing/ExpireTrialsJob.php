@@ -29,7 +29,16 @@ class ExpireTrialsJob implements ShouldQueue
             ->get();
 
         foreach ($corporationSubscriptions as $subscription) {
-            $subscription->update(['status' => SubscriptionStatus::PastDue->value]);
+            // A recurring subscription already exists at the gateway: the trial
+            // simply rolls into the paid cycle. Marking it past_due would flag a
+            // paying customer as delinquent and start the suspension countdown.
+            $convertedToPaid = $subscription->isBilledByGateway();
+
+            $subscription->update([
+                'status' => $convertedToPaid
+                    ? SubscriptionStatus::Active->value
+                    : SubscriptionStatus::PastDue->value,
+            ]);
 
             $corporation = $subscription->corporation;
 
@@ -40,7 +49,7 @@ class ExpireTrialsJob implements ShouldQueue
 
                 $owner = $corporation->owner;
 
-                if ($owner) {
+                if ($owner && ! $convertedToPaid) {
                     Notification::send($owner, new TrialExpired($corporation));
                 }
             }
@@ -52,7 +61,11 @@ class ExpireTrialsJob implements ShouldQueue
             ->get();
 
         foreach ($venueSubscriptions as $venueSubscription) {
-            $venueSubscription->update(['status' => SubscriptionStatus::PastDue->value]);
+            $venueSubscription->update([
+                'status' => $venueSubscription->isBilledByGateway()
+                    ? SubscriptionStatus::Active->value
+                    : SubscriptionStatus::PastDue->value,
+            ]);
 
             if ($venueSubscription->venue) {
                 BillingStatusService::flushBlockedCache($venueSubscription->venue);

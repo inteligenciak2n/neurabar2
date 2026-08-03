@@ -12,7 +12,11 @@ export interface Tenant {
 export function useModules() {
   const page = usePage();
 
-  const tenant = computed<Tenant | null>(() => page.props.tenant as Tenant | null);
+  // HandleInertiaRequests nests tenant under the `defs` bag, so reading
+  // `page.props.tenant` always resolved to undefined and hid every module.
+  const tenant = computed<Tenant | null>(
+    () => ((page.props.defs as Record<string, unknown> | undefined)?.tenant as Tenant | null) ?? null,
+  );
 
   const modules = computed<string[]>(() => tenant.value?.modules ?? []);
 

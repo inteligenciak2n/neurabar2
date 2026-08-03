@@ -10,6 +10,7 @@ use App\Models\Tenant\VenueSubscription;
 use App\Services\Billing\SubscriptionCalculator;
 use App\Services\Subscription\GatewayCustomerResolver;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
 use Throwable;
 
@@ -22,6 +23,24 @@ class ActivateGatewaySubscriptionAction
     ) {}
 
     public function execute(CorporationSubscription|VenueSubscription $subscription, UserPaymentMethod $paymentMethod): CorporationSubscription|VenueSubscription
+    {
+        // Duplo clique ou requisições concorrentes criavam duas assinaturas
+        // recorrentes no gateway para o mesmo cliente — e só a última ficava
+        // registrada localmente, deixando a outra cobrando indefinidamente.
+        $lock = Cache::lock('subscription-activation:'.$subscription->getKey(), 30);
+
+        if (! $lock->get()) {
+            throw new InvalidArgumentException('Já existe uma ativação de assinatura em andamento.');
+        }
+
+        try {
+            return $this->activate($subscription->refresh(), $paymentMethod);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function activate(CorporationSubscription|VenueSubscription $subscription, UserPaymentMethod $paymentMethod): CorporationSubscription|VenueSubscription
     {
         if ($subscription->isBilledByGateway()) {
             throw new InvalidArgumentException('A assinatura já está vinculada a um gateway de pagamento.');

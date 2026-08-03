@@ -14,20 +14,37 @@ use App\Models\Tenant\VenueInvoice;
 use App\Notifications\Billing\InvoiceGenerated;
 use App\Services\Billing\SubscriptionCalculator;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Notification;
 
-class GenerateInvoicesJob implements ShouldQueue
+class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable;
     use InteractsWithQueue;
     use Queueable;
     use SerializesModels;
 
+    public int $tries = 3;
+
+    /** @var list<int> */
+    public array $backoff = [60, 300];
+
+    /**
+     * Uma única execução por período, mesmo com retries ou múltiplos workers:
+     * gerar faturas duas vezes significa cobrar o cliente duas vezes.
+     */
+    public int $uniqueFor = 3600;
+
     public function __construct(private readonly string $period) {}
+
+    public function uniqueId(): string
+    {
+        return $this->period;
+    }
 
     public function handle(SubscriptionCalculator $calculator): void
     {
@@ -161,6 +178,18 @@ class GenerateInvoicesJob implements ShouldQueue
      */
     private function finalizeUnifiedInvoice(Corporation $corporation, CorporationSubscription $subscription, array $aggregate, array $venueInvoices): void
     {
+        // O período já foi fechado (fatura paga/cancelada): recriar aqui gerava
+        // uma segunda fatura cobrável para o mesmo mês.
+        $alreadyFinalized = CorporationInvoice::query()
+            ->where('corporation_id', $corporation->id)
+            ->where('period', $this->period)
+            ->where('is_finalized', true)
+            ->exists();
+
+        if ($alreadyFinalized) {
+            return;
+        }
+
         $discount = $this->resolveDiscount($corporation);
         $discountValue = $this->calculateDiscountValue($aggregate['total'], $discount);
         $finalTotal = max(0, $aggregate['total'] - $discountValue);

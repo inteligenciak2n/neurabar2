@@ -23,8 +23,11 @@ Route::prefix($platformPath)->name('platform.')->group(function () {
         Route::get('/', [PlatformDashboardController::class, 'index'])->name('dashboard');
 
         Route::get('/corporations', [PlatformCorporationController::class, 'index'])->name('corporations.index');
-        Route::get('/corporations/create', [PlatformCorporationController::class, 'create'])->name('corporations.create');
-        Route::post('/corporations', [PlatformCorporationController::class, 'store'])->name('corporations.store');
+
+        Route::middleware(['platform_role:super_admin,finance,registration'])->group(function () {
+            Route::get('/corporations/create', [PlatformCorporationController::class, 'create'])->name('corporations.create');
+            Route::post('/corporations', [PlatformCorporationController::class, 'store'])->name('corporations.store');
+        });
 
         Route::middleware(['platform_role:super_admin,finance'])->group(function () {
             Route::get('/corporations/{corporation}/edit', [PlatformCorporationController::class, 'edit'])->name('corporations.edit');
@@ -49,9 +52,12 @@ Route::prefix($platformPath)->name('platform.')->group(function () {
         Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
 
         Route::get('/plans', [PlanCatalogController::class, 'index'])->name('plans.index');
-        Route::post('/plans', [PlanCatalogController::class, 'store'])->name('plans.store');
-        Route::put('/plans/{plan}', [PlanCatalogController::class, 'update'])->name('plans.update');
-        Route::delete('/plans/{plan}', [PlanCatalogController::class, 'destroy'])->name('plans.destroy');
+
+        Route::middleware(['platform_role:super_admin,finance'])->group(function () {
+            Route::post('/plans', [PlanCatalogController::class, 'store'])->name('plans.store');
+            Route::put('/plans/{plan}', [PlanCatalogController::class, 'update'])->name('plans.update');
+            Route::delete('/plans/{plan}', [PlanCatalogController::class, 'destroy'])->name('plans.destroy');
+        });
 
         Route::middleware(['platform_role:super_admin'])->group(function () {
             Route::get('/users', [PlatformUserController::class, 'index'])->name('users.index');

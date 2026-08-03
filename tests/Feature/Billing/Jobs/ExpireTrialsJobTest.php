@@ -70,4 +70,43 @@ class ExpireTrialsJobTest extends TestCase
 
         Notification::assertSentTo($owner, TrialExpired::class);
     }
+
+    public function test_it_activates_corporation_trial_already_billed_by_gateway(): void
+    {
+        Notification::fake();
+
+        $owner = User::factory()->create();
+        $corporation = Corporation::factory()->create(['owner_id' => $owner->id]);
+        $subscription = CorporationSubscription::factory()->create([
+            'corporation_id' => $corporation->id,
+            'status' => SubscriptionStatus::Trial,
+            'trial_ends_at' => Carbon::now()->subDay(),
+            'gateway_subscription_id' => 'sub_000123',
+        ]);
+
+        (new ExpireTrialsJob)->handle();
+
+        $this->assertDatabaseHas('corporation_subscriptions', [
+            'id' => $subscription->id,
+            'status' => SubscriptionStatus::Active->value,
+        ]);
+
+        Notification::assertNothingSent();
+    }
+
+    public function test_it_activates_venue_trial_already_billed_by_gateway(): void
+    {
+        $subscription = VenueSubscription::factory()->create([
+            'status' => SubscriptionStatus::Trial,
+            'trial_ends_at' => Carbon::now()->subDay(),
+            'gateway_subscription_id' => 'sub_000456',
+        ]);
+
+        (new ExpireTrialsJob)->handle();
+
+        $this->assertDatabaseHas('venue_subscriptions', [
+            'id' => $subscription->id,
+            'status' => SubscriptionStatus::Active->value,
+        ]);
+    }
 }

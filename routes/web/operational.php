@@ -159,8 +159,10 @@ Route::middleware([
         Route::get('/attachments/{attachmentId}', [TutorialController::class, 'attachment'])->name('attachments.show');
     });
 
-    // Subscription self-management — owner or general manager only
-    Route::prefix('settings/subscription')->name('settings.subscription.')->middleware(['module:menu', 'role:owner,general_manager'])->group(function () {
+    // Subscription self-management — owner or general manager only.
+    // Deliberately outside `module:menu`: a tenant whose menu module lapsed
+    // must still be able to reach billing to pay and restore access.
+    Route::prefix('settings/subscription')->name('settings.subscription.')->middleware(['role:owner,general_manager'])->group(function () {
         Route::get('/', [SubscriptionController::class, 'index'])->name('index');
         Route::post('/cancel', [SubscriptionController::class, 'cancel'])->name('cancel');
         Route::post('/gateway/activate', [SubscriptionController::class, 'activateGateway'])->name('gateway.activate');

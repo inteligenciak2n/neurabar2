@@ -1,6 +1,7 @@
 <script setup>
 import PlatformLayout from '@/Layouts/PlatformLayout.vue';
 import { useForm } from '@inertiajs/vue3';
+import { useCurrency } from '@/Composables/useCurrency';
 
 const props = defineProps({
     filters: Object,
@@ -8,6 +9,8 @@ const props = defineProps({
     venueInvoices: Object,
     statuses: Array,
 });
+
+const { formatMoney } = useCurrency();
 
 const form = useForm({
     period: props.filters.period ?? '',
@@ -57,7 +60,7 @@ const submit = () => {
                                     {{ invoice.status.label }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-right text-ocean-deep dark:text-gray-100">{{ $page.props.formatMoney(invoice.total_value) }}</td>
+                            <td class="px-4 py-3 text-right text-ocean-deep dark:text-gray-100">{{ formatMoney(invoice.total_value) }}</td>
                         </tr>
                         <tr v-if="!corporationInvoices.data.length">
                             <td colspan="5" class="px-4 py-6 text-center text-muted-foreground">{{ __('No corporation invoices found.') }}</td>
@@ -88,7 +91,7 @@ const submit = () => {
                                     {{ invoice.status.label }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-right text-ocean-deep dark:text-gray-100">{{ $page.props.formatMoney(invoice.total_value) }}</td>
+                            <td class="px-4 py-3 text-right text-ocean-deep dark:text-gray-100">{{ formatMoney(invoice.total_value) }}</td>
                         </tr>
                         <tr v-if="!venueInvoices.data.length">
                             <td colspan="5" class="px-4 py-6 text-center text-muted-foreground">{{ __('No venue invoices found.') }}</td>

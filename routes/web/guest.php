@@ -14,7 +14,7 @@ Route::middleware('throttle:60,1')->group(function () {
 });
 
 // Guest Hub — QR-code-based visitor flow
-Route::prefix('g/{token}')->name('guest.')->group(function () {
+Route::prefix('g/{token}')->name('guest.')->middleware('billing.active')->group(function () {
     Route::get('/', [GuestHubController::class, 'show'])->name('hub')->middleware('throttle:60,1');
     Route::get('/menu', [PublicMenuController::class, 'show'])->name('menu')->middleware('throttle:60,1');
     Route::post('/session', [GuestSessionController::class, 'store'])->name('session.store')->middleware('throttle:10,1');

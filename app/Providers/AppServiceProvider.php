@@ -13,6 +13,7 @@ use App\Listeners\Billing\RecordOrderModuleUsage;
 use App\Listeners\Billing\RecordSignalUsage;
 use App\Listeners\Kitchen\BroadcastNewOrderByStation;
 use App\Models\User;
+use App\Services\Subscription\AsaasPaymentGateway;
 use App\Services\Subscription\FakePaymentGateway;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
@@ -22,6 +23,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use RuntimeException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,16 +32,44 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $gateway = config('subscription.payment.gateway');
+        $this->app->bind(PaymentGatewayContract::class, $this->resolvePaymentGateway());
+    }
 
-        if (! $gateway && ! app()->environment(['local', 'testing'])) {
-            throw new \RuntimeException('SUBSCRIPTION_PAYMENT_GATEWAY must be configured in non-local environments.');
+    /**
+     * Resolve the configured payment gateway implementation.
+     *
+     * Falling back to the fake gateway outside local/testing would let a
+     * production deploy "charge" customers without ever moving money, so the
+     * boot is aborted instead.
+     *
+     * @return class-string<PaymentGatewayContract>
+     */
+    private function resolvePaymentGateway(): string
+    {
+        $gateway = config('subscription.payment.gateway');
+        $isLocal = $this->app->environment(['local', 'testing']);
+
+        if (! $gateway) {
+            if (! $isLocal) {
+                throw new RuntimeException('SUBSCRIPTION_PAYMENT_GATEWAY must be configured in non-local environments.');
+            }
+
+            return FakePaymentGateway::class;
         }
 
-        $this->app->bind(
-            PaymentGatewayContract::class,
-            $gateway ?? FakePaymentGateway::class
-        );
+        if (! is_subclass_of($gateway, PaymentGatewayContract::class)) {
+            throw new RuntimeException("SUBSCRIPTION_PAYMENT_GATEWAY [{$gateway}] must implement ".PaymentGatewayContract::class.'.');
+        }
+
+        if (! $isLocal && $gateway === FakePaymentGateway::class) {
+            throw new RuntimeException('FakePaymentGateway cannot be used outside local/testing environments.');
+        }
+
+        if (! $isLocal && $gateway === AsaasPaymentGateway::class && ! config('services.asaas.access_token')) {
+            throw new RuntimeException('ASAAS_ACCESS_TOKEN must be configured to use the Asaas gateway.');
+        }
+
+        return $gateway;
     }
 
     /**

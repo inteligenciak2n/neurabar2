@@ -6,6 +6,7 @@ use App\Actions\Corporation\CreateVenueAction;
 use App\Models\Tenant\Corporation;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class FinalizeOnboardingAction
 {
@@ -20,7 +21,15 @@ class FinalizeOnboardingAction
      */
     public function execute(User $user, Corporation $corporation, array $corporationData, array $venues): void
     {
-        DB::transaction(function () use ($user, $corporation, $corporationData, $venues): void {
+        // CreateVenueAction grava em duas conexões: 'saas' (venue/assinatura) e a
+        // operacional (cardápio, estações, locais). Uma transação só na conexão
+        // padrão deixava dados operacionais órfãos quando o passo seguinte falhava.
+        $operationalConnection = $corporation->self_connection ?? 'operation_default_1';
+
+        DB::beginTransaction();
+        DB::connection($operationalConnection)->beginTransaction();
+
+        try {
             $corporation->update($corporationData);
 
             $firstVenueId = null;
@@ -38,7 +47,15 @@ class FinalizeOnboardingAction
             $user->current_venue_id = $firstVenueId;
             $user->onboarding_completed_at = now();
             $user->save();
-        });
+
+            DB::commit();
+            DB::connection($operationalConnection)->commit();
+        } catch (Throwable $e) {
+            DB::rollBack();
+            DB::connection($operationalConnection)->rollBack();
+
+            throw $e;
+        }
 
         session()->forget('onboarding.venue_count');
     }

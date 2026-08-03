@@ -32,8 +32,11 @@ class SubscriptionPaymentMethodController extends Controller
     {
         Gate::authorize('manage-subscription');
 
-        $data = $request->validated();
-        $this->paymentService->saveCard($request->user(), $data, $data['billing_address'] ?? []);
+        $this->paymentService->saveCard(
+            $request->user(),
+            $request->cardData(),
+            $request->validated('billing_address', []),
+        );
 
         return back()->with('success', __('Payment method saved successfully.'));
     }

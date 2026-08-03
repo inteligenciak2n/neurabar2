@@ -1,9 +1,12 @@
 <script setup>
 import PlatformLayout from '@/Layouts/PlatformLayout.vue';
+import { useCurrency } from '@/Composables/useCurrency';
 
 const props = defineProps({
     invoice: Object,
 });
+
+const { formatMoney } = useCurrency();
 </script>
 
 <template>
@@ -35,27 +38,27 @@ const props = defineProps({
             <div class="border-t pt-4 dark:border-gray-700">
                 <div class="flex justify-between py-1">
                     <span class="text-muted-foreground">{{ __('Base') }}</span>
-                    <span class="text-ocean-deep dark:text-gray-100">{{ $page.props.formatMoney(invoice.base_value) }}</span>
+                    <span class="text-ocean-deep dark:text-gray-100">{{ formatMoney(invoice.base_value) }}</span>
                 </div>
                 <div class="flex justify-between py-1">
                     <span class="text-muted-foreground">{{ __('Modules') }}</span>
-                    <span class="text-ocean-deep dark:text-gray-100">{{ $page.props.formatMoney(invoice.modules_value) }}</span>
+                    <span class="text-ocean-deep dark:text-gray-100">{{ formatMoney(invoice.modules_value) }}</span>
                 </div>
                 <div class="flex justify-between py-1">
                     <span class="text-muted-foreground">{{ __('Metered') }}</span>
-                    <span class="text-ocean-deep dark:text-gray-100">{{ $page.props.formatMoney(invoice.metered_value) }}</span>
+                    <span class="text-ocean-deep dark:text-gray-100">{{ formatMoney(invoice.metered_value) }}</span>
                 </div>
                 <div class="flex justify-between py-1">
                     <span class="text-muted-foreground">{{ __('Dedicated Surcharge') }}</span>
-                    <span class="text-ocean-deep dark:text-gray-100">{{ $page.props.formatMoney(invoice.dedicated_surcharge) }}</span>
+                    <span class="text-ocean-deep dark:text-gray-100">{{ formatMoney(invoice.dedicated_surcharge) }}</span>
                 </div>
                 <div class="flex justify-between py-1">
                     <span class="text-muted-foreground">{{ __('Discount') }}</span>
-                    <span class="text-ocean-deep dark:text-gray-100">{{ $page.props.formatMoney(invoice.discount_value) }}</span>
+                    <span class="text-ocean-deep dark:text-gray-100">{{ formatMoney(invoice.discount_value) }}</span>
                 </div>
                 <div class="flex justify-between py-2 font-semibold text-lg border-t dark:border-gray-700">
                     <span class="text-ocean-deep dark:text-gray-100">{{ __('Total') }}</span>
-                    <span class="text-ocean-deep dark:text-gray-100">{{ $page.props.formatMoney(invoice.total_value) }}</span>
+                    <span class="text-ocean-deep dark:text-gray-100">{{ formatMoney(invoice.total_value) }}</span>
                 </div>
             </div>
         </div>

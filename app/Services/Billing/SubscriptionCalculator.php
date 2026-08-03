@@ -8,13 +8,26 @@ use App\Models\Tenant\ModuleUsageTier;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueInvoice;
 use App\Models\Tenant\VenueUsageRecord;
+use Illuminate\Support\Carbon;
 
 class SubscriptionCalculator
 {
     /**
+     * Resolve o período de consumo faturado junto com a mensalidade do período
+     * informado. A assinatura é pré-paga (mês corrente) e o consumo medido é
+     * pós-pago (mês fechado anterior) — cobrar o consumo do próprio mês da
+     * fatura significava sempre faturar zero de excedente.
+     */
+    public static function usagePeriodFor(string $period): string
+    {
+        return Carbon::parse($period.'-01')->subMonthNoOverflow()->format('Y-m');
+    }
+
+    /**
+     * @param  string|null  $usagePeriod  Período do consumo medido. Padrão: mês anterior a $period.
      * @return array<string, float>|null
      */
-    public function calculateVenue(Venue $venue, string $period): ?array
+    public function calculateVenue(Venue $venue, string $period, ?string $usagePeriod = null): ?array
     {
         $subscription = $venue->subscription;
 
@@ -26,9 +39,12 @@ class SubscriptionCalculator
             return null;
         }
 
+        $usagePeriod ??= self::usagePeriodFor($period);
+
         $base = (float) $subscription->base_value;
-        $modulesValue = $this->calculateModules($venue);
-        $metered = $this->calculateMetered($venue, $period);
+        $billableModules = $this->resolveBillableModules($venue);
+        $modulesValue = $billableModules['value'];
+        $metered = $this->calculateMetered($venue, $usagePeriod, $billableModules['codes']);
         $dedicatedSurcharge = (float) ($subscription->dedicated_surcharge ?? 0);
 
         $total = $base + $modulesValue + $metered + $dedicatedSurcharge;
@@ -51,13 +67,15 @@ class SubscriptionCalculator
     /**
      * @return array<string, mixed>
      */
-    public function calculateCorporation(Corporation $corporation, string $period): array
+    public function calculateCorporation(Corporation $corporation, string $period, ?string $usagePeriod = null): array
     {
         $venueTotals = [];
         $grandTotal = 0.0;
 
+        $usagePeriod ??= self::usagePeriodFor($period);
+
         foreach ($corporation->venues as $venue) {
-            $calculated = $this->calculateVenue($venue, $period);
+            $calculated = $this->calculateVenue($venue, $period, $usagePeriod);
             $venueTotals[$venue->id] = $calculated ?? $this->emptyResult();
             $grandTotal += $calculated['total'] ?? 0.0;
         }
@@ -93,7 +111,14 @@ class SubscriptionCalculator
         return $invoice !== null;
     }
 
-    private function calculateModules(Venue $venue): float
+    /**
+     * Preço das mensalidades de módulo e, junto, a lista de códigos efetivamente
+     * contratados — usada para impedir que consumo medido de um módulo nunca
+     * contratado (ou já cancelado) gere cobrança de excedente.
+     *
+     * @return array{value: float, codes: list<string>}
+     */
+    private function resolveBillableModules(Venue $venue): array
     {
         $venueModules = $venue->modules()
             ->whereIn('status', [ModuleStatus::Active, ModuleStatus::Trial])
@@ -103,7 +128,7 @@ class SubscriptionCalculator
             ->get();
 
         if ($venueModules->isEmpty()) {
-            return 0.0;
+            return ['value' => 0.0, 'codes' => []];
         }
 
         // Carrega todos os módulos ativos da corporation em uma única query (com o
@@ -116,6 +141,7 @@ class SubscriptionCalculator
             ->keyBy('module_code') ?? collect();
 
         $total = 0.0;
+        $codes = [];
 
         foreach ($venueModules as $venueModule) {
             $corporationModule = $corporationModules->get($venueModule->module_code);
@@ -124,6 +150,8 @@ class SubscriptionCalculator
                 continue;
             }
 
+            $codes[] = (string) $venueModule->module_code;
+
             $unitPrice = $corporationModule->custom_monthly_price !== null
                 ? (float) $corporationModule->custom_monthly_price
                 : (float) ($corporationModule->catalog?->base_monthly_price ?? 0);
@@ -131,16 +159,24 @@ class SubscriptionCalculator
             $total += $unitPrice * max(1, (int) $venueModule->quantity);
         }
 
-        return $total;
+        return ['value' => $total, 'codes' => array_values(array_unique($codes))];
     }
 
-    private function calculateMetered(Venue $venue, string $period): float
+    /**
+     * @param  list<string>  $contractedModuleCodes
+     */
+    private function calculateMetered(Venue $venue, string $period, array $contractedModuleCodes): float
     {
+        if ($contractedModuleCodes === []) {
+            return 0.0;
+        }
+
         $total = 0.0;
 
         $records = VenueUsageRecord::query()
             ->where('venue_id', $venue->id)
             ->where('period', $period)
+            ->whereIn('module_code', $contractedModuleCodes)
             ->get();
 
         foreach ($records as $record) {

@@ -1,12 +1,9 @@
 <?php
 
-use App\Events\SocketTest;
 use App\Http\Controllers\Api\PaymentWebhookController;
 use App\Http\Controllers\TranslationsController;
 use App\Models\Tenant\PlanCatalog;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/set/translations/{page}', [TranslationsController::class, 'setTranslations'])->name('api.set.translations');
@@ -32,15 +29,6 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::post('/webhooks/payment/{gateway}', PaymentWebhookController::class)
+    ->whereIn('gateway', config('subscription.payment.supported_gateways', ['asaas']))
+    ->middleware('throttle:300,1')
     ->name('api.webhooks.payment');
-
-Route::post('/test-event/{user}', function (User $user) {
-    try {
-        $e = event(new SocketTest($user));
-        Log::debug('Evento enviado!', ['user' => $user, 'event' => $e]);
-    } catch (Exception $ex) {
-        Log::error('Erro ao enviar evento!', ['error' => $ex->getMessage()]);
-    }
-
-    return 'Evento enviado!';
-})->name('test-event');

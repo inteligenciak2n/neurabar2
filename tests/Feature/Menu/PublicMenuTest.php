@@ -2,9 +2,12 @@
 
 namespace Tests\Feature\Menu;
 
+use App\Enums\BillingMode;
+use App\Enums\SubscriptionStatus;
 use App\Models\Menu\Category;
 use App\Models\Menu\Menu;
 use App\Models\Menu\Product;
+use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\Venue;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
@@ -16,6 +19,20 @@ class PublicMenuTest extends TestCase
     private function makeToken(Venue $venue): string
     {
         return rtrim(base64_encode(json_encode(['v' => $venue->id])), '=');
+    }
+
+    public function test_suspended_venue_cannot_serve_the_public_menu(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+
+        CorporationSubscription::factory()->create([
+            'corporation_id' => $venue->corporation_id,
+            'billing_mode' => BillingMode::Unified,
+            'status' => SubscriptionStatus::Suspended,
+        ]);
+
+        $this->get(route('guest.menu', $this->makeToken($venue)))
+            ->assertStatus(503);
     }
 
     public function test_public_menu_returns_active_products_without_authentication(): void

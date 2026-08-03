@@ -26,6 +26,28 @@ class BillingStatusServiceTest extends TestCase
         $this->assertTrue(BillingStatusService::isBlocked($venue->fresh()));
     }
 
+    public function test_missing_subscription_does_not_suspend_the_public_channel(): void
+    {
+        $venue = Venue::factory()->create();
+        $venue->corporation->subscription()->delete();
+        $venue->unsetRelation('corporation');
+
+        $this->assertFalse(BillingStatusService::isSuspended($venue->fresh()));
+    }
+
+    public function test_suspended_unified_corporation_suspends_the_public_channel(): void
+    {
+        $venue = Venue::factory()->create();
+
+        CorporationSubscription::factory()->create([
+            'corporation_id' => $venue->corporation_id,
+            'billing_mode' => BillingMode::Unified,
+            'status' => SubscriptionStatus::Suspended,
+        ]);
+
+        $this->assertTrue(BillingStatusService::isSuspended($venue->fresh()));
+    }
+
     public function test_unified_corporation_suspended_blocks_venue(): void
     {
         $venue = Venue::factory()->create();

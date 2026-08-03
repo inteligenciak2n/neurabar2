@@ -67,6 +67,31 @@ class InviteUserTest extends TestCase
         $this->assertNotNull($invitation->fresh()->accepted_at);
     }
 
+    public function test_accepting_an_invitation_completes_onboarding(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $invitation = VenueInvitation::factory()->create([
+            'venue_id' => $venue->id,
+            'email' => 'invited@test.com',
+            'role' => UserRole::Attendant,
+            'expires_at' => now()->addHours(72),
+            'accepted_at' => null,
+        ]);
+
+        $user = User::factory()->create([
+            'email' => 'invited@test.com',
+            'onboarding_completed_at' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('invitations.accept', $invitation->token))
+            ->assertRedirect(route('dashboard'));
+
+        // Sem isso o convidado cairia no wizard de onboarding e criaria uma
+        // corporation/assinatura própria em vez de entrar na equipe existente.
+        $this->assertNotNull($user->fresh()->onboarding_completed_at);
+    }
+
     public function test_expired_invitation_cannot_be_accepted(): void
     {
         $venue = Venue::factory()->create(['active' => true]);

@@ -17,9 +17,9 @@ class ProcessWebhookPaymentAction
      */
     public function execute(string $gateway, ?string $token, array $payload): array
     {
-        $expectedToken = config('subscription.payment.webhook_token');
+        $expectedToken = (string) config('subscription.payment.webhook_token');
 
-        if (! $expectedToken || $token !== $expectedToken) {
+        if ($expectedToken === '' || ! hash_equals($expectedToken, (string) $token)) {
             throw new InvalidWebhookTokenException('Invalid webhook token.');
         }
 

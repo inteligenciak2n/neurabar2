@@ -2,6 +2,7 @@
 
 namespace App\Services\Subscription;
 
+use App\Actions\Subscription\ReactivateSubscriptionAction;
 use App\Contracts\Subscription\PaymentGatewayContract;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentSaasMethod;
@@ -14,6 +15,7 @@ use App\Models\Tenant\VenueSubscription;
 use App\Models\User;
 use App\Services\Billing\SubscriptionCalculator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
 
 class PaymentSaasService
@@ -22,6 +24,7 @@ class PaymentSaasService
         private readonly PaymentGatewayContract $gateway,
         private readonly GatewayCustomerResolver $customerResolver,
         private readonly SubscriptionCalculator $calculator,
+        private readonly ReactivateSubscriptionAction $reactivator,
     ) {}
 
     /**
@@ -62,6 +65,26 @@ class PaymentSaasService
      */
     public function charge(VenueInvoice|CorporationInvoice $invoice, array $paymentData, User $user): array
     {
+        // Duplo clique no botão de pagar gerava duas cobranças reais: a checagem
+        // de status abaixo não protege contra concorrência sozinha.
+        $lock = Cache::lock('invoice-charge:'.$invoice->getKey(), 30);
+
+        if (! $lock->get()) {
+            throw new InvalidArgumentException('Já existe um pagamento em andamento para esta fatura.');
+        }
+
+        try {
+            return $this->processCharge($invoice->refresh(), $paymentData, $user);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * @return array{status: string, gateway_payment_id: string, message: string}
+     */
+    private function processCharge(VenueInvoice|CorporationInvoice $invoice, array $paymentData, User $user): array
+    {
         $method = PaymentSaasMethod::tryFrom($paymentData['method'] ?? '');
 
         if (! $method) {
@@ -75,7 +98,7 @@ class PaymentSaasService
         $paymentData['gateway_customer_id'] = $this->resolveGatewayCustomerId($user, $invoice);
 
         $result = match ($method) {
-            PaymentSaasMethod::CreditCard => $this->chargeWithCard($invoice, $paymentData),
+            PaymentSaasMethod::CreditCard => $this->chargeWithCard($invoice, $paymentData, $user),
             PaymentSaasMethod::Pix => $this->gateway->processPix($invoice, $paymentData),
             PaymentSaasMethod::Boleto => $this->gateway->processBoleto($invoice, $paymentData),
         };
@@ -89,6 +112,8 @@ class PaymentSaasService
                 'paid_at' => now(),
                 'is_finalized' => true,
             ]);
+
+            $this->reactivator->execute($invoice);
         }
 
         return [
@@ -133,6 +158,8 @@ class PaymentSaasService
                 'is_finalized' => true,
             ]);
 
+            $this->reactivator->execute($invoice);
+
             return;
         }
 
@@ -144,12 +171,14 @@ class PaymentSaasService
         }
     }
 
-    private function chargeWithCard(VenueInvoice|CorporationInvoice $invoice, array $paymentData): array
+    private function chargeWithCard(VenueInvoice|CorporationInvoice $invoice, array $paymentData, User $user): array
     {
         $methodId = $paymentData['payment_method_id'] ?? null;
 
         if ($methodId) {
-            $method = UserPaymentMethod::findOrFail($methodId);
+            // Scoped to the authenticated user: an unscoped lookup allowed any
+            // tenant to charge their own invoice on another user's card.
+            $method = $user->paymentMethods()->findOrFail($methodId);
 
             if ($method->isExpired()) {
                 throw new InvalidArgumentException('Cartão expirado.');

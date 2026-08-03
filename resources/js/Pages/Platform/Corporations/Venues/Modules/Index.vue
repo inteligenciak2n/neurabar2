@@ -1,12 +1,15 @@
 <script setup>
 import PlatformLayout from '@/Layouts/PlatformLayout.vue';
 import { useForm } from '@inertiajs/vue3';
+import { useTranslate } from '@/Composables/useTranslate';
 
 const props = defineProps({
     corporation: Object,
     venue: Object,
     modules: Object,
 });
+
+const __ = useTranslate();
 
 const form = useForm({
     module_code: '',

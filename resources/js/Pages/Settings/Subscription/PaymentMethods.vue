@@ -15,6 +15,10 @@ const form = useForm({
     number: '',
     holder_name: '',
     holder_document: '',
+    holder_email: '',
+    holder_postal_code: '',
+    holder_address_number: '',
+    holder_phone: '',
     expiration_month: '',
     expiration_year: '',
     cvv: '',
@@ -35,14 +39,16 @@ const submit = () => {
         </template>
 
         <div class="space-y-6">
-            <div class="rounded-xl border border-border bg-white p-6 shadow-card flex items-center gap-3">
-                <Link :href="route('settings.subscription.index')" class="flex items-center text-sm text-primary hover:underline">
-                    <svg class="inline-block h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                    </svg>
-                    {{ __('Back') }}
-                </Link>
-                <h2 class="font-heading text-lg font-semibold">{{ __('Saved Cards') }}</h2>
+            <div class="rounded-xl border border-border bg-white p-6 shadow-card">
+                <div class="flex items-center gap-3">
+                    <Link :href="route('settings.subscription.index')" class="flex items-center text-sm text-primary hover:underline">
+                        <svg class="inline-block h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        {{ __('Back') }}
+                    </Link>
+                    <h2 class="font-heading text-lg font-semibold">{{ __('Saved Cards') }}</h2>
+                </div>
                 <div class="mt-4 space-y-3">
                     <div v-for="method in paymentMethods" :key="method.id" class="flex items-center justify-between rounded-lg border border-border p-4">
                         <div>
@@ -91,6 +97,28 @@ const submit = () => {
                         <label class="block text-sm font-medium">{{ __('Holder Document') }}</label>
                         <input v-model="form.holder_document" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
                         <InputError :message="form.errors.holder_document" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">{{ __('Holder Email') }}</label>
+                        <input v-model="form.holder_email" type="email" class="mt-1 block w-full rounded-md border-border shadow-sm">
+                        <InputError :message="form.errors.holder_email" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">{{ __('Holder Phone') }}</label>
+                        <input v-model="form.holder_phone" type="tel" class="mt-1 block w-full rounded-md border-border shadow-sm">
+                        <InputError :message="form.errors.holder_phone" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium">{{ __('Postal Code') }}</label>
+                            <input v-model="form.holder_postal_code" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
+                            <InputError :message="form.errors.holder_postal_code" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium">{{ __('Address Number') }}</label>
+                            <input v-model="form.holder_address_number" type="text" class="mt-1 block w-full rounded-md border-border shadow-sm">
+                            <InputError :message="form.errors.holder_address_number" />
+                        </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>

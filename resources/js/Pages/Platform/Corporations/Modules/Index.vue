@@ -1,11 +1,16 @@
 <script setup>
 import PlatformLayout from '@/Layouts/PlatformLayout.vue';
 import { useForm } from '@inertiajs/vue3';
+import { useCurrency } from '@/Composables/useCurrency';
+import { useTranslate } from '@/Composables/useTranslate';
 
 const props = defineProps({
     corporation: Object,
     modules: Object,
 });
+
+const __ = useTranslate();
+const { formatMoney } = useCurrency();
 
 const form = useForm({
     module_code: '',
@@ -72,7 +77,7 @@ const destroy = (moduleId) => {
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">
-                                {{ module.custom_monthly_price ? $page.props.formatMoney(module.custom_monthly_price) : $page.props.formatMoney(module.catalog?.base_monthly_price ?? 0) }}
+                                {{ module.custom_monthly_price ? formatMoney(module.custom_monthly_price) : formatMoney(module.catalog?.base_monthly_price ?? 0) }}
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <button v-if="module.status.value === 'active'" @click="destroy(module.id)" class="text-destructive hover:underline text-xs">
