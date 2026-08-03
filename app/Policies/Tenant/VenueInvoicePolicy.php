@@ -14,9 +14,15 @@ class VenueInvoicePolicy
             && $this->isSubscriptionManager($user);
     }
 
+    /**
+     * No modo unificado a fatura da venue é apenas o detalhamento da fatura
+     * da corporation — deixá-la pagável permitia cobrar o mesmo período duas
+     * vezes.
+     */
     public function pay(User $user, VenueInvoice $invoice): bool
     {
-        return $this->view($user, $invoice);
+        return $this->view($user, $invoice)
+            && $invoice->corporation_invoice_id === null;
     }
 
     private function belongsToCurrentCorporation(User $user, VenueInvoice $invoice): bool

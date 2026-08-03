@@ -37,18 +37,14 @@ class SubscriptionCalculator
      * Todos os valores retornados são inteiros em centavos.
      *
      * @param  string|null  $usagePeriod  Período do consumo medido. Padrão: mês anterior a $period.
-     * @return array<string, int>|null
+     * @return array<string, int>
      */
-    public function calculateVenue(Venue $venue, string $period, ?string $usagePeriod = null): ?array
+    public function calculateVenue(Venue $venue, string $period, ?string $usagePeriod = null): array
     {
         $subscription = $venue->subscription;
 
         if (! $subscription) {
             return $this->emptyResult();
-        }
-
-        if ($this->hasFinalizedInvoice($venue, $period)) {
-            return null;
         }
 
         $usagePeriod ??= self::usagePeriodFor($period);
@@ -81,13 +77,18 @@ class SubscriptionCalculator
      * consumo e geração de fatura, por exemplo) sobrescreviam o resultado um do
      * outro. Agora a persistência é explícita e acontece sob lock da linha.
      *
+     * Quando o período já tem fatura finalizada o snapshot continua sendo
+     * regravado (a mensalidade recorrente precisa refletir módulos ativados no
+     * meio do mês), mas o retorno é `null` para sinalizar ao faturamento que
+     * aquele período não deve ser refaturado.
+     *
      * @return array<string, int>|null
      */
     public function refreshVenueSnapshot(Venue $venue, string $period, ?string $usagePeriod = null): ?array
     {
         $calculated = $this->calculateVenue($venue, $period, $usagePeriod);
 
-        if ($calculated === null || ! $venue->subscription) {
+        if (! $venue->subscription) {
             return $calculated;
         }
 
@@ -106,7 +107,7 @@ class SubscriptionCalculator
 
         $venue->unsetRelation('subscription');
 
-        return $calculated;
+        return $this->isPeriodClosed($venue, $period) ? null : $calculated;
     }
 
     /**
@@ -143,8 +144,8 @@ class SubscriptionCalculator
 
         foreach ($corporation->venues as $venue) {
             $calculated = $this->calculateVenue($venue, $period, $usagePeriod);
-            $venueTotals[$venue->id] = $calculated ?? $this->emptyResult();
-            $grandTotal += $calculated['total'] ?? 0;
+            $venueTotals[$venue->id] = $calculated;
+            $grandTotal += $calculated['total'];
         }
 
         return [
@@ -169,7 +170,11 @@ class SubscriptionCalculator
         ];
     }
 
-    private function hasFinalizedInvoice(Venue $venue, string $period): bool
+    /**
+     * Um período com fatura finalizada não pode ser refaturado, mas continua
+     * podendo ter o snapshot da assinatura recalculado.
+     */
+    public function isPeriodClosed(Venue $venue, string $period): bool
     {
         $invoice = VenueInvoice::query()
             ->where('venue_id', $venue->id)
@@ -361,37 +366,69 @@ class SubscriptionCalculator
         return $total;
     }
 
+    /**
+     * Cobrança graduada: a quantidade é fatiada entre todas as faixas
+     * atravessadas e cada fatia é cobrada com o preço da sua própria faixa.
+     *
+     * A cobrança por faixa única aplicava o preço da faixa alcançada sobre a
+     * quantidade inteira, o que tornava a tabela não monotônica — consumir uma
+     * unidade a mais podia baratear a fatura. Somando as faixas o valor só
+     * pode crescer com a quantidade.
+     */
     private function calculateRecord(VenueUsageRecord $record): int
     {
-        $tier = $this->resolveTier($record);
+        $quantity = max(0, (int) $record->quantity);
+        $tiers = $this->resolveTiers((string) $record->module_code, $quantity);
 
-        if (! $tier) {
+        if ($tiers->isEmpty()) {
             return 0;
         }
 
-        $included = (int) ($tier->included_quantity ?? 0);
-        $quantity = max(0, (int) $record->quantity);
-        $overageQuantity = max(0, $quantity - $included);
-
-        // price_per_unit cobra apenas as unidades dentro do limite incluso; o
-        // excedente é cobrado exclusivamente via overage_price_per_unit/overage_flat_fee
-        // logo abaixo, evitando cobrança em duplicidade das unidades excedentes.
-        // Os preços unitários estão em centésimos de centavo e só viram centavos
-        // depois de multiplicados pela quantidade.
-        $basePrice = $tier->flat_price !== null
-            ? (int) $tier->flat_price
-            : Money::fromMicros((int) $tier->price_per_unit * min($quantity, $included));
-
+        $basePrice = 0;
         $overagePrice = 0;
+        $includedQuantity = 0;
+        $overageQuantity = 0;
+        $lastTierId = null;
+        $consumedUnits = 0;
 
-        if ($overageQuantity > 0) {
-            $overagePrice += (int) ($tier->overage_flat_fee ?? 0);
-            $overagePrice += Money::fromMicros($overageQuantity * (int) $tier->overage_price_per_unit);
+        foreach ($tiers as $tier) {
+            $upperBound = $tier->max_quantity !== null
+                ? min($quantity, (int) $tier->max_quantity)
+                : $quantity;
+
+            $unitsInTier = max(0, $upperBound - $consumedUnits);
+            $consumedUnits = max($consumedUnits, $upperBound);
+
+            if ($unitsInTier === 0) {
+                continue;
+            }
+
+            $lastTierId = $tier->id;
+
+            $tierIncluded = min($unitsInTier, max(0, (int) ($tier->included_quantity ?? 0)));
+            $tierOverage = $unitsInTier - $tierIncluded;
+
+            $includedQuantity += $tierIncluded;
+            $overageQuantity += $tierOverage;
+
+            // price_per_unit cobra apenas as unidades dentro do limite incluso
+            // da faixa; o excedente da faixa é cobrado exclusivamente via
+            // overage_price_per_unit/overage_flat_fee, evitando duplicidade.
+            // Os preços unitários estão em centésimos de centavo e só viram
+            // centavos depois de multiplicados pela quantidade.
+            $basePrice += $tier->flat_price !== null
+                ? (int) $tier->flat_price
+                : Money::fromMicros((int) $tier->price_per_unit * $tierIncluded);
+
+            if ($tierOverage > 0) {
+                $overagePrice += (int) ($tier->overage_flat_fee ?? 0);
+                $overagePrice += Money::fromMicros($tierOverage * (int) $tier->overage_price_per_unit);
+            }
         }
 
         $record->update([
-            'tier_id' => $tier->id,
-            'included_quantity' => min($quantity, $included),
+            'tier_id' => $lastTierId,
+            'included_quantity' => $includedQuantity,
             'overage_quantity' => $overageQuantity,
             'base_calculated_price' => $basePrice,
             'overage_calculated_price' => $overagePrice,
@@ -401,19 +438,17 @@ class SubscriptionCalculator
         return $basePrice + $overagePrice;
     }
 
-    private function resolveTier(VenueUsageRecord $record): ?ModuleUsageTier
+    /**
+     * Todas as faixas alcançadas pela quantidade, da menor para a maior.
+     *
+     * @return Collection<int, ModuleUsageTier>
+     */
+    private function resolveTiers(string $moduleCode, int $quantity): Collection
     {
-        $quantity = (int) $record->quantity;
-
-        $query = ModuleUsageTier::query()
-            ->where('module_code', $record->module_code)
+        return ModuleUsageTier::query()
+            ->where('module_code', $moduleCode)
             ->where('min_quantity', '<=', $quantity)
-            ->where(function ($query) use ($quantity): void {
-                $query->whereNull('max_quantity')->orWhere('max_quantity', '>=', $quantity);
-            })
-            ->orderBy('min_quantity', 'desc')
-            ->first();
-
-        return $query;
+            ->orderBy('min_quantity')
+            ->get();
     }
 }

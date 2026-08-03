@@ -65,7 +65,10 @@ const withType = (paginator, type) => (paginator?.data ?? []).map((invoice) => (
 const venueRows = computed(() => withType(props.venueInvoices, 'venue'));
 const corporationRows = computed(() => withType(props.corporationInvoices, 'corporation'));
 
-const isPayable = (invoice) => invoice.status === 'open' || invoice.status === 'overdue';
+// Fatura de venue vinculada a uma fatura da corporation é apenas o
+// detalhamento do modo unificado: quem paga é a corporation.
+const isPayable = (invoice) =>
+    (invoice.status === 'open' || invoice.status === 'overdue') && !invoice.corporation_invoice_id;
 
 const formatAmount = (cents) => formatMoney(cents);
 

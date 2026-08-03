@@ -1,6 +1,7 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import { Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
 import { useCurrency } from '@/Composables/useCurrency';
 
@@ -11,6 +12,12 @@ const props = defineProps({
 
 const __ = useTranslate();
 const { formatMoney } = useCurrency();
+
+// Fatura de venue vinculada a uma fatura da corporation é apenas o
+// detalhamento do modo unificado: quem paga é a corporation.
+const isPayable = computed(
+    () => ['open', 'overdue'].includes(props.invoice.status) && !props.invoice.corporation_invoice_id,
+);
 
 const statusClass = (status) => {
     return {
@@ -63,7 +70,7 @@ const statusClass = (status) => {
                 </div>
             </dl>
 
-            <div v-if="invoice.status === 'open' || invoice.status === 'overdue'" class="mt-6">
+            <div v-if="isPayable" class="mt-6">
                 <Link
                     :href="route('settings.subscription.invoices.index')"
                     class="rounded-md bg-primary px-4 py-2 text-sm text-white"
@@ -71,6 +78,10 @@ const statusClass = (status) => {
                     {{ __('Pay Invoice') }}
                 </Link>
             </div>
+
+            <p v-else-if="invoice.corporation_invoice_id" class="mt-6 text-sm text-muted-foreground">
+                {{ __('This invoice is part of the consolidated corporation invoice and is not paid separately.') }}
+            </p>
         </div>
     </SettingsLayout>
 </template>

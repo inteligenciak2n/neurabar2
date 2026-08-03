@@ -24,6 +24,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Minimum Due Days
+    |--------------------------------------------------------------------------
+    |
+    | Prazo mínimo, em dias, entre a emissão e o vencimento de uma fatura.
+    | Impede que a fatura nasça vencida quando o dia de cobrança contratado
+    | já passou (ou é o próprio dia da geração).
+    |
+    */
+    'minimum_due_days' => (int) env('BILLING_MINIMUM_DUE_DAYS', 3),
+
+    /*
+    |--------------------------------------------------------------------------
     | Default Currency
     |--------------------------------------------------------------------------
     */

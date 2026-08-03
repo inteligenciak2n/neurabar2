@@ -20,6 +20,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 
 class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
@@ -67,13 +68,18 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $corporation->loadMissing('venues.subscription');
-
         $isUnified = $subscription->billing_mode === BillingMode::Unified;
         $aggregate = $this->emptyContribution();
         $venueInvoices = [];
 
-        foreach ($corporation->venues as $venue) {
+        // Venues desativadas continuavam sendo faturadas todo mês: a coluna
+        // `active` precisa filtrar a geração, não só a operação.
+        $venues = $corporation->venues()
+            ->where('active', true)
+            ->with('subscription')
+            ->get();
+
+        foreach ($venues as $venue) {
             $result = $this->processVenue($venue, $corporation, $subscription, $calculator, $isUnified);
 
             if ($result === null) {
@@ -109,6 +115,16 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
         if ($calculated === null) {
             return $this->reuseExistingVenueInvoice($venue, $isUnified);
         }
+
+        // Período integralmente coberto pelo trial não gera fatura; trial que
+        // termina no meio do mês gera fatura proporcional aos dias restantes.
+        $billableFactor = $this->billableFactor($subscription, $venue);
+
+        if ($billableFactor <= 0.0) {
+            return null;
+        }
+
+        $calculated = $this->applyTrialFactor($calculated, $billableFactor);
 
         $discount = $isUnified ? null : $this->resolveDiscount($corporation);
         $discountValue = $this->calculateDiscountValue($calculated['total'], $discount);
@@ -278,12 +294,7 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
             return null;
         }
 
-        $monthsUsed = CorporationInvoice::query()
-            ->where('corporation_id', $corporation->id)
-            ->where('period', '>=', $discount->valid_from->format('Y-m'))
-            ->where('period', '<=', $this->period)
-            ->where('discount_value', '>', 0)
-            ->count();
+        $monthsUsed = $this->discountedPeriodsBefore($corporation, $discount->valid_from->format('Y-m'));
 
         if ($discount->max_months !== null && $monthsUsed >= $discount->max_months) {
             return null;
@@ -294,6 +305,35 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
             'value' => (int) $discount->value,
             'months_used' => $monthsUsed,
         ];
+    }
+
+    /**
+     * Quantos períodos anteriores já consumiram o desconto.
+     *
+     * No modo `per_venue` o desconto é gravado nas faturas das venues, então
+     * contar apenas `corporation_invoices` tornava qualquer desconto vitalício.
+     * O período corrente é excluído para que reexecutar o job no mesmo mês não
+     * consuma uma ocorrência extra.
+     */
+    private function discountedPeriodsBefore(Corporation $corporation, string $validFrom): int
+    {
+        $corporationPeriods = CorporationInvoice::query()
+            ->where('corporation_id', $corporation->id)
+            ->where('period', '>=', $validFrom)
+            ->where('period', '<', $this->period)
+            ->where('discount_value', '>', 0)
+            ->distinct()
+            ->pluck('period');
+
+        $venuePeriods = VenueInvoice::query()
+            ->whereIn('venue_id', Venue::query()->select('id')->where('corporation_id', $corporation->id))
+            ->where('period', '>=', $validFrom)
+            ->where('period', '<', $this->period)
+            ->where('discount_value', '>', 0)
+            ->distinct()
+            ->pluck('period');
+
+        return $corporationPeriods->merge($venuePeriods)->unique()->count();
     }
 
     /**
@@ -315,10 +355,96 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
         return min($discount['value'], $total);
     }
 
+    /**
+     * Vencimento da fatura no dia de cobrança contratado.
+     *
+     * Com `billing_day = 1` a fatura nascia vencida no mesmo dia da geração.
+     * Quando o dia contratado não respeita o prazo mínimo, o vencimento é
+     * empurrado para a próxima ocorrência do mesmo dia.
+     */
     private function resolveDueDate(CorporationSubscription $subscription): string
     {
         $billingDay = min(28, max(1, (int) $subscription->billing_day));
+        $dueDate = Carbon::parse($this->period.'-01')->startOfDay()->day($billingDay);
 
-        return "{$this->period}-{$billingDay}";
+        $minimumDueDate = Carbon::today()->addDays(max(0, (int) config('billing.minimum_due_days', 3)));
+
+        if ($dueDate->lessThan($minimumDueDate)) {
+            $dueDate = $minimumDueDate->copy()->day($billingDay);
+
+            if ($dueDate->lessThan($minimumDueDate)) {
+                $dueDate->addMonthNoOverflow();
+            }
+        }
+
+        return $dueDate->toDateString();
+    }
+
+    /**
+     * Proporção do período que está fora do trial.
+     *
+     * Faturar o mês inteiro de uma assinatura ainda em trial cobrava dias que
+     * o contrato dizia serem gratuitos. Retorna 0.0 quando o período inteiro
+     * está coberto pelo trial.
+     */
+    private function billableFactor(CorporationSubscription $subscription, Venue $venue): float
+    {
+        $venueSubscription = $venue->subscription;
+
+        // A assinatura da venue, quando existe, é a fonte da verdade do trial:
+        // cair para a da corporation aqui reintroduziria trial em venues que
+        // já saíram dele.
+        $trialEndsAt = $venueSubscription !== null
+            ? $venueSubscription->trial_ends_at
+            : $subscription->trial_ends_at;
+
+        if ($trialEndsAt === null) {
+            return 1.0;
+        }
+
+        $periodStart = Carbon::parse($this->period.'-01')->startOfDay();
+        $periodEnd = $periodStart->copy()->endOfMonth()->startOfDay();
+        $daysInPeriod = $periodStart->daysInMonth;
+
+        $subscriptionStart = $venueSubscription !== null
+            ? $venueSubscription->started_at
+            : $subscription->started_at;
+
+        $trialStart = Carbon::parse($subscriptionStart ?? $periodStart)->startOfDay();
+        $trialEnd = Carbon::parse($trialEndsAt)->startOfDay();
+
+        $start = $trialStart->greaterThan($periodStart) ? $trialStart : $periodStart;
+        $end = $trialEnd->lessThan($periodEnd) ? $trialEnd : $periodEnd;
+
+        if ($end->lessThan($start)) {
+            return 1.0;
+        }
+
+        $trialDays = min($daysInPeriod, (int) $start->diffInDays($end) + 1);
+
+        return max(0.0, ($daysInPeriod - $trialDays) / $daysInPeriod);
+    }
+
+    /**
+     * @param  array<string, int>  $calculated
+     * @return array<string, int>
+     */
+    private function applyTrialFactor(array $calculated, float $factor): array
+    {
+        if ($factor >= 1.0) {
+            return $calculated;
+        }
+
+        $base = Money::multiply($calculated['base'], $factor);
+        $modules = Money::multiply($calculated['modules'], $factor);
+        $dedicatedSurcharge = Money::multiply($calculated['dedicated_surcharge'], $factor);
+
+        // O consumo medido é pós-pago e já aconteceu: não é proporcionalizado.
+        return array_merge($calculated, [
+            'base' => $base,
+            'modules' => $modules,
+            'dedicated_surcharge' => $dedicatedSurcharge,
+            'total' => $base + $modules + $dedicatedSurcharge + $calculated['metered'],
+        ]);
     }
 }

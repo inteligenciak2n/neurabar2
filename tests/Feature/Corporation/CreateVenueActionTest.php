@@ -60,6 +60,50 @@ class CreateVenueActionTest extends TestCase
         ]);
     }
 
+    public function test_it_applies_dedicated_surcharge_only_for_dedicated_corporations(): void
+    {
+        $plan = PlanCatalog::factory()->create([
+            'monthly_price' => 19900,
+            'dedicated_surcharge' => 5000,
+        ]);
+
+        $dedicated = Corporation::factory()->create(['is_dedicated' => true]);
+        CorporationSubscription::factory()->create([
+            'corporation_id' => $dedicated->id,
+            'plan_catalog_id' => $plan->id,
+            'status' => SubscriptionStatus::Active,
+        ]);
+
+        $shared = Corporation::factory()->create(['is_dedicated' => false]);
+        CorporationSubscription::factory()->create([
+            'corporation_id' => $shared->id,
+            'plan_catalog_id' => $plan->id,
+            'status' => SubscriptionStatus::Active,
+        ]);
+
+        $action = app()->make(CreateVenueAction::class);
+
+        $dedicatedVenue = $action->execute($dedicated, [
+            'name' => 'Venue Dedicada',
+            'timezone' => 'America/Sao_Paulo',
+        ]);
+
+        $sharedVenue = $action->execute($shared, [
+            'name' => 'Venue Compartilhada',
+            'timezone' => 'America/Sao_Paulo',
+        ]);
+
+        $this->assertDatabaseHas('venue_subscriptions', [
+            'venue_id' => $dedicatedVenue->id,
+            'dedicated_surcharge' => 5000,
+        ]);
+
+        $this->assertDatabaseHas('venue_subscriptions', [
+            'venue_id' => $sharedVenue->id,
+            'dedicated_surcharge' => 0,
+        ]);
+    }
+
     public function test_it_recalculates_subscription_with_propagated_modules(): void
     {
         $plan = PlanCatalog::factory()->create(['monthly_price' => 10000]);

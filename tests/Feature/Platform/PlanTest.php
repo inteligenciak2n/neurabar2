@@ -26,11 +26,16 @@ class PlanTest extends TestCase
             'code' => 'STARTER',
             'name' => 'Starter',
             'monthly_price' => 99.00,
+            'dedicated_surcharge' => 50.00,
             'sort_order' => 1,
             'active' => true,
         ])->assertRedirect();
 
-        $this->assertDatabaseHas('plan_catalogs', ['code' => 'STARTER']);
+        $this->assertDatabaseHas('plan_catalogs', [
+            'code' => 'STARTER',
+            'monthly_price' => 9900,
+            'dedicated_surcharge' => 5000,
+        ]);
     }
 
     public function test_super_admin_can_update_plan(): void

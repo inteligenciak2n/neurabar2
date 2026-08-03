@@ -28,11 +28,13 @@ class PlanCatalogController extends Controller
             'name' => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string'],
             'monthly_price' => ['required', 'numeric', 'min:0'],
+            'dedicated_surcharge' => ['nullable', 'numeric', 'min:0'],
             'sort_order' => ['required', 'integer', 'min:0'],
             'active' => ['boolean'],
         ]);
 
         $validated['monthly_price'] = Money::fromFloat($validated['monthly_price']);
+        $validated['dedicated_surcharge'] = Money::fromFloat($validated['dedicated_surcharge'] ?? 0);
 
         PlanCatalog::create($validated);
 
@@ -46,11 +48,13 @@ class PlanCatalogController extends Controller
             'name' => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string'],
             'monthly_price' => ['required', 'numeric', 'min:0'],
+            'dedicated_surcharge' => ['nullable', 'numeric', 'min:0'],
             'sort_order' => ['required', 'integer', 'min:0'],
             'active' => ['boolean'],
         ]);
 
         $validated['monthly_price'] = Money::fromFloat($validated['monthly_price']);
+        $validated['dedicated_surcharge'] = Money::fromFloat($validated['dedicated_surcharge'] ?? 0);
 
         $plan->update($validated);
 

@@ -29,6 +29,11 @@ class AssignPlanToCorporationAction
             $billingMode = BillingMode::tryFrom($data['billing_mode'] ?? '') ?? BillingMode::PerVenue;
             $status = SubscriptionStatus::tryFrom($data['status'] ?? '') ?? SubscriptionStatus::Trial;
 
+            // Adicional cobrado apenas de quem opera em infraestrutura dedicada.
+            $dedicatedSurcharge = $corporation->is_dedicated
+                ? (int) ($plan->dedicated_surcharge ?? 0)
+                : 0;
+
             if ($subscription) {
                 $subscription->update([
                     'plan_catalog_id' => $plan->id,
@@ -63,10 +68,11 @@ class AssignPlanToCorporationAction
                         'plan_catalog_id' => $plan->id,
                         'status' => $status->value,
                         'base_value' => $baseValue,
+                        'dedicated_surcharge' => $dedicatedSurcharge,
                         'total_value' => $baseValue
                             + (int) $venueSubscription->modules_value
                             + (int) $venueSubscription->metered_value
-                            + (int) $venueSubscription->dedicated_surcharge,
+                            + $dedicatedSurcharge,
                         'started_at' => $data['started_at'] ?? now(),
                         'trial_ends_at' => $subscription->trial_ends_at,
                         'ended_at' => null,
@@ -80,8 +86,8 @@ class AssignPlanToCorporationAction
                         'base_value' => $baseValue,
                         'modules_value' => 0,
                         'metered_value' => 0,
-                        'dedicated_surcharge' => 0,
-                        'total_value' => $baseValue,
+                        'dedicated_surcharge' => $dedicatedSurcharge,
+                        'total_value' => $baseValue + $dedicatedSurcharge,
                         'started_at' => $data['started_at'] ?? now(),
                         'trial_ends_at' => $subscription->trial_ends_at,
                     ]);

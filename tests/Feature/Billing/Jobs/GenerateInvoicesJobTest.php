@@ -10,6 +10,7 @@ use App\Enums\ModuleStatus;
 use App\Enums\SubscriptionStatus;
 use App\Jobs\Billing\GenerateInvoicesJob;
 use App\Models\Tenant\Corporation;
+use App\Models\Tenant\CorporationDiscount;
 use App\Models\Tenant\CorporationInvoice;
 use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\CorporationSubscription;
@@ -20,6 +21,7 @@ use App\Models\Tenant\VenueModule;
 use App\Models\Tenant\VenueSubscription;
 use App\Notifications\Billing\InvoiceGenerated;
 use App\Services\Billing\SubscriptionCalculator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
@@ -212,6 +214,8 @@ class GenerateInvoicesJobTest extends TestCase
 
     public function test_sets_due_date_based_on_billing_day(): void
     {
+        Carbon::setTestNow('2026-07-01 08:00:00');
+
         $venue = $this->createActiveVenue(baseValue: 9990, billingDay: 15);
 
         (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
@@ -221,6 +225,24 @@ class GenerateInvoicesJobTest extends TestCase
             'period' => '2026-07',
             'due_date' => '2026-07-15',
         ]);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_due_date_respects_minimum_lead_time_when_billing_day_already_passed(): void
+    {
+        Carbon::setTestNow('2026-07-01 08:00:00');
+
+        $venue = $this->createActiveVenue(baseValue: 9990, billingDay: 1);
+
+        (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
+
+        $invoice = VenueInvoice::where('venue_id', $venue->id)->where('period', '2026-07')->firstOrFail();
+
+        // Com billing_day = 1 a fatura nascia vencida no mesmo dia da geração.
+        $this->assertSame('2026-08-01', $invoice->due_date->toDateString());
+
+        Carbon::setTestNow();
     }
 
     public function test_skips_corporation_subscription_billed_by_gateway(): void
@@ -271,6 +293,135 @@ class GenerateInvoicesJobTest extends TestCase
         $this->assertDatabaseCount('venue_invoices', 0);
     }
 
+    public function test_does_not_generate_invoice_for_inactive_venue(): void
+    {
+        $venue = $this->createActiveVenue(baseValue: 9990);
+        $venue->update(['active' => false]);
+
+        (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
+
+        $this->assertDatabaseCount('venue_invoices', 0);
+    }
+
+    public function test_does_not_generate_invoice_when_period_is_fully_covered_by_trial(): void
+    {
+        $venue = $this->createActiveVenue(baseValue: 9990);
+        $venue->subscription->update([
+            'started_at' => '2026-06-01',
+            'trial_ends_at' => '2026-08-10',
+        ]);
+
+        (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
+
+        $this->assertDatabaseCount('venue_invoices', 0);
+    }
+
+    public function test_prorates_invoice_when_trial_ends_mid_period(): void
+    {
+        $venue = $this->createActiveVenue(baseValue: 9990);
+        $venue->subscription->update([
+            'started_at' => '2026-06-01',
+            'trial_ends_at' => '2026-07-15',
+        ]);
+
+        (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
+
+        $invoice = VenueInvoice::where('venue_id', $venue->id)->where('period', '2026-07')->firstOrFail();
+
+        // 16 dos 31 dias de julho ficam fora do trial.
+        $this->assertSame((int) round(9990 * 16 / 31), (int) $invoice->base_value);
+        $this->assertSame((int) $invoice->base_value, (int) $invoice->total_value);
+    }
+
+    public function test_discount_stops_being_applied_after_max_months_in_per_venue_mode(): void
+    {
+        $venue = $this->createActiveVenue(baseValue: 10000);
+
+        CorporationDiscount::create([
+            'corporation_id' => $venue->corporation_id,
+            'type' => 'percentage',
+            'value' => 1000,
+            'valid_from' => '2026-04-01',
+            'valid_until' => null,
+            'max_months' => 3,
+            'is_active' => true,
+        ]);
+
+        // O desconto já foi consumido nos três períodos anteriores, gravado nas
+        // faturas das venues (modo per_venue).
+        foreach (['2026-04', '2026-05', '2026-06'] as $period) {
+            VenueInvoice::factory()->create([
+                'venue_id' => $venue->id,
+                'period' => $period,
+                'discount_value' => 1000,
+                'total_value' => 9000,
+            ]);
+        }
+
+        (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
+
+        $this->assertDatabaseHas('venue_invoices', [
+            'venue_id' => $venue->id,
+            'period' => '2026-07',
+            'discount_value' => 0,
+            'total_value' => 10000,
+        ]);
+    }
+
+    public function test_discount_is_applied_while_under_max_months_in_per_venue_mode(): void
+    {
+        $venue = $this->createActiveVenue(baseValue: 10000);
+
+        CorporationDiscount::create([
+            'corporation_id' => $venue->corporation_id,
+            'type' => 'percentage',
+            'value' => 1000,
+            'valid_from' => '2026-04-01',
+            'valid_until' => null,
+            'max_months' => 3,
+            'is_active' => true,
+        ]);
+
+        foreach (['2026-05', '2026-06'] as $period) {
+            VenueInvoice::factory()->create([
+                'venue_id' => $venue->id,
+                'period' => $period,
+                'discount_value' => 1000,
+                'total_value' => 9000,
+            ]);
+        }
+
+        (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
+
+        $this->assertDatabaseHas('venue_invoices', [
+            'venue_id' => $venue->id,
+            'period' => '2026-07',
+            'discount_value' => 1000,
+            'total_value' => 9000,
+        ]);
+    }
+
+    public function test_unified_mode_links_venue_invoices_to_the_corporation_invoice(): void
+    {
+        $corporation = Corporation::factory()->create();
+        CorporationSubscription::factory()->create([
+            'corporation_id' => $corporation->id,
+            'billing_mode' => BillingMode::Unified,
+            'status' => SubscriptionStatus::Active,
+            'billing_day' => 10,
+        ]);
+
+        $venue = $this->createVenueForCorporation($corporation, baseValue: 5000);
+
+        (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
+
+        $corporationInvoice = CorporationInvoice::where('corporation_id', $corporation->id)->firstOrFail();
+        $venueInvoice = VenueInvoice::where('venue_id', $venue->id)->firstOrFail();
+
+        // A fatura da venue é apenas o detalhamento: quem paga é a corporation.
+        $this->assertSame($corporationInvoice->id, $venueInvoice->corporation_invoice_id);
+    }
+
     private function createActiveVenue(int $baseValue, int $billingDay = 1): Venue
     {
         $corporation = Corporation::factory()->create();
@@ -288,6 +439,7 @@ class GenerateInvoicesJobTest extends TestCase
             'base_value' => $baseValue,
             'total_value' => $baseValue,
             'status' => SubscriptionStatus::Active,
+            'trial_ends_at' => null,
         ]);
 
         return $venue->fresh();
@@ -302,6 +454,7 @@ class GenerateInvoicesJobTest extends TestCase
             'base_value' => $baseValue,
             'total_value' => $baseValue,
             'status' => SubscriptionStatus::Active,
+            'trial_ends_at' => null,
         ]);
 
         return $venue->fresh();

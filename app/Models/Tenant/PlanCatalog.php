@@ -20,6 +20,7 @@ class PlanCatalog extends Model
         'description',
         'sort_order',
         'monthly_price',
+        'dedicated_surcharge',
         'included_modules',
         'active',
         'plan_type',
@@ -30,6 +31,7 @@ class PlanCatalog extends Model
         return [
             'active' => 'boolean',
             'monthly_price' => 'integer',
+            'dedicated_surcharge' => 'integer',
             'sort_order' => 'integer',
             'included_modules' => 'array',
             // Futuro: usar plan_type para resolver conexão automaticamente em TenantConnectionResolver

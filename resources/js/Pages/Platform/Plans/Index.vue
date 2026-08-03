@@ -19,6 +19,7 @@ const createForm = useForm({
     name: '',
     description: '',
     monthly_price: '',
+    dedicated_surcharge: '',
     sort_order: 0,
     active: true,
 });
@@ -28,6 +29,7 @@ const editForm = useForm({
     name: '',
     description: '',
     monthly_price: '',
+    dedicated_surcharge: '',
     sort_order: 0,
     active: true,
 });
@@ -48,6 +50,7 @@ const startEdit = (plan) => {
     editForm.description = plan.description ?? '';
     // O backend guarda centavos; o formulário edita reais.
     editForm.monthly_price = toAmount(plan.monthly_price);
+    editForm.dedicated_surcharge = toAmount(plan.dedicated_surcharge);
     editForm.sort_order = plan.sort_order;
     editForm.active = plan.active;
 };
@@ -94,6 +97,10 @@ const destroy = (plan) => {
                         <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Monthly Price') }}</label>
                         <input v-model="createForm.monthly_price" type="number" step="0.01" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Dedicated Infrastructure Surcharge') }}</label>
+                        <input v-model="createForm.dedicated_surcharge" type="number" step="0.01" min="0" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
+                    </div>
                     <div class="sm:col-span-3">
                         <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Description') }}</label>
                         <textarea v-model="createForm.description" rows="2" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
@@ -120,6 +127,10 @@ const destroy = (plan) => {
                     <div>
                         <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Monthly Price') }}</label>
                         <input v-model="editForm.monthly_price" type="number" step="0.01" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Dedicated Infrastructure Surcharge') }}</label>
+                        <input v-model="editForm.dedicated_surcharge" type="number" step="0.01" min="0" class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
                     </div>
                     <div class="sm:col-span-3">
                         <label class="block text-sm font-medium text-ocean-deep mb-1 dark:text-gray-300">{{ __('Description') }}</label>

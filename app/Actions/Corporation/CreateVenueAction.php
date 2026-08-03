@@ -30,6 +30,11 @@ class CreateVenueAction
 
         $plan = $corporationSubscription->planCatalog;
 
+        // Adicional cobrado apenas de quem opera em infraestrutura dedicada.
+        $dedicatedSurcharge = $corporation->is_dedicated
+            ? (int) ($plan?->dedicated_surcharge ?? 0)
+            : 0;
+
         $slug = Str::slug($data['name']).'-'.Str::lower(Str::random(6));
 
         $venue = Venue::create([
@@ -45,7 +50,8 @@ class CreateVenueAction
             'plan_catalog_id' => $plan?->id,
             'status' => $corporationSubscription->status,
             'base_value' => $plan?->monthly_price ?? 0,
-            'total_value' => $plan?->monthly_price ?? 0,
+            'dedicated_surcharge' => $dedicatedSurcharge,
+            'total_value' => ($plan?->monthly_price ?? 0) + $dedicatedSurcharge,
             'started_at' => now(),
             'trial_ends_at' => $corporationSubscription->trial_ends_at,
         ]);

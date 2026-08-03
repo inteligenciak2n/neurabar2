@@ -131,6 +131,61 @@ class SubscriptionCalculatorTest extends TestCase
         $this->assertSame(9990, $result['total']);
     }
 
+    public function test_metered_uses_graduated_tiers(): void
+    {
+        $venue = $this->createVenueWithSubscription(baseValue: 5000);
+        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 4990);
+        $this->createGraduatedTiers(ModuleCode::Kds);
+        $this->createUsageRecord($venue, ModuleCode::Kds, '2026-06', quantity: 1500);
+
+        $result = $this->calculator->calculateVenue($venue, '2026-07');
+
+        // 1.000 unidades na primeira faixa (R$ 0,05) + 500 na segunda (R$ 0,03).
+        $this->assertSame(5000 + 1500, $result['metered']);
+    }
+
+    public function test_metered_price_never_decreases_when_quantity_grows(): void
+    {
+        $this->createGraduatedTiers(ModuleCode::Kds);
+
+        $previousTotal = 0;
+
+        foreach ([0, 500, 999, 1000, 1001, 1500, 3000] as $quantity) {
+            $venue = $this->createVenueWithSubscription(baseValue: 0);
+            $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 0);
+            $this->createUsageRecord($venue, ModuleCode::Kds, '2026-06', quantity: $quantity);
+
+            $total = $this->calculator->calculateVenue($venue, '2026-07')['metered'];
+
+            $this->assertGreaterThanOrEqual(
+                $previousTotal,
+                $total,
+                "Consumir {$quantity} unidades ficou mais barato que a quantidade anterior."
+            );
+
+            $previousTotal = $total;
+        }
+    }
+
+    public function test_metered_record_totals_match_the_sum_of_its_parts(): void
+    {
+        $venue = $this->createVenueWithSubscription(baseValue: 5000);
+        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 4990);
+        $this->createGraduatedTiers(ModuleCode::Kds);
+        $this->createUsageRecord($venue, ModuleCode::Kds, '2026-06', quantity: 1237);
+
+        $metered = $this->calculator->calculateVenue($venue, '2026-07')['metered'];
+
+        $record = VenueUsageRecord::where('venue_id', $venue->id)->firstOrFail();
+
+        $this->assertSame(
+            (int) $record->base_calculated_price + (int) $record->overage_calculated_price,
+            (int) $record->total_calculated_price
+        );
+        $this->assertSame((int) $record->total_calculated_price, $metered);
+        $this->assertSame(1237, (int) $record->included_quantity + (int) $record->overage_quantity);
+    }
+
     public function test_module_activated_mid_period_is_charged_proportionally(): void
     {
         $venue = $this->createVenueWithSubscription(baseValue: 0);
@@ -201,7 +256,7 @@ class SubscriptionCalculatorTest extends TestCase
         $this->assertSame(7500, $result['total']);
     }
 
-    public function test_calculate_venue_skips_when_invoice_finalized(): void
+    public function test_refresh_venue_snapshot_signals_closed_period_when_invoice_finalized(): void
     {
         $venue = $this->createVenueWithSubscription(baseValue: 5000);
         VenueInvoice::factory()->create([
@@ -211,14 +266,19 @@ class SubscriptionCalculatorTest extends TestCase
             'status' => InvoiceStatus::Paid,
         ]);
 
-        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 49.90);
+        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 4990);
 
+        $this->assertNull($this->calculator->refreshVenueSnapshot($venue, '2026-07'));
+
+        // O cálculo puro continua disponível: o período fechado só impede o
+        // refaturamento.
         $result = $this->calculator->calculateVenue($venue, '2026-07');
 
-        $this->assertNull($result);
+        $this->assertSame(5000, $result['base']);
+        $this->assertSame(4990, $result['modules']);
     }
 
-    public function test_calculate_venue_does_not_update_subscription_when_invoice_finalized(): void
+    public function test_refresh_venue_snapshot_still_updates_subscription_when_invoice_finalized(): void
     {
         $venue = $this->createVenueWithSubscription(baseValue: 10000);
         VenueInvoice::factory()->create([
@@ -230,14 +290,16 @@ class SubscriptionCalculatorTest extends TestCase
             'total_value' => 10000,
         ]);
 
-        $this->calculator->calculateVenue($venue, '2026-07');
+        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 4990);
+
+        $this->calculator->refreshVenueSnapshot($venue, '2026-07');
 
         $this->assertDatabaseHas('venue_subscriptions', [
             'id' => $venue->subscription->id,
             'base_value' => 10000,
-            'modules_value' => 0,
+            'modules_value' => 4990,
             'metered_value' => 0,
-            'total_value' => 10000,
+            'total_value' => 14990,
         ]);
     }
 
@@ -342,6 +404,30 @@ class SubscriptionCalculatorTest extends TestCase
             'included_quantity' => $includedQuantity,
             'price_per_unit' => $pricePerUnit,
             'overage_price_per_unit' => $overagePricePerUnit,
+        ]);
+    }
+
+    /**
+     * Tabela graduada: até 1.000 unidades a R$ 0,05 e o excedente a R$ 0,03.
+     */
+    private function createGraduatedTiers(ModuleCode $code): void
+    {
+        ModuleUsageTier::create([
+            'module_code' => $code->value,
+            'min_quantity' => 0,
+            'max_quantity' => 1000,
+            'included_quantity' => 1000,
+            'price_per_unit' => 500,
+            'overage_price_per_unit' => 0,
+        ]);
+
+        ModuleUsageTier::create([
+            'module_code' => $code->value,
+            'min_quantity' => 1001,
+            'max_quantity' => null,
+            'included_quantity' => 0,
+            'price_per_unit' => 0,
+            'overage_price_per_unit' => 300,
         ]);
     }
 

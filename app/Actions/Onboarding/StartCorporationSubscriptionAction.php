@@ -9,6 +9,7 @@ use App\Enums\SubscriptionStatus;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\CorporationSubscription;
+use App\Models\Tenant\PlanCatalog;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -33,8 +34,18 @@ class StartCorporationSubscriptionAction
 
             $now = now();
 
+            // Sem plano a assinatura nascia com base_value zero e a venue
+            // criada em seguida nunca era cobrada pela mensalidade. Os módulos
+            // continuam sendo escolhidos à la carte; o plano define apenas a
+            // mensalidade base.
+            $defaultPlanId = PlanCatalog::query()
+                ->where('code', config('billing.default_plan_code'))
+                ->where('active', true)
+                ->value('id');
+
             CorporationSubscription::create([
                 'corporation_id' => $corporation->id,
+                'plan_catalog_id' => $defaultPlanId,
                 'billing_mode' => BillingMode::PerVenue->value,
                 'status' => SubscriptionStatus::Trial->value,
                 'started_at' => $now,

@@ -11,6 +11,7 @@ use App\Enums\ProfileEnum;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Jobs\Subscription\ProcessGatewayWebhookJob;
+use App\Models\Tenant\CorporationInvoice;
 use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\ModuleCatalog;
 use App\Models\Tenant\UserPaymentMethod;
@@ -223,6 +224,41 @@ class PortalSubscriptionTest extends TestCase
         $this->assertSame(InvoiceStatus::Paid->value, $invoice->status->value);
         $this->assertNotNull($invoice->paid_at);
         $this->assertTrue($invoice->is_finalized);
+    }
+
+    public function test_owner_cannot_pay_venue_invoice_consolidated_in_a_corporation_invoice(): void
+    {
+        $method = UserPaymentMethod::factory()->create([
+            'user_id' => $this->user->id,
+            'gateway_token' => 'fake_card_token',
+            'is_default' => true,
+        ]);
+
+        $corporationInvoice = CorporationInvoice::factory()->create([
+            'corporation_id' => $this->venue->corporation_id,
+            'status' => InvoiceStatus::Open,
+            'total_value' => 150,
+            'due_date' => now()->addDays(5),
+            'period' => now()->format('Y-m'),
+        ]);
+
+        $invoice = VenueInvoice::factory()->create([
+            'venue_id' => $this->venue->id,
+            'corporation_invoice_id' => $corporationInvoice->id,
+            'status' => InvoiceStatus::Open,
+            'total_value' => 150,
+            'due_date' => now()->addDays(5),
+            'period' => now()->format('Y-m'),
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('settings.subscription.invoices.pay', ['venue', $invoice->id]), [
+                'method' => PaymentSaasMethod::CreditCard->value,
+                'payment_method_id' => $method->id,
+            ])
+            ->assertForbidden();
+
+        $this->assertSame(InvoiceStatus::Open->value, $invoice->refresh()->status->value);
     }
 
     public function test_paying_the_last_overdue_invoice_reactivates_a_suspended_subscription(): void
