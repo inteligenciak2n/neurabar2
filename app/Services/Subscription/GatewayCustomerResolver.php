@@ -3,22 +3,38 @@
 namespace App\Services\Subscription;
 
 use App\Contracts\Subscription\PaymentGatewayContract;
+use App\Models\Tenant\Corporation;
 use App\Models\Tenant\GatewayCustomer;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 class GatewayCustomerResolver
 {
     public function __construct(private readonly PaymentGatewayContract $gateway) {}
 
     /**
-     * Resolve the gateway customer id for a user, reusing a previously
+     * Resolve the gateway customer id for a corporation, reusing a previously
      * created customer instead of creating a new one on every call.
+     *
+     * The customer is keyed by corporation, not by user: billing belongs to
+     * the company, so two employees paying for the same corporation must land
+     * on the same gateway customer. Keying it by user created one duplicate
+     * customer (and one duplicate CNPJ) per employee, scattering payment
+     * history and anti-fraud reputation across unrelated records.
      */
-    public function resolve(User $user, string $gatewayName, ?string $document = null): string
+    public function resolve(?Corporation $corporation, User $user, string $gatewayName, ?string $document = null): string
     {
+        [$ownerType, $ownerId] = $corporation
+            ? [Corporation::class, (string) $corporation->id]
+            : [User::class, (string) $user->id];
+
+        if ($corporation === null) {
+            Log::warning('gateway.customer.without_corporation', ['user_id' => $user->id]);
+        }
+
         $existing = GatewayCustomer::query()
-            ->where('owner_type', User::class)
-            ->where('owner_id', $user->id)
+            ->where('owner_type', $ownerType)
+            ->where('owner_id', $ownerId)
             ->where('gateway', $gatewayName)
             ->first();
 
@@ -27,14 +43,14 @@ class GatewayCustomerResolver
         }
 
         $customerId = $this->gateway->createCustomer([
-            'name' => $user->name,
+            'name' => $corporation?->name ?? $user->name,
             'email' => $user->email,
-            'document' => $document,
+            'document' => $document ?? $corporation?->tax_id,
         ]);
 
         GatewayCustomer::create([
-            'owner_type' => User::class,
-            'owner_id' => $user->id,
+            'owner_type' => $ownerType,
+            'owner_id' => $ownerId,
             'gateway' => $gatewayName,
             'customer_id' => $customerId,
         ]);

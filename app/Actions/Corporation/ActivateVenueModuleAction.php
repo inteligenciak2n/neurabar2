@@ -2,47 +2,25 @@
 
 namespace App\Actions\Corporation;
 
-use App\Enums\ModuleCode;
-use App\Enums\ModuleStatus;
+use App\Actions\Subscription\SubscribeModuleAction;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueModule;
-use App\Services\Billing\SubscriptionCalculator;
-use App\Services\VenueModuleCache;
-use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 
+/**
+ * Backoffice entry point for activating a venue module.
+ *
+ * It used to be a near copy of {@see SubscribeModuleAction}, and the copies had
+ * already drifted (quantity clamping, `started_at` handling and cache flushing
+ * all differed). The only intentional difference is that platform staff can act
+ * on a venue blocked for billing reasons — precisely when someone needs to fix
+ * the account.
+ */
 class ActivateVenueModuleAction
 {
-    public function __construct(private readonly SubscriptionCalculator $calculator) {}
+    public function __construct(private readonly SubscribeModuleAction $subscribe) {}
 
     public function execute(Venue $venue, string $moduleCode, int $quantity = 1): VenueModule
     {
-        $code = ModuleCode::tryFrom($moduleCode);
-
-        if (! $code) {
-            throw new InvalidArgumentException("Invalid module code: {$moduleCode}");
-        }
-
-        if (! $venue->corporation?->hasActiveModule($code)) {
-            throw new InvalidArgumentException("Module {$code->label()} is not available in the corporation plan.");
-        }
-
-        return DB::transaction(function () use ($venue, $code, $quantity) {
-            $module = VenueModule::firstOrNew([
-                'venue_id' => $venue->id,
-                'module_code' => $code->value,
-            ]);
-
-            $module->status = ModuleStatus::Active;
-            $module->quantity = $quantity;
-            $module->started_at = now();
-            $module->ended_at = null;
-            $module->save();
-
-            $this->calculator->calculateVenue($venue, now()->format('Y-m'));
-            VenueModuleCache::forget($venue);
-
-            return $module;
-        });
+        return $this->subscribe->execute($venue, $moduleCode, $quantity, enforceBillingStatus: false);
     }
 }

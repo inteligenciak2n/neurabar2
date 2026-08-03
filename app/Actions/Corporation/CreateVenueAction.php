@@ -100,7 +100,7 @@ class CreateVenueAction
         }
 
         if ($hasModules) {
-            $this->calculator->calculateVenue($venue, $now->format('Y-m'));
+            $this->calculator->refreshVenueSnapshot($venue, $now->format('Y-m'));
             VenueModuleCache::forget($venue);
         }
     }

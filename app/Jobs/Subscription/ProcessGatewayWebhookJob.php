@@ -7,12 +7,14 @@ use App\Enums\ProfileEnum;
 use App\Models\Tenant\GatewayWebhookEvent;
 use App\Models\User;
 use App\Notifications\Subscription\GatewayAccessTokenExpiringSoon;
+use App\Notifications\Subscription\GatewayWebhookFailed;
 use App\Services\Subscription\PaymentSaasService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Throwable;
 
@@ -63,5 +65,35 @@ class ProcessGatewayWebhookJob implements ShouldQueue
         $admins = User::query()->where('profile', ProfileEnum::SuperAdmin)->get();
 
         Notification::send($admins, new GatewayAccessTokenExpiringSoon($event));
+    }
+
+    /**
+     * Called once the queue gives up. Without this hook the event stayed in
+     * `failed` forever and nobody was told the payment was never reconciled.
+     */
+    public function failed(Throwable $exception): void
+    {
+        $event = GatewayWebhookEvent::find($this->webhookEventId);
+
+        if (! $event) {
+            return;
+        }
+
+        $event->markFailed($exception->getMessage());
+
+        Log::critical('gateway.webhook.permanently_failed', [
+            'webhook_event_id' => $this->webhookEventId,
+            'gateway' => $event->gateway,
+            'event_type' => $event->event_type,
+            'error' => $exception->getMessage(),
+        ]);
+
+        $admins = User::query()
+            ->whereIn('profile', [ProfileEnum::SuperAdmin, ProfileEnum::Finance])
+            ->get();
+
+        if ($admins->isNotEmpty()) {
+            Notification::send($admins, new GatewayWebhookFailed($event, $exception->getMessage()));
+        }
     }
 }

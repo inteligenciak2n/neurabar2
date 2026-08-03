@@ -33,7 +33,7 @@ class DisableCorporateModuleAction
                     'ended_at' => now(),
                 ]);
 
-            $this->calculator->calculateCorporation($corporation, now()->format('Y-m'));
+            $this->calculator->refreshCorporationSnapshot($corporation, now()->format('Y-m'));
             CorporationModuleCache::forget($corporation);
 
             foreach ($corporation->venues as $venue) {

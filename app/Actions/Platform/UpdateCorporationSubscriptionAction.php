@@ -35,7 +35,7 @@ class UpdateCorporationSubscriptionAction
                     continue;
                 }
 
-                $calculated = $this->calculator->calculateVenue($venue, now()->format('Y-m'));
+                $calculated = $this->calculator->refreshVenueSnapshot($venue, now()->format('Y-m'));
 
                 $venueSubscription->update([
                     'status' => $status,

@@ -9,10 +9,12 @@ use App\Models\Tenant\ModuleUsageTier;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueInvoice;
 use App\Models\Tenant\VenueModule;
+use App\Models\Tenant\VenueSubscription;
 use App\Models\Tenant\VenueUsageRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class SubscriptionCalculator
 {
@@ -28,6 +30,9 @@ class SubscriptionCalculator
     }
 
     /**
+     * Cálculo puro: não escreve nada. Use `refreshVenueSnapshot()` quando o
+     * valor recorrente da assinatura também precisar ser regravado.
+     *
      * @param  string|null  $usagePeriod  Período do consumo medido. Padrão: mês anterior a $period.
      * @return array<string, float>|null
      */
@@ -51,22 +56,75 @@ class SubscriptionCalculator
         $metered = $this->calculateMetered($venue, $usagePeriod, $this->contractedModuleCodes($venue, $usagePeriod));
         $dedicatedSurcharge = (float) ($subscription->dedicated_surcharge ?? 0);
 
-        $total = $base + $modulesValue + $metered + $dedicatedSurcharge;
-
-        // A assinatura guarda a mensalidade cheia (valor recorrente contratado);
-        // a proration vale só para o que será faturado neste período.
-        $subscription->update([
-            'modules_value' => $recurringModulesValue,
-            'metered_value' => $metered,
-            'total_value' => $base + $recurringModulesValue + $metered + $dedicatedSurcharge,
-        ]);
-
         return [
             'base' => $base,
             'modules' => $modulesValue,
             'metered' => $metered,
             'dedicated_surcharge' => $dedicatedSurcharge,
-            'total' => $total,
+            'total' => $base + $modulesValue + $metered + $dedicatedSurcharge,
+            // A assinatura guarda a mensalidade cheia (valor recorrente
+            // contratado); a proration vale só para o que será faturado
+            // neste período.
+            'recurring_modules' => $recurringModulesValue,
+            'recurring_total' => $base + $recurringModulesValue + $metered + $dedicatedSurcharge,
+        ];
+    }
+
+    /**
+     * Recalcula e grava a mensalidade recorrente da assinatura da venue.
+     *
+     * A gravação vivia dentro de `calculateVenue()`, que é chamado também por
+     * telas e webhooks: dois processos calculando ao mesmo tempo (registro de
+     * consumo e geração de fatura, por exemplo) sobrescreviam o resultado um do
+     * outro. Agora a persistência é explícita e acontece sob lock da linha.
+     *
+     * @return array<string, float>|null
+     */
+    public function refreshVenueSnapshot(Venue $venue, string $period, ?string $usagePeriod = null): ?array
+    {
+        $calculated = $this->calculateVenue($venue, $period, $usagePeriod);
+
+        if ($calculated === null || ! $venue->subscription) {
+            return $calculated;
+        }
+
+        DB::connection($venue->subscription->getConnectionName())->transaction(function () use ($venue, $calculated): void {
+            $subscription = VenueSubscription::query()
+                ->whereKey($venue->subscription->getKey())
+                ->lockForUpdate()
+                ->first();
+
+            $subscription?->update([
+                'modules_value' => $calculated['recurring_modules'],
+                'metered_value' => $calculated['metered'],
+                'total_value' => $calculated['recurring_total'],
+            ]);
+        });
+
+        $venue->unsetRelation('subscription');
+
+        return $calculated;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function refreshCorporationSnapshot(Corporation $corporation, string $period, ?string $usagePeriod = null): array
+    {
+        $venueTotals = [];
+        $grandTotal = 0.0;
+
+        $usagePeriod ??= self::usagePeriodFor($period);
+
+        foreach ($corporation->venues as $venue) {
+            $calculated = $this->refreshVenueSnapshot($venue, $period, $usagePeriod);
+            $venueTotals[$venue->id] = $calculated ?? $this->emptyResult();
+            $grandTotal += $calculated['total'] ?? 0.0;
+        }
+
+        return [
+            'venues' => $venueTotals,
+            'total' => $grandTotal,
         ];
     }
 
@@ -103,6 +161,8 @@ class SubscriptionCalculator
             'metered' => 0.0,
             'dedicated_surcharge' => 0.0,
             'total' => 0.0,
+            'recurring_modules' => 0.0,
+            'recurring_total' => 0.0,
         ];
     }
 

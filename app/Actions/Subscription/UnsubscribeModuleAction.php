@@ -32,7 +32,7 @@ class UnsubscribeModuleAction
                     'ended_at' => now(),
                 ]);
 
-            $this->calculator->calculateVenue($venue, now()->format('Y-m'));
+            $this->calculator->refreshVenueSnapshot($venue, now()->format('Y-m'));
             VenueModuleCache::forget($venue);
         });
     }

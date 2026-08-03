@@ -102,7 +102,7 @@ class AsaasPaymentGatewayTest extends TestCase
                 && $request['customer'] === 'cus_000001'
                 && $request['billingType'] === 'CREDIT_CARD'
                 && $request['creditCardToken'] === 'token_abc'
-                && $request['externalReference'] === 'sub-uuid-1';
+                && $request['externalReference'] === 'subscription:sub-uuid-1';
         });
     }
 

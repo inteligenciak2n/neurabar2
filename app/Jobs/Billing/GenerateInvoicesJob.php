@@ -103,7 +103,7 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
             return null;
         }
 
-        $calculated = $calculator->calculateVenue($venue, $this->period);
+        $calculated = $calculator->refreshVenueSnapshot($venue, $this->period);
 
         if ($calculated === null) {
             return $this->reuseExistingVenueInvoice($venue, $isUnified);

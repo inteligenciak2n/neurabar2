@@ -16,7 +16,7 @@ class SubscribeModuleAction
 {
     public function __construct(private readonly SubscriptionCalculator $calculator) {}
 
-    public function execute(Venue $venue, string $moduleCode, int $quantity = 1): VenueModule
+    public function execute(Venue $venue, string $moduleCode, int $quantity = 1, bool $enforceBillingStatus = true): VenueModule
     {
         $code = ModuleCode::tryFrom($moduleCode);
 
@@ -24,7 +24,7 @@ class SubscribeModuleAction
             throw new InvalidArgumentException("Invalid module code: {$moduleCode}");
         }
 
-        if (BillingStatusService::isBlocked($venue)) {
+        if ($enforceBillingStatus && BillingStatusService::isBlocked($venue)) {
             throw new InvalidArgumentException('Acesso suspenso por questões de faturamento.');
         }
 
@@ -38,13 +38,17 @@ class SubscribeModuleAction
                 'module_code' => $code->value,
             ]);
 
+            // A data de início original é preservada de propósito: zerá-la a
+            // cada reativação permitiria desligar e religar o módulo só para
+            // recomeçar a proration.
+            $module->started_at ??= now();
+
             $module->status = ModuleStatus::Active;
             $module->quantity = max(1, $quantity);
-            $module->started_at ??= now();
             $module->ended_at = null;
             $module->save();
 
-            $this->calculator->calculateVenue($venue, now()->format('Y-m'));
+            $this->calculator->refreshVenueSnapshot($venue, now()->format('Y-m'));
             VenueModuleCache::forget($venue);
             BillingStatusService::flushBlockedCache($venue);
 

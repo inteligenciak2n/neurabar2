@@ -86,7 +86,7 @@ class AssignPlanToCorporationAction
                 VenueModuleCache::forget($venue);
             }
 
-            $this->calculator->calculateCorporation($corporation, now()->format('Y-m'));
+            $this->calculator->refreshCorporationSnapshot($corporation, now()->format('Y-m'));
         });
     }
 }

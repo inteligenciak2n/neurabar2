@@ -3,9 +3,9 @@
 namespace Tests\Feature\Module;
 
 use App\Actions\Corporation\ActivateVenueModuleAction;
-use App\Actions\Corporation\DeactivateVenueModuleAction;
 use App\Actions\Platform\DisableCorporateModuleAction;
 use App\Actions\Platform\EnableCorporateModuleAction;
+use App\Actions\Subscription\UnsubscribeModuleAction;
 use App\Enums\BillingMode;
 use App\Enums\ModuleBillingType;
 use App\Enums\ModuleCode;
@@ -111,7 +111,7 @@ class ModuleActivationActionsTest extends TestCase
             'status' => ModuleStatus::Active,
         ]);
 
-        $action = app()->make(DeactivateVenueModuleAction::class);
+        $action = app()->make(UnsubscribeModuleAction::class);
         $action->execute($venue, ModuleCode::Kds->value);
 
         $this->assertDatabaseHas('venue_modules', [
@@ -160,7 +160,7 @@ class ModuleActivationActionsTest extends TestCase
             'quantity' => 1,
         ]);
 
-        $action = app()->make(DeactivateVenueModuleAction::class);
+        $action = app()->make(UnsubscribeModuleAction::class);
         $action->execute($venue, ModuleCode::Kds->value);
 
         $this->assertDatabaseHas('venue_subscriptions', [

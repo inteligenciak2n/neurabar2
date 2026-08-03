@@ -61,7 +61,7 @@ class ProvisionPlanModulesAction
                 );
             }
 
-            $this->calculator->calculateVenue($venue, $now->format('Y-m'));
+            $this->calculator->refreshVenueSnapshot($venue, $now->format('Y-m'));
             VenueModuleCache::forget($venue);
             CorporationModuleCache::forget($corporation);
         });

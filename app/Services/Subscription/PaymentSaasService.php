@@ -4,8 +4,11 @@ namespace App\Services\Subscription;
 
 use App\Actions\Subscription\ReactivateSubscriptionAction;
 use App\Contracts\Subscription\PaymentGatewayContract;
+use App\Enums\GatewayEvent;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentSaasMethod;
+use App\Exceptions\Subscription\GatewayRequestException;
+use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationInvoice;
 use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\PaymentAttempt;
@@ -14,8 +17,12 @@ use App\Models\Tenant\VenueInvoice;
 use App\Models\Tenant\VenueSubscription;
 use App\Models\User;
 use App\Services\Billing\SubscriptionCalculator;
+use App\Services\Subscription\Webhook\WebhookContext;
+use App\Services\Subscription\Webhook\WebhookEventDispatcher;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 class PaymentSaasService
@@ -25,6 +32,7 @@ class PaymentSaasService
         private readonly GatewayCustomerResolver $customerResolver,
         private readonly SubscriptionCalculator $calculator,
         private readonly ReactivateSubscriptionAction $reactivator,
+        private readonly WebhookEventDispatcher $dispatcher,
     ) {}
 
     /**
@@ -33,7 +41,12 @@ class PaymentSaasService
     public function saveCard(User $user, array $cardData, array $billingAddress = []): UserPaymentMethod
     {
         $gatewayName = config('subscription.payment.default', 'fake');
-        $customerId = $this->customerResolver->resolve($user, $gatewayName, $cardData['holder_document'] ?? null);
+        $customerId = $this->customerResolver->resolve(
+            $this->resolveUserCorporation($user),
+            $user,
+            $gatewayName,
+            $cardData['holder_document'] ?? null,
+        );
 
         $token = $this->gateway->saveCard($customerId, $cardData);
 
@@ -105,16 +118,30 @@ class PaymentSaasService
 
         $this->recordAttempt($invoice, $result);
 
+        // O identificador da cobrança precisa ser gravado assim que existe.
+        // Guardá-lo só no caminho "paid" fazia o webhook do PIX confirmado não
+        // achar a fatura, que seguia em aberto até ser suspensa.
+        if ($result['gateway_payment_id'] !== '' && $invoice->gateway_payment_id !== $result['gateway_payment_id']) {
+            $invoice->update(['gateway_payment_id' => $result['gateway_payment_id']]);
+        }
+
         if ($result['status'] === 'paid') {
             $invoice->update([
                 'status' => InvoiceStatus::Paid,
-                'gateway_payment_id' => $result['gateway_payment_id'],
                 'paid_at' => now(),
                 'is_finalized' => true,
             ]);
 
             $this->reactivator->execute($invoice);
         }
+
+        Log::info('billing.charge.processed', [
+            'invoice_type' => $invoice instanceof VenueInvoice ? 'venue' : 'corporation',
+            'invoice_id' => $invoice->id,
+            'method' => $method->value,
+            'status' => $result['status'],
+            'gateway_payment_id' => $result['gateway_payment_id'],
+        ]);
 
         return [
             'status' => $result['status'],
@@ -129,46 +156,87 @@ class PaymentSaasService
     public function handleWebhook(string $gateway, array $payload): array
     {
         $result = $this->gateway->handleWebhook($gateway, $payload);
+        $event = $this->resolveEvent($payload, $result);
 
-        if ($result['status'] === 'ignored') {
+        if ($event === null) {
+            Log::warning('gateway.webhook.unmapped_event', [
+                'gateway' => $gateway,
+                'event' => $payload['event'] ?? null,
+                'gateway_payment_id' => $result['gateway_payment_id'] ?? '',
+            ]);
+
+            return $this->ignored($result);
+        }
+
+        if ($result['status'] === 'ignored' || $event->isInformational()) {
+            Log::info('gateway.webhook.ignored', [
+                'gateway' => $gateway,
+                'event' => $event->value,
+                'gateway_payment_id' => $result['gateway_payment_id'] ?? '',
+            ]);
+
+            return $this->ignored($result);
+        }
+
+        // Espelhar a fatura, registrar a tentativa e mudar o status precisam
+        // acontecer juntos: uma falha no meio deixava a tentativa gravada sem a
+        // fatura correspondente.
+        return DB::connection('saas')->transaction(function () use ($gateway, $event, $result) {
+            $invoice = $this->resolveInvoice($result['invoice_type'], $result['invoice_id'])
+                ?? $this->resolveInvoiceByGatewayPaymentId($result['gateway_payment_id'])
+                ?? $this->mirrorSubscriptionInvoice($result);
+
+            if (! $invoice) {
+                // Cobrança avulsa criada fora da plataforma (ex.: PIX gerado no
+                // painel do gateway). Lançar aqui só queimava as 5 tentativas
+                // do job sem nunca existir fatura para conciliar.
+                Log::warning('gateway.webhook.invoice_not_found', [
+                    'gateway' => $gateway,
+                    'event' => $event->value,
+                    'gateway_payment_id' => $result['gateway_payment_id'],
+                    'external_reference' => $result['invoice_id'],
+                ]);
+
+                return $this->ignored($result);
+            }
+
+            $this->recordAttempt($invoice, $result);
+
+            $this->dispatcher->dispatch(new WebhookContext($event, $invoice, $result, $result['payload'] ?? []));
+
             return $result;
-        }
-
-        $invoice = $this->resolveInvoice($result['invoice_type'], $result['invoice_id'])
-            ?? $this->resolveInvoiceByGatewayPaymentId($result['gateway_payment_id'])
-            ?? $this->mirrorSubscriptionInvoice($result);
-
-        if (! $invoice) {
-            throw new InvalidArgumentException('Fatura não encontrada.');
-        }
-
-        $this->recordAttempt($invoice, $result);
-        $this->updateInvoiceFromGatewayStatus($invoice, $result['status'], $result['gateway_payment_id']);
-
-        return $result;
+        });
     }
 
-    private function updateInvoiceFromGatewayStatus(VenueInvoice|CorporationInvoice $invoice, string $status, string $gatewayPaymentId): void
+    /**
+     * The named event is authoritative. An event we do not know about is
+     * reported and dropped instead of being coerced into a local status —
+     * that coercion is what used to turn chargebacks into "pending".
+     *
+     * The normalized status is only consulted for gateways that do not name
+     * their events at all.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $result
+     */
+    private function resolveEvent(array $payload, array $result): ?GatewayEvent
     {
-        if ($status === 'paid') {
-            $invoice->update([
-                'status' => InvoiceStatus::Paid,
-                'gateway_payment_id' => $gatewayPaymentId,
-                'paid_at' => now(),
-                'is_finalized' => true,
-            ]);
+        $named = $result['event'] ?? $payload['event'] ?? null;
 
-            $this->reactivator->execute($invoice);
-
-            return;
+        if (is_string($named) && $named !== '') {
+            return GatewayEvent::tryFrom($named);
         }
 
-        if ($status === 'refunded') {
-            $invoice->update([
-                'status' => InvoiceStatus::Refunded,
-                'is_finalized' => true,
-            ]);
-        }
+        return GatewayEvent::fromNormalizedStatus((string) ($result['status'] ?? ''));
+    }
+
+    /**
+     * @param  array<string, mixed>  $result
+     * @return array<string, mixed>
+     */
+    private function ignored(array $result): array
+    {
+        return array_merge($result, ['status' => 'ignored']);
     }
 
     private function chargeWithCard(VenueInvoice|CorporationInvoice $invoice, array $paymentData, User $user): array
@@ -199,10 +267,21 @@ class PaymentSaasService
     {
         $gatewayName = config('subscription.payment.default', 'fake');
 
-        $document = $user->paymentMethods()->whereNotNull('holder_document')->value('holder_document')
-            ?? $invoice->corporation?->tax_id;
+        $corporation = $invoice->corporation;
 
-        return $this->customerResolver->resolve($user, $gatewayName, $document);
+        $document = $user->paymentMethods()->whereNotNull('holder_document')->value('holder_document')
+            ?? $corporation?->tax_id;
+
+        return $this->customerResolver->resolve($corporation, $user, $gatewayName, $document);
+    }
+
+    /**
+     * Billing belongs to the company, so the card is filed under the
+     * corporation the user is currently operating.
+     */
+    private function resolveUserCorporation(User $user): ?Corporation
+    {
+        return $user->currentVenue?->corporation ?? $user->ownedCorporation;
     }
 
     private function recordAttempt(VenueInvoice|CorporationInvoice $invoice, array $result): void
@@ -230,9 +309,13 @@ class PaymentSaasService
             return null;
         }
 
-        return $type === 'corporation'
-            ? CorporationInvoice::find($id)
-            : VenueInvoice::find($id);
+        return match ($type) {
+            'corporation' => CorporationInvoice::find($id),
+            // Tipo vazio vem de cobranças anteriores à referência tipada, que
+            // sempre apontavam para faturas de unidade.
+            'venue', '' => VenueInvoice::find($id),
+            default => null,
+        };
     }
 
     private function resolveInvoiceByGatewayPaymentId(string $gatewayPaymentId): VenueInvoice|CorporationInvoice|null
@@ -385,6 +468,16 @@ class PaymentSaasService
             return;
         }
 
-        $this->gateway->updatePaymentValue($result['gateway_payment_id'], $expectedValue);
+        try {
+            $this->gateway->updatePaymentValue($result['gateway_payment_id'], $expectedValue);
+        } catch (GatewayRequestException $exception) {
+            // A cobrança pode ter sido confirmada entre a emissão e este
+            // webhook. Abortar aqui impediria o espelhamento da fatura.
+            Log::warning('gateway.webhook.payment_value_not_updated', [
+                'gateway_payment_id' => $result['gateway_payment_id'],
+                'expected' => $expectedValue,
+                'reason' => $exception->getMessage(),
+            ]);
+        }
     }
 }

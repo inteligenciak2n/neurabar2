@@ -7,6 +7,7 @@ use App\Jobs\Billing\NotifyTrialEndingSoonJob;
 use App\Jobs\Billing\ReconcileGatewayPaymentsJob;
 use App\Jobs\Billing\RetryOverdueInvoicesJob;
 use App\Jobs\Billing\SuspendOverdueSubscriptionsJob;
+use App\Jobs\Subscription\SweepStaleGatewayWebhookEventsJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -23,4 +24,5 @@ Schedule::job(new SuspendOverdueSubscriptionsJob)->daily()->onOneServer()->witho
 Schedule::job(new MarkInvoicesOverdueJob)->daily()->onOneServer()->withoutOverlapping();
 Schedule::job(new RetryOverdueInvoicesJob)->dailyAt('09:00')->onOneServer()->withoutOverlapping();
 Schedule::job(new ReconcileGatewayPaymentsJob)->dailyAt('05:00')->onOneServer()->withoutOverlapping();
+Schedule::job(new SweepStaleGatewayWebhookEventsJob)->hourly()->onOneServer()->withoutOverlapping();
 Schedule::job(new GenerateInvoicesJob(now()->format('Y-m')))->monthlyOn(1, '00:00')->onOneServer()->withoutOverlapping();

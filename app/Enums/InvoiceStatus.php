@@ -9,6 +9,8 @@ enum InvoiceStatus: string
     case Paid = 'paid';
     case Canceled = 'canceled';
     case Refunded = 'refunded';
+    case Disputed = 'disputed';
+    case ChargedBack = 'charged_back';
 
     public function label(): string
     {
@@ -18,12 +20,20 @@ enum InvoiceStatus: string
             self::Paid => 'Paga',
             self::Canceled => 'Cancelada',
             self::Refunded => 'Reembolsada',
+            self::Disputed => 'Em disputa',
+            self::ChargedBack => 'Chargeback',
         };
     }
 
     public function isFinalized(): bool
     {
-        return in_array($this, [self::Paid, self::Canceled, self::Refunded], true);
+        return in_array($this, [
+            self::Paid,
+            self::Canceled,
+            self::Refunded,
+            self::Disputed,
+            self::ChargedBack,
+        ], true);
     }
 
     public function canTransitionTo(self $status): bool
@@ -43,7 +53,8 @@ enum InvoiceStatus: string
         return match ($this) {
             self::Open => [self::Overdue, self::Paid, self::Canceled],
             self::Overdue => [self::Paid, self::Canceled],
-            self::Paid => [self::Refunded],
+            self::Paid => [self::Refunded, self::Disputed, self::ChargedBack],
+            self::Disputed => [self::Paid, self::Refunded, self::ChargedBack],
             default => [],
         };
     }

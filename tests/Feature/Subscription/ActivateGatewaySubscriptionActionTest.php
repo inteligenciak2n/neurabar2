@@ -11,7 +11,6 @@ use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\UserPaymentMethod;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueSubscription;
-use App\Models\User;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use Tests\RefreshAllDatabases;
@@ -57,8 +56,8 @@ class ActivateGatewaySubscriptionActionTest extends TestCase
         $this->assertNotNull($result->gateway_customer_id);
         $this->assertDatabaseCount('gateway_customers', 1);
         $this->assertDatabaseHas('gateway_customers', [
-            'owner_type' => User::class,
-            'owner_id' => $paymentMethod->user_id,
+            'owner_type' => Corporation::class,
+            'owner_id' => $corporation->id,
             'customer_id' => $result->gateway_customer_id,
         ]);
     }

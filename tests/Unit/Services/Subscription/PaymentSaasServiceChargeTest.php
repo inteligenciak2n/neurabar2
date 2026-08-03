@@ -5,6 +5,7 @@ namespace Tests\Unit\Services\Subscription;
 use App\Contracts\Subscription\PaymentGatewayContract;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentSaasMethod;
+use App\Models\Tenant\Corporation;
 use App\Models\Tenant\UserPaymentMethod;
 use App\Models\Tenant\VenueInvoice;
 use App\Models\User;
@@ -46,7 +47,8 @@ class PaymentSaasServiceChargeTest extends TestCase
 
         $this->assertSame('pending', $result['status']);
         $this->assertDatabaseHas('gateway_customers', [
-            'owner_id' => $user->id,
+            'owner_type' => Corporation::class,
+            'owner_id' => $invoice->venue->corporation_id,
             'customer_id' => 'cus_forward_1',
         ]);
     }

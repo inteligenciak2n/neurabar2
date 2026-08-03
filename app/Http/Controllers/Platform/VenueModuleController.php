@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Platform;
 
 use App\Actions\Corporation\ActivateVenueModuleAction;
-use App\Actions\Corporation\DeactivateVenueModuleAction;
+use App\Actions\Subscription\UnsubscribeModuleAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Platform\StoreVenueModuleRequest;
 use App\Models\Tenant\Corporation;
@@ -55,7 +55,7 @@ class VenueModuleController extends Controller
         Corporation $corporation,
         Venue $venue,
         VenueModule $module,
-        DeactivateVenueModuleAction $action,
+        UnsubscribeModuleAction $action,
     ): RedirectResponse {
         $this->ensureVenueBelongsToCorporation($corporation, $venue);
 

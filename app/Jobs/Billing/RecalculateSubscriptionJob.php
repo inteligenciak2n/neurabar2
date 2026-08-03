@@ -26,6 +26,6 @@ class RecalculateSubscriptionJob implements ShouldQueue
     {
         $period = $this->period ?? now()->format('Y-m');
 
-        $calculator->calculateVenue($this->venue, $period);
+        $calculator->refreshVenueSnapshot($this->venue, $period);
     }
 }
