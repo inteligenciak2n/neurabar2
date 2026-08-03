@@ -10,7 +10,7 @@ class StoreSubscriptionModuleRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('manage-subscription') === true;
     }
 
     public function rules(): array

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -40,6 +41,8 @@ class PlatformUserController extends Controller
 
     public function update(Request $request, User $user): RedirectResponse
     {
+        $this->ensurePlatformUser($user);
+
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
             'email' => ['sometimes', 'email', 'unique:users,email,'.$user->id],
@@ -54,13 +57,38 @@ class PlatformUserController extends Controller
 
         $user->update($validated);
 
+        Log::info('platform.user.updated', [
+            'actor_id' => $request->user()?->id,
+            'target_id' => $user->id,
+            'changed' => array_keys(array_diff_key($validated, ['password' => null])),
+        ]);
+
         return back()->with('success', 'User updated successfully.');
     }
 
-    public function destroy(User $user): RedirectResponse
+    public function destroy(Request $request, User $user): RedirectResponse
     {
+        $this->ensurePlatformUser($user);
+
+        abort_if($request->user()?->is($user) === true, 403, 'You cannot delete your own account.');
+
         $user->delete();
 
+        Log::info('platform.user.deleted', [
+            'actor_id' => $request->user()?->id,
+            'target_id' => $user->id,
+            'target_email' => $user->email,
+        ]);
+
         return back()->with('success', 'User deleted successfully.');
+    }
+
+    /**
+     * The route model binding accepts any user id, so a backoffice admin could
+     * otherwise edit or delete tenant users through this screen.
+     */
+    private function ensurePlatformUser(User $user): void
+    {
+        abort_unless(in_array($user->profile?->value, ProfileEnum::platformProfiles(), true), 404);
     }
 }

@@ -47,13 +47,17 @@ class UserSettingsTest extends TestCase
         $venue = Venue::factory()->create(['active' => true]);
         $this->loginAs(UserRole::Owner, $venue);
 
+        // Platform profiles no longer exist in UserRole, so the venue role
+        // validation itself rejects the value before it reaches the action.
         $this->post(route('settings.users.store'), [
             'name' => 'Super Admin',
             'email' => 'super@test.com',
             'password' => 'password',
             'role' => 'super_admin',
             'active' => true,
-        ])->assertForbidden();
+        ])->assertSessionHasErrors('role');
+
+        $this->assertDatabaseMissing('users', ['email' => 'super@test.com']);
     }
 
     public function test_owner_can_delete_attendant(): void

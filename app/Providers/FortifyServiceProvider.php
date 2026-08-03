@@ -11,8 +11,10 @@ use App\Http\Responses\VerifyEmailResponse;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -83,6 +85,25 @@ class FortifyServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by(
                 ($credentialId ?: $request->session()->getId()).'|'.$request->ip()
             );
+        });
+
+        // Fortify ships the registration routes without any limiter, which lets a
+        // single IP create accounts (and trigger verification e-mails) in bulk.
+        RateLimiter::for('register', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        });
+
+        RateLimiter::for('onboarding', function (Request $request) {
+            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
+        });
+
+        // Fortify registra suas rotas depois do boot dos providers da aplicação
+        // e não expõe um limiter para o cadastro, então o throttle é anexado no
+        // momento em que a rota é resolvida.
+        Route::matched(function (RouteMatched $event): void {
+            if (in_array($event->route->getName(), ['register', 'register.store'], true)) {
+                $event->route->middleware('throttle:register');
+            }
         });
     }
 }

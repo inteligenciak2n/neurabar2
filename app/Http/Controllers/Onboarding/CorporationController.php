@@ -8,6 +8,7 @@ use App\Http\Requests\Onboarding\StoreCorporationRequest;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use InvalidArgumentException;
 
 class CorporationController extends Controller
 {
@@ -39,12 +40,18 @@ class CorporationController extends Controller
 
         abort_unless($corporation !== null, 403, 'Nenhuma corporation encontrada para este usuário.');
 
-        $action->execute(
-            $user,
-            $corporation,
-            $request->only(['name', 'tax_id', 'email', 'contact_phone']),
-            $request->validated('venues'),
-        );
+        try {
+            $action->execute(
+                $user,
+                $corporation,
+                $request->only(['name', 'tax_id', 'email', 'contact_phone']),
+                $request->validated('venues'),
+            );
+        } catch (InvalidArgumentException $e) {
+            // Business rules raised by the action are the user's problem to fix,
+            // not a server error that discards the whole filled-in form.
+            return back()->withInput()->withErrors(['venues' => $e->getMessage()]);
+        }
 
         return redirect()->route('dashboard')
             ->with('success', 'Tudo pronto! Seu período de teste começou.');

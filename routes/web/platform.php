@@ -13,13 +13,14 @@ use App\Http\Controllers\Platform\PlanCatalogController;
 use App\Http\Controllers\Platform\PlatformUserController;
 use App\Http\Controllers\Platform\SubscriptionController;
 use App\Http\Controllers\Platform\VenueModuleController;
+use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Support\Facades\Route;
 
 // Platform backoffice — guard web com platform_profile
 $platformPath = config('platform.path', 'backoffice');
 
 Route::prefix($platformPath)->name('platform.')->group(function () {
-    Route::middleware(['auth', 'platform_profile'])->group(function () {
+    Route::middleware(['auth', 'verified', AuthenticateSession::class, 'platform_profile'])->group(function () {
         Route::get('/', [PlatformDashboardController::class, 'index'])->name('dashboard');
 
         Route::get('/corporations', [PlatformCorporationController::class, 'index'])->name('corporations.index');
@@ -29,7 +30,9 @@ Route::prefix($platformPath)->name('platform.')->group(function () {
             Route::post('/corporations', [PlatformCorporationController::class, 'store'])->name('corporations.store');
         });
 
-        Route::middleware(['platform_role:super_admin,finance'])->group(function () {
+        // scopeBindings garante que discount/module/venue aninhados pertençam à
+        // corporation da URL — sem isso é possível apagar recurso de outro tenant.
+        Route::middleware(['platform_role:super_admin,finance'])->scopeBindings()->group(function () {
             Route::get('/corporations/{corporation}/edit', [PlatformCorporationController::class, 'edit'])->name('corporations.edit');
             Route::put('/corporations/{corporation}', [PlatformCorporationController::class, 'update'])->name('corporations.update');
             Route::put('/corporations/{corporation}/plan', [PlanAssignmentController::class, 'update'])->name('corporations.plan');

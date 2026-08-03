@@ -94,27 +94,30 @@ class AppServiceProvider extends ServiceProvider
                 ], 429));
         });
 
-        Gate::define('manage-menu', fn (User $user) => in_array($user->role, [
+        // The operational role lives in the `user_venue` pivot, never on the user
+        // row: gates defined over `$user->role` read a non-existent attribute and
+        // always denied.
+        Gate::define('manage-menu', fn (User $user) => in_array($user->currentVenueRole(), [
             UserRole::Owner,
             UserRole::GeneralManager,
         ], true));
 
-        Gate::define('manage-settings', fn (User $user) => in_array($user->role, [
+        Gate::define('manage-settings', fn (User $user) => in_array($user->currentVenueRole(), [
             UserRole::Owner,
             UserRole::GeneralManager,
         ], true));
 
-        Gate::define('manage-users', fn (User $user) => in_array($user->role, [
+        Gate::define('manage-users', fn (User $user) => in_array($user->currentVenueRole(), [
             UserRole::Owner,
             UserRole::GeneralManager,
         ], true));
 
-        Gate::define('access-corporation', fn (User $user) => in_array($user->role, [
+        Gate::define('access-corporation', fn (User $user) => in_array($user->currentVenueRole(), [
             UserRole::Owner,
             UserRole::GeneralManager,
         ], true));
 
-        Gate::define('register-payment', fn (User $user) => in_array($user->role, [
+        Gate::define('register-payment', fn (User $user) => in_array($user->currentVenueRole(), [
             UserRole::Owner,
             UserRole::GeneralManager,
             UserRole::SectionManager,

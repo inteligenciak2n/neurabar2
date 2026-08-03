@@ -2,7 +2,7 @@
 
 namespace App\Actions\Settings;
 
-use App\Enums\UserRole;
+use App\Enums\ProfileEnum;
 use App\Http\Requests\Settings\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -14,10 +14,10 @@ class UpdateUserAction
         $data = $request->validated();
 
         if (isset($data['role'])) {
-            // Venue settings may only assign operational roles; platform roles
-            // would grant backoffice access to a tenant user.
+            // Venue settings may only assign operational roles; a platform
+            // profile string would grant backoffice access to a tenant user.
             abort_if(
-                UserRole::from($data['role'])->isPlatform(),
+                in_array($data['role'], ProfileEnum::platformProfiles(), true),
                 403,
                 'Cannot assign this role from venue settings.'
             );

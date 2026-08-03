@@ -78,5 +78,23 @@ class CorporationDiscountTest extends TestCase
 
         $this->assertSoftDeleted('corporation_discounts', ['id' => $discount->id]);
     }
-}
 
+    public function test_discount_of_another_corporation_cannot_be_deleted(): void
+    {
+        $this->loginAsPlatformUser(ProfileEnum::SuperAdmin);
+
+        $corporationA = Corporation::factory()->create();
+        $corporationB = Corporation::factory()->create();
+
+        $discount = $corporationB->discounts()->create([
+            'type' => 'fixed',
+            'value' => 30,
+            'valid_from' => today()->toDateString(),
+        ]);
+
+        $this->delete(route('platform.corporations.discounts.destroy', [$corporationA->id, $discount->id]))
+            ->assertNotFound();
+
+        $this->assertDatabaseHas('corporation_discounts', ['id' => $discount->id, 'deleted_at' => null]);
+    }
+}

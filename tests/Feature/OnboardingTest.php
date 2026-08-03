@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ModuleCode;
 use App\Models\Tenant\CorporationSubscription;
+use App\Models\Tenant\ModuleCatalog;
 use App\Models\User;
 use Database\Seeders\ModuleCatalogsSeeder;
 use Tests\RefreshAllDatabases;
@@ -100,7 +101,7 @@ class OnboardingTest extends TestCase
         // null (checado no primeiro passo antes de a corporation existir).
         $response = $this->actingAs($user->fresh())->post(route('onboarding.corporation.store'), [
             'name' => 'Minha Empresa Ltda',
-            'tax_id' => '00.000.000/0001-00',
+            'tax_id' => '00.000.000/0001-91',
             'email' => 'contato@empresa.com',
             'contact_phone' => '11999990000',
             'venues' => [
@@ -123,5 +124,77 @@ class OnboardingTest extends TestCase
         $this->assertDatabaseHas('venues', ['name' => $user->name.' - Ponto de Venda 2']);
 
         $this->assertNull(session('onboarding.venue_count'));
+    }
+
+    public function test_subscription_step_rejects_inactive_module(): void
+    {
+        $user = $this->verifiedUser();
+
+        ModuleCatalog::where('code', ModuleCode::Kds->value)->update(['active' => false]);
+
+        $this->actingAs($user)->post(route('onboarding.subscription.store'), [
+            'module_codes' => [ModuleCode::Kds->value],
+            'venue_count' => 1,
+            'terms' => true,
+        ])->assertSessionHasErrors('module_codes');
+
+        $this->assertNull($user->fresh()->ownedCorporation);
+    }
+
+    public function test_corporation_step_rejects_venue_without_name_when_not_skipped(): void
+    {
+        $user = $this->startedSubscriptionUser();
+
+        // `skip` ausente costumava passar pela validação e estourar no action.
+        $this->actingAs($user)->post(route('onboarding.corporation.store'), [
+            'name' => 'Minha Empresa Ltda',
+            'email' => 'contato@empresa.com',
+            'venues' => [
+                [],
+            ],
+        ])->assertSessionHasErrors('venues.0.name');
+
+        $this->assertNull($user->fresh()->onboarding_completed_at);
+    }
+
+    public function test_corporation_step_rejects_invalid_tax_id_state_and_timezone(): void
+    {
+        $user = $this->startedSubscriptionUser();
+
+        $this->actingAs($user)->post(route('onboarding.corporation.store'), [
+            'name' => 'Minha Empresa Ltda',
+            'tax_id' => '11.111.111/1111-11',
+            'email' => 'contato@empresa.com',
+            'venues' => [
+                ['skip' => false, 'name' => 'Unidade Centro', 'state' => 'XX', 'timezone' => 'Mars/Olympus'],
+            ],
+        ])->assertSessionHasErrors(['tax_id', 'venues.0.state', 'venues.0.timezone']);
+
+        $this->assertNull($user->fresh()->onboarding_completed_at);
+    }
+
+    public function test_corporation_step_requires_billing_email(): void
+    {
+        $user = $this->startedSubscriptionUser();
+
+        $this->actingAs($user)->post(route('onboarding.corporation.store'), [
+            'name' => 'Minha Empresa Ltda',
+            'venues' => [
+                ['skip' => false, 'name' => 'Unidade Centro'],
+            ],
+        ])->assertSessionHasErrors('email');
+    }
+
+    private function startedSubscriptionUser(): User
+    {
+        $user = $this->verifiedUser();
+
+        $this->actingAs($user)->post(route('onboarding.subscription.store'), [
+            'module_codes' => [],
+            'venue_count' => 1,
+            'terms' => true,
+        ])->assertRedirect(route('onboarding.corporation.create'));
+
+        return $user->fresh();
     }
 }

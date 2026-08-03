@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Platform;
 
 use App\Enums\BillingMode;
+use App\Enums\ProfileEnum;
 use App\Enums\SubscriptionStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -11,7 +12,10 @@ class UpdateSubscriptionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return in_array($this->user()?->profile, [
+            ProfileEnum::SuperAdmin,
+            ProfileEnum::Finance,
+        ], true);
     }
 
     /** @return array<string, mixed> */

@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Platform;
 
-use App\Enums\InvoiceStatus;
+use App\Enums\ProfileEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,7 +10,10 @@ class StoreManualInvoiceRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return in_array($this->user()?->profile, [
+            ProfileEnum::SuperAdmin,
+            ProfileEnum::Finance,
+        ], true);
     }
 
     /** @return array<string, mixed> */

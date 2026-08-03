@@ -9,6 +9,7 @@ use App\Models\Tenant\ModuleCatalog;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use InvalidArgumentException;
 
 class SubscriptionController extends Controller
 {
@@ -42,7 +43,11 @@ class SubscriptionController extends Controller
             return redirect()->route('onboarding.corporation.create');
         }
 
-        $action->execute($user, $request->validated('module_codes', []), (int) $request->validated('venue_count'));
+        try {
+            $action->execute($user, $request->validated('module_codes', []), (int) $request->validated('venue_count'));
+        } catch (InvalidArgumentException $e) {
+            return back()->withInput()->withErrors(['module_codes' => $e->getMessage()]);
+        }
 
         return redirect()->route('onboarding.corporation.create');
     }
