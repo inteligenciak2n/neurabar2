@@ -62,7 +62,7 @@ class CreateUserOwnerDefinitions
             ['code' => config('billing.default_plan_code', 'pro')],
             [
                 'name' => 'Pro',
-                'monthly_price' => 99.90,
+                'monthly_price' => 9990,
                 'active' => true,
                 'plan_type' => 'shared',
             ]

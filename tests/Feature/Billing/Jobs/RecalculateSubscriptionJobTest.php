@@ -30,9 +30,9 @@ class RecalculateSubscriptionJobTest extends TestCase
         VenueSubscription::factory()->create([
             'venue_id' => $venue->id,
             'corporation_subscription_id' => $corporation->subscription->id,
-            'base_value' => 99.90,
-            'modules_value' => 0.0,
-            'total_value' => 0.0,
+            'base_value' => 9990,
+            'modules_value' => 0,
+            'total_value' => 0,
             'status' => SubscriptionStatus::Active,
         ]);
 
@@ -40,8 +40,8 @@ class RecalculateSubscriptionJobTest extends TestCase
 
         $this->assertDatabaseHas('venue_subscriptions', [
             'venue_id' => $venue->id,
-            'base_value' => 99.90,
-            'total_value' => 99.90,
+            'base_value' => 9990,
+            'total_value' => 9990,
         ]);
     }
 
@@ -58,9 +58,9 @@ class RecalculateSubscriptionJobTest extends TestCase
         VenueSubscription::factory()->create([
             'venue_id' => $venue->id,
             'corporation_subscription_id' => $corporation->subscription->id,
-            'base_value' => 49.90,
-            'modules_value' => 0.0,
-            'total_value' => 0.0,
+            'base_value' => 4990,
+            'modules_value' => 0,
+            'total_value' => 0,
             'status' => SubscriptionStatus::Active,
         ]);
 
@@ -68,8 +68,8 @@ class RecalculateSubscriptionJobTest extends TestCase
 
         $this->assertDatabaseHas('venue_subscriptions', [
             'venue_id' => $venue->id,
-            'base_value' => 49.90,
-            'total_value' => 49.90,
+            'base_value' => 4990,
+            'total_value' => 4990,
         ]);
     }
 }

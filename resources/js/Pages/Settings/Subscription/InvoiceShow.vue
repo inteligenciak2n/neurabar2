@@ -2,6 +2,7 @@
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import { Link } from '@inertiajs/vue3';
 import { useTranslate } from '@/Composables/useTranslate';
+import { useCurrency } from '@/Composables/useCurrency';
 
 const props = defineProps({
     invoice: Object,
@@ -9,6 +10,7 @@ const props = defineProps({
 });
 
 const __ = useTranslate();
+const { formatMoney } = useCurrency();
 
 const statusClass = (status) => {
     return {
@@ -57,7 +59,7 @@ const statusClass = (status) => {
                 </div>
                 <div>
                     <dt class="text-xs text-muted-foreground">{{ __('Total') }}</dt>
-                    <dd class="mt-1 font-medium">R$ {{ parseFloat(invoice.total_value).toFixed(2) }}</dd>
+                    <dd class="mt-1 font-medium">{{ formatMoney(invoice.total_value) }}</dd>
                 </div>
             </dl>
 

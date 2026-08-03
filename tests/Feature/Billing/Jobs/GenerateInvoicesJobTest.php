@@ -30,7 +30,7 @@ class GenerateInvoicesJobTest extends TestCase
 
     public function test_generates_venue_invoice_for_active_subscription(): void
     {
-        $venue = $this->createActiveVenue(baseValue: 99.90);
+        $venue = $this->createActiveVenue(baseValue: 9990);
 
         (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
 
@@ -38,8 +38,8 @@ class GenerateInvoicesJobTest extends TestCase
             'venue_id' => $venue->id,
             'period' => '2026-07',
             'status' => InvoiceStatus::Open->value,
-            'base_value' => 99.90,
-            'total_value' => 99.90,
+            'base_value' => 9990,
+            'total_value' => 9990,
         ]);
     }
 
@@ -55,7 +55,7 @@ class GenerateInvoicesJobTest extends TestCase
             'billing_day' => 10,
         ]);
 
-        $venue = $this->createVenueForCorporation($corporation, baseValue: 50.00);
+        $venue = $this->createVenueForCorporation($corporation, baseValue: 5000);
 
         (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
 
@@ -75,10 +75,10 @@ class GenerateInvoicesJobTest extends TestCase
             'billing_day' => 10,
         ]);
 
-        $venueA = $this->createVenueForCorporation($corporation, baseValue: 50.00);
-        $venueB = $this->createVenueForCorporation($corporation, baseValue: 50.00);
-        $this->enableModule($corporation, $venueA, ModuleCode::Kds, 49.90);
-        $this->enableModule($corporation, $venueB, ModuleCode::Kds, 49.90);
+        $venueA = $this->createVenueForCorporation($corporation, baseValue: 5000);
+        $venueB = $this->createVenueForCorporation($corporation, baseValue: 5000);
+        $this->enableModule($corporation, $venueA, ModuleCode::Kds, 4990);
+        $this->enableModule($corporation, $venueB, ModuleCode::Kds, 4990);
 
         (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
 
@@ -88,7 +88,7 @@ class GenerateInvoicesJobTest extends TestCase
             ->first();
 
         $this->assertNotNull($corporationInvoice);
-        $this->assertSame(199.80, (float) $corporationInvoice->total_value);
+        $this->assertSame(19980, (int) $corporationInvoice->total_value);
 
         $this->assertDatabaseHas('venue_invoices', [
             'venue_id' => $venueA->id,
@@ -105,7 +105,7 @@ class GenerateInvoicesJobTest extends TestCase
 
     public function test_does_not_duplicate_invoices_for_same_period(): void
     {
-        $venue = $this->createActiveVenue(baseValue: 99.90);
+        $venue = $this->createActiveVenue(baseValue: 9990);
 
         (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
         (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
@@ -115,16 +115,16 @@ class GenerateInvoicesJobTest extends TestCase
 
     public function test_does_not_generate_for_finalized_venue_invoice(): void
     {
-        $venue = $this->createActiveVenue(baseValue: 99.90);
+        $venue = $this->createActiveVenue(baseValue: 9990);
         VenueInvoice::factory()->create([
             'venue_id' => $venue->id,
             'period' => '2026-07',
             'is_finalized' => true,
             'status' => InvoiceStatus::Paid,
-            'base_value' => 99.90,
-            'modules_value' => 0.0,
-            'metered_value' => 0.0,
-            'total_value' => 99.90,
+            'base_value' => 9990,
+            'modules_value' => 0,
+            'metered_value' => 0,
+            'total_value' => 9990,
         ]);
 
         (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
@@ -133,10 +133,10 @@ class GenerateInvoicesJobTest extends TestCase
         $this->assertDatabaseHas('venue_invoices', [
             'venue_id' => $venue->id,
             'period' => '2026-07',
-            'base_value' => 99.90,
-            'modules_value' => 0.0,
-            'metered_value' => 0.0,
-            'total_value' => 99.90,
+            'base_value' => 9990,
+            'modules_value' => 0,
+            'metered_value' => 0,
+            'total_value' => 9990,
         ]);
     }
 
@@ -149,18 +149,18 @@ class GenerateInvoicesJobTest extends TestCase
             'status' => SubscriptionStatus::Active,
             'billing_day' => 10,
         ]);
-        $venue = $this->createVenueForCorporation($corporation, baseValue: 50.00);
-        $this->enableModule($corporation, $venue, ModuleCode::Kds, 49.90);
+        $venue = $this->createVenueForCorporation($corporation, baseValue: 5000);
+        $this->enableModule($corporation, $venue, ModuleCode::Kds, 4990);
 
         CorporationInvoice::factory()->create([
             'corporation_id' => $corporation->id,
             'period' => '2026-07',
             'is_finalized' => true,
             'status' => InvoiceStatus::Paid,
-            'base_value' => 50.00,
-            'modules_value' => 49.90,
-            'metered_value' => 0.0,
-            'total_value' => 99.90,
+            'base_value' => 5000,
+            'modules_value' => 4990,
+            'metered_value' => 0,
+            'total_value' => 9990,
         ]);
 
         (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
@@ -168,10 +168,10 @@ class GenerateInvoicesJobTest extends TestCase
         $this->assertDatabaseHas('corporation_invoices', [
             'corporation_id' => $corporation->id,
             'period' => '2026-07',
-            'base_value' => 50.00,
-            'modules_value' => 49.90,
-            'metered_value' => 0.0,
-            'total_value' => 99.90,
+            'base_value' => 5000,
+            'modules_value' => 4990,
+            'metered_value' => 0,
+            'total_value' => 9990,
         ]);
     }
 
@@ -184,18 +184,18 @@ class GenerateInvoicesJobTest extends TestCase
             'status' => SubscriptionStatus::Active,
             'billing_day' => 10,
         ]);
-        $venue = $this->createVenueForCorporation($corporation, baseValue: 50.00);
-        $this->enableModule($corporation, $venue, ModuleCode::Kds, 49.90);
+        $venue = $this->createVenueForCorporation($corporation, baseValue: 5000);
+        $this->enableModule($corporation, $venue, ModuleCode::Kds, 4990);
 
         VenueInvoice::factory()->create([
             'venue_id' => $venue->id,
             'period' => '2026-07',
             'is_finalized' => true,
             'status' => InvoiceStatus::Paid,
-            'base_value' => 50.00,
-            'modules_value' => 49.90,
-            'metered_value' => 0.0,
-            'total_value' => 99.90,
+            'base_value' => 5000,
+            'modules_value' => 4990,
+            'metered_value' => 0,
+            'total_value' => 9990,
         ]);
 
         (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
@@ -203,16 +203,16 @@ class GenerateInvoicesJobTest extends TestCase
         $this->assertDatabaseHas('venue_invoices', [
             'venue_id' => $venue->id,
             'period' => '2026-07',
-            'base_value' => 50.00,
-            'modules_value' => 49.90,
-            'metered_value' => 0.0,
-            'total_value' => 99.90,
+            'base_value' => 5000,
+            'modules_value' => 4990,
+            'metered_value' => 0,
+            'total_value' => 9990,
         ]);
     }
 
     public function test_sets_due_date_based_on_billing_day(): void
     {
-        $venue = $this->createActiveVenue(baseValue: 99.90, billingDay: 15);
+        $venue = $this->createActiveVenue(baseValue: 9990, billingDay: 15);
 
         (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
 
@@ -236,7 +236,7 @@ class GenerateInvoicesJobTest extends TestCase
             'gateway_subscription_id' => 'sub_123',
         ]);
 
-        $this->createVenueForCorporation($corporation, baseValue: 50.00);
+        $this->createVenueForCorporation($corporation, baseValue: 5000);
 
         (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
 
@@ -258,8 +258,8 @@ class GenerateInvoicesJobTest extends TestCase
         VenueSubscription::factory()->create([
             'venue_id' => $venue->id,
             'corporation_subscription_id' => $corporation->subscription->id,
-            'base_value' => 99.90,
-            'total_value' => 99.90,
+            'base_value' => 9990,
+            'total_value' => 9990,
             'status' => SubscriptionStatus::Active,
             'gateway' => 'asaas',
             'gateway_customer_id' => 'cus_123',
@@ -271,7 +271,7 @@ class GenerateInvoicesJobTest extends TestCase
         $this->assertDatabaseCount('venue_invoices', 0);
     }
 
-    private function createActiveVenue(float $baseValue, int $billingDay = 1): Venue
+    private function createActiveVenue(int $baseValue, int $billingDay = 1): Venue
     {
         $corporation = Corporation::factory()->create();
         CorporationSubscription::factory()->create([
@@ -293,7 +293,7 @@ class GenerateInvoicesJobTest extends TestCase
         return $venue->fresh();
     }
 
-    private function createVenueForCorporation(Corporation $corporation, float $baseValue): Venue
+    private function createVenueForCorporation(Corporation $corporation, int $baseValue): Venue
     {
         $venue = Venue::factory()->create(['corporation_id' => $corporation->id]);
         VenueSubscription::factory()->create([
@@ -307,7 +307,7 @@ class GenerateInvoicesJobTest extends TestCase
         return $venue->fresh();
     }
 
-    private function enableModule(Corporation $corporation, Venue $venue, ModuleCode $code, float $price): void
+    private function enableModule(Corporation $corporation, Venue $venue, ModuleCode $code, int $price): void
     {
         ModuleCatalog::firstOrCreate(
             ['code' => $code->value],

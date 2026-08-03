@@ -3,6 +3,7 @@ import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import { Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
+import { useCurrency } from '@/Composables/useCurrency';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 
 const props = defineProps({
@@ -15,6 +16,7 @@ const props = defineProps({
 });
 
 const __ = useTranslate();
+const { formatMoney } = useCurrency();
 
 const confirmingCancellation = ref(false);
 const canceling = ref(false);
@@ -217,7 +219,7 @@ const statusLabel = (status) => ({
                                 <div class="flex items-start justify-between">
                                     <div>
                                         <p class="font-medium">{{ module.name }}</p>
-                                        <p class="text-xs text-muted-foreground">R$ {{ module.monthly_price.toFixed(2) }}/mês</p>
+                                        <p class="text-xs text-muted-foreground">{{ formatMoney(module.monthly_price) }}/mês</p>
                                     </div>
                                     <button
                                         type="button"

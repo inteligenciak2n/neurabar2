@@ -6,13 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Platform\StoreCorporationDiscountRequest;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationDiscount;
+use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 
 class CorporationDiscountController extends Controller
 {
     public function store(StoreCorporationDiscountRequest $request, Corporation $corporation): RedirectResponse
     {
-        $corporation->discounts()->create($request->validated());
+        $validated = $request->validated();
+
+        // Centavos quando o desconto é fixo; pontos-base quando é percentual.
+        $validated['value'] = Money::fromFloat($validated['value']);
+
+        $corporation->discounts()->create($validated);
 
         return back()->with('success', __('Discount created successfully.'));
     }

@@ -129,19 +129,22 @@ class ActivateGatewaySubscriptionAction
             : $subscription->venue?->corporation;
     }
 
-    private function resolveValue(CorporationSubscription|VenueSubscription $subscription): float
+    /**
+     * @return int Centavos.
+     */
+    private function resolveValue(CorporationSubscription|VenueSubscription $subscription): int
     {
         $period = now()->format('Y-m');
 
         if ($subscription instanceof CorporationSubscription) {
             $calculated = $this->calculator->calculateCorporation($subscription->corporation, $period);
 
-            return (float) ($calculated['total'] ?? 0.0);
+            return (int) ($calculated['total'] ?? 0);
         }
 
         $calculated = $this->calculator->calculateVenue($subscription->venue, $period);
 
-        return (float) ($calculated['total'] ?? $subscription->total_value);
+        return (int) ($calculated['total'] ?? $subscription->total_value);
     }
 
     private function resolveBillingDay(CorporationSubscription|VenueSubscription $subscription): int

@@ -16,7 +16,10 @@ class EnableCorporateModuleAction
 {
     public function __construct(private readonly SubscriptionCalculator $calculator) {}
 
-    public function execute(Corporation $corporation, string $moduleCode, ?float $customMonthlyPrice = null): CorporationModule
+    /**
+     * @param  int|null  $customMonthlyPrice  Centavos.
+     */
+    public function execute(Corporation $corporation, string $moduleCode, ?int $customMonthlyPrice = null): CorporationModule
     {
         $code = ModuleCode::tryFrom($moduleCode);
 

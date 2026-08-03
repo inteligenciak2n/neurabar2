@@ -26,14 +26,14 @@ class ModuleActivationActionsTest extends TestCase
     {
         $venue = Venue::factory()->create();
         $corporation = $venue->corporation;
-        $this->createCatalogModule(ModuleCode::Kds, 49.90);
+        $this->createCatalogModule(ModuleCode::Kds, 4990);
 
         $action = app()->make(EnableCorporateModuleAction::class);
-        $module = $action->execute($corporation, ModuleCode::Kds->value, 49.90);
+        $module = $action->execute($corporation, ModuleCode::Kds->value, 4990);
 
         $this->assertInstanceOf(CorporationModule::class, $module);
         $this->assertEquals(ModuleStatus::Active, $module->status);
-        $this->assertEquals(49.90, $module->custom_monthly_price);
+        $this->assertSame(4990, $module->custom_monthly_price);
         $this->assertDatabaseHas('corporation_modules', [
             'id' => $module->id,
             'module_code' => ModuleCode::Kds->value,
@@ -49,7 +49,7 @@ class ModuleActivationActionsTest extends TestCase
             [
                 'name' => ModuleCode::Kds->label(),
                 'billing_type' => ModuleBillingType::Hybrid,
-                'base_monthly_price' => 49.90,
+                'base_monthly_price' => 4990,
                 'dependencies' => [],
                 'active' => false,
             ]
@@ -123,9 +123,9 @@ class ModuleActivationActionsTest extends TestCase
 
     public function test_activate_venue_module_recalculates_subscription_value(): void
     {
-        $venue = $this->createVenueWithSubscription(baseValue: 100.00);
+        $venue = $this->createVenueWithSubscription(baseValue: 10000);
         $corporation = $venue->corporation;
-        $this->createCatalogModule(ModuleCode::Kds, 30.00);
+        $this->createCatalogModule(ModuleCode::Kds, 3000);
         CorporationModule::factory()->create([
             'corporation_id' => $corporation->id,
             'module_code' => ModuleCode::Kds->value,
@@ -137,17 +137,17 @@ class ModuleActivationActionsTest extends TestCase
 
         $this->assertDatabaseHas('venue_subscriptions', [
             'venue_id' => $venue->id,
-            'base_value' => 100.00,
-            'modules_value' => 60.00,
-            'total_value' => 160.00,
+            'base_value' => 10000,
+            'modules_value' => 6000,
+            'total_value' => 16000,
         ]);
     }
 
     public function test_deactivate_venue_module_recalculates_subscription_value(): void
     {
-        $venue = $this->createVenueWithSubscription(baseValue: 100.00);
+        $venue = $this->createVenueWithSubscription(baseValue: 10000);
         $corporation = $venue->corporation;
-        $this->createCatalogModule(ModuleCode::Kds, 30.00);
+        $this->createCatalogModule(ModuleCode::Kds, 3000);
         CorporationModule::factory()->create([
             'corporation_id' => $corporation->id,
             'module_code' => ModuleCode::Kds->value,
@@ -166,16 +166,16 @@ class ModuleActivationActionsTest extends TestCase
         $this->assertDatabaseHas('venue_subscriptions', [
             'venue_id' => $venue->id,
             'modules_value' => 0,
-            'total_value' => 100.00,
+            'total_value' => 10000,
         ]);
     }
 
     public function test_enable_corporate_module_recalculates_all_venue_subscriptions(): void
     {
         $corporation = Corporation::factory()->create();
-        $venueA = $this->createVenueForCorporation($corporation, baseValue: 100.00);
-        $venueB = $this->createVenueForCorporation($corporation, baseValue: 100.00);
-        $this->createCatalogModule(ModuleCode::Kds, 25.00);
+        $venueA = $this->createVenueForCorporation($corporation, baseValue: 10000);
+        $venueB = $this->createVenueForCorporation($corporation, baseValue: 10000);
+        $this->createCatalogModule(ModuleCode::Kds, 2500);
 
         $action = app()->make(EnableCorporateModuleAction::class);
         $action->execute($corporation, ModuleCode::Kds->value);
@@ -196,21 +196,21 @@ class ModuleActivationActionsTest extends TestCase
 
         $this->assertDatabaseHas('venue_subscriptions', [
             'venue_id' => $venueA->id,
-            'modules_value' => 25.00,
-            'total_value' => 125.00,
+            'modules_value' => 2500,
+            'total_value' => 12500,
         ]);
         $this->assertDatabaseHas('venue_subscriptions', [
             'venue_id' => $venueB->id,
-            'modules_value' => 25.00,
-            'total_value' => 125.00,
+            'modules_value' => 2500,
+            'total_value' => 12500,
         ]);
     }
 
     public function test_disable_corporate_module_recalculates_all_venue_subscriptions(): void
     {
         $corporation = Corporation::factory()->create();
-        $venue = $this->createVenueForCorporation($corporation, baseValue: 100.00);
-        $this->createCatalogModule(ModuleCode::Kds, 25.00);
+        $venue = $this->createVenueForCorporation($corporation, baseValue: 10000);
+        $this->createCatalogModule(ModuleCode::Kds, 2500);
         CorporationModule::factory()->create([
             'corporation_id' => $corporation->id,
             'module_code' => ModuleCode::Kds->value,
@@ -228,11 +228,11 @@ class ModuleActivationActionsTest extends TestCase
         $this->assertDatabaseHas('venue_subscriptions', [
             'venue_id' => $venue->id,
             'modules_value' => 0,
-            'total_value' => 100.00,
+            'total_value' => 10000,
         ]);
     }
 
-    private function createVenueWithSubscription(float $baseValue): Venue
+    private function createVenueWithSubscription(int $baseValue): Venue
     {
         $venue = Venue::factory()->create();
         CorporationSubscription::factory()->create([
@@ -251,7 +251,7 @@ class ModuleActivationActionsTest extends TestCase
         return $venue->fresh();
     }
 
-    private function createVenueForCorporation(Corporation $corporation, float $baseValue): Venue
+    private function createVenueForCorporation(Corporation $corporation, int $baseValue): Venue
     {
         $venue = Venue::factory()->create(['corporation_id' => $corporation->id]);
         VenueSubscription::factory()->create([
@@ -269,7 +269,7 @@ class ModuleActivationActionsTest extends TestCase
         return $venue->fresh();
     }
 
-    private function createCatalogModule(ModuleCode $code, float $price): void
+    private function createCatalogModule(ModuleCode $code, int $price): void
     {
         ModuleCatalog::updateOrCreate(
             ['code' => $code->value],

@@ -24,10 +24,10 @@ class MetricsTest extends TestCase
 
     public function test_mrr_is_sum_of_active_subscriptions_with_valid_plan(): void
     {
-        $plan199 = PlanCatalog::factory()->create(['monthly_price' => 199.00]);
-        $plan299 = PlanCatalog::factory()->create(['monthly_price' => 299.00]);
-        $plan100 = PlanCatalog::factory()->create(['monthly_price' => 100.00]);
-        $plan99 = PlanCatalog::factory()->create(['monthly_price' => 99.00]);
+        $plan199 = PlanCatalog::factory()->create(['monthly_price' => 19900]);
+        $plan299 = PlanCatalog::factory()->create(['monthly_price' => 29900]);
+        $plan100 = PlanCatalog::factory()->create(['monthly_price' => 10000]);
+        $plan99 = PlanCatalog::factory()->create(['monthly_price' => 9900]);
 
         $this->createActiveCorporationWithSubscription($plan199);
         $this->createActiveCorporationWithSubscription($plan299);
@@ -41,7 +41,7 @@ class MetricsTest extends TestCase
         $service = new MetricsService;
         $mrr = $service->calculateMRR();
 
-        $this->assertEquals(498.00, $mrr);
+        $this->assertSame(49800, $mrr);
     }
 
     public function test_operational_summary_returns_correct_counts(): void
@@ -52,7 +52,7 @@ class MetricsTest extends TestCase
         $initialActive = Corporation::where('active', true)->count();
         $initialInactive = Corporation::where('active', false)->count();
 
-        $plan = PlanCatalog::factory()->create(['monthly_price' => 99.00]);
+        $plan = PlanCatalog::factory()->create(['monthly_price' => 9900]);
 
         Corporation::factory()->count(3)->create(['active' => true])->each(function (Corporation $corp) use ($plan): void {
             $this->createSubscriptionFor($corp, $plan);

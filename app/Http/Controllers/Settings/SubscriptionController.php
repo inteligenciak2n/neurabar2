@@ -87,7 +87,7 @@ class SubscriptionController extends Controller
                 'code' => $m->module_code,
                 'name' => $m->catalog?->name ?? ModuleCode::tryFrom($m->module_code)?->label(),
                 'description' => $m->catalog?->description,
-                'monthly_price' => (float) ($m->custom_monthly_price ?? $m->catalog?->base_monthly_price ?? 0),
+                'monthly_price' => (int) ($m->custom_monthly_price ?? $m->catalog?->base_monthly_price ?? 0),
             ])
             ->values()
             ->all();

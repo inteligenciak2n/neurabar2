@@ -10,6 +10,7 @@ use App\Models\Tenant\CorporationInvoice;
 use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\VenueInvoice;
 use App\Models\Tenant\VenueSubscription;
+use App\Support\Money;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
@@ -70,7 +71,7 @@ class AsaasPaymentGateway implements PaymentGatewayContract
         $payload = [
             'customer' => $data['gateway_customer_id'],
             'billingType' => $this->mapBillingType($data['billing_type'] ?? PaymentSaasMethod::CreditCard->value),
-            'value' => (float) $data['value'],
+            'value' => Money::toFloat((int) $data['value']),
             'nextDueDate' => $data['next_due_date'],
             'cycle' => strtoupper($data['cycle'] ?? 'monthly'),
             'externalReference' => 'subscription:'.$subscription->id,
@@ -98,10 +99,10 @@ class AsaasPaymentGateway implements PaymentGatewayContract
         ];
     }
 
-    public function updatePaymentValue(string $gatewayPaymentId, float $newValue): void
+    public function updatePaymentValue(string $gatewayPaymentId, int $amountInCents): void
     {
         $this->handle($this->client()->put("/v3/payments/{$gatewayPaymentId}", [
-            'value' => $newValue,
+            'value' => Money::toFloat($amountInCents),
         ]));
     }
 
@@ -182,7 +183,7 @@ class AsaasPaymentGateway implements PaymentGatewayContract
                 'status' => 'ignored',
                 'invoice_type' => '',
                 'invoice_id' => '',
-                'amount' => 0.0,
+                'amount' => 0,
                 'gateway_subscription_id' => null,
                 'due_date' => null,
                 'payload' => $payload,
@@ -197,7 +198,7 @@ class AsaasPaymentGateway implements PaymentGatewayContract
             'status' => $this->mapWebhookStatus((string) ($payload['event'] ?? ''), (string) ($payment['status'] ?? 'PENDING')),
             'invoice_type' => $reference['type'],
             'invoice_id' => $reference['id'],
-            'amount' => (float) ($payment['value'] ?? 0),
+            'amount' => Money::fromFloat($payment['value'] ?? 0),
             'gateway_subscription_id' => isset($payment['subscription']) ? (string) $payment['subscription'] : null,
             'due_date' => isset($payment['dueDate']) ? (string) $payment['dueDate'] : null,
             'payload' => $payload,
@@ -280,7 +281,7 @@ class AsaasPaymentGateway implements PaymentGatewayContract
         $payload = [
             'customer' => $paymentData['gateway_customer_id'] ?? null,
             'billingType' => $billingType,
-            'value' => (float) $invoice->total_value,
+            'value' => Money::toFloat((int) $invoice->total_value),
             'dueDate' => $invoice->due_date->toDateString(),
             'externalReference' => $externalReference,
         ];

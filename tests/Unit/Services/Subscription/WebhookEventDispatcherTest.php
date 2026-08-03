@@ -28,7 +28,7 @@ class WebhookEventDispatcherTest extends TestCase
                 'status' => $status,
                 'invoice_type' => 'venue',
                 'invoice_id' => null,
-                'amount' => 100.0,
+                'amount' => 10000,
                 'gateway_subscription_id' => null,
                 'due_date' => null,
                 'payload' => [],
@@ -41,7 +41,7 @@ class WebhookEventDispatcherTest extends TestCase
         return VenueInvoice::factory()->create([
             'status' => $status,
             'is_finalized' => $status->isFinalized(),
-            'total_value' => 100,
+            'total_value' => 10000,
             'gateway_payment_id' => 'pay_1',
             'period' => now()->format('Y-m'),
         ]);

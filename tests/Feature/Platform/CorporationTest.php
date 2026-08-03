@@ -53,7 +53,7 @@ class CorporationTest extends TestCase
         $this->loginAsPlatformUser(ProfileEnum::SuperAdmin);
 
         $corporation = Corporation::factory()->create();
-        $plan = PlanCatalog::factory()->create(['monthly_price' => 299.00]);
+        $plan = PlanCatalog::factory()->create(['monthly_price' => 29900]);
 
         $this->put(route('platform.corporations.plan', $corporation->id), [
             'plan_catalog_id' => $plan->id,

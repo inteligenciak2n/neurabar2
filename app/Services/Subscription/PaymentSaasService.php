@@ -293,7 +293,7 @@ class PaymentSaasService
             'invoice_id' => $invoice->id,
             'gateway' => config('subscription.payment.default', 'fake'),
             'gateway_payment_id' => $result['gateway_payment_id'],
-            'amount' => $result['payload']['amount'] ?? (float) $invoice->total_value,
+            'amount' => $result['payload']['amount'] ?? (int) $invoice->total_value,
             'status' => $result['status'],
             'payload' => $result['payload'] ?? [],
             'attempted_at' => now(),
@@ -371,16 +371,16 @@ class PaymentSaasService
         }
 
         $calculated = $this->calculator->calculateVenue($venue, $period) ?? [
-            'base' => (float) $subscription->base_value,
-            'modules' => (float) $subscription->modules_value,
-            'metered' => (float) $subscription->metered_value,
-            'dedicated_surcharge' => (float) $subscription->dedicated_surcharge,
-            'total' => (float) $subscription->total_value,
+            'base' => (int) $subscription->base_value,
+            'modules' => (int) $subscription->modules_value,
+            'metered' => (int) $subscription->metered_value,
+            'dedicated_surcharge' => (int) $subscription->dedicated_surcharge,
+            'total' => (int) $subscription->total_value,
         ];
 
-        $this->syncGatewayValue($result, (float) $calculated['total']);
+        $this->syncGatewayValue($result, (int) $calculated['total']);
 
-        $total = $result['status'] === 'pending' ? (float) $calculated['total'] : (float) $result['amount'];
+        $total = $result['status'] === 'pending' ? (int) $calculated['total'] : (int) $result['amount'];
 
         return VenueInvoice::updateOrCreate(
             ['gateway_payment_id' => $result['gateway_payment_id']],
@@ -414,7 +414,7 @@ class PaymentSaasService
 
         $this->syncGatewayValue($result, $breakdown['total']);
 
-        $total = $result['status'] === 'pending' ? $breakdown['total'] : (float) $result['amount'];
+        $total = $result['status'] === 'pending' ? $breakdown['total'] : (int) $result['amount'];
 
         return CorporationInvoice::updateOrCreate(
             ['gateway_payment_id' => $result['gateway_payment_id']],
@@ -439,32 +439,32 @@ class PaymentSaasService
      * Sum the per-venue breakdown produced by the calculator into the flat
      * shape expected by CorporationInvoice, instead of discarding it.
      *
-     * @param  array{venues?: array<int|string, array<string, mixed>>, total?: float}  $calculated
-     * @return array{base: float, modules: float, metered: float, dedicated_surcharge: float, total: float}
+     * @param  array{venues?: array<int|string, array<string, mixed>>, total?: int}  $calculated
+     * @return array{base: int, modules: int, metered: int, dedicated_surcharge: int, total: int}
      */
     private function aggregateCorporationBreakdown(array $calculated): array
     {
-        $breakdown = ['base' => 0.0, 'modules' => 0.0, 'metered' => 0.0, 'dedicated_surcharge' => 0.0];
+        $breakdown = ['base' => 0, 'modules' => 0, 'metered' => 0, 'dedicated_surcharge' => 0];
 
         foreach ($calculated['venues'] ?? [] as $venueTotals) {
-            $breakdown['base'] += (float) ($venueTotals['base'] ?? 0);
-            $breakdown['modules'] += (float) ($venueTotals['modules'] ?? 0);
-            $breakdown['metered'] += (float) ($venueTotals['metered'] ?? 0);
-            $breakdown['dedicated_surcharge'] += (float) ($venueTotals['dedicated_surcharge'] ?? 0);
+            $breakdown['base'] += (int) ($venueTotals['base'] ?? 0);
+            $breakdown['modules'] += (int) ($venueTotals['modules'] ?? 0);
+            $breakdown['metered'] += (int) ($venueTotals['metered'] ?? 0);
+            $breakdown['dedicated_surcharge'] += (int) ($venueTotals['dedicated_surcharge'] ?? 0);
         }
 
-        $breakdown['total'] = (float) ($calculated['total'] ?? 0.0);
+        $breakdown['total'] = (int) ($calculated['total'] ?? 0);
 
         return $breakdown;
     }
 
-    private function syncGatewayValue(array $result, float $expectedValue): void
+    private function syncGatewayValue(array $result, int $expectedValue): void
     {
         if ($result['status'] !== 'pending') {
             return;
         }
 
-        if (abs($expectedValue - $result['amount']) < 0.01) {
+        if ($expectedValue === (int) $result['amount']) {
             return;
         }
 

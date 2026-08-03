@@ -5,6 +5,7 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import Checkbox from '@/Components/Checkbox.vue';
+import { useCurrency } from '@/Composables/useCurrency';
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -17,6 +18,8 @@ const props = defineProps({
         default: 14,
     },
 });
+
+const { formatMoney } = useCurrency();
 
 const toggleableModules = computed(() => props.modules.filter((module) => module.code !== 'menu'));
 
@@ -41,14 +44,13 @@ const monthlyTotal = computed(() => {
         (module) => module.code === 'menu' || form.module_codes.includes(module.code),
     );
 
+    // Os preços chegam em centavos.
     const perVenue = selected.reduce((sum, module) => sum + Number(module.base_monthly_price ?? 0), 0);
 
     return perVenue * (Number(form.venue_count) || 1);
 });
 
-const formattedTotal = computed(() =>
-    monthlyTotal.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
-);
+const formattedTotal = computed(() => formatMoney(monthlyTotal.value));
 
 const submit = () => {
     form.post(route('onboarding.subscription.store'));
@@ -92,7 +94,7 @@ const submit = () => {
                                 <span class="text-sm text-ocean-deep">{{ module.name }}</span>
                             </span>
                             <span class="text-xs text-muted-foreground whitespace-nowrap">
-                                {{ Number(module.base_monthly_price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }} / venue
+                                {{ formatMoney(module.base_monthly_price) }} / venue
                             </span>
                         </label>
                     </div>

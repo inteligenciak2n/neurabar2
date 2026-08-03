@@ -45,13 +45,14 @@ class CorporationModuleControllerTest extends TestCase
             [
                 'name' => ModuleCode::Kds->label(),
                 'billing_type' => ModuleBillingType::Hybrid,
-                'base_monthly_price' => 49.90,
+                'base_monthly_price' => 4990,
                 'active' => true,
             ]
         );
 
         $response = $this->actingAs($user)->post(route('platform.corporations.modules.store', $corporation), [
             'module_code' => ModuleCode::Kds->value,
+            // O formulário envia reais.
             'custom_monthly_price' => 39.90,
         ]);
 
@@ -60,7 +61,7 @@ class CorporationModuleControllerTest extends TestCase
             'corporation_id' => $corporation->id,
             'module_code' => ModuleCode::Kds->value,
             'status' => ModuleStatus::Active->value,
-            'custom_monthly_price' => 39.90,
+            'custom_monthly_price' => 3990,
         ]);
     }
 
@@ -92,7 +93,7 @@ class CorporationModuleControllerTest extends TestCase
             [
                 'name' => ModuleCode::Kds->label(),
                 'billing_type' => ModuleBillingType::Hybrid,
-                'base_monthly_price' => 49.90,
+                'base_monthly_price' => 4990,
                 'active' => true,
             ]
         );

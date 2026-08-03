@@ -10,6 +10,7 @@ use App\Models\Tenant\PlanCatalog;
 use App\Models\Tenant\VenueSubscription;
 use App\Services\Billing\SubscriptionCalculator;
 use App\Services\VenueModuleCache;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 
 class AssignPlanToCorporationAction
@@ -21,7 +22,10 @@ class AssignPlanToCorporationAction
         DB::transaction(function () use ($corporation, $plan, $data): void {
             $subscription = $corporation->subscription;
 
-            $baseValue = (float) ($data['subscription_value'] ?? $plan->monthly_price);
+            // O formulário envia reais; o catálogo já guarda centavos.
+            $baseValue = isset($data['subscription_value'])
+                ? Money::fromFloat($data['subscription_value'])
+                : (int) $plan->monthly_price;
             $billingMode = BillingMode::tryFrom($data['billing_mode'] ?? '') ?? BillingMode::PerVenue;
             $status = SubscriptionStatus::tryFrom($data['status'] ?? '') ?? SubscriptionStatus::Trial;
 
@@ -60,9 +64,9 @@ class AssignPlanToCorporationAction
                         'status' => $status->value,
                         'base_value' => $baseValue,
                         'total_value' => $baseValue
-                            + (float) $venueSubscription->modules_value
-                            + (float) $venueSubscription->metered_value
-                            + (float) $venueSubscription->dedicated_surcharge,
+                            + (int) $venueSubscription->modules_value
+                            + (int) $venueSubscription->metered_value
+                            + (int) $venueSubscription->dedicated_surcharge,
                         'started_at' => $data['started_at'] ?? now(),
                         'trial_ends_at' => $subscription->trial_ends_at,
                         'ended_at' => null,

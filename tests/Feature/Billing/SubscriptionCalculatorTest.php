@@ -37,77 +37,77 @@ class SubscriptionCalculatorTest extends TestCase
 
     public function test_calculate_venue_with_base_only(): void
     {
-        $venue = $this->createVenueWithSubscription(baseValue: 99.90);
+        $venue = $this->createVenueWithSubscription(baseValue: 9990);
 
         $result = $this->calculator->calculateVenue($venue, '2026-07');
 
-        $this->assertEqualsWithDelta(99.90, $result['base'], 0.01);
-        $this->assertEqualsWithDelta(0.0, $result['modules'], 0.01);
-        $this->assertEqualsWithDelta(0.0, $result['metered'], 0.01);
-        $this->assertEqualsWithDelta(99.90, $result['total'], 0.01);
+        $this->assertSame(9990, $result['base']);
+        $this->assertSame(0, $result['modules']);
+        $this->assertSame(0, $result['metered']);
+        $this->assertSame(9990, $result['total']);
         $this->assertDatabaseHas('venue_subscriptions', [
             'id' => $venue->subscription->id,
-            'base_value' => 99.90,
-            'total_value' => 99.90,
+            'base_value' => 9990,
+            'total_value' => 9990,
         ]);
     }
 
     public function test_calculate_venue_with_fixed_modules(): void
     {
-        $venue = $this->createVenueWithSubscription(baseValue: 50.00);
-        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 49.90);
+        $venue = $this->createVenueWithSubscription(baseValue: 5000);
+        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 4990);
 
         $result = $this->calculator->calculateVenue($venue, '2026-07');
 
-        $this->assertEqualsWithDelta(50.00, $result['base'], 0.01);
-        $this->assertEqualsWithDelta(49.90, $result['modules'], 0.01);
-        $this->assertEqualsWithDelta(99.90, $result['total'], 0.01);
+        $this->assertSame(5000, $result['base']);
+        $this->assertSame(4990, $result['modules']);
+        $this->assertSame(9990, $result['total']);
     }
 
     public function test_calculate_venue_with_custom_corporate_price(): void
     {
-        $venue = $this->createVenueWithSubscription(baseValue: 50.00);
-        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 49.90, customPrice: 39.90);
+        $venue = $this->createVenueWithSubscription(baseValue: 5000);
+        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 4990, customPrice: 3990);
 
         $result = $this->calculator->calculateVenue($venue, '2026-07');
 
-        $this->assertEqualsWithDelta(39.90, $result['modules'], 0.01);
-        $this->assertEqualsWithDelta(89.90, $result['total'], 0.01);
+        $this->assertSame(3990, $result['modules']);
+        $this->assertSame(8990, $result['total']);
     }
 
     public function test_calculate_venue_with_metered_within_included_quantity(): void
     {
-        $venue = $this->createVenueWithSubscription(baseValue: 50.00);
-        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 49.90);
+        $venue = $this->createVenueWithSubscription(baseValue: 5000);
+        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 4990);
         $this->createUsageTier(ModuleCode::Kds, includedQuantity: 500);
         $this->createUsageRecord($venue, ModuleCode::Kds, '2026-06', quantity: 300);
 
         $result = $this->calculator->calculateVenue($venue, '2026-07');
 
-        $this->assertEqualsWithDelta(49.90, $result['modules'], 0.01);
-        $this->assertEqualsWithDelta(0.0, $result['metered'], 0.01);
-        $this->assertEqualsWithDelta(99.90, $result['total'], 0.01);
+        $this->assertSame(4990, $result['modules']);
+        $this->assertSame(0, $result['metered']);
+        $this->assertSame(9990, $result['total']);
     }
 
     public function test_calculate_venue_with_metered_overage(): void
     {
-        $venue = $this->createVenueWithSubscription(baseValue: 50.00);
-        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 49.90);
-        $this->createUsageTier(ModuleCode::Kds, includedQuantity: 500, overagePricePerUnit: 0.10);
+        $venue = $this->createVenueWithSubscription(baseValue: 5000);
+        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 4990);
+        $this->createUsageTier(ModuleCode::Kds, includedQuantity: 500, overagePricePerUnit: 1000);
         $this->createUsageRecord($venue, ModuleCode::Kds, '2026-06', quantity: 700);
 
         $result = $this->calculator->calculateVenue($venue, '2026-07');
 
-        $this->assertEqualsWithDelta(49.90, $result['modules'], 0.01);
-        $this->assertEqualsWithDelta(20.00, $result['metered'], 0.01);
-        $this->assertEqualsWithDelta(119.90, $result['total'], 0.01);
+        $this->assertSame(4990, $result['modules']);
+        $this->assertSame(2000, $result['metered']);
+        $this->assertSame(11990, $result['total']);
     }
 
     public function test_metered_is_billed_from_the_previous_closed_period(): void
     {
-        $venue = $this->createVenueWithSubscription(baseValue: 50.00);
-        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 49.90);
-        $this->createUsageTier(ModuleCode::Kds, includedQuantity: 500, overagePricePerUnit: 0.10);
+        $venue = $this->createVenueWithSubscription(baseValue: 5000);
+        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 4990);
+        $this->createUsageTier(ModuleCode::Kds, includedQuantity: 500, overagePricePerUnit: 1000);
 
         // Consumo do próprio mês da fatura ainda está aberto e não deve entrar:
         // a fatura de 2026-07 é emitida no dia 01, quando o mês mal começou.
@@ -115,95 +115,95 @@ class SubscriptionCalculatorTest extends TestCase
 
         $result = $this->calculator->calculateVenue($venue, '2026-07');
 
-        $this->assertEqualsWithDelta(0.0, $result['metered'], 0.01);
+        $this->assertSame(0, $result['metered']);
     }
 
     public function test_metered_is_not_charged_for_modules_the_venue_never_contracted(): void
     {
-        $venue = $this->createVenueWithSubscription(baseValue: 50.00);
-        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 49.90);
-        $this->createUsageTier(ModuleCode::Taker, includedQuantity: 0, overagePricePerUnit: 0.10);
+        $venue = $this->createVenueWithSubscription(baseValue: 5000);
+        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 4990);
+        $this->createUsageTier(ModuleCode::Taker, includedQuantity: 0, overagePricePerUnit: 1000);
         $this->createUsageRecord($venue, ModuleCode::Taker, '2026-06', quantity: 700);
 
         $result = $this->calculator->calculateVenue($venue, '2026-07');
 
-        $this->assertEqualsWithDelta(0.0, $result['metered'], 0.01);
-        $this->assertEqualsWithDelta(99.90, $result['total'], 0.01);
+        $this->assertSame(0, $result['metered']);
+        $this->assertSame(9990, $result['total']);
     }
 
     public function test_module_activated_mid_period_is_charged_proportionally(): void
     {
-        $venue = $this->createVenueWithSubscription(baseValue: 0.0);
+        $venue = $this->createVenueWithSubscription(baseValue: 0);
         // Ativo de 17/07 a 31/07 = 15 dos 31 dias de julho.
-        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 31.00, startedAt: '2026-07-17');
+        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 3100, startedAt: '2026-07-17');
 
         $result = $this->calculator->calculateVenue($venue, '2026-07');
 
-        $this->assertEqualsWithDelta(15.00, $result['modules'], 0.01);
+        $this->assertSame(1500, $result['modules']);
     }
 
     public function test_module_canceled_mid_period_is_still_charged_for_the_days_used(): void
     {
-        $venue = $this->createVenueWithSubscription(baseValue: 0.0);
+        $venue = $this->createVenueWithSubscription(baseValue: 0);
         // Sem proration este cenário — ativar dia 2 e cancelar dia 28 — nunca
         // era faturado: o módulo já saía da janela de módulos ativos.
         $this->enableModuleForVenue(
             $venue,
             ModuleCode::Kds,
-            basePrice: 31.00,
+            basePrice: 3100,
             startedAt: '2026-07-02',
             endedAt: '2026-07-28',
         );
 
         $result = $this->calculator->calculateVenue($venue, '2026-07');
 
-        $this->assertEqualsWithDelta(27.00, $result['modules'], 0.01);
+        $this->assertSame(2700, $result['modules']);
     }
 
     public function test_module_outside_the_period_is_not_charged(): void
     {
-        $venue = $this->createVenueWithSubscription(baseValue: 0.0);
+        $venue = $this->createVenueWithSubscription(baseValue: 0);
         $this->enableModuleForVenue(
             $venue,
             ModuleCode::Kds,
-            basePrice: 31.00,
+            basePrice: 3100,
             startedAt: '2026-05-01',
             endedAt: '2026-06-30',
         );
 
         $result = $this->calculator->calculateVenue($venue, '2026-07');
 
-        $this->assertEqualsWithDelta(0.0, $result['modules'], 0.01);
+        $this->assertSame(0, $result['modules']);
     }
 
     public function test_calculate_venue_with_metered_overage_does_not_double_charge_included_quantity(): void
     {
-        $venue = $this->createVenueWithSubscription(baseValue: 50.00);
-        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 49.90);
-        $this->createUsageTier(ModuleCode::Kds, includedQuantity: 500, overagePricePerUnit: 0.10, pricePerUnit: 0.05);
+        $venue = $this->createVenueWithSubscription(baseValue: 5000);
+        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 4990);
+        $this->createUsageTier(ModuleCode::Kds, includedQuantity: 500, overagePricePerUnit: 1000, pricePerUnit: 500);
         $this->createUsageRecord($venue, ModuleCode::Kds, '2026-06', quantity: 700);
 
         $result = $this->calculator->calculateVenue($venue, '2026-07');
 
         // Esperado: 500 unidades inclusas * 0.05 (base) + 200 unidades excedentes * 0.10 (overage) = 25 + 20 = 45.
         // Antes da correção, o cálculo cobrava price_per_unit sobre as 700 unidades (35) mais o excedente (20) = 55.
-        $this->assertEqualsWithDelta(45.00, $result['metered'], 0.01);
-        $this->assertEqualsWithDelta(144.90, $result['total'], 0.01);
+        $this->assertSame(4500, $result['metered']);
+        $this->assertSame(14490, $result['total']);
     }
 
     public function test_calculate_venue_with_dedicated_surcharge(): void
     {
-        $venue = $this->createVenueWithSubscription(baseValue: 50.00, dedicatedSurcharge: 25.00);
+        $venue = $this->createVenueWithSubscription(baseValue: 5000, dedicatedSurcharge: 2500);
 
         $result = $this->calculator->calculateVenue($venue, '2026-07');
 
-        $this->assertEqualsWithDelta(25.00, $result['dedicated_surcharge'], 0.01);
-        $this->assertEqualsWithDelta(75.00, $result['total'], 0.01);
+        $this->assertSame(2500, $result['dedicated_surcharge']);
+        $this->assertSame(7500, $result['total']);
     }
 
     public function test_calculate_venue_skips_when_invoice_finalized(): void
     {
-        $venue = $this->createVenueWithSubscription(baseValue: 50.00);
+        $venue = $this->createVenueWithSubscription(baseValue: 5000);
         VenueInvoice::factory()->create([
             'venue_id' => $venue->id,
             'period' => '2026-07',
@@ -220,24 +220,24 @@ class SubscriptionCalculatorTest extends TestCase
 
     public function test_calculate_venue_does_not_update_subscription_when_invoice_finalized(): void
     {
-        $venue = $this->createVenueWithSubscription(baseValue: 100.00);
+        $venue = $this->createVenueWithSubscription(baseValue: 10000);
         VenueInvoice::factory()->create([
             'venue_id' => $venue->id,
             'period' => '2026-07',
             'is_finalized' => true,
             'status' => InvoiceStatus::Paid,
-            'base_value' => 100.00,
-            'total_value' => 100.00,
+            'base_value' => 10000,
+            'total_value' => 10000,
         ]);
 
         $this->calculator->calculateVenue($venue, '2026-07');
 
         $this->assertDatabaseHas('venue_subscriptions', [
             'id' => $venue->subscription->id,
-            'base_value' => 100.00,
-            'modules_value' => 0.0,
-            'metered_value' => 0.0,
-            'total_value' => 100.00,
+            'base_value' => 10000,
+            'modules_value' => 0,
+            'metered_value' => 0,
+            'total_value' => 10000,
         ]);
     }
 
@@ -250,18 +250,18 @@ class SubscriptionCalculatorTest extends TestCase
             'status' => SubscriptionStatus::Active,
         ]);
 
-        $venueA = $this->createVenueForCorporation($corporation, baseValue: 50.00);
-        $venueB = $this->createVenueForCorporation($corporation, baseValue: 50.00);
-        $this->enableModuleForVenue($venueA, ModuleCode::Kds, basePrice: 49.90);
-        $this->enableModuleForVenue($venueB, ModuleCode::Kds, basePrice: 49.90);
+        $venueA = $this->createVenueForCorporation($corporation, baseValue: 5000);
+        $venueB = $this->createVenueForCorporation($corporation, baseValue: 5000);
+        $this->enableModuleForVenue($venueA, ModuleCode::Kds, basePrice: 4990);
+        $this->enableModuleForVenue($venueB, ModuleCode::Kds, basePrice: 4990);
 
         $result = $this->calculator->calculateCorporation($corporation, '2026-07');
 
         $this->assertCount(2, $result['venues']);
-        $this->assertEqualsWithDelta(199.80, $result['total'], 0.01);
+        $this->assertSame(19980, $result['total']);
     }
 
-    private function createVenueWithSubscription(float $baseValue, float $dedicatedSurcharge = 0.0): Venue
+    private function createVenueWithSubscription(int $baseValue, int $dedicatedSurcharge = 0): Venue
     {
         $venue = Venue::factory()->create();
         VenueSubscription::factory()->create([
@@ -275,7 +275,7 @@ class SubscriptionCalculatorTest extends TestCase
         return $venue->fresh();
     }
 
-    private function createVenueForCorporation(Corporation $corporation, float $baseValue): Venue
+    private function createVenueForCorporation(Corporation $corporation, int $baseValue): Venue
     {
         $venue = Venue::factory()->create(['corporation_id' => $corporation->id]);
         VenueSubscription::factory()->create([
@@ -292,8 +292,8 @@ class SubscriptionCalculatorTest extends TestCase
     private function enableModuleForVenue(
         Venue $venue,
         ModuleCode $code,
-        float $basePrice,
-        ?float $customPrice = null,
+        int $basePrice,
+        ?int $customPrice = null,
         string $startedAt = '2026-06-01',
         ?string $endedAt = null,
     ): void {
@@ -330,7 +330,10 @@ class SubscriptionCalculatorTest extends TestCase
         ]);
     }
 
-    private function createUsageTier(ModuleCode $code, int $includedQuantity, float $overagePricePerUnit = 0.0, float $pricePerUnit = 0.0): void
+    /**
+     * Os preços das faixas são armazenados em centésimos de centavo (1e-4 BRL).
+     */
+    private function createUsageTier(ModuleCode $code, int $includedQuantity, int $overagePricePerUnit = 0, int $pricePerUnit = 0): void
     {
         ModuleUsageTier::create([
             'module_code' => $code->value,

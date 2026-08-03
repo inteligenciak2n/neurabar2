@@ -24,11 +24,11 @@ class VenueSubscription extends Model
     protected function casts(): array
     {
         return [
-            'base_value' => 'decimal:2',
-            'modules_value' => 'decimal:2',
-            'metered_value' => 'decimal:2',
-            'dedicated_surcharge' => 'decimal:2',
-            'total_value' => 'decimal:2',
+            'base_value' => 'integer',
+            'modules_value' => 'integer',
+            'metered_value' => 'integer',
+            'dedicated_surcharge' => 'integer',
+            'total_value' => 'integer',
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
             'trial_ends_at' => 'datetime',

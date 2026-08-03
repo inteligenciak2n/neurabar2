@@ -37,17 +37,18 @@ class PlanTest extends TestCase
     {
         $this->loginAsPlatformUser(ProfileEnum::SuperAdmin);
 
-        $plan = PlanCatalog::factory()->create(['monthly_price' => 99.00]);
+        $plan = PlanCatalog::factory()->create(['monthly_price' => 9900]);
 
         $this->put(route('platform.plans.update', $plan->id), [
             'code' => $plan->code,
             'name' => 'Updated Name',
+            // O formulário envia reais; o catálogo guarda centavos.
             'monthly_price' => 149.00,
             'sort_order' => 1,
             'active' => true,
         ])->assertRedirect();
 
-        $this->assertDatabaseHas('plan_catalogs', ['id' => $plan->id, 'monthly_price' => 149.00]);
+        $this->assertDatabaseHas('plan_catalogs', ['id' => $plan->id, 'monthly_price' => 14900]);
     }
 
     public function test_super_admin_can_delete_plan(): void

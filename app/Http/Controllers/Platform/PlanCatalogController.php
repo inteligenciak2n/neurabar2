@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\PlanCatalog;
+use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -31,6 +32,8 @@ class PlanCatalogController extends Controller
             'active' => ['boolean'],
         ]);
 
+        $validated['monthly_price'] = Money::fromFloat($validated['monthly_price']);
+
         PlanCatalog::create($validated);
 
         return back()->with('success', 'Plan created successfully.');
@@ -46,6 +49,8 @@ class PlanCatalogController extends Controller
             'sort_order' => ['required', 'integer', 'min:0'],
             'active' => ['boolean'],
         ]);
+
+        $validated['monthly_price'] = Money::fromFloat($validated['monthly_price']);
 
         $plan->update($validated);
 

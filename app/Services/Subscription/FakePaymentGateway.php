@@ -45,7 +45,7 @@ class FakePaymentGateway implements PaymentGatewayContract
         ];
     }
 
-    public function updatePaymentValue(string $gatewayPaymentId, float $newValue): void
+    public function updatePaymentValue(string $gatewayPaymentId, int $amountInCents): void
     {
         // No-op: the fake gateway has no remote state to update.
     }
@@ -95,7 +95,7 @@ class FakePaymentGateway implements PaymentGatewayContract
             'payload' => [
                 'invoice_id' => $invoice->id,
                 'invoice_type' => $invoice instanceof VenueInvoice ? 'venue' : 'corporation',
-                'amount' => (float) $invoice->total_value,
+                'amount' => (int) $invoice->total_value,
                 'gateway_payment_id' => $gatewayPaymentId,
             ],
         ];
@@ -115,7 +115,7 @@ class FakePaymentGateway implements PaymentGatewayContract
             'payload' => [
                 'invoice_id' => $invoice->id,
                 'invoice_type' => $invoice instanceof VenueInvoice ? 'venue' : 'corporation',
-                'amount' => (float) $invoice->total_value,
+                'amount' => (int) $invoice->total_value,
                 'gateway_payment_id' => $gatewayPaymentId,
             ],
         ];
@@ -136,7 +136,7 @@ class FakePaymentGateway implements PaymentGatewayContract
         $status = $payload['status'] ?? 'paid';
         $invoiceType = $payload['invoice_type'] ?? 'venue';
         $invoiceId = $payload['invoice_id'] ?? null;
-        $amount = (float) ($payload['amount'] ?? 0);
+        $amount = (int) ($payload['amount'] ?? 0);
 
         if (! in_array($status, ['paid', 'failed', 'refunded', 'expired'], true)) {
             $status = 'paid';
@@ -166,7 +166,7 @@ class FakePaymentGateway implements PaymentGatewayContract
             'payload' => [
                 'invoice_id' => $invoice->id,
                 'invoice_type' => $invoice instanceof VenueInvoice ? 'venue' : 'corporation',
-                'amount' => (float) $invoice->total_value,
+                'amount' => (int) $invoice->total_value,
                 'gateway_payment_id' => $gatewayPaymentId,
             ],
         ];

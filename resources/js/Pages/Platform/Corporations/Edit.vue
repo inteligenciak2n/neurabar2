@@ -4,6 +4,7 @@ import { useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { useTranslate } from '@/Composables/useTranslate';
+import { useCurrency } from '@/Composables/useCurrency';
 import InputError from '@/Components/InputError.vue';
 
 const props = defineProps({
@@ -18,6 +19,7 @@ const props = defineProps({
 });
 
 const __ = useTranslate();
+const { formatMoney: formatCurrency, toAmount } = useCurrency();
 
 const activeTab = ref('info');
 const tabs = [
@@ -39,7 +41,10 @@ const form = useForm({
 
 const planForm = useForm({
     plan_catalog_id: props.corporation.subscription?.plan_catalog_id ?? '',
-    subscription_value: props.corporation.subscription?.base_value ?? '',
+    // O backend guarda centavos; o formulário edita reais.
+    subscription_value: props.corporation.subscription?.base_value != null
+        ? toAmount(props.corporation.subscription.base_value)
+        : '',
     billing_mode: props.corporation.subscription?.billing_mode ?? 'per_venue',
     billing_day: props.corporation.subscription?.billing_day ?? 1,
     grace_period_days: props.corporation.subscription?.grace_period_days ?? 3,
@@ -217,10 +222,6 @@ const changeInvoiceStatus = (invoice) => {
 };
 
 const formatDate = (value) => value ? value.split('T')[0] : '-';
-
-const formatCurrency = (value) => {
-    return 'R$ ' + Number(value ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-};
 
 const getStatusClass = (status) => {
     return {
@@ -569,7 +570,7 @@ const getStatusClass = (status) => {
                         <tbody class="divide-y divide-border dark:divide-gray-700">
                             <tr v-for="discount in corporation.discounts" :key="discount.id">
                                 <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">{{ discount.type === 'percentage' ? __('Percentage') : __('Fixed') }}</td>
-                                <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">{{ discount.type === 'percentage' ? discount.value + '%' : formatCurrency(discount.value) }}</td>
+                                <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">{{ discount.type === 'percentage' ? toAmount(discount.value) + '%' : formatCurrency(discount.value) }}</td>
                                 <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">{{ formatDate(discount.valid_from) }} {{ discount.valid_until ? '→ ' + formatDate(discount.valid_until) : '' }}</td>
                                 <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">{{ discount.max_months ?? '-' }}</td>
                                 <td class="px-4 py-3 text-right">

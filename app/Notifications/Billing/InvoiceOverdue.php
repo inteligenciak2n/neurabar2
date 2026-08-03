@@ -4,6 +4,7 @@ namespace App\Notifications\Billing;
 
 use App\Models\Tenant\CorporationInvoice;
 use App\Models\Tenant\VenueInvoice;
+use App\Support\Money;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -24,12 +25,12 @@ class InvoiceOverdue extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $period = $this->invoice->period;
-        $total = number_format((float) $this->invoice->total_value, 2, ',', '.');
+        $total = Money::format((int) $this->invoice->total_value);
 
         return (new MailMessage)
             ->subject("Fatura {$period} vencida")
             ->greeting('Olá, '.$notifiable->name)
-            ->line("Sua fatura de {$period} no valor de R$ {$total} está vencida.")
+            ->line("Sua fatura de {$period} no valor de {$total} está vencida.")
             ->line('Regularize o pagamento para evitar a suspensão da conta.');
     }
 }

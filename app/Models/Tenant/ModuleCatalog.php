@@ -24,7 +24,7 @@ class ModuleCatalog extends Model
     {
         return [
             'active' => 'boolean',
-            'base_monthly_price' => 'decimal:2',
+            'base_monthly_price' => 'integer',
             'sort_order' => 'integer',
             'dependencies' => 'array',
             'required_roles' => 'array',

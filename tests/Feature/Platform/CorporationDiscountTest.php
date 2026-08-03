@@ -44,7 +44,8 @@ class CorporationDiscountTest extends TestCase
         $this->assertDatabaseHas('corporation_discounts', [
             'corporation_id' => $corporation->id,
             'type' => 'percentage',
-            'value' => 15,
+            // 15% guardados em pontos-base.
+            'value' => 1500,
             'max_months' => 6,
         ]);
     }

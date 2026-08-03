@@ -48,7 +48,7 @@ class VenueModuleControllerTest extends TestCase
             [
                 'name' => ModuleCode::Kds->label(),
                 'billing_type' => ModuleBillingType::Hybrid,
-                'base_monthly_price' => 49.90,
+                'base_monthly_price' => 4990,
                 'active' => true,
             ]
         );
@@ -127,7 +127,7 @@ class VenueModuleControllerTest extends TestCase
             [
                 'name' => ModuleCode::Kds->label(),
                 'billing_type' => ModuleBillingType::Hybrid,
-                'base_monthly_price' => 49.90,
+                'base_monthly_price' => 4990,
                 'active' => true,
             ]
         );

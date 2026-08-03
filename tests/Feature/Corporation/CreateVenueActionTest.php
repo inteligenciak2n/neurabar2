@@ -12,8 +12,6 @@ use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\ModuleCatalog;
 use App\Models\Tenant\PlanCatalog;
-use App\Models\Tenant\VenueModule;
-use App\Models\Tenant\VenueSubscription;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
@@ -23,7 +21,7 @@ class CreateVenueActionTest extends TestCase
 
     public function test_it_creates_venue_with_subscription_and_propagates_modules(): void
     {
-        $plan = PlanCatalog::factory()->create(['monthly_price' => 199.00]);
+        $plan = PlanCatalog::factory()->create(['monthly_price' => 19900]);
         $corporation = Corporation::factory()->create();
         CorporationSubscription::factory()->create([
             'corporation_id' => $corporation->id,
@@ -46,7 +44,7 @@ class CreateVenueActionTest extends TestCase
         $this->assertDatabaseHas('venue_subscriptions', [
             'venue_id' => $venue->id,
             'plan_catalog_id' => $plan->id,
-            'base_value' => 199.00,
+            'base_value' => 19900,
         ]);
 
         $this->assertDatabaseHas('venue_modules', [
@@ -64,7 +62,7 @@ class CreateVenueActionTest extends TestCase
 
     public function test_it_recalculates_subscription_with_propagated_modules(): void
     {
-        $plan = PlanCatalog::factory()->create(['monthly_price' => 100.00]);
+        $plan = PlanCatalog::factory()->create(['monthly_price' => 10000]);
         $corporation = Corporation::factory()->create();
         CorporationSubscription::factory()->create([
             'corporation_id' => $corporation->id,
@@ -77,7 +75,7 @@ class CreateVenueActionTest extends TestCase
             [
                 'name' => ModuleCode::Kds->label(),
                 'billing_type' => ModuleBillingType::Hybrid,
-                'base_monthly_price' => 25.00,
+                'base_monthly_price' => 2500,
                 'dependencies' => [],
                 'active' => true,
             ]
@@ -97,9 +95,9 @@ class CreateVenueActionTest extends TestCase
 
         $this->assertDatabaseHas('venue_subscriptions', [
             'venue_id' => $venue->id,
-            'base_value' => 100.00,
-            'modules_value' => 25.00,
-            'total_value' => 125.00,
+            'base_value' => 10000,
+            'modules_value' => 2500,
+            'total_value' => 12500,
         ]);
     }
 

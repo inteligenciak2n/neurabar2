@@ -13,6 +13,7 @@ use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueInvoice;
 use App\Notifications\Billing\InvoiceGenerated;
 use App\Services\Billing\SubscriptionCalculator;
+use App\Support\Money;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -95,7 +96,7 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
     /**
      * Calcula e persiste (ou reaproveita) a fatura de uma venue.
      *
-     * @return array{0: VenueInvoice, 1: array<string, float>}|null
+     * @return array{0: VenueInvoice, 1: array<string, int>}|null
      */
     private function processVenue(Venue $venue, Corporation $corporation, CorporationSubscription $subscription, SubscriptionCalculator $calculator, bool $isUnified): ?array
     {
@@ -147,7 +148,7 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
     }
 
     /**
-     * @return array{0: VenueInvoice, 1: array<string, float>}|null
+     * @return array{0: VenueInvoice, 1: array<string, int>}|null
      */
     private function reuseExistingVenueInvoice(Venue $venue, bool $isUnified): ?array
     {
@@ -165,11 +166,11 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
         }
 
         return [$existingInvoice, [
-            'base' => (float) $existingInvoice->base_value,
-            'modules' => (float) $existingInvoice->modules_value,
-            'metered' => (float) $existingInvoice->metered_value,
-            'dedicated_surcharge' => (float) $existingInvoice->dedicated_surcharge,
-            'total' => (float) $existingInvoice->total_value,
+            'base' => (int) $existingInvoice->base_value,
+            'modules' => (int) $existingInvoice->modules_value,
+            'metered' => (int) $existingInvoice->metered_value,
+            'dedicated_surcharge' => (int) $existingInvoice->dedicated_surcharge,
+            'total' => (int) $existingInvoice->total_value,
         ]];
     }
 
@@ -226,23 +227,23 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
     }
 
     /**
-     * @return array<string, float>
+     * @return array<string, int>
      */
     private function emptyContribution(): array
     {
         return [
-            'base' => 0.0,
-            'modules' => 0.0,
-            'metered' => 0.0,
-            'dedicated_surcharge' => 0.0,
-            'total' => 0.0,
+            'base' => 0,
+            'modules' => 0,
+            'metered' => 0,
+            'dedicated_surcharge' => 0,
+            'total' => 0,
         ];
     }
 
     /**
-     * @param  array<string, float>  $aggregate
-     * @param  array<string, float>  $contribution
-     * @return array<string, float>
+     * @param  array<string, int>  $aggregate
+     * @param  array<string, int>  $contribution
+     * @return array<string, int>
      */
     private function addContribution(array $aggregate, array $contribution): array
     {
@@ -263,7 +264,7 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
     }
 
     /**
-     * @return array{type: string, value: float, months_used: int}|null
+     * @return array{type: string, value: int, months_used: int}|null
      */
     private function resolveDiscount(Corporation $corporation): ?array
     {
@@ -290,19 +291,25 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
 
         return [
             'type' => $discount->type,
-            'value' => (float) $discount->value,
+            'value' => (int) $discount->value,
             'months_used' => $monthsUsed,
         ];
     }
 
-    private function calculateDiscountValue(float $total, ?array $discount): float
+    /**
+     * @param  array{type: string, value: int, months_used: int}|null  $discount
+     * @return int Centavos.
+     */
+    private function calculateDiscountValue(int $total, ?array $discount): int
     {
         if (! $discount) {
-            return 0.0;
+            return 0;
         }
 
+        // Em `percentage` o campo guarda pontos-base (1500 = 15%); em `fixed`,
+        // centavos.
         if ($discount['type'] === 'percentage') {
-            return round($total * ($discount['value'] / 100), 2);
+            return Money::percentage($total, $discount['value']);
         }
 
         return min($discount['value'], $total);

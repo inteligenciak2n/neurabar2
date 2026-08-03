@@ -49,8 +49,8 @@ class ManualInvoiceTest extends TestCase
 
         $this->assertDatabaseHas('corporation_invoices', [
             'corporation_id' => $corporation->id,
-            'base_value' => 100,
-            'total_value' => 115,
+            'base_value' => 10000,
+            'total_value' => 11500,
             'status' => InvoiceStatus::Open->value,
         ]);
     }
@@ -77,8 +77,8 @@ class ManualInvoiceTest extends TestCase
 
         $this->assertDatabaseHas('venue_invoices', [
             'venue_id' => $venue->id,
-            'base_value' => 50,
-            'total_value' => 50,
+            'base_value' => 5000,
+            'total_value' => 5000,
         ]);
     }
 

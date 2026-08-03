@@ -25,7 +25,7 @@ class CorporationModule extends Model
     protected function casts(): array
     {
         return [
-            'custom_monthly_price' => 'decimal:2',
+            'custom_monthly_price' => 'integer',
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
             'status' => ModuleStatus::class,

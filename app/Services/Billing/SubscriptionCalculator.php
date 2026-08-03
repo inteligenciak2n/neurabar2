@@ -11,6 +11,7 @@ use App\Models\Tenant\VenueInvoice;
 use App\Models\Tenant\VenueModule;
 use App\Models\Tenant\VenueSubscription;
 use App\Models\Tenant\VenueUsageRecord;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -33,8 +34,10 @@ class SubscriptionCalculator
      * Cálculo puro: não escreve nada. Use `refreshVenueSnapshot()` quando o
      * valor recorrente da assinatura também precisar ser regravado.
      *
+     * Todos os valores retornados são inteiros em centavos.
+     *
      * @param  string|null  $usagePeriod  Período do consumo medido. Padrão: mês anterior a $period.
-     * @return array<string, float>|null
+     * @return array<string, int>|null
      */
     public function calculateVenue(Venue $venue, string $period, ?string $usagePeriod = null): ?array
     {
@@ -50,11 +53,11 @@ class SubscriptionCalculator
 
         $usagePeriod ??= self::usagePeriodFor($period);
 
-        $base = (float) $subscription->base_value;
+        $base = (int) $subscription->base_value;
         $modulesValue = $this->calculateModules($venue, $period, prorate: true);
         $recurringModulesValue = $this->calculateModules($venue, $period, prorate: false);
         $metered = $this->calculateMetered($venue, $usagePeriod, $this->contractedModuleCodes($venue, $usagePeriod));
-        $dedicatedSurcharge = (float) ($subscription->dedicated_surcharge ?? 0);
+        $dedicatedSurcharge = (int) ($subscription->dedicated_surcharge ?? 0);
 
         return [
             'base' => $base,
@@ -78,7 +81,7 @@ class SubscriptionCalculator
      * consumo e geração de fatura, por exemplo) sobrescreviam o resultado um do
      * outro. Agora a persistência é explícita e acontece sob lock da linha.
      *
-     * @return array<string, float>|null
+     * @return array<string, int>|null
      */
     public function refreshVenueSnapshot(Venue $venue, string $period, ?string $usagePeriod = null): ?array
     {
@@ -112,14 +115,14 @@ class SubscriptionCalculator
     public function refreshCorporationSnapshot(Corporation $corporation, string $period, ?string $usagePeriod = null): array
     {
         $venueTotals = [];
-        $grandTotal = 0.0;
+        $grandTotal = 0;
 
         $usagePeriod ??= self::usagePeriodFor($period);
 
         foreach ($corporation->venues as $venue) {
             $calculated = $this->refreshVenueSnapshot($venue, $period, $usagePeriod);
             $venueTotals[$venue->id] = $calculated ?? $this->emptyResult();
-            $grandTotal += $calculated['total'] ?? 0.0;
+            $grandTotal += $calculated['total'] ?? 0;
         }
 
         return [
@@ -134,14 +137,14 @@ class SubscriptionCalculator
     public function calculateCorporation(Corporation $corporation, string $period, ?string $usagePeriod = null): array
     {
         $venueTotals = [];
-        $grandTotal = 0.0;
+        $grandTotal = 0;
 
         $usagePeriod ??= self::usagePeriodFor($period);
 
         foreach ($corporation->venues as $venue) {
             $calculated = $this->calculateVenue($venue, $period, $usagePeriod);
             $venueTotals[$venue->id] = $calculated ?? $this->emptyResult();
-            $grandTotal += $calculated['total'] ?? 0.0;
+            $grandTotal += $calculated['total'] ?? 0;
         }
 
         return [
@@ -151,18 +154,18 @@ class SubscriptionCalculator
     }
 
     /**
-     * @return array<string, float>
+     * @return array<string, int>
      */
     private function emptyResult(): array
     {
         return [
-            'base' => 0.0,
-            'modules' => 0.0,
-            'metered' => 0.0,
-            'dedicated_surcharge' => 0.0,
-            'total' => 0.0,
-            'recurring_modules' => 0.0,
-            'recurring_total' => 0.0,
+            'base' => 0,
+            'modules' => 0,
+            'metered' => 0,
+            'dedicated_surcharge' => 0,
+            'total' => 0,
+            'recurring_modules' => 0,
+            'recurring_total' => 0,
         ];
     }
 
@@ -181,8 +184,10 @@ class SubscriptionCalculator
      * Mensalidade dos módulos do período, proporcional aos dias de vigência.
      * Sem proration, um módulo ativado no dia 2 e cancelado no dia 28 nunca era
      * faturado — exploit trivial e repetível todo mês.
+     *
+     * @return int Centavos.
      */
-    private function calculateModules(Venue $venue, string $period, bool $prorate): float
+    private function calculateModules(Venue $venue, string $period, bool $prorate): int
     {
         [$periodStart, $periodEnd] = self::periodBounds($period);
         $daysInPeriod = $periodStart->daysInMonth;
@@ -190,12 +195,12 @@ class SubscriptionCalculator
         $venueModules = $this->modulesOverlapping($venue, $periodStart, $periodEnd);
 
         if ($venueModules->isEmpty()) {
-            return 0.0;
+            return 0;
         }
 
         $corporationModules = $this->corporationModulesOverlapping($venue, $periodStart, $periodEnd);
 
-        $total = 0.0;
+        $total = 0;
 
         foreach ($venueModules as $venueModule) {
             $corporationModule = $corporationModules->get($venueModule->module_code);
@@ -220,13 +225,15 @@ class SubscriptionCalculator
             }
 
             $unitPrice = $corporationModule->custom_monthly_price !== null
-                ? (float) $corporationModule->custom_monthly_price
-                : (float) ($corporationModule->catalog?->base_monthly_price ?? 0);
+                ? (int) $corporationModule->custom_monthly_price
+                : (int) ($corporationModule->catalog?->base_monthly_price ?? 0);
 
-            $total += $unitPrice * max(1, (int) $venueModule->quantity) * $factor;
+            // Arredonda por módulo: somar frações de centavo e arredondar só no
+            // fim fazia o total da fatura divergir da soma das linhas exibidas.
+            $total += Money::multiply($unitPrice * max(1, (int) $venueModule->quantity), $factor);
         }
 
-        return round($total, 2);
+        return $total;
     }
 
     /**
@@ -331,14 +338,15 @@ class SubscriptionCalculator
 
     /**
      * @param  list<string>  $contractedModuleCodes
+     * @return int Centavos.
      */
-    private function calculateMetered(Venue $venue, string $period, array $contractedModuleCodes): float
+    private function calculateMetered(Venue $venue, string $period, array $contractedModuleCodes): int
     {
         if ($contractedModuleCodes === []) {
-            return 0.0;
+            return 0;
         }
 
-        $total = 0.0;
+        $total = 0;
 
         $records = VenueUsageRecord::query()
             ->where('venue_id', $venue->id)
@@ -353,12 +361,12 @@ class SubscriptionCalculator
         return $total;
     }
 
-    private function calculateRecord(VenueUsageRecord $record): float
+    private function calculateRecord(VenueUsageRecord $record): int
     {
         $tier = $this->resolveTier($record);
 
         if (! $tier) {
-            return 0.0;
+            return 0;
         }
 
         $included = (int) ($tier->included_quantity ?? 0);
@@ -368,15 +376,17 @@ class SubscriptionCalculator
         // price_per_unit cobra apenas as unidades dentro do limite incluso; o
         // excedente é cobrado exclusivamente via overage_price_per_unit/overage_flat_fee
         // logo abaixo, evitando cobrança em duplicidade das unidades excedentes.
+        // Os preços unitários estão em centésimos de centavo e só viram centavos
+        // depois de multiplicados pela quantidade.
         $basePrice = $tier->flat_price !== null
-            ? (float) $tier->flat_price
-            : ((float) $tier->price_per_unit * min($quantity, $included));
+            ? (int) $tier->flat_price
+            : Money::fromMicros((int) $tier->price_per_unit * min($quantity, $included));
 
-        $overagePrice = 0.0;
+        $overagePrice = 0;
 
         if ($overageQuantity > 0) {
-            $overagePrice += (float) ($tier->overage_flat_fee ?? 0);
-            $overagePrice += $overageQuantity * (float) $tier->overage_price_per_unit;
+            $overagePrice += (int) ($tier->overage_flat_fee ?? 0);
+            $overagePrice += Money::fromMicros($overageQuantity * (int) $tier->overage_price_per_unit);
         }
 
         $record->update([

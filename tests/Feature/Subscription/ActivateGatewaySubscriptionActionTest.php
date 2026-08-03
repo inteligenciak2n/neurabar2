@@ -40,8 +40,8 @@ class ActivateGatewaySubscriptionActionTest extends TestCase
         VenueSubscription::factory()->create([
             'venue_id' => $venue->id,
             'corporation_subscription_id' => $subscription->id,
-            'base_value' => 100.0,
-            'total_value' => 100.0,
+            'base_value' => 10000,
+            'total_value' => 10000,
             'status' => SubscriptionStatus::Active,
         ]);
 
@@ -75,8 +75,8 @@ class ActivateGatewaySubscriptionActionTest extends TestCase
         $venueSubscription = VenueSubscription::factory()->create([
             'venue_id' => $venue->id,
             'corporation_subscription_id' => $subscription->id,
-            'base_value' => 100.0,
-            'total_value' => 100.0,
+            'base_value' => 10000,
+            'total_value' => 10000,
             'status' => SubscriptionStatus::Active,
         ]);
 
@@ -105,8 +105,8 @@ class ActivateGatewaySubscriptionActionTest extends TestCase
         $venueSubscriptionA = VenueSubscription::factory()->create([
             'venue_id' => $venueA->id,
             'corporation_subscription_id' => $subscription->id,
-            'base_value' => 100.0,
-            'total_value' => 100.0,
+            'base_value' => 10000,
+            'total_value' => 10000,
             'status' => SubscriptionStatus::Active,
         ]);
 
@@ -114,8 +114,8 @@ class ActivateGatewaySubscriptionActionTest extends TestCase
         $venueSubscriptionB = VenueSubscription::factory()->create([
             'venue_id' => $venueB->id,
             'corporation_subscription_id' => $subscription->id,
-            'base_value' => 100.0,
-            'total_value' => 100.0,
+            'base_value' => 10000,
+            'total_value' => 10000,
             'status' => SubscriptionStatus::Active,
         ]);
 
@@ -188,8 +188,8 @@ class ActivateGatewaySubscriptionActionTest extends TestCase
         VenueSubscription::factory()->create([
             'venue_id' => $venue->id,
             'corporation_subscription_id' => $subscription->id,
-            'base_value' => 100.0,
-            'total_value' => 100.0,
+            'base_value' => 10000,
+            'total_value' => 10000,
             'status' => SubscriptionStatus::Active,
         ]);
 
@@ -229,8 +229,8 @@ class ActivateGatewaySubscriptionActionTest extends TestCase
         VenueSubscription::factory()->create([
             'venue_id' => $venue->id,
             'corporation_subscription_id' => $subscription->id,
-            'base_value' => 100.0,
-            'total_value' => 100.0,
+            'base_value' => 10000,
+            'total_value' => 10000,
             'status' => SubscriptionStatus::Active,
         ]);
 

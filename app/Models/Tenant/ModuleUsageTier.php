@@ -25,10 +25,11 @@ class ModuleUsageTier extends Model
             'min_quantity' => 'integer',
             'max_quantity' => 'integer',
             'included_quantity' => 'integer',
-            'price_per_unit' => 'decimal:4',
-            'flat_price' => 'decimal:2',
-            'overage_price_per_unit' => 'decimal:4',
-            'overage_flat_fee' => 'decimal:2',
+            // Preços unitários guardam centésimos de centavo (Money::MICRO_SCALE).
+            'price_per_unit' => 'integer',
+            'flat_price' => 'integer',
+            'overage_price_per_unit' => 'integer',
+            'overage_flat_fee' => 'integer',
         ];
     }
 }

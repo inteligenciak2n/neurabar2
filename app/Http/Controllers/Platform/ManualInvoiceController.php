@@ -10,6 +10,7 @@ use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationInvoice;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueInvoice;
+use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -20,11 +21,14 @@ class ManualInvoiceController extends Controller
         $validated = $request->validated();
 
         DB::transaction(function () use ($corporation, $validated): void {
-            $total = (float) $validated['base_value']
-                + (float) ($validated['modules_value'] ?? 0)
-                + (float) ($validated['metered_value'] ?? 0)
-                + (float) ($validated['dedicated_surcharge'] ?? 0)
-                - (float) ($validated['discount_value'] ?? 0);
+            // O formulário envia reais; a persistência é em centavos.
+            $baseValue = Money::fromFloat($validated['base_value']);
+            $modulesValue = Money::fromFloat($validated['modules_value'] ?? 0);
+            $meteredValue = Money::fromFloat($validated['metered_value'] ?? 0);
+            $dedicatedSurcharge = Money::fromFloat($validated['dedicated_surcharge'] ?? 0);
+            $discountValue = Money::fromFloat($validated['discount_value'] ?? 0);
+
+            $total = $baseValue + $modulesValue + $meteredValue + $dedicatedSurcharge - $discountValue;
 
             if ($validated['invoiceable_type'] === 'corporation') {
                 CorporationInvoice::create([
@@ -34,11 +38,11 @@ class ManualInvoiceController extends Controller
                     'period' => $validated['period'],
                     'due_date' => $validated['due_date'],
                     'status' => InvoiceStatus::Open,
-                    'base_value' => $validated['base_value'],
-                    'modules_value' => $validated['modules_value'] ?? 0,
-                    'metered_value' => $validated['metered_value'] ?? 0,
-                    'dedicated_surcharge' => $validated['dedicated_surcharge'] ?? 0,
-                    'discount_value' => $validated['discount_value'] ?? 0,
+                    'base_value' => $baseValue,
+                    'modules_value' => $modulesValue,
+                    'metered_value' => $meteredValue,
+                    'dedicated_surcharge' => $dedicatedSurcharge,
+                    'discount_value' => $discountValue,
                     'total_value' => max(0, $total),
                 ]);
 
@@ -56,11 +60,11 @@ class ManualInvoiceController extends Controller
                 'period' => $validated['period'],
                 'due_date' => $validated['due_date'],
                 'status' => InvoiceStatus::Open,
-                'base_value' => $validated['base_value'],
-                'modules_value' => $validated['modules_value'] ?? 0,
-                'metered_value' => $validated['metered_value'] ?? 0,
-                'dedicated_surcharge' => $validated['dedicated_surcharge'] ?? 0,
-                'discount_value' => $validated['discount_value'] ?? 0,
+                'base_value' => $baseValue,
+                'modules_value' => $modulesValue,
+                'metered_value' => $meteredValue,
+                'dedicated_surcharge' => $dedicatedSurcharge,
+                'discount_value' => $discountValue,
                 'total_value' => max(0, $total),
             ]);
         });

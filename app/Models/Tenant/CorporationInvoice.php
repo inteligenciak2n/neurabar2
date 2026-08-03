@@ -31,12 +31,12 @@ class CorporationInvoice extends Model
             'due_date' => 'date',
             'is_finalized' => 'boolean',
             'status' => InvoiceStatus::class,
-            'base_value' => 'decimal:2',
-            'modules_value' => 'decimal:2',
-            'metered_value' => 'decimal:2',
-            'dedicated_surcharge' => 'decimal:2',
-            'discount_value' => 'decimal:2',
-            'total_value' => 'decimal:2',
+            'base_value' => 'integer',
+            'modules_value' => 'integer',
+            'metered_value' => 'integer',
+            'dedicated_surcharge' => 'integer',
+            'discount_value' => 'integer',
+            'total_value' => 'integer',
             'paid_at' => 'datetime',
         ];
     }

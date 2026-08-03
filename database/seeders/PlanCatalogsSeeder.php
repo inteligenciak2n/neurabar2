@@ -16,7 +16,7 @@ class PlanCatalogsSeeder extends Seeder
                 'name' => 'Basic',
                 'description' => 'Plano básico para pequenos estabelecimentos.',
                 'sort_order' => 1,
-                'monthly_price' => 99.00,
+                'monthly_price' => 9900,
                 'included_modules' => [
                     ModuleCode::Menu->value,
                 ],
@@ -27,7 +27,7 @@ class PlanCatalogsSeeder extends Seeder
                 'name' => 'Pro',
                 'description' => 'Plano intermediário com recursos avançados.',
                 'sort_order' => 2,
-                'monthly_price' => 199.00,
+                'monthly_price' => 19900,
                 'included_modules' => [
                     ModuleCode::Menu->value,
                     ModuleCode::Kds->value,
@@ -42,7 +42,7 @@ class PlanCatalogsSeeder extends Seeder
                 'name' => 'Enterprise',
                 'description' => 'Plano completo para redes e grupos.',
                 'sort_order' => 3,
-                'monthly_price' => 499.00,
+                'monthly_price' => 49900,
                 'included_modules' => [
                     ModuleCode::Menu->value,
                     ModuleCode::Kds->value,

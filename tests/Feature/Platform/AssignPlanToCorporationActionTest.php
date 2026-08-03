@@ -27,10 +27,11 @@ class AssignPlanToCorporationActionTest extends TestCase
     {
         $corporation = Corporation::factory()->create();
         Venue::factory()->count(2)->create(['corporation_id' => $corporation->id]);
-        $plan = PlanCatalog::factory()->create(['monthly_price' => 199.90]);
+        $plan = PlanCatalog::factory()->create(['monthly_price' => 19990]);
 
         $action = app()->make(AssignPlanToCorporationAction::class);
         $action->execute($corporation, $plan, [
+            // O formulário do backoffice envia reais.
             'subscription_value' => 199.90,
             'billing_mode' => BillingMode::PerVenue->value,
             'billing_day' => 10,
@@ -49,8 +50,8 @@ class AssignPlanToCorporationActionTest extends TestCase
         foreach ($corporation->venues as $venue) {
             $this->assertDatabaseHas('venue_subscriptions', [
                 'venue_id' => $venue->id,
-                'base_value' => 199.90,
-                'total_value' => 199.90,
+                'base_value' => 19990,
+                'total_value' => 19990,
             ]);
         }
     }
@@ -69,8 +70,8 @@ class AssignPlanToCorporationActionTest extends TestCase
         VenueSubscription::factory()->create([
             'venue_id' => $venue->id,
             'corporation_subscription_id' => $corporation->subscription->id,
-            'base_value' => 100.00,
-            'total_value' => 100.00,
+            'base_value' => 10000,
+            'total_value' => 10000,
             'status' => SubscriptionStatus::Active,
         ]);
 
@@ -79,7 +80,7 @@ class AssignPlanToCorporationActionTest extends TestCase
             [
                 'name' => ModuleCode::Kds->label(),
                 'billing_type' => ModuleBillingType::Hybrid,
-                'base_monthly_price' => 50.00,
+                'base_monthly_price' => 5000,
                 'dependencies' => [],
                 'active' => true,
             ]
@@ -106,9 +107,9 @@ class AssignPlanToCorporationActionTest extends TestCase
 
         $this->assertDatabaseHas('venue_subscriptions', [
             'venue_id' => $venue->id,
-            'base_value' => 100.00,
-            'modules_value' => 50.00,
-            'total_value' => 150.00,
+            'base_value' => 10000,
+            'modules_value' => 5000,
+            'total_value' => 15000,
         ]);
     }
 }

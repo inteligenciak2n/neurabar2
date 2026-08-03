@@ -25,9 +25,9 @@ class VenueUsageRecord extends Model
             'quantity' => 'integer',
             'included_quantity' => 'integer',
             'overage_quantity' => 'integer',
-            'base_calculated_price' => 'decimal:2',
-            'overage_calculated_price' => 'decimal:2',
-            'total_calculated_price' => 'decimal:2',
+            'base_calculated_price' => 'integer',
+            'overage_calculated_price' => 'integer',
+            'total_calculated_price' => 'integer',
         ];
     }
 }

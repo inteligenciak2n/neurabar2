@@ -112,7 +112,7 @@ class AsaasPaymentGatewayTest extends TestCase
             '*/v3/payments/pay_000001' => Http::response(['id' => 'pay_000001', 'value' => 250.0], 200),
         ]);
 
-        $this->gateway->updatePaymentValue('pay_000001', 250.0);
+        $this->gateway->updatePaymentValue('pay_000001', 25000);
 
         Http::assertSent(function ($request) {
             return $request->method() === 'PUT'
@@ -181,7 +181,7 @@ class AsaasPaymentGatewayTest extends TestCase
 
         $invoice = new CorporationInvoice;
         $invoice->id = 'invoice-uuid-1';
-        $invoice->total_value = 100.5;
+        $invoice->total_value = 10050;
         $invoice->due_date = '2026-09-10';
 
         $result = $this->gateway->processPix($invoice);
@@ -208,7 +208,7 @@ class AsaasPaymentGatewayTest extends TestCase
 
         $invoice = new CorporationInvoice;
         $invoice->id = 'invoice-uuid-2';
-        $invoice->total_value = 50;
+        $invoice->total_value = 5000;
         $invoice->due_date = '2026-09-10';
 
         $this->gateway->processPix($invoice, ['gateway_customer_id' => 'cus_000099']);
@@ -249,7 +249,8 @@ class AsaasPaymentGatewayTest extends TestCase
         $this->assertSame('pay_000001', $result['gateway_payment_id']);
         $this->assertSame('paid', $result['status']);
         $this->assertSame('invoice-uuid-1', $result['invoice_id']);
-        $this->assertSame(199.9, $result['amount']);
+        // O gateway fala em decimal; a camada anticorrupção devolve centavos.
+        $this->assertSame(19990, $result['amount']);
         $this->assertNull($result['gateway_subscription_id']);
         $this->assertNull($result['due_date']);
     }

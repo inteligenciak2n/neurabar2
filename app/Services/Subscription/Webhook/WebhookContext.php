@@ -27,9 +27,12 @@ class WebhookContext
         return (string) ($this->result['gateway_payment_id'] ?? '');
     }
 
-    public function amount(): float
+    /**
+     * Valor da cobrança em centavos.
+     */
+    public function amount(): int
     {
-        return (float) ($this->result['amount'] ?? 0);
+        return (int) ($this->result['amount'] ?? 0);
     }
 
     /**

@@ -30,7 +30,7 @@ class ModuleUsageTiersSeeder extends Seeder
                     'included_quantity' => 100,
                     'price_per_unit' => 0,
                     'flat_price' => 0,
-                    'overage_price_per_unit' => 0.0500,
+                    'overage_price_per_unit' => 500,
                     'overage_flat_fee' => 0,
                     'currency' => 'BRL',
                 ]
@@ -46,7 +46,7 @@ class ModuleUsageTiersSeeder extends Seeder
                     'included_quantity' => 100,
                     'price_per_unit' => 0,
                     'flat_price' => 0,
-                    'overage_price_per_unit' => 0.0300,
+                    'overage_price_per_unit' => 300,
                     'overage_flat_fee' => 0,
                     'currency' => 'BRL',
                 ]

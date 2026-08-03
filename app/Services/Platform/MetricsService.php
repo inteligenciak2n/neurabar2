@@ -9,9 +9,12 @@ use Illuminate\Support\Facades\Cache;
 
 class MetricsService
 {
-    public function calculateMRR(): float
+    /**
+     * Receita recorrente mensal, em centavos.
+     */
+    public function calculateMRR(): int
     {
-        return (float) CorporationSubscription::query()
+        return (int) CorporationSubscription::query()
             ->where('status', SubscriptionStatus::Active->value)
             ->where(function ($query): void {
                 $query->whereNull('ended_at')->orWhere('ended_at', '>=', now());

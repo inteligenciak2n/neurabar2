@@ -3,12 +3,14 @@ import PlatformLayout from '@/Layouts/PlatformLayout.vue';
 import { useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
+import { useCurrency } from '@/Composables/useCurrency';
 
 const props = defineProps({
     plans: Array,
 });
 
 const __ = useTranslate();
+const { formatMoney, toAmount } = useCurrency();
 const showCreate = ref(false);
 const editingPlan = ref(null);
 
@@ -44,7 +46,8 @@ const startEdit = (plan) => {
     editForm.code = plan.code;
     editForm.name = plan.name;
     editForm.description = plan.description ?? '';
-    editForm.monthly_price = plan.monthly_price;
+    // O backend guarda centavos; o formulário edita reais.
+    editForm.monthly_price = toAmount(plan.monthly_price);
     editForm.sort_order = plan.sort_order;
     editForm.active = plan.active;
 };
@@ -149,7 +152,7 @@ const destroy = (plan) => {
                         <tr v-for="plan in plans" :key="plan.id" class="border-b border-border last:border-0 dark:border-gray-700">
                             <td class="px-4 py-3 font-mono text-xs text-muted-foreground dark:text-gray-400">{{ plan.code }}</td>
                             <td class="px-4 py-3 font-medium text-ocean-deep dark:text-gray-100">{{ plan.name }}</td>
-                            <td class="px-4 py-3 dark:text-gray-300">R$ {{ Number(plan.monthly_price).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</td>
+                            <td class="px-4 py-3 dark:text-gray-300">{{ formatMoney(plan.monthly_price) }}</td>
                             <td class="px-4 py-3">
                                 <span :class="plan.active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'" class="rounded-full px-2 py-0.5 text-xs font-medium">
                                     {{ plan.active ? __('Active') : __('Inactive') }}

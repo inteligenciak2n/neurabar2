@@ -22,8 +22,6 @@ use Illuminate\Support\Facades\Log;
  */
 class SyncPaymentHandler implements WebhookEventHandler
 {
-    private const TOLERANCE = 0.01;
-
     public function __construct(
         private readonly SubscriptionCalculator $calculator,
         private readonly PaymentGatewayContract $gateway,
@@ -51,11 +49,11 @@ class SyncPaymentHandler implements WebhookEventHandler
             return;
         }
 
-        if (abs($expected - (float) $invoice->total_value) >= self::TOLERANCE) {
+        if ($expected !== (int) $invoice->total_value) {
             $invoice->update(['total_value' => $expected]);
         }
 
-        if (abs($expected - $context->amount()) < self::TOLERANCE) {
+        if ($expected === $context->amount()) {
             return;
         }
 
@@ -71,7 +69,10 @@ class SyncPaymentHandler implements WebhookEventHandler
         }
     }
 
-    private function expectedTotal(VenueInvoice|CorporationInvoice $invoice): ?float
+    /**
+     * @return int|null Centavos, ou null quando o total não pode ser recalculado.
+     */
+    private function expectedTotal(VenueInvoice|CorporationInvoice $invoice): ?int
     {
         if ($invoice instanceof CorporationInvoice) {
             $corporation = $invoice->corporation;
@@ -80,7 +81,7 @@ class SyncPaymentHandler implements WebhookEventHandler
                 return null;
             }
 
-            return (float) ($this->calculator->calculateCorporation($corporation, $invoice->period)['total'] ?? 0.0);
+            return (int) ($this->calculator->calculateCorporation($corporation, $invoice->period)['total'] ?? 0);
         }
 
         $venue = $invoice->venue;
@@ -91,12 +92,12 @@ class SyncPaymentHandler implements WebhookEventHandler
 
         $calculated = $this->calculator->calculateVenue($venue, $invoice->period);
 
-        return $calculated === null ? null : (float) $calculated['total'];
+        return $calculated === null ? null : (int) $calculated['total'];
     }
 
-    private function reportDivergence(WebhookContext $context, float $expected): void
+    private function reportDivergence(WebhookContext $context, int $expected): void
     {
-        if (abs($expected - $context->amount()) < self::TOLERANCE) {
+        if ($expected === $context->amount()) {
             return;
         }
 

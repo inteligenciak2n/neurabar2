@@ -104,7 +104,7 @@ class RetryOverdueInvoicesJobTest extends TestCase
             'venue_id' => $venue->id,
             'status' => InvoiceStatus::Overdue,
             'is_finalized' => false,
-            'total_value' => 150,
+            'total_value' => 15000,
             'due_date' => now()->subDays($daysPastDue),
             'period' => now()->subDays($daysPastDue)->format('Y-m'),
         ]);

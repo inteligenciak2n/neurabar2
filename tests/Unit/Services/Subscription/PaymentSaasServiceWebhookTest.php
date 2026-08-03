@@ -31,12 +31,12 @@ class PaymentSaasServiceWebhookTest extends TestCase
                 'status' => 'pending',
                 'invoice_type' => '',
                 'invoice_id' => '',
-                'amount' => 10.0,
+                'amount' => 10,
                 'gateway_subscription_id' => 'sub_asaas_123',
                 'due_date' => now()->addDays(5)->toDateString(),
                 'payload' => [],
             ]);
-            $mock->shouldReceive('updatePaymentValue')->once()->with('pay_asaas_1', 150.0);
+            $mock->shouldReceive('updatePaymentValue')->once()->with('pay_asaas_1', 150);
         });
 
         $service = app(PaymentSaasService::class);
@@ -48,7 +48,7 @@ class PaymentSaasServiceWebhookTest extends TestCase
             'venue_id' => $venueSubscription->venue_id,
             'venue_subscription_id' => $venueSubscription->id,
             'gateway_payment_id' => 'pay_asaas_1',
-            'total_value' => 150.00,
+            'total_value' => 150,
             'status' => 'open',
         ]);
     }
@@ -67,7 +67,7 @@ class PaymentSaasServiceWebhookTest extends TestCase
                 'status' => 'pending',
                 'invoice_type' => '',
                 'invoice_id' => '',
-                'amount' => 80.0,
+                'amount' => 80,
                 'gateway_subscription_id' => 'sub_asaas_456',
                 'due_date' => now()->addDays(5)->toDateString(),
                 'payload' => [],
@@ -81,7 +81,7 @@ class PaymentSaasServiceWebhookTest extends TestCase
         $this->assertDatabaseHas('venue_invoices', [
             'venue_id' => $venueSubscription->venue_id,
             'gateway_payment_id' => 'pay_asaas_2',
-            'total_value' => 80.00,
+            'total_value' => 80,
         ]);
     }
 
@@ -108,7 +108,7 @@ class PaymentSaasServiceWebhookTest extends TestCase
                 'status' => 'paid',
                 'invoice_type' => '',
                 'invoice_id' => '',
-                'amount' => 60.0,
+                'amount' => 60,
                 'gateway_subscription_id' => 'sub_asaas_789',
                 'due_date' => now()->addDays(5)->toDateString(),
                 'payload' => [],
@@ -140,7 +140,7 @@ class PaymentSaasServiceWebhookTest extends TestCase
                 'status' => 'paid',
                 'invoice_type' => '',
                 'invoice_id' => '',
-                'amount' => 150.0,
+                'amount' => 150,
                 'gateway_subscription_id' => 'sub_asaas_999',
                 'due_date' => now()->addDays(5)->toDateString(),
                 'payload' => [],
@@ -155,7 +155,7 @@ class PaymentSaasServiceWebhookTest extends TestCase
             'venue_id' => $venueSubscription->venue_id,
             'gateway_payment_id' => 'pay_asaas_9',
             'status' => 'paid',
-            'total_value' => 150.00,
+            'total_value' => 150,
         ]);
     }
 
@@ -182,12 +182,12 @@ class PaymentSaasServiceWebhookTest extends TestCase
                 'status' => 'pending',
                 'invoice_type' => '',
                 'invoice_id' => '',
-                'amount' => 50.0,
+                'amount' => 50,
                 'gateway_subscription_id' => 'sub_corp_1',
                 'due_date' => now()->addDays(5)->toDateString(),
                 'payload' => [],
             ]);
-            $mock->shouldReceive('updatePaymentValue')->once()->with('pay_corp_1', 120.0);
+            $mock->shouldReceive('updatePaymentValue')->once()->with('pay_corp_1', 120);
         });
 
         $service = app(PaymentSaasService::class);
@@ -196,8 +196,8 @@ class PaymentSaasServiceWebhookTest extends TestCase
         $this->assertDatabaseHas('corporation_invoices', [
             'corporation_id' => $corporation->id,
             'gateway_payment_id' => 'pay_corp_1',
-            'base_value' => 120.00,
-            'total_value' => 120.00,
+            'base_value' => 120,
+            'total_value' => 120,
         ]);
     }
 }

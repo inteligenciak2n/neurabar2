@@ -3,6 +3,7 @@ import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
+import { useCurrency } from '@/Composables/useCurrency';
 import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
 import AppPagination from '@/Components/AppPagination.vue';
@@ -18,6 +19,7 @@ const props = defineProps({
 });
 
 const __ = useTranslate();
+const { formatMoney } = useCurrency();
 const payingInvoice = ref(null);
 
 const defaultPaymentMethodId = () => props.paymentMethods.find((m) => m.is_default)?.id ?? '';
@@ -65,7 +67,7 @@ const corporationRows = computed(() => withType(props.corporationInvoices, 'corp
 
 const isPayable = (invoice) => invoice.status === 'open' || invoice.status === 'overdue';
 
-const formatAmount = (value) => `R$ ${parseFloat(value).toFixed(2)}`;
+const formatAmount = (cents) => formatMoney(cents);
 
 const statusClass = (status) => ({
     open: 'text-amber-600',

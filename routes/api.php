@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\PaymentWebhookController;
 use App\Http\Controllers\TranslationsController;
 use App\Models\Tenant\PlanCatalog;
+use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -13,7 +14,15 @@ Route::get('/available-languages', [TranslationsController::class, 'availableLan
 Route::get('/plans/public', function () {
     $plans = PlanCatalog::where('active', true)
         ->orderBy('sort_order')
-        ->get(['name', 'description', 'monthly_price', 'code']);
+        ->get(['name', 'description', 'monthly_price', 'code'])
+        // A landing page é um consumidor externo: mantemos o contrato em reais
+        // decimais mesmo depois da migração interna para centavos.
+        ->map(fn (PlanCatalog $plan): array => [
+            'code' => $plan->code,
+            'name' => $plan->name,
+            'description' => $plan->description,
+            'monthly_price' => Money::toFloat((int) $plan->monthly_price),
+        ]);
 
     $landingUrl = rtrim((string) config('platform.landing_page_url'), '/');
 

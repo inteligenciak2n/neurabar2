@@ -24,7 +24,8 @@ class CorporationDiscount extends Model
     protected function casts(): array
     {
         return [
-            'value' => 'decimal:2',
+            // Centavos quando `type = fixed`; pontos-base (1/100 de 1%) quando `type = percentage`.
+            'value' => 'integer',
             'valid_from' => 'date',
             'valid_until' => 'date',
             'max_months' => 'integer',

@@ -22,7 +22,7 @@ class PlanCatalogFactory extends Factory
             'name' => fake()->words(2, true),
             'description' => fake()->sentence(),
             'sort_order' => fake()->numberBetween(1, 10),
-            'monthly_price' => fake()->randomFloat(2, 49, 999),
+            'monthly_price' => fake()->numberBetween(4900, 99900),
             'active' => true,
         ];
     }

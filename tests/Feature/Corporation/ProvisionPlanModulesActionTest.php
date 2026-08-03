@@ -11,7 +11,6 @@ use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\ModuleCatalog;
 use App\Models\Tenant\PlanCatalog;
 use App\Models\Tenant\Venue;
-use App\Models\Tenant\VenueModule;
 use App\Models\Tenant\VenueSubscription;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
@@ -85,8 +84,8 @@ class ProvisionPlanModulesActionTest extends TestCase
             'venue_id' => $venue->id,
             'corporation_subscription_id' => $corporation->subscription->id,
             'plan_catalog_id' => $plan->id,
-            'base_value' => 100.00,
-            'total_value' => 100.00,
+            'base_value' => 10000,
+            'total_value' => 10000,
         ]);
 
         ModuleCatalog::updateOrCreate(
@@ -94,7 +93,7 @@ class ProvisionPlanModulesActionTest extends TestCase
             [
                 'name' => ModuleCode::Kds->label(),
                 'billing_type' => ModuleBillingType::Hybrid,
-                'base_monthly_price' => 50.00,
+                'base_monthly_price' => 5000,
                 'dependencies' => [],
                 'active' => true,
             ]
@@ -105,9 +104,9 @@ class ProvisionPlanModulesActionTest extends TestCase
 
         $this->assertDatabaseHas('venue_subscriptions', [
             'venue_id' => $venue->id,
-            'base_value' => 100.00,
-            'modules_value' => 50.00,
-            'total_value' => 150.00,
+            'base_value' => 10000,
+            'modules_value' => 5000,
+            'total_value' => 15000,
         ]);
     }
 
@@ -129,7 +128,7 @@ class ProvisionPlanModulesActionTest extends TestCase
             [
                 'name' => ModuleCode::Kds->label(),
                 'billing_type' => ModuleBillingType::Hybrid,
-                'base_monthly_price' => 50.00,
+                'base_monthly_price' => 5000,
                 'dependencies' => [],
                 'active' => false,
             ]
@@ -149,7 +148,7 @@ class ProvisionPlanModulesActionTest extends TestCase
                 [
                     'name' => $code->label(),
                     'billing_type' => ModuleBillingType::Fixed,
-                    'base_monthly_price' => 0.00,
+                    'base_monthly_price' => 0,
                     'dependencies' => [],
                     'active' => true,
                 ]

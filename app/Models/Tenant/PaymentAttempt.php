@@ -21,7 +21,7 @@ class PaymentAttempt extends Model
     protected function casts(): array
     {
         return [
-            'amount' => 'decimal:2',
+            'amount' => 'integer',
             'payload' => 'array',
             'attempted_at' => 'datetime',
             'succeeded_at' => 'datetime',

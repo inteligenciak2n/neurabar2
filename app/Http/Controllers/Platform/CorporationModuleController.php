@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Platform\StoreCorporationModuleRequest;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationModule;
+use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -38,7 +39,9 @@ class CorporationModuleController extends Controller
         $action->execute(
             $corporation,
             $validated['module_code'],
-            $validated['custom_monthly_price'] ?? null,
+            isset($validated['custom_monthly_price'])
+                ? Money::fromFloat($validated['custom_monthly_price'])
+                : null,
         );
 
         return back()->with('success', 'Módulo habilitado com sucesso.');
