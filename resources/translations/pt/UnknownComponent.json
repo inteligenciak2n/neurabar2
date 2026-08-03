@@ -8,5 +8,6 @@
     "Module enabled successfully for venue": "Módulo habilitado com sucesso para o local",
     "Failed to create invoice": "Falha ao criar fatura",
     "Invoice created successfully": "Fatura criada com sucesso",
-    "Invoice status updated successfully": "Status da fatura atualizado com sucesso"
+    "Invoice status updated successfully": "Status da fatura atualizado com sucesso",
+    "Are you sure you want to cancel your subscription? You will keep access until the end of the current billing period.": "Tem certeza de que deseja cancelar sua assinatura? Você manterá o acesso até o final do período de cobrança atual."
 }
