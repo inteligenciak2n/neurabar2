@@ -7,11 +7,13 @@ use App\Enums\ModuleBillingType;
 use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
 use App\Enums\SubscriptionStatus;
+use App\Jobs\Venue\CreateVenueDefaultsJob;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\ModuleCatalog;
 use App\Models\Tenant\PlanCatalog;
+use Illuminate\Support\Facades\Queue;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
@@ -157,5 +159,29 @@ class CreateVenueActionTest extends TestCase
             'name' => 'Nova Venue',
             'timezone' => 'America/Sao_Paulo',
         ]);
+    }
+
+    public function test_it_queues_the_default_provisioning_instead_of_running_it_inline(): void
+    {
+        Queue::fake();
+
+        $plan = PlanCatalog::factory()->create(['monthly_price' => 19900]);
+        $corporation = Corporation::factory()->create();
+        CorporationSubscription::factory()->create([
+            'corporation_id' => $corporation->id,
+            'plan_catalog_id' => $plan->id,
+            'status' => SubscriptionStatus::Active,
+        ]);
+
+        $action = app()->make(CreateVenueAction::class);
+        $venue = $action->execute($corporation, [
+            'name' => 'Nova Venue',
+            'timezone' => 'America/Sao_Paulo',
+        ]);
+
+        Queue::assertPushed(
+            CreateVenueDefaultsJob::class,
+            fn (CreateVenueDefaultsJob $job): bool => $job->venueId() === $venue->id
+        );
     }
 }

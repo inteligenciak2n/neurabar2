@@ -48,6 +48,16 @@ return [
             ? 'https://api.asaas.com'
             : 'https://api-sandbox.asaas.com',
         'access_token' => env('ASAAS_ACCESS_TOKEN'),
+
+        /*
+         * Quantas falhas de infraestrutura seguidas abrem o circuito e por
+         * quantos segundos ele permanece aberto. Sem isso, uma indisponibilidade
+         * do gateway trava cada request do usuário no timeout da chamada.
+         */
+        'circuit_breaker' => [
+            'threshold' => (int) env('ASAAS_CIRCUIT_BREAKER_THRESHOLD', 5),
+            'cooldown' => (int) env('ASAAS_CIRCUIT_BREAKER_COOLDOWN', 60),
+        ],
     ],
 
 ];

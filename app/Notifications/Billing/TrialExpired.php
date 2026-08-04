@@ -4,10 +4,11 @@ namespace App\Notifications\Billing;
 
 use App\Models\Tenant\Corporation;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class TrialExpired extends Notification
+class TrialExpired extends Notification implements ShouldQueue
 {
     use Queueable;
 

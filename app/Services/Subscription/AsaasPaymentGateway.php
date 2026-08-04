@@ -11,6 +11,7 @@ use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\VenueInvoice;
 use App\Models\Tenant\VenueSubscription;
 use App\Support\Money;
+use Closure;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
@@ -27,34 +28,46 @@ class AsaasPaymentGateway implements PaymentGatewayContract
 
     private readonly string $accessToken;
 
-    public function __construct()
+    private readonly GatewayCircuitBreaker $circuitBreaker;
+
+    public function __construct(?GatewayCircuitBreaker $circuitBreaker = null)
     {
         $this->baseUrl = (string) config('services.asaas.base_url');
         $this->accessToken = (string) config('services.asaas.access_token');
+        $this->circuitBreaker = $circuitBreaker ?? new GatewayCircuitBreaker;
+    }
+
+    /**
+     * Executa a chamada sob o disjuntor: com o gateway fora do ar, o usuário
+     * recebe o erro na hora em vez de esperar o timeout de cada tentativa.
+     */
+    private function send(Closure $request): Response
+    {
+        return $this->circuitBreaker->call($request);
     }
 
     public function createCustomer(array $data): string
     {
-        $response = $this->client()->post('/v3/customers', [
+        $response = $this->send(fn (): Response => $this->client()->post('/v3/customers', [
             'name' => $data['name'],
             'cpfCnpj' => $this->onlyDigits($data['document'] ?? ''),
             'email' => $data['email'] ?? null,
             'phone' => $data['phone'] ?? null,
             'mobilePhone' => $data['mobile_phone'] ?? null,
             'externalReference' => $data['external_reference'] ?? null,
-        ]);
+        ]));
 
         return (string) $this->handle($response)['id'];
     }
 
     public function saveCard(string $customerId, array $cardData): array
     {
-        $response = $this->client()->post('/v3/creditCard/tokenizeCreditCard', [
+        $response = $this->send(fn (): Response => $this->client()->post('/v3/creditCard/tokenizeCreditCard', [
             'customer' => $customerId,
             'creditCard' => $this->creditCardPayload($cardData),
             'creditCardHolderInfo' => $this->creditCardHolderInfoPayload($cardData),
             'remoteIp' => $cardData['remote_ip'],
-        ]);
+        ]));
 
         $card = $this->mapCreditCardResponse($this->handle($response));
 
@@ -82,7 +95,7 @@ class AsaasPaymentGateway implements PaymentGatewayContract
             $payload['creditCardToken'] = $data['gateway_token'];
         }
 
-        $result = $this->handle($this->client()->post('/v3/subscriptions/', $payload));
+        $result = $this->handle($this->send(fn (): Response => $this->client()->post('/v3/subscriptions/', $payload)));
 
         Log::info('asaas.subscription_created', [
             'gateway_subscription_id' => $result['id'] ?? null,
@@ -101,18 +114,18 @@ class AsaasPaymentGateway implements PaymentGatewayContract
 
     public function updatePaymentValue(string $gatewayPaymentId, int $amountInCents): void
     {
-        $this->handle($this->client()->put("/v3/payments/{$gatewayPaymentId}", [
+        $this->handle($this->send(fn (): Response => $this->client()->put("/v3/payments/{$gatewayPaymentId}", [
             'value' => Money::toFloat($amountInCents),
-        ]));
+        ])));
     }
 
     public function updateSubscriptionCard(string $gatewaySubscriptionId, array $cardData): array
     {
-        $response = $this->client()->put("/v3/subscriptions/{$gatewaySubscriptionId}/creditCard", [
+        $response = $this->send(fn (): Response => $this->client()->put("/v3/subscriptions/{$gatewaySubscriptionId}/creditCard", [
             'creditCard' => $this->creditCardPayload($cardData),
             'creditCardHolderInfo' => $this->creditCardHolderInfoPayload($cardData),
             'remoteIp' => $cardData['remote_ip'],
-        ]);
+        ]));
 
         $result = $this->handle($response);
 
@@ -121,7 +134,7 @@ class AsaasPaymentGateway implements PaymentGatewayContract
 
     public function cancelSubscription(string $gatewaySubscriptionId): void
     {
-        $response = $this->client()->delete("/v3/subscriptions/{$gatewaySubscriptionId}");
+        $response = $this->send(fn (): Response => $this->client()->delete("/v3/subscriptions/{$gatewaySubscriptionId}"));
 
         if ($response->status() === 404) {
             return;
@@ -132,7 +145,7 @@ class AsaasPaymentGateway implements PaymentGatewayContract
 
     public function fetchPaymentStatus(string $gatewayPaymentId): ?string
     {
-        $response = $this->readClient()->get("/v3/payments/{$gatewayPaymentId}");
+        $response = $this->send(fn (): Response => $this->readClient()->get("/v3/payments/{$gatewayPaymentId}"));
 
         if ($response->status() === 404) {
             return null;
@@ -291,7 +304,7 @@ class AsaasPaymentGateway implements PaymentGatewayContract
         }
 
         try {
-            $result = $this->handle($this->client()->post('/v3/payments', $payload));
+            $result = $this->handle($this->send(fn (): Response => $this->client()->post('/v3/payments', $payload)));
         } catch (ConnectionException $exception) {
             $result = $this->recoverPaymentByExternalReference($externalReference, $exception);
         }

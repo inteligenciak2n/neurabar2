@@ -5,6 +5,7 @@ namespace App\Actions\Corporation;
 use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
 use App\Enums\UserRole;
+use App\Jobs\Venue\CreateVenueDefaultsJob;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueModule;
@@ -56,7 +57,9 @@ class CreateVenueAction
             'trial_ends_at' => $corporationSubscription->trial_ends_at,
         ]);
 
-        (new CreateVenueDefaultsAction)->execute($venue);
+        // Dezenas de inserts (cardápio, mesas, estações) não precisam segurar
+        // o request de criação da venue.
+        CreateVenueDefaultsJob::dispatch($venue);
 
         $this->propagateCorporateModules($corporation, $venue);
 

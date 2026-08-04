@@ -6,10 +6,11 @@ use App\Models\Tenant\CorporationInvoice;
 use App\Models\Tenant\VenueInvoice;
 use App\Support\Money;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class CardPaymentRefused extends Notification
+class CardPaymentRefused extends Notification implements ShouldQueue
 {
     use Queueable;
 

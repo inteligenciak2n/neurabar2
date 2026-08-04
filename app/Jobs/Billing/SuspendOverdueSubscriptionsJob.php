@@ -11,13 +11,16 @@ use App\Models\Tenant\VenueInvoice;
 use App\Models\Tenant\VenueSubscription;
 use App\Notifications\Billing\SubscriptionSuspended;
 use App\Services\Billing\BillingStatusService;
+use App\Services\Billing\GracePeriod;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Throwable;
 
 class SuspendOverdueSubscriptionsJob implements ShouldQueue
 {
@@ -26,6 +29,11 @@ class SuspendOverdueSubscriptionsJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
+    public int $tries = 3;
+
+    /** @var list<int> */
+    public array $backoff = [60, 300];
+
     public function handle(): void
     {
         $this->suspendExpiredTrials();
@@ -33,16 +41,27 @@ class SuspendOverdueSubscriptionsJob implements ShouldQueue
         $this->suspendOverdueVenues();
     }
 
+    public function failed(Throwable $exception): void
+    {
+        Log::error('billing.suspend_overdue_subscriptions.failed', [
+            'message' => $exception->getMessage(),
+        ]);
+    }
+
     private function suspendExpiredTrials(): void
     {
-        $corporationSubscriptions = CorporationSubscription::query()
-            ->where('status', SubscriptionStatus::PastDue->value)
-            ->whereRaw("trial_ends_at + INTERVAL '1 day' * grace_period_days <= ?", [now()])
-            ->get();
+        $query = CorporationSubscription::query()
+            ->where('status', SubscriptionStatus::PastDue->value);
 
-        foreach ($corporationSubscriptions as $subscription) {
-            $this->suspendCorporationSubscription($subscription, 'trial_grace_period_elapsed');
-        }
+        GracePeriod::elapsed($query, 'trial_ends_at', 'grace_period_days');
+
+        // Carregar todas as assinaturas de uma vez estourava a memória do worker
+        // conforme a base cresce.
+        $query->chunkById(100, function ($subscriptions): void {
+            foreach ($subscriptions as $subscription) {
+                $this->suspendCorporationSubscription($subscription, 'trial_grace_period_elapsed');
+            }
+        });
     }
 
     private function suspendOverdueUnifiedCorporations(): void
@@ -57,15 +76,21 @@ class SuspendOverdueSubscriptionsJob implements ShouldQueue
                 $query->select(DB::raw(1))
                     ->from('corporation_subscriptions')
                     ->whereColumn('corporation_subscriptions.id', 'corporation_invoices.corporation_subscription_id')
-                    ->where('corporation_subscriptions.billing_mode', BillingMode::Unified->value)
-                    ->whereRaw("corporation_invoices.due_date + INTERVAL '1 day' * corporation_subscriptions.grace_period_days <= ?", [$threshold]);
+                    ->where('corporation_subscriptions.billing_mode', BillingMode::Unified->value);
+
+                GracePeriod::elapsed(
+                    $query,
+                    'corporation_invoices.due_date',
+                    'corporation_subscriptions.grace_period_days',
+                    $threshold,
+                );
             })
             ->groupBy('corporation_id')
-            ->pluck('corporation_id');
+            ->cursor();
 
-        foreach ($corporationIds as $corporationId) {
+        foreach ($corporationIds as $row) {
             $subscription = CorporationSubscription::query()
-                ->where('corporation_id', $corporationId)
+                ->where('corporation_id', $row->corporation_id)
                 ->whereIn('status', [SubscriptionStatus::Active->value, SubscriptionStatus::PastDue->value])
                 ->first();
 
@@ -88,16 +113,23 @@ class SuspendOverdueSubscriptionsJob implements ShouldQueue
                     ->from('corporation_subscriptions')
                     ->join('venue_subscriptions', 'venue_subscriptions.corporation_subscription_id', '=', 'corporation_subscriptions.id')
                     ->whereColumn('venue_subscriptions.venue_id', 'venue_invoices.venue_id')
-                    ->where('corporation_subscriptions.billing_mode', BillingMode::PerVenue->value)
-                    ->whereRaw("venue_invoices.due_date + INTERVAL '1 day' * corporation_subscriptions.grace_period_days <= ?", [$threshold]);
+                    ->where('corporation_subscriptions.billing_mode', BillingMode::PerVenue->value);
+
+                GracePeriod::elapsed(
+                    $query,
+                    'venue_invoices.due_date',
+                    'corporation_subscriptions.grace_period_days',
+                    $threshold,
+                );
             })
             ->groupBy('venue_id')
-            ->pluck('venue_id');
+            ->cursor();
 
-        foreach ($venueIds as $venueId) {
+        foreach ($venueIds as $row) {
             $subscription = VenueSubscription::query()
-                ->where('venue_id', $venueId)
+                ->where('venue_id', $row->venue_id)
                 ->whereIn('status', [SubscriptionStatus::Active->value, SubscriptionStatus::PastDue->value])
+                ->with('venue')
                 ->first();
 
             if (! $subscription) {
@@ -131,6 +163,7 @@ class SuspendOverdueSubscriptionsJob implements ShouldQueue
         $venueSubscriptions = VenueSubscription::query()
             ->where('corporation_subscription_id', $subscription->id)
             ->whereIn('status', [SubscriptionStatus::Active->value, SubscriptionStatus::PastDue->value])
+            ->with('venue')
             ->get();
 
         foreach ($venueSubscriptions as $venueSubscription) {

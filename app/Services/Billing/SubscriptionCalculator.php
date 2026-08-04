@@ -12,6 +12,7 @@ use App\Models\Tenant\VenueModule;
 use App\Models\Tenant\VenueSubscription;
 use App\Models\Tenant\VenueUsageRecord;
 use App\Support\Money;
+use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -19,6 +20,43 @@ use Illuminate\Support\Facades\DB;
 
 class SubscriptionCalculator
 {
+    /**
+     * Fora de um lote o cache fica desligado: telas e ações alteram módulos e
+     * recalculam na mesma instância, e um valor memoizado ali seria obsoleto.
+     */
+    private bool $batching = false;
+
+    /** @var array<string, mixed> */
+    private array $memo = [];
+
+    /**
+     * Executa o callback com memoização de catálogo/módulos/faixas ativa.
+     *
+     * Usado pela geração mensal de faturas, onde os mesmos registros são lidos
+     * uma vez por venue da mesma corporation.
+     */
+    public function duringBatch(Closure $callback): mixed
+    {
+        $this->batching = true;
+        $this->memo = [];
+
+        try {
+            return $callback();
+        } finally {
+            $this->batching = false;
+            $this->memo = [];
+        }
+    }
+
+    private function remember(string $key, Closure $resolver): mixed
+    {
+        if (! $this->batching) {
+            return $resolver();
+        }
+
+        return $this->memo[$key] ??= $resolver();
+    }
+
     /**
      * Resolve o período de consumo faturado junto com a mensalidade do período
      * informado. A assinatura é pré-paga (mês corrente) e o consumo medido é
@@ -298,16 +336,19 @@ class SubscriptionCalculator
      */
     private function modulesOverlapping(Venue $venue, Carbon $periodStart, Carbon $periodEnd): Collection
     {
-        return $venue->modules()
-            ->where(function ($query): void {
-                $query->whereIn('status', [ModuleStatus::Active, ModuleStatus::Trial])
-                    ->orWhereNotNull('ended_at');
-            })
-            ->where('started_at', '<=', $periodEnd)
-            ->where(function ($query) use ($periodStart): void {
-                $query->whereNull('ended_at')->orWhere('ended_at', '>=', $periodStart);
-            })
-            ->get();
+        return $this->remember(
+            'venue_modules:'.$venue->id.':'.$periodStart->format('Y-m'),
+            fn (): Collection => $venue->modules()
+                ->where(function ($query): void {
+                    $query->whereIn('status', [ModuleStatus::Active, ModuleStatus::Trial])
+                        ->orWhereNotNull('ended_at');
+                })
+                ->where('started_at', '<=', $periodEnd)
+                ->where(function ($query) use ($periodStart): void {
+                    $query->whereNull('ended_at')->orWhere('ended_at', '>=', $periodStart);
+                })
+                ->get(),
+        );
     }
 
     /**
@@ -324,18 +365,21 @@ class SubscriptionCalculator
             return collect();
         }
 
-        return $corporation->modules()
-            ->where(function ($query): void {
-                $query->whereIn('status', [ModuleStatus::Active, ModuleStatus::Trial])
-                    ->orWhereNotNull('ended_at');
-            })
-            ->where('started_at', '<=', $periodEnd)
-            ->where(function ($query) use ($periodStart): void {
-                $query->whereNull('ended_at')->orWhere('ended_at', '>=', $periodStart);
-            })
-            ->with('catalog:id,code,base_monthly_price')
-            ->get()
-            ->keyBy('module_code');
+        return $this->remember(
+            'corporation_modules:'.$corporation->id.':'.$periodStart->format('Y-m'),
+            fn (): Collection => $corporation->modules()
+                ->where(function ($query): void {
+                    $query->whereIn('status', [ModuleStatus::Active, ModuleStatus::Trial])
+                        ->orWhereNotNull('ended_at');
+                })
+                ->where('started_at', '<=', $periodEnd)
+                ->where(function ($query) use ($periodStart): void {
+                    $query->whereNull('ended_at')->orWhere('ended_at', '>=', $periodStart);
+                })
+                ->with('catalog:id,code,base_monthly_price')
+                ->get()
+                ->keyBy('module_code'),
+        );
     }
 
     /**
@@ -476,10 +520,25 @@ class SubscriptionCalculator
      */
     private function resolveTiers(string $moduleCode, int $quantity): Collection
     {
-        return ModuleUsageTier::query()
-            ->where('module_code', $moduleCode)
-            ->where('min_quantity', '<=', $quantity)
-            ->orderBy('min_quantity')
-            ->get();
+        if (! $this->batching) {
+            return ModuleUsageTier::query()
+                ->where('module_code', $moduleCode)
+                ->where('min_quantity', '<=', $quantity)
+                ->orderBy('min_quantity')
+                ->get();
+        }
+
+        /** @var Collection<int, ModuleUsageTier> $tiers */
+        $tiers = $this->remember(
+            'tiers:'.$moduleCode,
+            fn (): Collection => ModuleUsageTier::query()
+                ->where('module_code', $moduleCode)
+                ->orderBy('min_quantity')
+                ->get(),
+        );
+
+        return $tiers
+            ->filter(fn (ModuleUsageTier $tier): bool => (int) $tier->min_quantity <= $quantity)
+            ->values();
     }
 }

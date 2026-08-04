@@ -23,7 +23,10 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Throwable;
 
 class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
 {
@@ -52,14 +55,28 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
 
     public function handle(SubscriptionCalculator $calculator): void
     {
-        CorporationSubscription::query()
-            ->whereIn('status', [SubscriptionStatus::Active, SubscriptionStatus::Trial, SubscriptionStatus::PastDue])
-            ->whereNull('gateway_subscription_id')
-            ->where(function ($query): void {
-                $query->whereNull('ended_at')->orWhere('ended_at', '>=', now());
-            })
-            ->cursor()
-            ->each(fn (CorporationSubscription $subscription) => $this->generateForSubscription($subscription, $calculator));
+        // Catálogo de módulos e faixas de consumo são estáveis durante a
+        // execução: sem memoização, cada venue repetia as mesmas consultas e a
+        // geração mensal virava dezenas de milhares de queries.
+        $calculator->duringBatch(function () use ($calculator): void {
+            CorporationSubscription::query()
+                ->whereIn('status', [SubscriptionStatus::Active, SubscriptionStatus::Trial, SubscriptionStatus::PastDue])
+                ->whereNull('gateway_subscription_id')
+                ->where(function ($query): void {
+                    $query->whereNull('ended_at')->orWhere('ended_at', '>=', now());
+                })
+                ->with('corporation.owner')
+                ->cursor()
+                ->each(fn (CorporationSubscription $subscription) => $this->generateForSubscription($subscription, $calculator));
+        });
+    }
+
+    public function failed(Throwable $exception): void
+    {
+        Log::error('billing.generate_invoices.failed', [
+            'period' => $this->period,
+            'message' => $exception->getMessage(),
+        ]);
     }
 
     private function generateForSubscription(CorporationSubscription $subscription, SubscriptionCalculator $calculator): void
@@ -70,35 +87,43 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $isUnified = $subscription->billing_mode === BillingMode::Unified;
-        $aggregate = $this->emptyContribution();
-        $venueInvoices = [];
+        // Uma falha no meio da corporation deixava faturas de venue órfãs, sem
+        // a fatura unificada correspondente.
+        DB::connection($subscription->getConnectionName())->transaction(function () use ($subscription, $corporation, $calculator): void {
+            $isUnified = $subscription->billing_mode === BillingMode::Unified;
+            $aggregate = $this->emptyContribution();
+            $venueInvoices = [];
 
-        // Venues desativadas continuavam sendo faturadas todo mês: a coluna
-        // `active` precisa filtrar a geração, não só a operação.
-        $venues = $corporation->venues()
-            ->where('active', true)
-            ->with('subscription')
-            ->get();
+            // Venues desativadas continuavam sendo faturadas todo mês: a coluna
+            // `active` precisa filtrar a geração, não só a operação.
+            $venues = $corporation->venues()
+                ->where('active', true)
+                ->with('subscription')
+                ->get();
 
-        foreach ($venues as $venue) {
-            $result = $this->processVenue($venue, $corporation, $subscription, $calculator, $isUnified);
+            foreach ($venues as $venue) {
+                // A corporation já está em memória: deixar o cálculo recarregá-la
+                // por venue era uma query extra por estabelecimento.
+                $venue->setRelation('corporation', $corporation);
 
-            if ($result === null) {
-                continue;
+                $result = $this->processVenue($venue, $corporation, $subscription, $calculator, $isUnified);
+
+                if ($result === null) {
+                    continue;
+                }
+
+                [$invoice, $contribution] = $result;
+                $venueInvoices[] = $invoice;
+
+                if ($isUnified) {
+                    $aggregate = $this->addContribution($aggregate, $contribution);
+                }
             }
-
-            [$invoice, $contribution] = $result;
-            $venueInvoices[] = $invoice;
 
             if ($isUnified) {
-                $aggregate = $this->addContribution($aggregate, $contribution);
+                $this->finalizeUnifiedInvoice($corporation, $subscription, $aggregate, $venueInvoices);
             }
-        }
-
-        if ($isUnified) {
-            $this->finalizeUnifiedInvoice($corporation, $subscription, $aggregate, $venueInvoices);
-        }
+        });
     }
 
     /**

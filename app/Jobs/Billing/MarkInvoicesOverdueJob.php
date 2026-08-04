@@ -11,7 +11,9 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Throwable;
 
 class MarkInvoicesOverdueJob implements ShouldQueue
 {
@@ -20,29 +22,43 @@ class MarkInvoicesOverdueJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
+    public int $tries = 3;
+
+    /** @var list<int> */
+    public array $backoff = [60, 300];
+
     public function handle(): void
     {
-        $venueInvoices = VenueInvoice::query()
+        VenueInvoice::query()
             ->where('status', InvoiceStatus::Open->value)
             ->where('due_date', '<', today())
             ->where('is_finalized', false)
-            ->get();
+            ->with('corporation.owner')
+            ->chunkById(100, function ($invoices): void {
+                foreach ($invoices as $invoice) {
+                    $invoice->update(['status' => InvoiceStatus::Overdue->value]);
+                    $this->notifyOwner($invoice);
+                }
+            });
 
-        foreach ($venueInvoices as $invoice) {
-            $invoice->update(['status' => InvoiceStatus::Overdue->value]);
-            $this->notifyOwner($invoice);
-        }
-
-        $corporationInvoices = CorporationInvoice::query()
+        CorporationInvoice::query()
             ->where('status', InvoiceStatus::Open->value)
             ->where('due_date', '<', today())
             ->where('is_finalized', false)
-            ->get();
+            ->with('corporation.owner')
+            ->chunkById(100, function ($invoices): void {
+                foreach ($invoices as $invoice) {
+                    $invoice->update(['status' => InvoiceStatus::Overdue->value]);
+                    $this->notifyOwner($invoice);
+                }
+            });
+    }
 
-        foreach ($corporationInvoices as $invoice) {
-            $invoice->update(['status' => InvoiceStatus::Overdue->value]);
-            $this->notifyOwner($invoice);
-        }
+    public function failed(Throwable $exception): void
+    {
+        Log::error('billing.mark_invoices_overdue.failed', [
+            'message' => $exception->getMessage(),
+        ]);
     }
 
     private function notifyOwner(VenueInvoice|CorporationInvoice $invoice): void
