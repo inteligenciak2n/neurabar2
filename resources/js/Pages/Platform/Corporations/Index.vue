@@ -68,7 +68,7 @@ const applySearch = () => {
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right">
-                                <Link :href="route('platform.corporations.edit', corp.id)" class="text-primary hover:underline text-xs">{{ __('Edit') }}</Link>
+                                <Link :href="route('platform.corporations.edit', corp.id)" prefetch class="text-primary hover:underline text-xs">{{ __('Edit') }}</Link>
                             </td>
                         </tr>
                     </tbody>

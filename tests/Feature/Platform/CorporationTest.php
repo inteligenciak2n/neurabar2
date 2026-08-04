@@ -7,6 +7,7 @@ use App\Models\Tenant\Corporation;
 use App\Models\Tenant\PlanCatalog;
 use Database\Seeders\PlanCatalogsSeeder;
 use Illuminate\Support\Facades\Mail;
+use Inertia\Inertia;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
@@ -85,5 +86,33 @@ class CorporationTest extends TestCase
         $corporations = $response->original->getData()['page']['props']['corporations']['data'];
         $this->assertCount(1, $corporations);
         $this->assertEquals('Acme Corp', $corporations[0]['name']);
+    }
+
+    public function test_corporation_edit_defers_the_audit_data(): void
+    {
+        $this->loginAsPlatformUser(ProfileEnum::SuperAdmin);
+
+        $corporation = Corporation::factory()->create();
+
+        $this->get(route('platform.corporations.edit', $corporation->id))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Platform/Corporations/Edit')
+                ->has('corporation')
+                ->missing('statusHistory')
+                ->missing('auditLogs')
+            );
+
+        $partial = $this->get(route('platform.corporations.edit', $corporation->id), [
+            'X-Inertia' => 'true',
+            'X-Inertia-Version' => (string) Inertia::getVersion(),
+            'X-Inertia-Partial-Component' => 'Platform/Corporations/Edit',
+            'X-Inertia-Partial-Data' => 'statusHistory,auditLogs',
+        ])->assertOk();
+
+        $props = $partial->json('props');
+
+        $this->assertArrayHasKey('statusHistory', $props);
+        $this->assertArrayHasKey('auditLogs', $props);
     }
 }

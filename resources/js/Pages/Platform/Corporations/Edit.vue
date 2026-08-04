@@ -1,10 +1,11 @@
 <script setup>
 import PlatformLayout from '@/Layouts/PlatformLayout.vue';
-import { useForm } from '@inertiajs/vue3';
+import { Deferred, router, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { useTranslate } from '@/Composables/useTranslate';
 import { useCurrency } from '@/Composables/useCurrency';
+import AppSkeleton from '@/Components/AppSkeleton.vue';
 import InputError from '@/Components/InputError.vue';
 
 const props = defineProps({
@@ -114,20 +115,21 @@ watch(() => invoiceForm.invoiceable_type, (type) => {
 const unifiedInvoices = computed(() => props.invoices.filter(i => i.venue_total === null || i.venue_total === 0));
 const allInvoices = computed(() => [...props.invoices, ...props.venueInvoices].sort((a, b) => b.period.localeCompare(a.period)));
 
-const statusChangeForms = ref({});
-allInvoices.value.forEach((invoice) => {
-    if (!statusChangeForms.value[invoice.id]) {
-        statusChangeForms.value[invoice.id] = useForm({ status: invoice.status });
-    }
-});
+// Um `useForm()` por fatura criava watchers que nunca eram descartados a cada
+// atualização da lista. Aqui basta guardar o status escolhido.
+const statusChangeValues = ref({});
 
-watch(() => allInvoices.value, (invoices) => {
+const syncStatusValues = (invoices) => {
     invoices.forEach((invoice) => {
-        if (!statusChangeForms.value[invoice.id]) {
-            statusChangeForms.value[invoice.id] = useForm({ status: invoice.status });
+        if (statusChangeValues.value[invoice.id] === undefined) {
+            statusChangeValues.value[invoice.id] = invoice.status;
         }
     });
-});
+};
+
+syncStatusValues(allInvoices.value);
+
+watch(allInvoices, syncStatusValues);
 
 const submit = () => {
     form.put(route('platform.corporations.update', props.corporation.id),{
@@ -181,8 +183,8 @@ const submitVenueModule = (venue) => {
 
 const destroyVenueModule = (venue, moduleId) => {
     if (confirm(__('Are you sure you want to disable this venue module?'))) {
-        const vf = useForm({});
-        vf.delete(route('platform.corporations.venues.modules.destroy', [props.corporation.id, venue.id, moduleId]),{
+        router.delete(route('platform.corporations.venues.modules.destroy', [props.corporation.id, venue.id, moduleId]), {
+            preserveScroll: true,
             onSuccess: () => {
                 toast.success(__('Venue module disabled successfully'));
             },
@@ -201,8 +203,8 @@ const submitDiscount = () => {
 
 const destroyDiscount = (discountId) => {
     if (confirm(__('Are you sure you want to remove this discount?'))) {
-        const df = useForm({});
-        df.delete(route('platform.corporations.discounts.destroy', [props.corporation.id, discountId]), {
+        router.delete(route('platform.corporations.discounts.destroy', [props.corporation.id, discountId]), {
+            preserveScroll: true,
             onSuccess: () => {
                 toast.success(__('Discount removed successfully'));
             },
@@ -220,10 +222,14 @@ const submitInvoice = () => {
 };
 
 const changeInvoiceStatus = (invoice) => {
-    const sf = statusChangeForms.value[invoice.id];
-    if (!sf) return;
+    const status = statusChangeValues.value[invoice.id];
 
-    sf.put(route('platform.corporations.invoices.status', [props.corporation.id, invoice.id]), {
+    if (! status) {
+        return;
+    }
+
+    router.put(route('platform.corporations.invoices.status', [props.corporation.id, invoice.id]), { status }, {
+        preserveScroll: true,
         onSuccess: () => {
             toast.success(__('Invoice status updated successfully'));
         },
@@ -686,7 +692,7 @@ const getStatusClass = (status) => {
                                 <td class="px-4 py-3 text-right text-ocean-deep dark:text-gray-100">{{ formatCurrency(invoice.total_value) }}</td>
                                 <td class="px-4 py-3 text-right">
                                     <div v-if="!invoice.is_finalized" class="flex items-center justify-end gap-2">
-                                        <select v-model="statusChangeForms[invoice.id].status" class="rounded-md border border-border px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
+                                        <select v-model="statusChangeValues[invoice.id]" class="rounded-md border border-border px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
                                             <option v-for="s in invoiceStatuses" :key="s.value" :value="s.value">{{ s.label }}</option>
                                         </select>
                                         <button @click="changeInvoiceStatus(invoice)" class="text-primary hover:underline text-xs">{{ __('Update') }}</button>
@@ -714,61 +720,71 @@ const getStatusClass = (status) => {
 
             <!-- Audit -->
             <div v-if="activeTab === 'audit'" class="space-y-6">
-                <div class="bg-white rounded-xl shadow-card overflow-hidden dark:bg-gray-800">
-                    <h2 class="font-heading font-semibold text-ocean-deep border-b px-4 py-3 dark:text-gray-100 dark:border-gray-700">{{ __('Subscription Status History') }}</h2>
-                    <table class="min-w-full text-sm">
-                        <thead class="bg-ocean-deep text-white">
-                            <tr>
-                                <th class="px-4 py-3 text-left font-medium">{{ __('Date') }}</th>
-                                <th class="px-4 py-3 text-left font-medium">{{ __('From') }}</th>
-                                <th class="px-4 py-3 text-left font-medium">{{ __('To') }}</th>
-                                <th class="px-4 py-3 text-left font-medium">{{ __('Reason') }}</th>
-                                <th class="px-4 py-3 text-left font-medium">{{ __('Actor') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-border dark:divide-gray-700">
-                            <tr v-for="entry in statusHistory" :key="entry.id">
-                                <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">{{ formatDate(entry.created_at) }}</td>
-                                <td class="px-4 py-3 text-muted-foreground">{{ entry.from_status ?? '-' }}</td>
-                                <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">{{ entry.to_status }}</td>
-                                <td class="px-4 py-3 text-muted-foreground">{{ entry.reason ?? '-' }}</td>
-                                <td class="px-4 py-3 text-muted-foreground">{{ entry.actor_name ?? __('System') }}</td>
-                            </tr>
-                            <tr v-if="!statusHistory.length">
-                                <td colspan="5" class="px-4 py-6 text-center text-muted-foreground">{{ __('No status changes recorded.') }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <Deferred :data="['statusHistory', 'auditLogs']">
+                    <template #fallback>
+                        <div class="bg-white rounded-xl shadow-card p-4 dark:bg-gray-800">
+                            <AppSkeleton :lines="6" />
+                        </div>
+                    </template>
 
-                <div class="bg-white rounded-xl shadow-card overflow-hidden dark:bg-gray-800">
-                    <h2 class="font-heading font-semibold text-ocean-deep border-b px-4 py-3 dark:text-gray-100 dark:border-gray-700">{{ __('Audit Log') }}</h2>
-                    <table class="min-w-full text-sm">
-                        <thead class="bg-ocean-deep text-white">
-                            <tr>
-                                <th class="px-4 py-3 text-left font-medium">{{ __('Date') }}</th>
-                                <th class="px-4 py-3 text-left font-medium">{{ __('Action') }}</th>
-                                <th class="px-4 py-3 text-left font-medium">{{ __('Actor') }}</th>
-                                <th class="px-4 py-3 text-left font-medium">{{ __('Changes') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-border dark:divide-gray-700">
-                            <tr v-for="log in auditLogs" :key="log.id">
-                                <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">{{ formatDate(log.created_at) }}</td>
-                                <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">{{ log.action }}</td>
-                                <td class="px-4 py-3 text-muted-foreground">{{ log.actor_name ?? __('System') }}</td>
-                                <td class="px-4 py-3 text-xs text-muted-foreground">
-                                    <span v-for="key in changedKeys(log)" :key="key" class="mr-2 inline-block">
-                                        {{ key }}: {{ log.before?.[key] ?? '-' }} &rarr; {{ log.after?.[key] ?? '-' }}
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr v-if="!auditLogs.length">
-                                <td colspan="4" class="px-4 py-6 text-center text-muted-foreground">{{ __('No audit entries recorded.') }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-xl shadow-card overflow-hidden dark:bg-gray-800">
+                            <h2 class="font-heading font-semibold text-ocean-deep border-b px-4 py-3 dark:text-gray-100 dark:border-gray-700">{{ __('Subscription Status History') }}</h2>
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-ocean-deep text-white">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left font-medium">{{ __('Date') }}</th>
+                                        <th class="px-4 py-3 text-left font-medium">{{ __('From') }}</th>
+                                        <th class="px-4 py-3 text-left font-medium">{{ __('To') }}</th>
+                                        <th class="px-4 py-3 text-left font-medium">{{ __('Reason') }}</th>
+                                        <th class="px-4 py-3 text-left font-medium">{{ __('Actor') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-border dark:divide-gray-700">
+                                    <tr v-for="entry in statusHistory" :key="entry.id">
+                                        <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">{{ formatDate(entry.created_at) }}</td>
+                                        <td class="px-4 py-3 text-muted-foreground">{{ entry.from_status ?? '-' }}</td>
+                                        <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">{{ entry.to_status }}</td>
+                                        <td class="px-4 py-3 text-muted-foreground">{{ entry.reason ?? '-' }}</td>
+                                        <td class="px-4 py-3 text-muted-foreground">{{ entry.actor_name ?? __('System') }}</td>
+                                    </tr>
+                                    <tr v-if="!statusHistory.length">
+                                        <td colspan="5" class="px-4 py-6 text-center text-muted-foreground">{{ __('No status changes recorded.') }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-card overflow-hidden dark:bg-gray-800">
+                            <h2 class="font-heading font-semibold text-ocean-deep border-b px-4 py-3 dark:text-gray-100 dark:border-gray-700">{{ __('Audit Log') }}</h2>
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-ocean-deep text-white">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left font-medium">{{ __('Date') }}</th>
+                                        <th class="px-4 py-3 text-left font-medium">{{ __('Action') }}</th>
+                                        <th class="px-4 py-3 text-left font-medium">{{ __('Actor') }}</th>
+                                        <th class="px-4 py-3 text-left font-medium">{{ __('Changes') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-border dark:divide-gray-700">
+                                    <tr v-for="log in auditLogs" :key="log.id">
+                                        <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">{{ formatDate(log.created_at) }}</td>
+                                        <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">{{ log.action }}</td>
+                                        <td class="px-4 py-3 text-muted-foreground">{{ log.actor_name ?? __('System') }}</td>
+                                        <td class="px-4 py-3 text-xs text-muted-foreground">
+                                            <span v-for="key in changedKeys(log)" :key="key" class="mr-2 inline-block">
+                                                {{ key }}: {{ log.before?.[key] ?? '-' }} &rarr; {{ log.after?.[key] ?? '-' }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="!auditLogs.length">
+                                        <td colspan="4" class="px-4 py-6 text-center text-muted-foreground">{{ __('No audit entries recorded.') }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </Deferred>
             </div>
         </div>
     </PlatformLayout>

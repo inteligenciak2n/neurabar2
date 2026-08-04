@@ -88,8 +88,13 @@ class CorporationController extends Controller
             'plans' => $plans,
             'invoices' => $invoices,
             'venueInvoices' => $venueInvoices,
-            'statusHistory' => $this->statusHistoryFor($corporation),
-            'auditLogs' => $this->auditLogsFor($corporation, $invoices->pluck('id'), $venueInvoices->pluck('id')),
+            // A auditoria só é lida na aba própria: carregá-la no request
+            // principal atrasava a abertura da tela inteira.
+            'statusHistory' => Inertia::defer(fn () => $this->statusHistoryFor($corporation), 'audit'),
+            'auditLogs' => Inertia::defer(
+                fn () => $this->auditLogsFor($corporation, $invoices->pluck('id'), $venueInvoices->pluck('id')),
+                'audit'
+            ),
             'moduleCatalog' => ModuleCode::all(),
             'subscriptionStatuses' => array_map(fn ($s) => ['value' => $s->value, 'label' => $s->label()], SubscriptionStatus::cases()),
             'billingModes' => array_map(fn ($m) => ['value' => $m->value, 'label' => $m->label()], BillingMode::cases()),

@@ -7,6 +7,7 @@ use App\Exceptions\Subscription\GatewayRequestException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\PayInvoiceRequest;
 use App\Models\Tenant\CorporationInvoice;
+use App\Models\Tenant\PaymentAttempt;
 use App\Models\Tenant\VenueInvoice;
 use App\Services\Subscription\PaymentSaasService;
 use Illuminate\Http\RedirectResponse;
@@ -88,6 +89,15 @@ class SubscriptionInvoiceController extends Controller
             default => $result['message'],
         };
 
+        // PIX e boleto exigem uma ação fora do sistema: sem as instruções o
+        // cliente saa da tela sem saber como concluir o pagamento.
+        if ($result['status'] === 'pending') {
+            return redirect()->route('settings.subscription.invoices.show', [
+                'invoiceType' => $invoiceType,
+                'invoiceId' => $invoiceId,
+            ])->with('success', $message);
+        }
+
         return back()->with($result['status'] === 'failed' ? 'error' : 'success', $message);
     }
 
@@ -112,7 +122,46 @@ class SubscriptionInvoiceController extends Controller
         return Inertia::render('Settings/Subscription/InvoiceShow', [
             'invoice' => $invoice,
             'type' => $invoiceType,
+            'paymentInstructions' => $this->paymentInstructions($invoice, $invoiceType),
         ]);
+    }
+
+    /**
+     * Dados que o cliente precisa para concluir um PIX ou boleto já emitido.
+     *
+     * Apenas os campos públicos da cobrança são expostos: o payload bruto do
+     * gateway carrega dados do cliente e do meio de pagamento.
+     *
+     * @return array<string, string>|null
+     */
+    private function paymentInstructions(VenueInvoice|CorporationInvoice $invoice, string $invoiceType): ?array
+    {
+        if ($invoice->status->isFinalized()) {
+            return null;
+        }
+
+        $attempt = PaymentAttempt::query()
+            ->where('invoice_type', $invoiceType)
+            ->where('invoice_id', $invoice->id)
+            ->where('status', 'pending')
+            ->orderByDesc('attempted_at')
+            ->first();
+
+        if (! $attempt) {
+            return null;
+        }
+
+        $payload = is_array($attempt->payload) ? $attempt->payload : [];
+
+        $instructions = array_filter([
+            'pix_code' => $payload['pixQrCode'] ?? null,
+            'pix_qr_image' => $payload['pixQrCodeImage'] ?? null,
+            'boleto_url' => $payload['bankSlipUrl'] ?? null,
+            'invoice_url' => $payload['invoiceUrl'] ?? null,
+            'due_date' => $payload['dueDate'] ?? null,
+        ], fn ($value): bool => is_string($value) && $value !== '');
+
+        return $instructions === [] ? null : $instructions;
     }
 
     private function resolveInvoice(Request $request, string $type, string $id): VenueInvoice|CorporationInvoice|null

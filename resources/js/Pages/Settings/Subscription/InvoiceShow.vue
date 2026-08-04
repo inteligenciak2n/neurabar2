@@ -1,17 +1,37 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import { Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
 import { useCurrency } from '@/Composables/useCurrency';
 
 const props = defineProps({
     invoice: Object,
     type: String,
+    paymentInstructions: {
+        type: Object,
+        default: null,
+    },
 });
 
 const __ = useTranslate();
 const { formatMoney } = useCurrency();
+
+const copied = ref(false);
+
+const copyPixCode = async () => {
+    if (! props.paymentInstructions?.pix_code) {
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(props.paymentInstructions.pix_code);
+        copied.value = true;
+        setTimeout(() => (copied.value = false), 2000);
+    } catch {
+        copied.value = false;
+    }
+};
 
 // Fatura de venue vinculada a uma fatura da corporation é apenas o
 // detalhamento do modo unificado: quem paga é a corporation.
@@ -97,12 +117,61 @@ const statusClass = (status) => {
                 </table>
             </div>
 
+            <div v-if="paymentInstructions" class="mt-6 rounded-lg border border-primary/40 bg-ocean-light/20 p-4">
+                <h2 class="font-heading text-sm font-bold text-ocean-deep">{{ __('Complete your payment') }}</h2>
+
+                <div v-if="paymentInstructions.pix_code" class="mt-3">
+                    <p class="text-xs text-muted-foreground">{{ __('Pix copy and paste') }}</p>
+                    <div class="mt-1 flex flex-wrap items-center gap-2">
+                        <code class="flex-1 break-all rounded bg-white px-2 py-1 text-xs">{{ paymentInstructions.pix_code }}</code>
+                        <button
+                            type="button"
+                            class="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+                            @click="copyPixCode"
+                        >
+                            {{ copied ? __('Copied!') : __('Copy code') }}
+                        </button>
+                    </div>
+                    <img
+                        v-if="paymentInstructions.pix_qr_image"
+                        :src="paymentInstructions.pix_qr_image"
+                        :alt="__('Pix QR code')"
+                        class="mt-3 h-40 w-40 rounded bg-white p-2"
+                    >
+                </div>
+
+                <p v-if="paymentInstructions.due_date" class="mt-3 text-xs text-muted-foreground">
+                    {{ __('Pay by') }} {{ paymentInstructions.due_date }}
+                </p>
+
+                <div class="mt-3 flex flex-wrap gap-3">
+                    <a
+                        v-if="paymentInstructions.boleto_url"
+                        :href="paymentInstructions.boleto_url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-sm font-medium text-primary hover:underline"
+                    >
+                        {{ __('Open bank slip') }}
+                    </a>
+                    <a
+                        v-if="paymentInstructions.invoice_url"
+                        :href="paymentInstructions.invoice_url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-sm font-medium text-primary hover:underline"
+                    >
+                        {{ __('Open payment page') }}
+                    </a>
+                </div>
+            </div>
+
             <div v-if="isPayable" class="mt-6">
                 <Link
                     :href="route('settings.subscription.invoices.index')"
                     class="rounded-md bg-primary px-4 py-2 text-sm text-white"
                 >
-                    {{ __('Pay Invoice') }}
+                    {{ paymentInstructions ? __('Pay with another method') : __('Pay Invoice') }}
                 </Link>
             </div>
 

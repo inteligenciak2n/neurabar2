@@ -1,13 +1,14 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import { Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
 import { useCurrency } from '@/Composables/useCurrency';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 
 const props = defineProps({
-    subscription: Object,    corporation: Object,
+    subscription: Object,
+    corporation: Object,
     availableModules: Array,
     venues: Array,
     blocked: Boolean,
@@ -53,6 +54,75 @@ const activateGateway = (venueId = null) => {
 };
 
 const hasModule = (venue, moduleCode) => venue.modules.some((m) => m.code === moduleCode);
+
+// Contratar um módulo pago custa dinheiro: a troca acontecia em um clique,
+// sem confirmação e sem mostrar quanto seria cobrado.
+const pendingModule = ref(null);
+
+const trialDaysLeft = computed(() => {
+    if (! props.subscription?.trial_ends_at || props.subscription.status !== 'trial') {
+        return null;
+    }
+
+    const endsAt = new Date(props.subscription.trial_ends_at);
+    const days = Math.ceil((endsAt.getTime() - Date.now()) / 86400000);
+
+    return days > 0 ? days : 0;
+});
+
+// A cobrança do mês de adesão é proporcional aos dias restantes, igual ao que
+// o `SubscriptionCalculator` faz no faturamento.
+const proratedAmount = computed(() => {
+    if (! pendingModule.value) {
+        return 0;
+    }
+
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const remainingDays = daysInMonth - now.getDate() + 1;
+
+    return Math.round((pendingModule.value.module.monthly_price * remainingDays) / daysInMonth);
+});
+
+const confirmMessage = computed(() => {
+    if (! pendingModule.value) {
+        return '';
+    }
+
+    const { module, venue, action } = pendingModule.value;
+
+    if (action === 'remove') {
+        return `${__('Remove :module from :venue?').replace(':module', module.name).replace(':venue', venue.name)} `
+            + `${__('You will still be charged for the days already used in the current period.')}`;
+    }
+
+    return `${__('Enable :module for :venue?').replace(':module', module.name).replace(':venue', venue.name)} `
+        + `${__('Monthly price: :price.').replace(':price', formatMoney(module.monthly_price))} `
+        + `${__('Charged now (pro rata): :amount.').replace(':amount', formatMoney(proratedAmount.value))}`;
+});
+
+const requestToggle = (venue, module) => {
+    if (pendingModuleKey.value) {
+        return;
+    }
+
+    pendingModule.value = {
+        venue,
+        module,
+        action: hasModule(venue, module.code) ? 'remove' : 'add',
+    };
+};
+
+const confirmToggle = () => {
+    if (! pendingModule.value) {
+        return;
+    }
+
+    const { venue, module } = pendingModule.value;
+
+    pendingModule.value = null;
+    toggleModule(venue, module.code);
+};
 
 const toggleModule = (venue, moduleCode) => {
     const key = `${venue.id}:${moduleCode}`;
@@ -102,6 +172,16 @@ const statusLabel = (status) => ({
 
             <div v-else-if="inGracePeriod" class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
                 {{ __('Your subscription is in grace period. Regularize your payment to avoid suspension.') }}
+            </div>
+
+            <div v-if="trialDaysLeft !== null" class="rounded-xl border border-ocean-light bg-ocean-light/30 p-4 text-sm text-ocean-deep">
+                <span v-if="trialDaysLeft > 0">
+                    {{ __('Your trial ends in :days day(s).').replace(':days', trialDaysLeft) }}
+                </span>
+                <span v-else>{{ __('Your trial ends today.') }}</span>
+                <span v-if="!hasPaymentMethod">
+                    {{ __('Add a credit card to keep your access after the trial.') }}
+                </span>
             </div>
 
             <div class="rounded-xl border border-border bg-white p-6 shadow-card">
@@ -167,6 +247,7 @@ const statusLabel = (status) => ({
             <div class="grid gap-4 sm:grid-cols-2">
                 <Link
                     :href="route('settings.subscription.invoices.index')"
+                    prefetch
                     class="rounded-xl border border-border bg-white p-5 shadow-card transition-shadow hover:shadow-ocean"
                 >
                     <p class="font-heading font-semibold">{{ __('Invoices') }}</p>
@@ -174,6 +255,7 @@ const statusLabel = (status) => ({
                 </Link>
                 <Link
                     :href="route('settings.subscription.payment-methods.index')"
+                    prefetch
                     class="rounded-xl border border-border bg-white p-5 shadow-card transition-shadow hover:shadow-ocean"
                 >
                     <p class="font-heading font-semibold">{{ __('Payment Methods') }}</p>
@@ -181,6 +263,7 @@ const statusLabel = (status) => ({
                 </Link>
                 <Link
                     :href="route('settings.subscription.billing-address.edit')"
+                    prefetch
                     class="rounded-xl border border-border bg-white p-5 shadow-card transition-shadow hover:shadow-ocean"
                 >
                     <p class="font-heading font-semibold">{{ __('Billing Address') }}</p>
@@ -229,7 +312,7 @@ const statusLabel = (status) => ({
                                         class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                         :class="hasModule(venue, module.code) ? 'bg-primary' : 'bg-gray-200'"
                                         :disabled="blocked || pendingModuleKey !== null"
-                                        @click="toggleModule(venue, module.code)"
+                                        @click="requestToggle(venue, module)"
                                     >
                                         <span
                                             class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
@@ -253,6 +336,16 @@ const statusLabel = (status) => ({
             :loading="canceling"
             @confirm="cancelSubscription"
             @cancel="confirmingCancellation = false"
+        />
+
+        <AppConfirmModal
+            :show="pendingModule !== null"
+            :title="pendingModule?.action === 'remove' ? __('Remove Module') : __('Enable Module')"
+            :message="confirmMessage"
+            :confirm-label="pendingModule?.action === 'remove' ? __('Remove Module') : __('Enable Module')"
+            :variant="pendingModule?.action === 'remove' ? 'destructive' : 'primary'"
+            @confirm="confirmToggle"
+            @cancel="pendingModule = null"
         />
     </SettingsLayout>
 </template>
