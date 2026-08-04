@@ -3,12 +3,14 @@
 namespace App\Jobs\Billing;
 
 use App\Enums\BillingMode;
+use App\Enums\InvoiceItemType;
 use App\Enums\InvoiceStatus;
 use App\Enums\SubscriptionStatus;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationDiscount;
 use App\Models\Tenant\CorporationInvoice;
 use App\Models\Tenant\CorporationSubscription;
+use App\Models\Tenant\InvoiceItem;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueInvoice;
 use App\Notifications\Billing\InvoiceGenerated;
@@ -154,6 +156,8 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
             $this->notifyOwner($invoice);
         }
 
+        $this->syncVenueInvoiceItems($invoice, $calculated, $discountValue);
+
         return [$invoice, [
             'base' => $calculated['base'],
             'modules' => $calculated['modules'],
@@ -237,8 +241,135 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
             }
         }
 
+        $this->syncCorporationInvoiceItems($corporationInvoice, $aggregate, $discountValue);
+
         if ($corporationInvoice->wasRecentlyCreated) {
             $this->notifyOwner($corporationInvoice);
+        }
+    }
+
+    /**
+     * Reescreve as linhas da fatura da venue.
+     *
+     * A fatura guardava só totais agregados: nem o cliente nem o suporte
+     * conseguiam responder de onde vinha cada real cobrado.
+     *
+     * @param  array<string, mixed>  $calculated
+     */
+    private function syncVenueInvoiceItems(VenueInvoice $invoice, array $calculated, int $discountValue): void
+    {
+        $items = [];
+
+        if ($calculated['base'] > 0) {
+            $items[] = [
+                'type' => InvoiceItemType::Base,
+                'description' => 'Mensalidade do plano',
+                'period' => $this->period,
+                'quantity' => 1,
+                'unit_amount' => $calculated['base'],
+                'total_amount' => $calculated['base'],
+            ];
+        }
+
+        foreach ($calculated['module_lines'] as $line) {
+            $items[] = [
+                'type' => InvoiceItemType::Module,
+                'description' => 'Módulo '.$line['module_code'],
+                'module_code' => $line['module_code'],
+                'period' => $this->period,
+                'quantity' => (int) $line['quantity'],
+                'unit_amount' => (int) $line['unit_amount'],
+                'total_amount' => (int) $line['total_amount'],
+            ];
+        }
+
+        foreach ($calculated['metered_lines'] as $line) {
+            $items[] = [
+                'type' => InvoiceItemType::Metered,
+                'description' => 'Consumo '.$line['module_code'],
+                'module_code' => $line['module_code'],
+                'period' => $calculated['usage_period'],
+                'quantity' => (int) $line['quantity'],
+                'unit_amount' => 0,
+                'total_amount' => (int) $line['total_amount'],
+            ];
+        }
+
+        if ($calculated['dedicated_surcharge'] > 0) {
+            $items[] = [
+                'type' => InvoiceItemType::Surcharge,
+                'description' => 'Infraestrutura dedicada',
+                'period' => $this->period,
+                'quantity' => 1,
+                'unit_amount' => $calculated['dedicated_surcharge'],
+                'total_amount' => $calculated['dedicated_surcharge'],
+            ];
+        }
+
+        $this->replaceInvoiceItems($invoice, $items, $discountValue);
+    }
+
+    /**
+     * @param  array<string, int>  $aggregate
+     */
+    private function syncCorporationInvoiceItems(CorporationInvoice $invoice, array $aggregate, int $discountValue): void
+    {
+        $items = [];
+
+        $labels = [
+            'base' => ['Mensalidade dos planos', InvoiceItemType::Base],
+            'modules' => ['Módulos contratados', InvoiceItemType::Module],
+            'metered' => ['Consumo medido', InvoiceItemType::Metered],
+            'dedicated_surcharge' => ['Infraestrutura dedicada', InvoiceItemType::Surcharge],
+        ];
+
+        foreach ($labels as $key => [$description, $type]) {
+            if ($aggregate[$key] <= 0) {
+                continue;
+            }
+
+            $items[] = [
+                'type' => $type,
+                'description' => $description,
+                'period' => $this->period,
+                'quantity' => 1,
+                'unit_amount' => $aggregate[$key],
+                'total_amount' => $aggregate[$key],
+            ];
+        }
+
+        $this->replaceInvoiceItems($invoice, $items, $discountValue);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $items
+     */
+    private function replaceInvoiceItems(VenueInvoice|CorporationInvoice $invoice, array $items, int $discountValue): void
+    {
+        if ($discountValue > 0) {
+            $items[] = [
+                'type' => InvoiceItemType::Discount,
+                'description' => 'Desconto comercial',
+                'period' => $this->period,
+                'quantity' => 1,
+                'unit_amount' => -$discountValue,
+                'total_amount' => -$discountValue,
+            ];
+        }
+
+        // Reexecução do job no mesmo período recalcula os valores: manter as
+        // linhas antigas duplicaria a fatura item a item.
+        InvoiceItem::query()
+            ->where('invoice_type', $invoice->getMorphClass())
+            ->where('invoice_id', $invoice->getKey())
+            ->delete();
+
+        foreach ($items as $item) {
+            InvoiceItem::create(array_merge([
+                'invoice_type' => $invoice->getMorphClass(),
+                'invoice_id' => $invoice->getKey(),
+                'module_code' => null,
+            ], $item));
         }
     }
 
@@ -426,8 +557,8 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
     }
 
     /**
-     * @param  array<string, int>  $calculated
-     * @return array<string, int>
+     * @param  array<string, mixed>  $calculated
+     * @return array<string, mixed>
      */
     private function applyTrialFactor(array $calculated, float $factor): array
     {
@@ -436,13 +567,29 @@ class GenerateInvoicesJob implements ShouldBeUnique, ShouldQueue
         }
 
         $base = Money::multiply($calculated['base'], $factor);
-        $modules = Money::multiply($calculated['modules'], $factor);
         $dedicatedSurcharge = Money::multiply($calculated['dedicated_surcharge'], $factor);
+
+        // As linhas são proporcionalizadas uma a uma e o total dos módulos passa
+        // a ser a soma delas: prorratear o agregado separadamente faria a fatura
+        // divergir dos itens exibidos por arredondamento.
+        $moduleLines = [];
+        $modules = 0;
+
+        foreach ($calculated['module_lines'] as $line) {
+            $line['total_amount'] = Money::multiply((int) $line['total_amount'], $factor);
+            $modules += $line['total_amount'];
+            $moduleLines[] = $line;
+        }
+
+        if ($moduleLines === []) {
+            $modules = Money::multiply($calculated['modules'], $factor);
+        }
 
         // O consumo medido é pós-pago e já aconteceu: não é proporcionalizado.
         return array_merge($calculated, [
             'base' => $base,
             'modules' => $modules,
+            'module_lines' => $moduleLines,
             'dedicated_surcharge' => $dedicatedSurcharge,
             'total' => $base + $modules + $dedicatedSurcharge + $calculated['metered'],
         ]);

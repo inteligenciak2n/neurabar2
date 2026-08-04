@@ -34,6 +34,7 @@ class ExpireTrialsJob implements ShouldQueue
             // paying customer as delinquent and start the suspension countdown.
             $convertedToPaid = $subscription->isBilledByGateway();
 
+            $subscription->statusChangeReason = $convertedToPaid ? 'trial_converted_to_paid' : 'trial_expired';
             $subscription->update([
                 'status' => $convertedToPaid
                     ? SubscriptionStatus::Active->value
@@ -61,6 +62,9 @@ class ExpireTrialsJob implements ShouldQueue
             ->get();
 
         foreach ($venueSubscriptions as $venueSubscription) {
+            $venueSubscription->statusChangeReason = $venueSubscription->isBilledByGateway()
+                ? 'trial_converted_to_paid'
+                : 'trial_expired';
             $venueSubscription->update([
                 'status' => $venueSubscription->isBilledByGateway()
                     ? SubscriptionStatus::Active->value

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Platform;
 use App\Enums\ProfileEnum;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Audit\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -13,6 +14,9 @@ use Inertia\Response;
 
 class PlatformUserController extends Controller
 {
+    /** @var list<string> */
+    private const AUDITED_ATTRIBUTES = ['name', 'email', 'profile', 'active'];
+
     public function index(): Response
     {
         $users = User::whereIn('profile', ProfileEnum::platformProfiles())
@@ -34,7 +38,9 @@ class PlatformUserController extends Controller
             'active' => ['boolean'],
         ]);
 
-        User::create($validated);
+        $user = User::create($validated);
+
+        AuditLogger::record('platform_user.created', $user, null, AuditLogger::snapshot($user, self::AUDITED_ATTRIBUTES));
 
         return back()->with('success', 'User created successfully.');
     }
@@ -55,7 +61,11 @@ class PlatformUserController extends Controller
             unset($validated['password']);
         }
 
+        $before = AuditLogger::snapshot($user, self::AUDITED_ATTRIBUTES);
+
         $user->update($validated);
+
+        AuditLogger::record('platform_user.updated', $user, $before, AuditLogger::snapshot($user, self::AUDITED_ATTRIBUTES));
 
         Log::info('platform.user.updated', [
             'actor_id' => $request->user()?->id,
@@ -72,7 +82,11 @@ class PlatformUserController extends Controller
 
         abort_if($request->user()?->is($user) === true, 403, 'You cannot delete your own account.');
 
+        $before = AuditLogger::snapshot($user, self::AUDITED_ATTRIBUTES);
+
         $user->delete();
+
+        AuditLogger::record('platform_user.deleted', $user, $before, null);
 
         Log::info('platform.user.deleted', [
             'actor_id' => $request->user()?->id,

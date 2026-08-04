@@ -10,6 +10,7 @@ use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationInvoice;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueInvoice;
+use App\Services\Audit\AuditLogger;
 use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +32,7 @@ class ManualInvoiceController extends Controller
             $total = $baseValue + $modulesValue + $meteredValue + $dedicatedSurcharge - $discountValue;
 
             if ($validated['invoiceable_type'] === 'corporation') {
-                CorporationInvoice::create([
+                $invoice = CorporationInvoice::create([
                     'corporation_id' => $corporation->id,
                     'corporation_subscription_id' => $corporation->subscription?->id,
                     'affiliate_code_id' => $corporation->subscription?->affiliate_code_id,
@@ -46,6 +47,8 @@ class ManualInvoiceController extends Controller
                     'total_value' => max(0, $total),
                 ]);
 
+                AuditLogger::record('invoice.created_manually', $invoice, null, $this->snapshot($invoice));
+
                 return;
             }
 
@@ -53,7 +56,7 @@ class ManualInvoiceController extends Controller
                 ->where('id', $validated['invoiceable_id'])
                 ->firstOrFail();
 
-            VenueInvoice::create([
+            $venueInvoice = VenueInvoice::create([
                 'venue_id' => $venue->id,
                 'venue_subscription_id' => $venue->subscription?->id,
                 'affiliate_code_id' => $venue->subscription?->affiliate_code_id,
@@ -67,6 +70,8 @@ class ManualInvoiceController extends Controller
                 'discount_value' => $discountValue,
                 'total_value' => max(0, $total),
             ]);
+
+            AuditLogger::record('invoice.created_manually', $venueInvoice, null, $this->snapshot($venueInvoice));
         });
 
         return back()->with('success', __('Invoice created successfully.'));
@@ -83,12 +88,26 @@ class ManualInvoiceController extends Controller
             return back()->with('error', __('Invoice status transition not allowed.'));
         }
 
+        $before = $this->snapshot($invoice);
+
         $invoice->update([
             'status' => $status,
             'paid_at' => $status === InvoiceStatus::Paid ? now() : $invoice->paid_at,
             'is_finalized' => $status->isFinalized(),
         ]);
 
+        // Marcar uma fatura como paga na mão libera acesso e encerra cobrança:
+        // sem registro não havia como responder quem autorizou.
+        AuditLogger::record('invoice.status_changed_manually', $invoice, $before, $this->snapshot($invoice));
+
         return back()->with('success', __('Invoice status updated successfully.'));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function snapshot(VenueInvoice|CorporationInvoice $invoice): array
+    {
+        return AuditLogger::snapshot($invoice, ['period', 'status', 'total_value', 'due_date', 'is_finalized', 'paid_at']);
     }
 }

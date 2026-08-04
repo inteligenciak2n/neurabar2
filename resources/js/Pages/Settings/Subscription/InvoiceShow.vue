@@ -70,6 +70,33 @@ const statusClass = (status) => {
                 </div>
             </dl>
 
+            <div class="mt-6 border-t border-border pt-4">
+                <h2 class="font-heading text-sm font-bold text-ocean-deep dark:text-gray-100">{{ __('Invoice Items') }}</h2>
+
+                <p v-if="!invoice.items || invoice.items.length === 0" class="mt-2 text-sm text-muted-foreground">
+                    {{ __('No items recorded for this invoice.') }}
+                </p>
+
+                <table v-else class="mt-2 w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-xs text-muted-foreground">
+                            <th class="py-1 font-medium">{{ __('Description') }}</th>
+                            <th class="py-1 font-medium">{{ __('Period') }}</th>
+                            <th class="py-1 font-medium text-right">{{ __('Quantity') }}</th>
+                            <th class="py-1 font-medium text-right">{{ __('Total') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in invoice.items" :key="item.id" class="border-t border-border">
+                            <td class="py-1">{{ item.description }}</td>
+                            <td class="py-1 text-muted-foreground">{{ item.period }}</td>
+                            <td class="py-1 text-right text-muted-foreground">{{ item.quantity }}</td>
+                            <td class="py-1 text-right">{{ formatMoney(item.total_amount) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
             <div v-if="isPayable" class="mt-6">
                 <Link
                     :href="route('settings.subscription.invoices.index')"

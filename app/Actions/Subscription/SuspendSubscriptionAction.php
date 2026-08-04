@@ -77,6 +77,7 @@ class SuspendSubscriptionAction
             return;
         }
 
+        $subscription->statusChangeReason = $reason;
         $subscription->update([
             'status' => SubscriptionStatus::Suspended,
             'ended_at' => now(),
@@ -107,6 +108,7 @@ class SuspendSubscriptionAction
             return;
         }
 
+        $subscription->statusChangeReason = $reason;
         $subscription->update([
             'status' => SubscriptionStatus::Suspended,
             'ended_at' => now(),

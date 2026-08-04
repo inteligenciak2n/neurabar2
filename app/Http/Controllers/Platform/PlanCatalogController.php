@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\PlanCatalog;
+use App\Services\Audit\AuditLogger;
 use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,6 +13,11 @@ use Inertia\Response;
 
 class PlanCatalogController extends Controller
 {
+    /** @var list<string> */
+    private const AUDITED_ATTRIBUTES = [
+        'code', 'name', 'monthly_price', 'dedicated_surcharge', 'sort_order', 'active',
+    ];
+
     public function index(): Response
     {
         $plans = PlanCatalog::orderBy('sort_order')->get();
@@ -36,7 +42,9 @@ class PlanCatalogController extends Controller
         $validated['monthly_price'] = Money::fromFloat($validated['monthly_price']);
         $validated['dedicated_surcharge'] = Money::fromFloat($validated['dedicated_surcharge'] ?? 0);
 
-        PlanCatalog::create($validated);
+        $plan = PlanCatalog::create($validated);
+
+        AuditLogger::record('plan.created', $plan, null, AuditLogger::snapshot($plan, self::AUDITED_ATTRIBUTES));
 
         return back()->with('success', 'Plan created successfully.');
     }
@@ -56,14 +64,24 @@ class PlanCatalogController extends Controller
         $validated['monthly_price'] = Money::fromFloat($validated['monthly_price']);
         $validated['dedicated_surcharge'] = Money::fromFloat($validated['dedicated_surcharge'] ?? 0);
 
+        // Alterar preço de plano muda a fatura de todos os clientes: precisa
+        // deixar rastro de quem mudou o quê.
+        $before = AuditLogger::snapshot($plan, self::AUDITED_ATTRIBUTES);
+
         $plan->update($validated);
+
+        AuditLogger::record('plan.updated', $plan, $before, AuditLogger::snapshot($plan, self::AUDITED_ATTRIBUTES));
 
         return back()->with('success', 'Plan updated successfully.');
     }
 
     public function destroy(PlanCatalog $plan): RedirectResponse
     {
+        $before = AuditLogger::snapshot($plan, self::AUDITED_ATTRIBUTES);
+
         $plan->delete();
+
+        AuditLogger::record('plan.deleted', $plan, $before, null);
 
         return back()->with('success', 'Plan deleted successfully.');
     }

@@ -6,6 +6,7 @@ use App\Actions\Platform\AssignPlanToCorporationAction;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\PlanCatalog;
+use App\Services\Audit\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -25,7 +26,16 @@ class PlanAssignmentController extends Controller
 
         $plan = PlanCatalog::findOrFail($validated['plan_catalog_id']);
 
+        $previousPlanId = $corporation->subscription?->plan_catalog_id;
+
         $action->execute($corporation, $plan, $validated);
+
+        AuditLogger::record(
+            'subscription.plan_assigned',
+            $corporation,
+            ['plan_catalog_id' => $previousPlanId],
+            ['plan_catalog_id' => $plan->id, 'subscription_value' => $validated['subscription_value']],
+        );
 
         return back()->with('success', 'Plan assigned successfully.');
     }

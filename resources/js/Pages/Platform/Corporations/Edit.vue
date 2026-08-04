@@ -12,6 +12,14 @@ const props = defineProps({
     plans: Array,
     invoices: Array,
     venueInvoices: Array,
+    statusHistory: {
+        type: Array,
+        default: () => [],
+    },
+    auditLogs: {
+        type: Array,
+        default: () => [],
+    },
     moduleCatalog: Array,
     subscriptionStatuses: Array,
     billingModes: Array,
@@ -29,6 +37,7 @@ const tabs = [
     { key: 'discounts', label: 'Descontos' },
     { key: 'invoices', label: 'Faturas' },
     { key: 'affiliate', label: 'Afiliado' },
+    { key: 'audit', label: 'Auditoria' },
 ];
 
 const form = useForm({
@@ -222,6 +231,12 @@ const changeInvoiceStatus = (invoice) => {
 };
 
 const formatDate = (value) => value ? value.split('T')[0] : '-';
+
+const changedKeys = (log) => {
+    const keys = new Set([...Object.keys(log.before ?? {}), ...Object.keys(log.after ?? {})]);
+
+    return [...keys].filter((key) => (log.before?.[key] ?? null) !== (log.after?.[key] ?? null));
+};
 
 const getStatusClass = (status) => {
     return {
@@ -695,6 +710,65 @@ const getStatusClass = (status) => {
                     <p><span class="font-medium">{{ __('Email') }}:</span> {{ corporation.affiliate.email }}</p>
                 </div>
                 <p v-else class="text-sm text-muted-foreground">{{ __('No affiliate associated.') }}</p>
+            </div>
+
+            <!-- Audit -->
+            <div v-if="activeTab === 'audit'" class="space-y-6">
+                <div class="bg-white rounded-xl shadow-card overflow-hidden dark:bg-gray-800">
+                    <h2 class="font-heading font-semibold text-ocean-deep border-b px-4 py-3 dark:text-gray-100 dark:border-gray-700">{{ __('Subscription Status History') }}</h2>
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-ocean-deep text-white">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-medium">{{ __('Date') }}</th>
+                                <th class="px-4 py-3 text-left font-medium">{{ __('From') }}</th>
+                                <th class="px-4 py-3 text-left font-medium">{{ __('To') }}</th>
+                                <th class="px-4 py-3 text-left font-medium">{{ __('Reason') }}</th>
+                                <th class="px-4 py-3 text-left font-medium">{{ __('Actor') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border dark:divide-gray-700">
+                            <tr v-for="entry in statusHistory" :key="entry.id">
+                                <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">{{ formatDate(entry.created_at) }}</td>
+                                <td class="px-4 py-3 text-muted-foreground">{{ entry.from_status ?? '-' }}</td>
+                                <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">{{ entry.to_status }}</td>
+                                <td class="px-4 py-3 text-muted-foreground">{{ entry.reason ?? '-' }}</td>
+                                <td class="px-4 py-3 text-muted-foreground">{{ entry.actor_name ?? __('System') }}</td>
+                            </tr>
+                            <tr v-if="!statusHistory.length">
+                                <td colspan="5" class="px-4 py-6 text-center text-muted-foreground">{{ __('No status changes recorded.') }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-card overflow-hidden dark:bg-gray-800">
+                    <h2 class="font-heading font-semibold text-ocean-deep border-b px-4 py-3 dark:text-gray-100 dark:border-gray-700">{{ __('Audit Log') }}</h2>
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-ocean-deep text-white">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-medium">{{ __('Date') }}</th>
+                                <th class="px-4 py-3 text-left font-medium">{{ __('Action') }}</th>
+                                <th class="px-4 py-3 text-left font-medium">{{ __('Actor') }}</th>
+                                <th class="px-4 py-3 text-left font-medium">{{ __('Changes') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border dark:divide-gray-700">
+                            <tr v-for="log in auditLogs" :key="log.id">
+                                <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">{{ formatDate(log.created_at) }}</td>
+                                <td class="px-4 py-3 text-ocean-deep dark:text-gray-100">{{ log.action }}</td>
+                                <td class="px-4 py-3 text-muted-foreground">{{ log.actor_name ?? __('System') }}</td>
+                                <td class="px-4 py-3 text-xs text-muted-foreground">
+                                    <span v-for="key in changedKeys(log)" :key="key" class="mr-2 inline-block">
+                                        {{ key }}: {{ log.before?.[key] ?? '-' }} &rarr; {{ log.after?.[key] ?? '-' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr v-if="!auditLogs.length">
+                                <td colspan="4" class="px-4 py-6 text-center text-muted-foreground">{{ __('No audit entries recorded.') }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </PlatformLayout>

@@ -35,6 +35,7 @@ class CancelSubscriptionAction
                 $endedAt = now()->endOfMonth();
             }
 
+            $subscription->statusChangeReason = 'canceled_by_customer';
             $subscription->update([
                 'status' => SubscriptionStatus::Canceled,
                 'ended_at' => $endedAt,
@@ -44,6 +45,7 @@ class CancelSubscriptionAction
                 $venueSubscription = $venue->subscription;
 
                 if ($venueSubscription) {
+                    $venueSubscription->statusChangeReason = 'corporation_subscription_canceled';
                     $venueSubscription->update([
                         'status' => SubscriptionStatus::Canceled,
                         'ended_at' => $endedAt,

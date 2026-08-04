@@ -103,8 +103,14 @@ class SubscriptionInvoiceController extends Controller
 
         Gate::authorize('view', $invoice);
 
+        $invoice->load('items');
+
+        if ($invoice instanceof VenueInvoice) {
+            $invoice->load('venue:id,name');
+        }
+
         return Inertia::render('Settings/Subscription/InvoiceShow', [
-            'invoice' => $invoice->load('venue:id,name'),
+            'invoice' => $invoice,
             'type' => $invoiceType,
         ]);
     }

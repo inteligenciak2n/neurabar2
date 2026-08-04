@@ -81,6 +81,7 @@ class ReactivateSubscriptionAction
             return;
         }
 
+        $subscription->statusChangeReason = 'payment_confirmed';
         $subscription->update(['status' => SubscriptionStatus::Active]);
 
         $corporation->loadMissing('venues');
@@ -111,6 +112,7 @@ class ReactivateSubscriptionAction
             return;
         }
 
+        $subscription->statusChangeReason = 'payment_confirmed';
         $subscription->update(['status' => SubscriptionStatus::Active]);
 
         BillingStatusService::flushBlockedCache($venue);

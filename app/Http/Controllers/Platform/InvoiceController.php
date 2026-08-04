@@ -46,7 +46,7 @@ class InvoiceController extends Controller
     {
         Gate::authorize('view-invoice');
 
-        $corporationInvoice = CorporationInvoice::with('corporation:id,name,email')->find($invoice);
+        $corporationInvoice = CorporationInvoice::with(['corporation:id,name,email', 'items'])->find($invoice);
 
         if ($corporationInvoice) {
             return Inertia::render('Platform/Invoices/Show', [
@@ -54,7 +54,7 @@ class InvoiceController extends Controller
             ]);
         }
 
-        $venueInvoice = VenueInvoice::with('venue:id,name,corporation_id')->findOrFail($invoice);
+        $venueInvoice = VenueInvoice::with(['venue:id,name,corporation_id', 'items'])->findOrFail($invoice);
 
         return Inertia::render('Platform/Invoices/Show', [
             'invoice' => $venueInvoice,

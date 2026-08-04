@@ -37,7 +37,7 @@ class SubscriptionCalculator
      * Todos os valores retornados são inteiros em centavos.
      *
      * @param  string|null  $usagePeriod  Período do consumo medido. Padrão: mês anterior a $period.
-     * @return array<string, int>
+     * @return array<string, mixed>
      */
     public function calculateVenue(Venue $venue, string $period, ?string $usagePeriod = null): array
     {
@@ -50,9 +50,11 @@ class SubscriptionCalculator
         $usagePeriod ??= self::usagePeriodFor($period);
 
         $base = (int) $subscription->base_value;
-        $modulesValue = $this->calculateModules($venue, $period, prorate: true);
-        $recurringModulesValue = $this->calculateModules($venue, $period, prorate: false);
-        $metered = $this->calculateMetered($venue, $usagePeriod, $this->contractedModuleCodes($venue, $usagePeriod));
+        $proratedModules = $this->calculateModules($venue, $period, prorate: true);
+        $modulesValue = $proratedModules['total'];
+        $recurringModulesValue = $this->calculateModules($venue, $period, prorate: false)['total'];
+        $meteredResult = $this->calculateMetered($venue, $usagePeriod, $this->contractedModuleCodes($venue, $usagePeriod));
+        $metered = $meteredResult['total'];
         $dedicatedSurcharge = (int) ($subscription->dedicated_surcharge ?? 0);
 
         return [
@@ -66,6 +68,10 @@ class SubscriptionCalculator
             // neste período.
             'recurring_modules' => $recurringModulesValue,
             'recurring_total' => $base + $recurringModulesValue + $metered + $dedicatedSurcharge,
+            // Linhas detalhadas para a auditoria da fatura.
+            'module_lines' => $proratedModules['lines'],
+            'metered_lines' => $meteredResult['lines'],
+            'usage_period' => $usagePeriod,
         ];
     }
 
@@ -155,7 +161,7 @@ class SubscriptionCalculator
     }
 
     /**
-     * @return array<string, int>
+     * @return array<string, mixed>
      */
     private function emptyResult(): array
     {
@@ -167,6 +173,9 @@ class SubscriptionCalculator
             'total' => 0,
             'recurring_modules' => 0,
             'recurring_total' => 0,
+            'module_lines' => [],
+            'metered_lines' => [],
+            'usage_period' => null,
         ];
     }
 
@@ -190,9 +199,9 @@ class SubscriptionCalculator
      * Sem proration, um módulo ativado no dia 2 e cancelado no dia 28 nunca era
      * faturado — exploit trivial e repetível todo mês.
      *
-     * @return int Centavos.
+     * @return array{total: int, lines: list<array<string, mixed>>} Valores em centavos.
      */
-    private function calculateModules(Venue $venue, string $period, bool $prorate): int
+    private function calculateModules(Venue $venue, string $period, bool $prorate): array
     {
         [$periodStart, $periodEnd] = self::periodBounds($period);
         $daysInPeriod = $periodStart->daysInMonth;
@@ -200,12 +209,13 @@ class SubscriptionCalculator
         $venueModules = $this->modulesOverlapping($venue, $periodStart, $periodEnd);
 
         if ($venueModules->isEmpty()) {
-            return 0;
+            return ['total' => 0, 'lines' => []];
         }
 
         $corporationModules = $this->corporationModulesOverlapping($venue, $periodStart, $periodEnd);
 
         $total = 0;
+        $lines = [];
 
         foreach ($venueModules as $venueModule) {
             $corporationModule = $corporationModules->get($venueModule->module_code);
@@ -235,10 +245,19 @@ class SubscriptionCalculator
 
             // Arredonda por módulo: somar frações de centavo e arredondar só no
             // fim fazia o total da fatura divergir da soma das linhas exibidas.
-            $total += Money::multiply($unitPrice * max(1, (int) $venueModule->quantity), $factor);
+            $quantity = max(1, (int) $venueModule->quantity);
+            $lineTotal = Money::multiply($unitPrice * $quantity, $factor);
+            $total += $lineTotal;
+
+            $lines[] = [
+                'module_code' => (string) $venueModule->module_code,
+                'quantity' => $quantity,
+                'unit_amount' => $unitPrice,
+                'total_amount' => $lineTotal,
+            ];
         }
 
-        return $total;
+        return ['total' => $total, 'lines' => $lines];
     }
 
     /**
@@ -343,15 +362,16 @@ class SubscriptionCalculator
 
     /**
      * @param  list<string>  $contractedModuleCodes
-     * @return int Centavos.
+     * @return array{total: int, lines: list<array<string, mixed>>} Valores em centavos.
      */
-    private function calculateMetered(Venue $venue, string $period, array $contractedModuleCodes): int
+    private function calculateMetered(Venue $venue, string $period, array $contractedModuleCodes): array
     {
         if ($contractedModuleCodes === []) {
-            return 0;
+            return ['total' => 0, 'lines' => []];
         }
 
         $total = 0;
+        $lines = [];
 
         $records = VenueUsageRecord::query()
             ->where('venue_id', $venue->id)
@@ -360,10 +380,21 @@ class SubscriptionCalculator
             ->get();
 
         foreach ($records as $record) {
-            $total += $this->calculateRecord($record);
+            $recordTotal = $this->calculateRecord($record);
+            $total += $recordTotal;
+
+            if ($recordTotal === 0) {
+                continue;
+            }
+
+            $lines[] = [
+                'module_code' => (string) $record->module_code,
+                'quantity' => max(0, (int) $record->quantity),
+                'total_amount' => $recordTotal,
+            ];
         }
 
-        return $total;
+        return ['total' => $total, 'lines' => $lines];
     }
 
     /**

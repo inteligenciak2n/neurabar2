@@ -41,7 +41,7 @@ class SuspendOverdueSubscriptionsJob implements ShouldQueue
             ->get();
 
         foreach ($corporationSubscriptions as $subscription) {
-            $this->suspendCorporationSubscription($subscription);
+            $this->suspendCorporationSubscription($subscription, 'trial_grace_period_elapsed');
         }
     }
 
@@ -70,7 +70,7 @@ class SuspendOverdueSubscriptionsJob implements ShouldQueue
                 ->first();
 
             if ($subscription) {
-                $this->suspendCorporationSubscription($subscription);
+                $this->suspendCorporationSubscription($subscription, 'overdue_invoice_grace_period_elapsed');
             }
         }
     }
@@ -104,6 +104,7 @@ class SuspendOverdueSubscriptionsJob implements ShouldQueue
                 continue;
             }
 
+            $subscription->statusChangeReason = 'overdue_invoice_grace_period_elapsed';
             $subscription->update([
                 'status' => SubscriptionStatus::Suspended->value,
                 'ended_at' => now(),
@@ -117,20 +118,28 @@ class SuspendOverdueSubscriptionsJob implements ShouldQueue
         }
     }
 
-    private function suspendCorporationSubscription(CorporationSubscription $subscription): void
+    private function suspendCorporationSubscription(CorporationSubscription $subscription, string $reason): void
     {
+        $subscription->statusChangeReason = $reason;
         $subscription->update([
             'status' => SubscriptionStatus::Suspended->value,
             'ended_at' => now(),
         ]);
 
-        VenueSubscription::query()
+        // Atualizar em massa não dispara eventos de model e deixaria as
+        // assinaturas das venues sem histórico de suspensão.
+        $venueSubscriptions = VenueSubscription::query()
             ->where('corporation_subscription_id', $subscription->id)
             ->whereIn('status', [SubscriptionStatus::Active->value, SubscriptionStatus::PastDue->value])
-            ->update([
+            ->get();
+
+        foreach ($venueSubscriptions as $venueSubscription) {
+            $venueSubscription->statusChangeReason = 'corporation_subscription_suspended';
+            $venueSubscription->update([
                 'status' => SubscriptionStatus::Suspended->value,
                 'ended_at' => now(),
             ]);
+        }
 
         $corporation = $subscription->corporation;
 

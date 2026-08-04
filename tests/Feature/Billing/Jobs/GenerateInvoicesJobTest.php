@@ -3,6 +3,7 @@
 namespace Tests\Feature\Billing\Jobs;
 
 use App\Enums\BillingMode;
+use App\Enums\InvoiceItemType;
 use App\Enums\InvoiceStatus;
 use App\Enums\ModuleBillingType;
 use App\Enums\ModuleCode;
@@ -420,6 +421,64 @@ class GenerateInvoicesJobTest extends TestCase
 
         // A fatura da venue é apenas o detalhamento: quem paga é a corporation.
         $this->assertSame($corporationInvoice->id, $venueInvoice->corporation_invoice_id);
+    }
+
+    public function test_venue_invoice_items_sum_matches_the_invoice_total(): void
+    {
+        $venue = $this->createActiveVenue(baseValue: 9990);
+        $this->enableModule($venue->corporation, $venue, ModuleCode::Kds, 4990);
+
+        CorporationDiscount::create([
+            'corporation_id' => $venue->corporation_id,
+            'type' => 'percentage',
+            'value' => 1000,
+            'valid_from' => '2026-01-01',
+            'valid_until' => null,
+            'max_months' => null,
+            'is_active' => true,
+        ]);
+
+        (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
+
+        $invoice = VenueInvoice::where('venue_id', $venue->id)->firstOrFail();
+        $items = $invoice->items;
+
+        $this->assertGreaterThan(0, $items->count());
+        $this->assertSame((int) $invoice->total_value, (int) $items->sum('total_amount'));
+        $this->assertTrue($items->contains(fn ($item): bool => $item->type === InvoiceItemType::Discount));
+    }
+
+    public function test_regenerating_invoice_does_not_duplicate_items(): void
+    {
+        $venue = $this->createActiveVenue(baseValue: 9990);
+
+        (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
+        (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
+
+        $invoice = VenueInvoice::where('venue_id', $venue->id)->firstOrFail();
+
+        $this->assertSame(1, $invoice->items()->count());
+        $this->assertSame((int) $invoice->total_value, (int) $invoice->items()->sum('total_amount'));
+    }
+
+    public function test_corporation_invoice_items_sum_matches_the_invoice_total(): void
+    {
+        $corporation = Corporation::factory()->create();
+        CorporationSubscription::factory()->create([
+            'corporation_id' => $corporation->id,
+            'billing_mode' => BillingMode::Unified,
+            'status' => SubscriptionStatus::Active,
+            'billing_day' => 10,
+        ]);
+
+        $venue = $this->createVenueForCorporation($corporation, baseValue: 5000);
+        $this->enableModule($corporation, $venue, ModuleCode::Kds, 4990);
+
+        (new GenerateInvoicesJob('2026-07'))->handle(new SubscriptionCalculator);
+
+        $invoice = CorporationInvoice::where('corporation_id', $corporation->id)->firstOrFail();
+
+        $this->assertSame((int) $invoice->total_value, (int) $invoice->items()->sum('total_amount'));
     }
 
     private function createActiveVenue(int $baseValue, int $billingDay = 1): Venue

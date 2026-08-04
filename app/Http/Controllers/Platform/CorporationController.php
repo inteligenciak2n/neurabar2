@@ -3,11 +3,23 @@
 namespace App\Http\Controllers\Platform;
 
 use App\Actions\Platform\CreateCorporationAction;
+use App\Enums\BillingMode;
+use App\Enums\InvoiceStatus;
+use App\Enums\ModuleCode;
+use App\Enums\SubscriptionStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Platform\StoreCorporationRequest;
 use App\Http\Requests\Platform\UpdateCorporationRequest;
+use App\Models\AuditLog;
 use App\Models\Tenant\Corporation;
+use App\Models\Tenant\CorporationInvoice;
+use App\Models\Tenant\CorporationSubscription;
+use App\Models\Tenant\PlanCatalog;
+use App\Models\Tenant\SubscriptionStatusHistory;
+use App\Models\Tenant\VenueInvoice;
+use App\Models\Tenant\VenueSubscription;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -52,21 +64,21 @@ class CorporationController extends Controller
             'owner:id,name,email',
         ]);
 
-        $invoices = \App\Models\Tenant\CorporationInvoice::query()
+        $invoices = CorporationInvoice::query()
             ->where('corporation_id', $corporation->id)
             ->withSum('venueInvoices as venue_total', 'total_value')
             ->orderByDesc('period')
             ->limit(50)
             ->get();
 
-        $venueInvoices = \App\Models\Tenant\VenueInvoice::query()
+        $venueInvoices = VenueInvoice::query()
             ->whereIn('venue_id', $corporation->venues->pluck('id'))
             ->with('venue:id,name')
             ->orderByDesc('period')
             ->limit(50)
             ->get();
 
-        $plans = \App\Models\Tenant\PlanCatalog::query()
+        $plans = PlanCatalog::query()
             ->where('active', true)
             ->select('id', 'name', 'monthly_price', 'included_modules')
             ->get();
@@ -76,11 +88,56 @@ class CorporationController extends Controller
             'plans' => $plans,
             'invoices' => $invoices,
             'venueInvoices' => $venueInvoices,
-            'moduleCatalog' => \App\Enums\ModuleCode::all(),
-            'subscriptionStatuses' => array_map(fn ($s) => ['value' => $s->value, 'label' => $s->label()], \App\Enums\SubscriptionStatus::cases()),
-            'billingModes' => array_map(fn ($m) => ['value' => $m->value, 'label' => $m->label()], \App\Enums\BillingMode::cases()),
-            'invoiceStatuses' => array_map(fn ($s) => ['value' => $s->value, 'label' => $s->label()], \App\Enums\InvoiceStatus::cases()),
+            'statusHistory' => $this->statusHistoryFor($corporation),
+            'auditLogs' => $this->auditLogsFor($corporation, $invoices->pluck('id'), $venueInvoices->pluck('id')),
+            'moduleCatalog' => ModuleCode::all(),
+            'subscriptionStatuses' => array_map(fn ($s) => ['value' => $s->value, 'label' => $s->label()], SubscriptionStatus::cases()),
+            'billingModes' => array_map(fn ($m) => ['value' => $m->value, 'label' => $m->label()], BillingMode::cases()),
+            'invoiceStatuses' => array_map(fn ($s) => ['value' => $s->value, 'label' => $s->label()], InvoiceStatus::cases()),
         ]);
+    }
+
+    /**
+     * Histórico de status da assinatura da corporation e das suas venues.
+     *
+     * @return Collection<int, SubscriptionStatusHistory>
+     */
+    private function statusHistoryFor(Corporation $corporation): Collection
+    {
+        $corporationSubscriptionIds = CorporationSubscription::query()
+            ->where('corporation_id', $corporation->id)
+            ->pluck('id');
+
+        $venueSubscriptionIds = VenueSubscription::query()
+            ->whereIn('venue_id', $corporation->venues->pluck('id'))
+            ->pluck('id');
+
+        return SubscriptionStatusHistory::query()
+            ->whereIn('subscription_id', $corporationSubscriptionIds->merge($venueSubscriptionIds))
+            ->orderByDesc('created_at')
+            ->limit(100)
+            ->get();
+    }
+
+    /**
+     * @param  Collection<int, string>  $corporationInvoiceIds
+     * @param  Collection<int, string>  $venueInvoiceIds
+     * @return Collection<int, AuditLog>
+     */
+    private function auditLogsFor(Corporation $corporation, Collection $corporationInvoiceIds, Collection $venueInvoiceIds): Collection
+    {
+        $auditableIds = collect([$corporation->id])
+            ->merge(CorporationSubscription::query()->where('corporation_id', $corporation->id)->pluck('id'))
+            ->merge($corporation->discounts->pluck('id'))
+            ->merge($corporationInvoiceIds)
+            ->merge($venueInvoiceIds)
+            ->unique();
+
+        return AuditLog::query()
+            ->whereIn('auditable_id', $auditableIds)
+            ->orderByDesc('created_at')
+            ->limit(100)
+            ->get();
     }
 
     public function update(UpdateCorporationRequest $request, Corporation $corporation): RedirectResponse
