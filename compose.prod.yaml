@@ -2,37 +2,19 @@
 # PostgreSQL: RDS externo (configurado via .env)
 # Redis: local (container)
 #
-# Build do frontend (separado do backend para evitar OOM em instâncias pequenas):
-#   docker compose -f compose.prod.yaml build --no-cache frontend
-#   docker compose -f compose.prod.yaml up -d --build app
+# Assets do frontend: buildados localmente e sincronizados via rsync, NÃO mais
+# pelo Docker (ver scripts/deploy-assets.sh). O container `app` monta
+# public/build/ como bind mount, então basta rodar o script e reiniciar/
+# recarregar o container não é nem necessário (Apache lê os arquivos direto).
 #
-# Build só do backend (frontend já compilado):
+# Build/deploy do backend:
 #   docker compose -f compose.prod.yaml up -d --build app
 
 services:
-    frontend:
-        build:
-            context: '.'
-            dockerfile: 'Dockerfile.frontend'
-            args:
-                APP_URL: '${APP_URL}'
-                VITE_APP_NAME: '${APP_NAME}'
-                VITE_PUSHER_APP_KEY: '${PUSHER_APP_KEY}'
-                VITE_PUSHER_HOST: '${VITE_PUSHER_HOST}'
-                VITE_PUSHER_PORT: '${VITE_PUSHER_PORT}'
-                VITE_PUSHER_SCHEME: '${VITE_PUSHER_SCHEME}'
-        image: 'neurabar/assets:latest'
-        profiles: ['frontend']
-        command: ['true']
-        networks:
-            - sail
-
     app:
         build:
             context: '.'
             dockerfile: 'Dockerfile.prod'
-            args:
-                ASSETS_IMAGE: 'neurabar/assets:latest'
         image: 'neurabar/app:latest'
         ports:
             - '127.0.0.1:${APP_PORT:-9090}:80'
@@ -41,6 +23,7 @@ services:
         volumes:
             - './storage:/var/www/html/storage'
             - './bootstrap/cache:/var/www/html/bootstrap/cache'
+            - './public/build:/var/www/html/public/build'
         networks:
             - sail
         depends_on:

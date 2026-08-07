@@ -119,7 +119,7 @@ BROADCAST_CONNECTION=pusher
 
 ## 3. Build e Subir os Containers Docker
 
-O `Dockerfile.prod` usa **multi-stage build**: Stage 1 (Node 20) lê as variáveis `VITE_*` do `.env` e compila os assets do Vite; Stage 2 (PHP 8.2 + Apache) instala as dependências Composer. Nenhuma instalação manual prévia é necessária.
+O `Dockerfile.prod` instala as dependências Composer (PHP 8.2 + Apache). Os assets do frontend **não são mais buildados pelo Docker**: rode `scripts/deploy-assets.sh` localmente (build com `.env.production` + rsync para `/var/www/neurabar/public/build`) antes ou depois de subir os containers — o diretório é montado como bind mount no serviço `app`.
 
 ```bash
 cd /var/www/neurabar
@@ -374,8 +374,8 @@ Internet
 # 1. Parar tudo
 docker compose -f compose.prod.yaml down
 
-# 2. Buildar o frontend (sem subir containers)
-docker compose -f compose.prod.yaml build --no-cache frontend
+# 2. Buildar os assets do frontend localmente e sincronizar via rsync
+scripts/deploy-assets.sh
 
 # 3. Buildar o backend (sem subir containers)
 docker compose -f compose.prod.yaml build --no-cache app
