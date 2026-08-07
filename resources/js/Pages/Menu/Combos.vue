@@ -113,7 +113,7 @@ const itemCount = (combo) => combo.items?.length ?? 0;
         <template #header>
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
-                    <Link :href="route('menu.index')" class="text-sm font-medium text-primary hover:underline">← {{ __('Menu') }}</Link>
+                    <Link :href="route('menu.index')" class="text-sm font-medium text-primary dark:text-gray-100 hover:underline">← {{ __('Menu') }}</Link>
                     <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Combos') }}</h1>
                 </div>
                 <AppButton @click="openCreate">{{ __('Add Combo') }}</AppButton>

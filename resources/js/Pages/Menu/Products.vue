@@ -178,7 +178,7 @@ const deleteProduct = () => {
         <template #header>
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
-                    <Link :href="route('menu.index')" class="text-sm font-medium text-primary hover:underline">← {{ __('Menu') }}</Link>
+                    <Link :href="route('menu.index')" class="text-sm font-medium text-primary dark:text-gray-100 hover:underline">← {{ __('Menu') }}</Link>
                     <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Products') }}</h1>
                 </div>
                 <AppButton @click="openCreate">{{ __('Add Product') }}</AppButton>
@@ -189,7 +189,7 @@ const deleteProduct = () => {
         <div class="mb-4 flex gap-2 overflow-x-auto">
             <button
                 class="whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
-                :class="!selectedCategoryId ? 'bg-primary text-white' : 'bg-muted text-ocean-deep dark:text-gray-100 hover:bg-sand'"
+                :class="!selectedCategoryId ? 'bg-primary text-white' : 'bg-muted text-ocean-deep dark:text-gray-600 hover:bg-sand'"
                 @click="filterByCategory('')"
             >
                 {{ __('All') }}
@@ -198,7 +198,7 @@ const deleteProduct = () => {
                 v-for="category in categories"
                 :key="category.id"
                 class="whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
-                :class="selectedCategoryId === category.id ? 'bg-primary text-white' : 'bg-muted text-ocean-deep dark:text-gray-100 hover:bg-sand'"
+                :class="selectedCategoryId === category.id ? 'bg-primary text-white' : 'bg-muted text-ocean-deep dark:text-gray-600 hover:bg-sand'"
                 @click="filterByCategory(category.id)"
             >
                 {{ category.name }}

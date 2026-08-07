@@ -81,13 +81,13 @@ const moveDown = (categories, index) => {
             <div class="flex items-center justify-between">
                 <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Menu') }}</h1>
                 <div class="flex items-center gap-3">
-                    <Link :href="route('menu.products.index')" class="text-sm font-medium text-primary hover:underline">
+                    <Link :href="route('menu.products.index')" class="text-sm font-medium text-primary dark:text-gray-100 hover:underline">
                         {{ __('Products') }}
                     </Link>
-                    <Link :href="route('menu.modifier-groups.index')" class="text-sm font-medium text-primary hover:underline">
+                    <Link :href="route('menu.modifier-groups.index')" class="text-sm font-medium text-primary dark:text-gray-100 hover:underline">
                         {{ __('Modifiers') }}
                     </Link>
-                    <Link :href="route('menu.combos.index')" class="text-sm font-medium text-primary hover:underline">
+                    <Link :href="route('menu.combos.index')" class="text-sm font-medium text-primary dark:text-gray-100 hover:underline">
                         {{ __('Combos') }}
                     </Link>
                     <AppButton @click="openCreate">{{ __('Add Category') }}</AppButton>
@@ -127,7 +127,7 @@ const moveDown = (categories, index) => {
                         <span
                             v-for="product in category.products.slice(0, 5)"
                             :key="product.id"
-                            class="rounded-full bg-ocean-light px-2 py-0.5 text-xs text-ocean-deep dark:text-gray-100"
+                            class="rounded-full bg-ocean-light dark:bg-gray-500 px-2 py-0.5 text-xs text-ocean-deep dark:text-gray-100"
                         >
                             {{ product.name }}
                         </span>

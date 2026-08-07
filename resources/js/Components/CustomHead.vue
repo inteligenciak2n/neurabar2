@@ -20,11 +20,11 @@ defineProps({
         <meta name="keywords" content="">
         <meta name="author" content="NeuraBar">
         <meta name="robots" content="index, follow">
-        <meta name="canonical" href="www.neurabar.com">
+        <meta name="canonical" href="https://www.neurabar.com">
         <meta property="og:title" :content="Title">
         <meta property="og:description" content="">
         <meta property="og:image" content="">
 
-        <link rel="shortcut icon"  :href="$page.props.assets + '/images/favicon.svg'" />
+        <link rel="shortcut icon"  :href="$page.props.assets + '/images/favicon.png'" />
     </Head>    
 </template>

@@ -1,6 +1,9 @@
 <script setup>
-import ApplicationLogo from './ApplicationLogo.vue';
 </script>
 <template>
-  <ApplicationLogo class="w-18 h-18 fill-current text-gray-500" />
+  <img
+    :src="$page.props.assets + '/images/logo_blue.png'"
+    alt="NeuraBar"
+    class="rounded-md"
+  />
 </template>

@@ -101,7 +101,7 @@ const roleLabel = (role) => {
             <header class="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border bg-white px-4 shadow-card sm:px-6 dark:border-gray-700 dark:bg-gray-900">
                 <!-- Left: Logo + Venue badge -->
                 <div class="flex items-center gap-4">
-                    <Link :href="route('dashboard')" class="flex items-center gap-2.5">
+                    <Link :href="route('dashboard')" class="flex items-center gap-1">
                         <ApplicationMark class="h-8 w-auto text-primary" />
                         <span class="font-heading text-lg font-bold text-ocean-deep tracking-tight dark:text-gray-100">NeuraBar</span>
                     </Link>
@@ -203,7 +203,8 @@ const roleLabel = (role) => {
                         {{ item.label }}
                     </Link>
 
-                    <Dropdown v-if="moduleLinks.length" align="left" width="48">
+                    <Dropdown v-if="moduleLinks.length & false" align="left" width="48">
+                        <!-- menu removido porque a maioria dos modulos ainda não está disponível. Alem disso o acesso a estes recursos será diferente -->
                         <template #trigger>
                             <button class="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-body font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-ocean-deep dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100">
                                 {{ __('Modules') }}
