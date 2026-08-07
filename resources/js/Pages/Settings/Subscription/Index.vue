@@ -204,6 +204,7 @@ const statusLabel = (status) => ({
                     <div>
                         <dt class="text-xs text-muted-foreground">{{ __('Billing Mode') }}</dt>
                         <dd class="mt-1 font-medium">{{ subscription.billing_mode === 'unified' ? __('Unified') : __('Per Venue') }}</dd>
+                        <small class="text-xs text-muted-foreground">{{ __('To unify your billing, please contact support.') }}</small>
                     </div>
                     <div>
                         <dt class="text-xs text-muted-foreground">{{ __('Billing Day') }}</dt>

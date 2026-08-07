@@ -279,7 +279,7 @@ class CreateUserOwnerDefinitions
     private function createUserAttendant(Venue $venue, User $owner): void
     {
         $emailParts = explode('@', $owner->email);
-        $attendantEmail = $emailParts[0].'+attendant@'.$emailParts[1];
+        $attendantEmail = $emailParts[0].'+attendant_'.time().'@'.$emailParts[1];
 
         $attendant = User::create([
             'name' => 'Atendente Padrão',

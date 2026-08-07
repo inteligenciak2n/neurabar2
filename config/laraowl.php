@@ -3,7 +3,7 @@
 return [
 
     // Enable or disable monitoring
-    'enabled' => env('LARAOWL_ENABLED', true),
+    'enabled' => env('LARAOWL_ENABLED', false),
 
     // Application Token and Server URL
     'token' => env('LARAOWL_TOKEN'),
