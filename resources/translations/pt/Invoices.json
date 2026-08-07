@@ -1,6 +1,6 @@
 {
     "Invoices": "Faturas",
-    "Venue / Corporation": "Venue / Empresa",
+    "Venue / Corporation": "Ponto de Venda / Empresa",
     "Period": "Período",
     "Total": "Total",
     "Due Date": "Vencimento",
@@ -16,6 +16,6 @@
     "A boleto will be generated after confirmation.": "Um boleto será gerado após a confirmação.",
     "Cancel": "Cancelar",
     "Confirm": "Confirmar",
-    "Venue invoices": "Faturas por venue",
+    "Venue invoices": "Faturas por Ponto de Venda",
     "Corporation invoices": "Faturas da empresa"
 }

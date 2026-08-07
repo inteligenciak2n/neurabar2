@@ -1,5 +1,5 @@
 {
-    "Add Venue": "Adicionar local",
+    "Add Venue": "Adicionar Ponto de Venda",
     "Name": "Nome",
     "Phone": "Telefone",
     "State": "Estado",
@@ -7,5 +7,5 @@
     "City": "Cidade",
     "Tax ID": "Identificação fiscal",
     "Cancel": "Cancelar",
-    "Create Venue": "Criar local"
+    "Create Venue": "Criar Ponto de Venda"
 }
