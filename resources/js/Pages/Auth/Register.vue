@@ -1,23 +1,53 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AuthenticationCard from '@/Components/AuthenticationCard.vue';
 import AuthenticationCardLogo from '@/Components/AuthenticationCardLogo.vue';
+import DialogModal from '@/Components/DialogModal.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
+import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import CustomHead from '@/Components/CustomHead.vue';
 import { ref, computed } from 'vue';
+
+const page = usePage();
+
+const readPromoFromUrl = () => {
+    const queryString = page.url.split('?')[1] ?? '';
+    const promo = new URLSearchParams(queryString).get('promo') ?? '';
+
+    return promo.trim().slice(0, 64);
+};
 
 const form = useForm({
     name: '',
     email: '',
     password: '',
     password_confirmation: '',
+    affiliate_code: readPromoFromUrl(),
 });
 
 const showPassword = ref(false);
 const showConfirm = ref(false);
+
+const showAffiliateModal = ref(false);
+const affiliateCodeInput = ref(form.affiliate_code);
+
+const openAffiliateModal = () => {
+    affiliateCodeInput.value = form.affiliate_code;
+    showAffiliateModal.value = true;
+};
+
+const applyAffiliateCode = () => {
+    form.affiliate_code = affiliateCodeInput.value.trim().slice(0, 64);
+    showAffiliateModal.value = false;
+};
+
+const clearAffiliateCode = () => {
+    form.affiliate_code = '';
+    affiliateCodeInput.value = '';
+};
 
 const passwordStrength = computed(() => {
     const val = form.password;
@@ -180,11 +210,63 @@ const submit = () => {
                 </PrimaryButton>
             </div>
 
-            <div class="mt-5 text-center">
+            <div class="mt-5 flex items-center justify-center gap-3">
                 <Link :href="route('login')" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                     {{ __('Already registered?') }} <span class="font-medium text-gray-900 dark:text-white">{{ __('Sign in') }}</span>
                 </Link>
+
+                <button
+                    type="button"
+                    :title="__('I have a promotional code')"
+                    :aria-label="__('I have a promotional code')"
+                    @click="openAffiliateModal"
+                    class="text-gray-300 hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 6h.008v.008H6V6z" />
+                    </svg>
+                </button>
             </div>
+
+            <div v-if="form.affiliate_code" class="mt-3 flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <span>{{ __('Promotional code') }}: <span class="font-medium text-gray-900 dark:text-white">{{ form.affiliate_code }}</span></span>
+                <button type="button" @click="clearAffiliateCode" class="text-gray-400 hover:text-red-500 transition-colors">
+                    {{ __('Remove') }}
+                </button>
+            </div>
+            <InputError class="mt-1.5 text-center" :message="form.errors.affiliate_code" />
         </form>
+
+        <DialogModal :show="showAffiliateModal" max-width="md" @close="showAffiliateModal = false">
+            <template #title>
+                {{ __('I have a promotional code') }}
+            </template>
+
+            <template #content>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ __('Enter the promotional code you received. You can leave it blank if you do not have one.') }}
+                </p>
+
+                <TextInput
+                    v-model="affiliateCodeInput"
+                    type="text"
+                    maxlength="64"
+                    class="mt-3 block w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-900 focus:border-gray-900 dark:focus:border-white focus:ring-gray-900 dark:focus:ring-white transition-all"
+                    :placeholder="__('Promotional code')"
+                    @keyup.enter="applyAffiliateCode"
+                />
+            </template>
+
+            <template #footer>
+                <SecondaryButton @click="showAffiliateModal = false">
+                    {{ __('Cancel') }}
+                </SecondaryButton>
+
+                <PrimaryButton class="ms-3" @click="applyAffiliateCode">
+                    {{ __('Apply') }}
+                </PrimaryButton>
+            </template>
+        </DialogModal>
     </AuthenticationCard>
 </template>

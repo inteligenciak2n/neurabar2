@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\AffiliateCodeStatus;
 use App\Enums\ModuleCode;
+use App\Models\Tenant\AffiliateCode;
 use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\ModuleCatalog;
 use App\Models\User;
@@ -124,6 +126,43 @@ class OnboardingTest extends TestCase
         $this->assertDatabaseHas('venues', ['name' => $user->name.' - Ponto de Venda 2']);
 
         $this->assertNull(session('onboarding.venue_count'));
+    }
+
+    public function test_subscription_step_propagates_user_affiliate_code(): void
+    {
+        $affiliate = AffiliateCode::create([
+            'code' => 'ONB2026',
+            'name' => 'Parceiro Onboarding',
+            'status' => AffiliateCodeStatus::Active->value,
+        ]);
+
+        $user = $this->verifiedUser();
+        $user->forceFill(['affiliate_code_id' => $affiliate->id])->save();
+
+        $this->actingAs($user)->post(route('onboarding.subscription.store'), [
+            'module_codes' => [],
+            'venue_count' => 1,
+            'terms' => true,
+        ])->assertRedirect(route('onboarding.corporation.create'));
+
+        $corporation = $user->fresh()->ownedCorporation;
+        $this->assertSame($affiliate->id, $corporation->affiliate_code_id);
+
+        $subscription = CorporationSubscription::where('corporation_id', $corporation->id)->first();
+        $this->assertSame($affiliate->id, $subscription->affiliate_code_id);
+
+        $this->actingAs($user->fresh())->post(route('onboarding.corporation.store'), [
+            'name' => 'Minha Empresa Ltda',
+            'tax_id' => '00.000.000/0001-91',
+            'email' => 'contato@empresa.com',
+            'venues' => [
+                ['skip' => false, 'name' => 'Unidade Centro', 'timezone' => 'America/Sao_Paulo'],
+            ],
+        ])->assertRedirect(route('dashboard'));
+
+        $venue = $corporation->venues()->firstWhere('name', 'Unidade Centro');
+        $this->assertSame($affiliate->id, $venue->affiliate_code_id);
+        $this->assertSame($affiliate->id, $venue->subscription->affiliate_code_id);
     }
 
     public function test_subscription_step_rejects_inactive_module(): void

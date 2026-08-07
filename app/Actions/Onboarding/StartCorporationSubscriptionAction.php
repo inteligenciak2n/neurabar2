@@ -26,6 +26,7 @@ class StartCorporationSubscriptionAction
         return DB::transaction(function () use ($user, $moduleCodes, $venueCount): Corporation {
             $corporation = Corporation::create([
                 'owner_id' => $user->id,
+                'affiliate_code_id' => $user->affiliate_code_id,
                 'name' => $user->name,
                 'self_connection' => 'operation_default_1',
                 'is_dedicated' => false,
@@ -45,6 +46,7 @@ class StartCorporationSubscriptionAction
 
             CorporationSubscription::create([
                 'corporation_id' => $corporation->id,
+                'affiliate_code_id' => $corporation->affiliate_code_id,
                 'plan_catalog_id' => $defaultPlanId,
                 'billing_mode' => BillingMode::PerVenue->value,
                 'status' => SubscriptionStatus::Trial->value,

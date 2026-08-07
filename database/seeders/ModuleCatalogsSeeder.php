@@ -62,7 +62,7 @@ class ModuleCatalogsSeeder extends Seeder
                 'dependencies' => [],
                 'required_roles' => ['owner', 'general_manager', 'section_manager', 'attendant'],
                 'sort_order' => 30,
-                'active' => true,
+                'active' => false,
             ],
             [
                 'code' => ModuleCode::Delivery->value,
@@ -75,7 +75,7 @@ class ModuleCatalogsSeeder extends Seeder
                 'dependencies' => [ModuleCode::Menu->value],
                 'required_roles' => ['owner', 'general_manager', 'section_manager', 'attendant'],
                 'sort_order' => 40,
-                'active' => true,
+                'active' => false,
             ],
             [
                 'code' => ModuleCode::ProductionDashboard->value,
@@ -88,7 +88,7 @@ class ModuleCatalogsSeeder extends Seeder
                 'dependencies' => [ModuleCode::Menu->value],
                 'required_roles' => ['owner', 'general_manager', 'section_manager'],
                 'sort_order' => 50,
-                'active' => true,
+                'active' => false,
             ],
             [
                 'code' => ModuleCode::FinancialDashboard->value,
@@ -101,7 +101,7 @@ class ModuleCatalogsSeeder extends Seeder
                 'dependencies' => [ModuleCode::Menu->value],
                 'required_roles' => ['owner', 'general_manager'],
                 'sort_order' => 60,
-                'active' => true,
+                'active' => false,
             ],
             [
                 'code' => ModuleCode::DirectPrint->value,
@@ -114,7 +114,7 @@ class ModuleCatalogsSeeder extends Seeder
                 'dependencies' => [ModuleCode::Menu->value],
                 'required_roles' => ['owner', 'general_manager'],
                 'sort_order' => 70,
-                'active' => true,
+                'active' => false,
             ],
             [
                 'code' => ModuleCode::FiscalNote->value,
@@ -127,7 +127,7 @@ class ModuleCatalogsSeeder extends Seeder
                 'dependencies' => [ModuleCode::Menu->value],
                 'required_roles' => ['owner', 'general_manager'],
                 'sort_order' => 80,
-                'active' => true,
+                'active' => false,
             ],
             [
                 'code' => ModuleCode::VoiceCommand->value,
@@ -140,12 +140,14 @@ class ModuleCatalogsSeeder extends Seeder
                 'dependencies' => [ModuleCode::Menu->value],
                 'required_roles' => ['owner', 'general_manager', 'section_manager', 'attendant'],
                 'sort_order' => 90,
-                'active' => true,
+                'active' => false,
             ],
         ];
 
         foreach ($modules as $module) {
-            ModuleCatalog::firstOrCreate(['code' => $module['code']], $module);
+            ModuleCatalog::firstOrCreate(
+                ['code' => $module['code']], array_merge($module, ['active' => $module['active'] || config('app.env') === 'local'])
+            );
         }
     }
 }

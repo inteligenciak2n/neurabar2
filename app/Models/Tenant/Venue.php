@@ -32,6 +32,7 @@ class Venue extends Model
 
     protected $fillable = [
         'corporation_id',
+        'affiliate_code_id',
         'name',
         'tax_id',
         'phone',

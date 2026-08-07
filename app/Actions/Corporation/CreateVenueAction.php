@@ -41,6 +41,7 @@ class CreateVenueAction
         $venue = Venue::create([
             ...$data,
             'corporation_id' => $corporation->id,
+            'affiliate_code_id' => $data['affiliate_code_id'] ?? $corporation->affiliate_code_id,
             'call_waiter_slug' => $slug,
             'active' => true,
         ]);
@@ -48,6 +49,7 @@ class CreateVenueAction
         VenueSubscription::create([
             'venue_id' => $venue->id,
             'corporation_subscription_id' => $corporationSubscription->id,
+            'affiliate_code_id' => $venue->affiliate_code_id,
             'plan_catalog_id' => $plan?->id,
             'status' => $corporationSubscription->status,
             'base_value' => $plan?->monthly_price ?? 0,

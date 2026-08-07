@@ -13,5 +13,14 @@
     "Create account": "Create account",
     "Choose your plan": "Choose your plan",
     "Sign in": "Sign in",
-    "Creating account...": "Creating account..."
+    "Creating account...": "Creating account...",
+    "I have a referral code": "I have a referral code",
+    "Referral code": "Referral code",
+    "Enter the referral code you received. You can leave it blank if you do not have one.": "Enter the referral code you received. You can leave it blank if you do not have one.",
+    "Remove": "Remove",
+    "Cancel": "Cancel",
+    "Apply": "Apply",
+    "Promotional code": "Promotional code",
+    "Enter the promotional code you received. You can leave it blank if you do not have one.": "Enter the promotional code you received. You can leave it blank if you do not have one.",
+    "I have a promotional code": "I have a promotional code"
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ModuleCode;
 use App\Enums\ProfileEnum;
 use App\Enums\UserRole;
+use App\Models\Tenant\AffiliateCode;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\UserPaymentMethod;
 use App\Models\Tenant\Venue;
@@ -51,6 +52,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'active',
         'lang',
         'profile',
+        'affiliate_code_id',
     ];
 
     /**
@@ -103,6 +105,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function ownedCorporation(): HasOne
     {
         return $this->hasOne(Corporation::class, 'owner_id');
+    }
+
+    public function affiliateCode(): BelongsTo
+    {
+        return $this->belongsTo(AffiliateCode::class);
     }
 
     public function paymentMethods(): HasMany

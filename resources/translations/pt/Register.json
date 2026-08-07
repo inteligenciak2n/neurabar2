@@ -13,5 +13,14 @@
     "Create account": "Criar conta",
     "Choose your plan": "Escolha seu plano",
     "Sign in": "Faça login",
-    "Creating account...": "Criando conta..."
+    "Creating account...": "Criando conta...",
+    "I have a referral code": "Tenho um código de indicação",
+    "Referral code": "Código de indicação",
+    "Enter the referral code you received. You can leave it blank if you do not have one.": "Informe o código de indicação que você recebeu. Você pode deixar em branco se não tiver um.",
+    "Remove": "Remover",
+    "Cancel": "Cancelar",
+    "Apply": "Aplicar",
+    "Promotional code": "Código promocional",
+    "Enter the promotional code you received. You can leave it blank if you do not have one.": "Insira o código promocional que você recebeu. Você pode deixá-lo em branco se não tiver um.",
+    "I have a promotional code": "Eu tenho um código promocional"
 }
