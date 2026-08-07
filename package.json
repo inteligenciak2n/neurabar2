@@ -25,8 +25,8 @@
         "vue": "^3.3.13"
     },
     "dependencies": {
-        "@fontsource/dm-sans": "^5.2.8",
-        "@fontsource/space-grotesk": "^5.2.10",
+        "@fontsource/manrope": "^5.2.6",
+        "@fontsource/poppins": "^5.2.6",
         "@vueuse/core": "^14.3.0",
         "maska": "^3.2.0",
         "vue-sonner": "^2.0.9"

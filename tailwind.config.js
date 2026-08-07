@@ -16,22 +16,38 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                heading: ['Space Grotesk', ...defaultTheme.fontFamily.sans],
-                body:    ['DM Sans', ...defaultTheme.fontFamily.sans],
-                sans:    ['DM Sans', ...defaultTheme.fontFamily.sans],
+                heading: ['Poppins', ...defaultTheme.fontFamily.sans],
+                body:    ['Manrope', ...defaultTheme.fontFamily.sans],
+                sans:    ['Manrope', ...defaultTheme.fontFamily.sans],
             },
             colors: {
-                primary:     { DEFAULT: 'hsl(199 89% 48%)', foreground: '#ffffff', hover: 'hsl(199 89% 40%)', light: '#e0f2fe' },
-                accent:      { DEFAULT: 'hsl(180 55% 40%)', foreground: '#ffffff' },
-                destructive: { DEFAULT: 'hsl(0 84% 60%)',   foreground: '#ffffff' },
-                'ocean-light': 'hsl(200 60% 90%)',
+                // Paleta NeuraBar (rebranding 2026-08): Azul Intenso + Dourado Glow
+                primary:     { DEFAULT: '#293b4f', foreground: '#ffffff', hover: '#1e2a3a', light: '#dde3ea' },
+                accent:      { DEFAULT: '#a28665', foreground: '#ffffff' },
+                destructive: { DEFAULT: 'hsl(0 84% 60%)', foreground: '#ffffff' },
+                success:     { DEFAULT: '#16a34a', foreground: '#ffffff' },
+                'ocean-light': '#dde3ea',
                 'ocean-deep':  '#0f172a',
-                'warm-gold':   'hsl(38 80% 55%)',
-                sand:          'hsl(35 40% 85%)',
-                muted:  { DEFAULT: '#f8fafc', foreground: '#64748b' },
+                'warm-gold':   '#a28665',
+                sand:          '#c4b39b',
+                muted:  { DEFAULT: '#eeeeee', foreground: '#64748b' },
                 border: { DEFAULT: '#e2e8f0' },
                 surface: '#ffffff',
                 foreground: '#0f172a',
+                // Escala neutra realinhada ao Azul Intenso da marca (usada em dark mode)
+                gray: {
+                    50:  '#f4f6f8',
+                    100: '#e7ebf0',
+                    200: '#d3d9e0',
+                    300: '#b0b9c4',
+                    400: '#8993a3',
+                    500: '#667385',
+                    600: '#4c5870',
+                    700: '#384357',
+                    800: '#293b4f',
+                    900: '#1e2a3a',
+                    950: '#141c27',
+                },
             },
             borderRadius: {
                 DEFAULT: '0.75rem',

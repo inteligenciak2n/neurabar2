@@ -104,34 +104,34 @@
   <!-- ===== Fonts ===== -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet" />
 
   <!-- ===== Favicon ===== -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="icon" type="image/png" href="/favicon.png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <meta name="theme-color" content="#0284c7" />
+  <meta name="theme-color" content="#293b4f" />
 
   <style>
     /* ===== CSS Reset & Variables ===== */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --primary:        hsl(199, 89%, 48%);
-      --primary-hover:  hsl(199, 89%, 40%);
-      --primary-10:     hsl(199, 89%, 48%, 0.10);
-      --primary-30:     hsl(199, 89%, 48%, 0.30);
-      --accent:         hsl(180, 55%, 40%);
+      --primary:        #293b4f;
+      --primary-hover:  #1e2a3a;
+      --primary-10:     rgba(41, 59, 79, 0.10);
+      --primary-30:     rgba(41, 59, 79, 0.30);
+      --accent:         #a28665;
       --destructive:    hsl(0, 84%, 60%);
       --ocean-deep:     #0f172a;
-      --warm-gold:      hsl(38, 80%, 55%);
-      --muted:          #f8fafc;
+      --warm-gold:      #a28665;
+      --muted:          #eeeeee;
       --muted-fg:       #64748b;
       --border:         #e2e8f0;
       --surface:        #ffffff;
       --foreground:     #0f172a;
-      --font-heading:   'Space Grotesk', sans-serif;
-      --font-body:      'DM Sans', sans-serif;
+      --font-heading:   'Poppins', sans-serif;
+      --font-body:      'Manrope', sans-serif;
       --shadow-ocean:   0 10px 40px -10px hsl(200, 75%, 45%, 0.25);
       --shadow-card:    0 4px 24px -4px hsl(210, 30%, 12%, 0.08);
       --radius:         0.75rem;
@@ -303,7 +303,7 @@
       right: -16rem; top: -16rem;
       width: 37.5rem; height: 37.5rem;
       border-radius: 50%;
-      background: rgba(2,132,199,0.10);
+      background: var(--primary-10);
       filter: blur(64px);
     }
     .hero__bg-circle2 {
@@ -311,7 +311,7 @@
       left: -8rem; bottom: -8rem;
       width: 25rem; height: 25rem;
       border-radius: 50%;
-      background: hsl(180,55%,40%,0.10);
+      background: rgba(162, 134, 101, 0.10);
       filter: blur(64px);
     }
     .hero__content { position: relative; text-align: center; }
@@ -719,7 +719,7 @@
       width: 0.25rem;
       height: 0.25rem;
       border-radius: 50%;
-      background: hsl(199, 70%, 62%);
+      background: var(--accent);
     }
 
     /* ===== Ideal use ===== */
@@ -860,7 +860,7 @@
       background: var(--muted);
       color: var(--ocean-deep);
     }
-    .plan-cta.default:hover { border-color: var(--primary-30); background: rgba(2,132,199,0.05); }
+    .plan-cta.default:hover { border-color: var(--primary-30); background: var(--primary-10); }
     .plan-cta.highlighted {
       background: var(--primary);
       color: #fff;
@@ -1079,7 +1079,7 @@
       <div class="navbar__inner">
         <a href="/" class="navbar__brand" aria-label="NeuraBar - Página inicial">
             <div style="width:40px;height:40px;margin-right:0.75rem">
-                <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="e" y2="100%"><stop stop-color="#6C63FF" offset="0"/><stop stop-color="#3F3D99" offset=".5"/><stop stop-color="#1A1A2E" offset="1"/></linearGradient><linearGradient id="a" y2="100%"><stop stop-color="#00F2FE" offset="0"/><stop stop-color="#4FACFE" offset="1"/></linearGradient><linearGradient id="d" y2="100%"><stop stop-color="#fff" offset="0"/><stop stop-color="#E0E0FF" offset="1"/></linearGradient><filter id="b"><feGaussianBlur result="coloredBlur" stdDeviation="8"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><filter id="c"><feDropShadow dx="0" dy="4" flood-opacity=".3" stdDeviation="8"/></filter></defs><rect x="25" y="25" width="450" height="450" rx="80" ry="80" fill="url(#e)" filter="url(#c)"/><rect x="25" y="25" width="450" height="450" rx="80" ry="80" fill="none" filter="url(#b)" opacity=".8" stroke="url(#a)" stroke-width="4"/><circle cx="250" cy="250" r="120" fill="none" opacity=".3" stroke="url(#a)" stroke-width="2"/><g fill="none" opacity=".15" stroke="#00F2FE" stroke-width="1.5"><circle cx="250" cy="250" r="160"/><circle cx="250" cy="250" r="180"/><line x1="250" x2="250" y1="90" y2="410"/><line x1="90" x2="410" y1="250" y2="250"/><circle cx="250" cy="160" r="3" fill="#00F2FE"/><circle cx="250" cy="340" r="3" fill="#00F2FE"/><circle cx="160" cy="250" r="3" fill="#00F2FE"/><circle cx="340" cy="250" r="3" fill="#00F2FE"/></g><g filter="url(#b)"><path d="m170 310v-140h50l60 100v-100h50v160h-50l-60-100v100z" fill="url(#d)" opacity=".95"/></g><g fill="#00F2FE" opacity=".4"><circle cx="170" cy="170" r="5"/><circle cx="330" cy="170" r="5"/><circle cx="170" cy="330" r="5"/><circle cx="330" cy="330" r="5"/><circle cx="220" cy="230" r="4" opacity=".6"/><circle cx="280" cy="270" r="4" opacity=".6"/></g><g opacity=".6"><circle cx="190" cy="180" r="2.5" fill="#4FACFE"/><circle cx="220" cy="200" r="2" fill="#4FACFE"/><circle cx="250" cy="250" r="3" fill="#00F2FE"/><circle cx="310" cy="300" r="2" fill="#4FACFE"/><circle cx="280" cy="310" r="2.5" fill="#4FACFE"/></g></svg>
+                <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="e" y2="100%"><stop stop-color="#293b4f" offset="0"/><stop stop-color="#23303f" offset=".5"/><stop stop-color="#1e2a3a" offset="1"/></linearGradient><linearGradient id="a" y2="100%"><stop stop-color="#c4b39b" offset="0"/><stop stop-color="#a28665" offset="1"/></linearGradient><linearGradient id="d" y2="100%"><stop stop-color="#fff" offset="0"/><stop stop-color="#eeeeee" offset="1"/></linearGradient><filter id="b"><feGaussianBlur result="coloredBlur" stdDeviation="8"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><filter id="c"><feDropShadow dx="0" dy="4" flood-opacity=".3" stdDeviation="8"/></filter></defs><rect x="25" y="25" width="450" height="450" rx="80" ry="80" fill="url(#e)" filter="url(#c)"/><rect x="25" y="25" width="450" height="450" rx="80" ry="80" fill="none" filter="url(#b)" opacity=".8" stroke="url(#a)" stroke-width="4"/><circle cx="250" cy="250" r="120" fill="none" opacity=".3" stroke="url(#a)" stroke-width="2"/><g fill="none" opacity=".15" stroke="#c4b39b" stroke-width="1.5"><circle cx="250" cy="250" r="160"/><circle cx="250" cy="250" r="180"/><line x1="250" x2="250" y1="90" y2="410"/><line x1="90" x2="410" y1="250" y2="250"/><circle cx="250" cy="160" r="3" fill="#c4b39b"/><circle cx="250" cy="340" r="3" fill="#c4b39b"/><circle cx="160" cy="250" r="3" fill="#c4b39b"/><circle cx="340" cy="250" r="3" fill="#c4b39b"/></g><g filter="url(#b)"><path d="m170 310v-140h50l60 100v-100h50v160h-50l-60-100v100z" fill="url(#d)" opacity=".95"/></g><g fill="#c4b39b" opacity=".4"><circle cx="170" cy="170" r="5"/><circle cx="330" cy="170" r="5"/><circle cx="170" cy="330" r="5"/><circle cx="330" cy="330" r="5"/><circle cx="220" cy="230" r="4" opacity=".6"/><circle cx="280" cy="270" r="4" opacity=".6"/></g><g opacity=".6"><circle cx="190" cy="180" r="2.5" fill="#a28665"/><circle cx="220" cy="200" r="2" fill="#a28665"/><circle cx="250" cy="250" r="3" fill="#c4b39b"/><circle cx="310" cy="300" r="2" fill="#a28665"/><circle cx="280" cy="310" r="2.5" fill="#a28665"/></g></svg>
             </div>
           NeuraBar
         </a>
@@ -1624,7 +1624,7 @@
         <div>
           <div class="footer__brand" aria-label="NeuraBar">
             <div style="width:40px;height:40px;margin-right:0.75rem">
-                <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="e" y2="100%"><stop stop-color="#6C63FF" offset="0"/><stop stop-color="#3F3D99" offset=".5"/><stop stop-color="#1A1A2E" offset="1"/></linearGradient><linearGradient id="a" y2="100%"><stop stop-color="#00F2FE" offset="0"/><stop stop-color="#4FACFE" offset="1"/></linearGradient><linearGradient id="d" y2="100%"><stop stop-color="#fff" offset="0"/><stop stop-color="#E0E0FF" offset="1"/></linearGradient><filter id="b"><feGaussianBlur result="coloredBlur" stdDeviation="8"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><filter id="c"><feDropShadow dx="0" dy="4" flood-opacity=".3" stdDeviation="8"/></filter></defs><rect x="25" y="25" width="450" height="450" rx="80" ry="80" fill="url(#e)" filter="url(#c)"/><rect x="25" y="25" width="450" height="450" rx="80" ry="80" fill="none" filter="url(#b)" opacity=".8" stroke="url(#a)" stroke-width="4"/><circle cx="250" cy="250" r="120" fill="none" opacity=".3" stroke="url(#a)" stroke-width="2"/><g fill="none" opacity=".15" stroke="#00F2FE" stroke-width="1.5"><circle cx="250" cy="250" r="160"/><circle cx="250" cy="250" r="180"/><line x1="250" x2="250" y1="90" y2="410"/><line x1="90" x2="410" y1="250" y2="250"/><circle cx="250" cy="160" r="3" fill="#00F2FE"/><circle cx="250" cy="340" r="3" fill="#00F2FE"/><circle cx="160" cy="250" r="3" fill="#00F2FE"/><circle cx="340" cy="250" r="3" fill="#00F2FE"/></g><g filter="url(#b)"><path d="m170 310v-140h50l60 100v-100h50v160h-50l-60-100v100z" fill="url(#d)" opacity=".95"/></g><g fill="#00F2FE" opacity=".4"><circle cx="170" cy="170" r="5"/><circle cx="330" cy="170" r="5"/><circle cx="170" cy="330" r="5"/><circle cx="330" cy="330" r="5"/><circle cx="220" cy="230" r="4" opacity=".6"/><circle cx="280" cy="270" r="4" opacity=".6"/></g><g opacity=".6"><circle cx="190" cy="180" r="2.5" fill="#4FACFE"/><circle cx="220" cy="200" r="2" fill="#4FACFE"/><circle cx="250" cy="250" r="3" fill="#00F2FE"/><circle cx="310" cy="300" r="2" fill="#4FACFE"/><circle cx="280" cy="310" r="2.5" fill="#4FACFE"/></g></svg>
+                <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="e" y2="100%"><stop stop-color="#293b4f" offset="0"/><stop stop-color="#23303f" offset=".5"/><stop stop-color="#1e2a3a" offset="1"/></linearGradient><linearGradient id="a" y2="100%"><stop stop-color="#c4b39b" offset="0"/><stop stop-color="#a28665" offset="1"/></linearGradient><linearGradient id="d" y2="100%"><stop stop-color="#fff" offset="0"/><stop stop-color="#eeeeee" offset="1"/></linearGradient><filter id="b"><feGaussianBlur result="coloredBlur" stdDeviation="8"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><filter id="c"><feDropShadow dx="0" dy="4" flood-opacity=".3" stdDeviation="8"/></filter></defs><rect x="25" y="25" width="450" height="450" rx="80" ry="80" fill="url(#e)" filter="url(#c)"/><rect x="25" y="25" width="450" height="450" rx="80" ry="80" fill="none" filter="url(#b)" opacity=".8" stroke="url(#a)" stroke-width="4"/><circle cx="250" cy="250" r="120" fill="none" opacity=".3" stroke="url(#a)" stroke-width="2"/><g fill="none" opacity=".15" stroke="#c4b39b" stroke-width="1.5"><circle cx="250" cy="250" r="160"/><circle cx="250" cy="250" r="180"/><line x1="250" x2="250" y1="90" y2="410"/><line x1="90" x2="410" y1="250" y2="250"/><circle cx="250" cy="160" r="3" fill="#c4b39b"/><circle cx="250" cy="340" r="3" fill="#c4b39b"/><circle cx="160" cy="250" r="3" fill="#c4b39b"/><circle cx="340" cy="250" r="3" fill="#c4b39b"/></g><g filter="url(#b)"><path d="m170 310v-140h50l60 100v-100h50v160h-50l-60-100v100z" fill="url(#d)" opacity=".95"/></g><g fill="#c4b39b" opacity=".4"><circle cx="170" cy="170" r="5"/><circle cx="330" cy="170" r="5"/><circle cx="170" cy="330" r="5"/><circle cx="330" cy="330" r="5"/><circle cx="220" cy="230" r="4" opacity=".6"/><circle cx="280" cy="270" r="4" opacity=".6"/></g><g opacity=".6"><circle cx="190" cy="180" r="2.5" fill="#a28665"/><circle cx="220" cy="200" r="2" fill="#a28665"/><circle cx="250" cy="250" r="3" fill="#c4b39b"/><circle cx="310" cy="300" r="2" fill="#a28665"/><circle cx="280" cy="310" r="2.5" fill="#a28665"/></g></svg>
             </div>
             NeuraBar
           </div>

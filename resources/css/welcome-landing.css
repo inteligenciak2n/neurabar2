@@ -1,20 +1,20 @@
 /* Landing page layout — scoped for Welcome.vue */
 .welcome-landing {
---primary:        hsl(199, 89%, 48%);
-      --primary-hover:  hsl(199, 89%, 40%);
-      --primary-10:     hsl(199, 89%, 48%, 0.10);
-      --primary-30:     hsl(199, 89%, 48%, 0.30);
-      --accent:         hsl(180, 55%, 40%);
+--primary:        #293b4f;
+      --primary-hover:  #1e2a3a;
+      --primary-10:     rgba(41, 59, 79, 0.10);
+      --primary-30:     rgba(41, 59, 79, 0.30);
+      --accent:         #a28665;
       --destructive:    hsl(0, 84%, 60%);
       --ocean-deep:     #0f172a;
-      --warm-gold:      hsl(38, 80%, 55%);
-      --muted:          #f8fafc;
+      --warm-gold:      #a28665;
+      --muted:          #eeeeee;
       --muted-fg:       #64748b;
       --border:         #e2e8f0;
       --surface:        #ffffff;
       --foreground:     #0f172a;
-      --font-heading:   'Space Grotesk', sans-serif;
-      --font-body:      'DM Sans', sans-serif;
+      --font-heading:   'Poppins', sans-serif;
+      --font-body:      'Manrope', sans-serif;
       --shadow-ocean:   0 10px 40px -10px hsl(200, 75%, 45%, 0.25);
       --shadow-card:    0 4px 24px -4px hsl(210, 30%, 12%, 0.08);
       --radius:         0.75rem;
@@ -180,7 +180,7 @@ html { scroll-behavior: smooth; }
       right: -16rem; top: -16rem;
       width: 37.5rem; height: 37.5rem;
       border-radius: 50%;
-      background: rgba(2,132,199,0.10);
+      background: var(--primary-10);
       filter: blur(64px);
     }
     .welcome-landing .hero__bg-circle2 {
@@ -188,7 +188,7 @@ html { scroll-behavior: smooth; }
       left: -8rem; bottom: -8rem;
       width: 25rem; height: 25rem;
       border-radius: 50%;
-      background: hsl(180,55%,40%,0.10);
+      background: rgba(162, 134, 101, 0.10);
       filter: blur(64px);
     }
     .welcome-landing .hero__content { position: relative; text-align: center; }
@@ -596,7 +596,7 @@ html { scroll-behavior: smooth; }
       width: 0.25rem;
       height: 0.25rem;
       border-radius: 50%;
-      background: hsl(199, 70%, 62%);
+      background: var(--accent);
     }
 
     /* ===== Ideal use ===== */
@@ -737,7 +737,7 @@ html { scroll-behavior: smooth; }
       background: var(--muted);
       color: var(--ocean-deep);
     }
-    .welcome-landing .plan-cta.default:hover { border-color: var(--primary-30); background: rgba(2,132,199,0.05); }
+    .welcome-landing .plan-cta.default:hover { border-color: var(--primary-30); background: var(--primary-10); }
     .welcome-landing .plan-cta.highlighted {
       background: var(--primary);
       color: #fff;

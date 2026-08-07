@@ -10,8 +10,8 @@ const toggleDark = () => {
 </script>
 <template>
     <button class="h-6 my-auto px-2 border rounded-full
-    bg-gray-200 hover:bg-indigo-700 text-gray-700 hover:text-gray-200 text-sm
-    dark:bg-indigo-700 dark:text-gray-800 dark:border-gray-900 dark:hover:bg-gray-200 dark:hover:text-gray-700
+    bg-gray-200 hover:bg-primary-hover text-gray-700 hover:text-gray-200 text-sm
+    dark:bg-primary dark:text-gray-800 dark:border-gray-900 dark:hover:bg-gray-200 dark:hover:text-gray-700
     "
     @click="toggleDark()"
     type="button"

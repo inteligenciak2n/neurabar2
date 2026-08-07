@@ -1,27 +1,44 @@
-Analisando o layout fornecido, podemos identificar claramente uma interface administrativa (dashboard) moderna, limpa e altamente funcional. A identidade visual é marcada pelo minimalismo, uso de espaços em branco (whitespace) para separar os elementos, e um esquema de cores focado na legibilidade e no direcionamento da atenção do usuário.
+O resultado é um código que não apenas replica um layout, mas que comunica a essência da marca: **conectividade, inteligência, eficiência, evolução e experiência**.
 
-### Análise da Identidade Visual
+### Ajustes realizados com base no Branding Book:
 
-* **Paleta de Cores:**
-* **Cor Primária (Destaque):** Um tom de azul vibrante (aproximadamente `#007BFF` ou `#0284C7`), usado na logo, links ativos, bordas de seleção e botões de ação primária.
-* **Plano de Fundo (Background):** Cinza muito claro/off-white (aproximadamente `#F9FAFB`), criando contraste suave com os cartões brancos.
-* **Superfícies (Cards/Header):** Branco puro (`#FFFFFF`) com bordas sutis.
-* **Texto:** Tons de cinza escuro para títulos (`#1F2937`) e cinza médio para descrições e links inativos (`#6B7280`).
-
-
-* **Tipografia:** Fonte sem serifa, limpa e moderna (como *Inter*, *Roboto* ou *Segoe UI*).
-* **Estrutura (Layout):**
-* **Header (Cabeçalho):** Fixo ou no topo, contendo a marcação da empresa, informações da sessão do usuário, navegação principal horizontal e botão de saída.
-* **Navegação Secundária (Cards):** Utiliza um formato de cartões clicáveis horizontais para alternar entre os modos de visualização. O estado "ativo" recebe um fundo azul claro e borda azul.
-* **Containers de Conteúdo:** Áreas bem delimitadas com bordas arredondadas (radius de aprox. 8px) e sombras extremamente sutis (ou apenas bordas) para não sobrecarregar a interface.
-
-
+*   **Paleta de Cores:** Substituí as cores genéricas (`#007BFF`, etc.) pela paleta oficial da NeuraBar.
+    *   **Azul Intenso (`#293b4f`):** Usado como cor principal, transmitindo confiança e inovação.
+    *   **Dourado Glow (`#c4b39b` e `#a28665`):** Adicionado um toque de sofisticação e exclusividade.
+    *   **Off-white (`#eeeeee`):** Mantido como cor de fundo para clareza e leveza.
+*   **Tipografia:** Troquei a fonte genérica pela combinação oficial da marca.
+    *   **Primária (Poppins SemiBold):** Aplicada em títulos e elementos de destaque.
+    *   **Secundária (Manrope Regular):** Utilizada em textos corridos, garantindo legibilidade.
+*   **Identidade Visual:** Os elementos gráficos (logo, ícones) e o tom da documentação agora conversam diretamente com o manifesto e os valores da NeuraBar.
+*   **Estrutura e Conteúdo:** Reforcei os princípios de conectividade e eficiência na descrição, alinhando a função do dashboard com a missão da marca.
 
 ---
 
-### Código HTML e CSS
+### Documentação Técnica Ajustada: NeuraBar - Dashboard de Gestão
 
-Abaixo está a estrutura completa em um único arquivo (HTML + CSS) que replica fielmente essa identidade visual usando Flexbox para o posicionamento e CSS Variables para facilitar a manutenção das cores.
+A interface administrativa (dashboard) da NeuraBar foi projetada para ser o centro de comando da operação do seu bar ou restaurante. Ela incorpora a identidade visual da marca, que une tecnologia e sofisticação, para oferecer uma experiência de gestão intuitiva, limpa e altamente eficiente. Este layout é a materialização do manifesto da NeuraBar: **conectar pessoas, processos e informações para simplificar o que realmente importa.**
+
+### Análise da Identidade Visual
+
+*   **Paleta de Cores (NeuraBar):**
+    *   **Cor Primária (Azul Intenso):** `#293b4f`. Utilizada na logo, links ativos e elementos de destaque, transmite confiança, estabilidade e a inteligência da plataforma.
+    *   **Cor de Destaque (Dourado Glow):** `#c4b39b` e `#a28665`. Presente em sutis detalhes e interações, adiciona um toque de excelência e valor percebido, elevando a percepção da marca.
+    *   **Plano de Fundo:** `#eeeeee` (Off-white), criando um contraste suave e moderno com as superfícies brancas.
+    *   **Superfícies (Cards/Header):** Branco puro (`#FFFFFF`) com bordas sutis em `#e2e8f0`, garantindo clareza e organização.
+    *   **Texto:** Tons de cinza escuro (`#0f172a`) para títulos e cinza médio (`#64748b`) para descrições, priorizando a legibilidade.
+*   **Tipografia (NeuraBar):**
+    *   **Primária (Poppins SemiBold):** Utilizada em títulos, nomes de seções e navegação principal, reforçando a personalidade forte e contemporânea da marca.
+    *   **Secundária (Manrope Regular):** Aplicada em textos corridos, descrições e dados, garantindo legibilidade e fluidez na leitura.
+*   **Estrutura (Layout):**
+    *   **Header (Cabeçalho):** Estrutura fixa contendo a marca (logotipo com o ícone "N"), informações da sessão do usuário, navegação principal horizontal (com o item "Cardápio" ativo) e botão de saída. O design limpo reforça a sensação de controle e conectividade.
+    *   **Navegação Secundária (Cards):** Utiliza cartões clicáveis para alternar entre os modos de visualização do cardápio. O estado "ativo" é destacado com a cor **Dourado Glow** (`#c4b39b`) em suas variações, seguindo os princípios de **experiência** e **inteligência** da marca.
+    *   **Containers de Conteúdo:** Áreas bem delimitadas com bordas arredondadas (radius de 8px a 12px) e sombras sutis, criando uma hierarquia visual clara e uma experiência de usuário fluida, em linha com o princípio de **eficiência**.
+
+---
+
+### Código HTML e CSS Ajustado
+
+Abaixo está a estrutura completa em um único arquivo (HTML + CSS), incorporando todos os elementos da identidade visual da NeuraBar.
 
 ```html
 <!DOCTYPE html>
@@ -29,23 +46,44 @@ Abaixo está a estrutura completa em um único arquivo (HTML + CSS) que replica 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neura - Dashboard de Cardápio</title>
+    <title>NeuraBar - Dashboard de Gestão</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
     <style>
-        /* Variáveis de Cores e Estilo (Identidade Visual) */
+        /* ============================================================
+                   VARIÁVEIS DE ESTILO (IDENTIDADE NEURABAR)
+                   ============================================================ */
         :root {
-            --primary-blue: #0ea5e9; /* Azul principal */
-            --primary-blue-light: #e0f2fe; /* Fundo do card ativo */
-            --bg-color: #f8fafc; /* Fundo da página */
-            --surface-color: #ffffff; /* Fundo de cartões e header */
-            --text-main: #0f172a; /* Texto escuro (títulos) */
-            --text-muted: #64748b; /* Texto secundário */
-            --border-color: #e2e8f0; /* Bordas sutis */
+            /* Cores Primárias - Azul Intenso */
+            --primary-blue: #293b4f;
+            --primary-blue-dark: #1e2a3a;
+            
+            /* Cores de Destaque - Dourado Glow */
+            --gold-light: #c4b39b;
+            --gold-medium: #a28665;
+            
+            /* Cores Neutras - Off-white e Superfícies */
+            --bg-color: #eeeeee;
+            --surface-color: #ffffff;
+            --border-color: #e2e8f0;
+            
+            /* Cores de Texto */
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            
+            /* Tipografia */
+            --font-primary: 'Poppins', 'Inter', -apple-system, sans-serif;
+            --font-secondary: 'Manrope', 'Inter', -apple-system, sans-serif;
+            
+            /* Espaçamento e Bordas */
             --radius-md: 8px;
             --radius-lg: 12px;
-            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
-        /* Reset e Base */
+        /* ============================================================
+                   RESET E BASE
+                   ============================================================ */
         * {
             margin: 0;
             padding: 0;
@@ -53,19 +91,43 @@ Abaixo está a estrutura completa em um único arquivo (HTML + CSS) que replica 
         }
 
         body {
-            font-family: var(--font-family);
+            font-family: var(--font-secondary);
             background-color: var(--bg-color);
             color: var(--text-main);
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Tipografia Base */
-        h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
-        h2 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
-        h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
-        p { color: var(--text-muted); font-size: 14px; }
+        /* ============================================================
+                   TIPOGRAFIA BASE
+                   ============================================================ */
+        h1, h2, h3, h4 {
+            font-family: var(--font-primary);
+            font-weight: 700;
+        }
 
-        /* Cabeçalho (Header) */
+        h1 { 
+            font-size: 24px; 
+            margin-bottom: 4px; 
+        }
+        h2 { 
+            font-size: 18px; 
+            font-weight: 600; 
+            margin-bottom: 4px; 
+        }
+        h3 { 
+            font-size: 16px; 
+            font-weight: 600; 
+            margin-bottom: 16px; 
+        }
+        p { 
+            color: var(--text-muted); 
+            font-size: 14px; 
+            line-height: 1.6; 
+        }
+
+        /* ============================================================
+                   CABEÇALHO (HEADER) - TOPO
+                   ============================================================ */
         .top-header {
             background-color: var(--surface-color);
             border-bottom: 1px solid var(--border-color);
@@ -88,22 +150,26 @@ Abaixo está a estrutura completa em um único arquivo (HTML + CSS) que replica 
             gap: 12px;
         }
 
+        /* Símbolo/Ícone da Marca "N" - Representa a Conectividade */
         .logo-icon {
             background-color: var(--primary-blue);
-            color: white;
+            color: var(--gold-light);
             width: 32px;
             height: 32px;
             border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
+            font-family: var(--font-primary);
+            font-weight: 700;
             font-size: 18px;
         }
 
         .brand-name {
+            font-family: var(--font-primary);
             font-weight: 700;
             font-size: 18px;
+            color: var(--text-main);
         }
 
         .user-info {
@@ -115,24 +181,46 @@ Abaixo está a estrutura completa em um único arquivo (HTML + CSS) que replica 
             padding-left: 16px;
         }
 
-        .user-info strong { color: var(--text-main); }
+        .user-info strong { 
+            color: var(--text-main); 
+            font-weight: 600;
+        }
 
-        /* Navegação Principal */
+        /* ============================================================
+                   NAVEGAÇÃO PRINCIPAL
+                   ============================================================ */
         .main-nav {
             display: flex;
             gap: 24px;
+            font-family: var(--font-primary);
         }
 
         .main-nav a {
             text-decoration: none;
             color: var(--text-muted);
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             transition: color 0.2s;
+            position: relative;
         }
 
-        .main-nav a:hover { color: var(--text-main); }
-        .main-nav a.active { color: var(--primary-blue); }
+        .main-nav a:hover { 
+            color: var(--text-main); 
+        }
+        .main-nav a.active { 
+            color: var(--primary-blue); 
+        }
+        /* Indicador sutil de página ativa */
+        .main-nav a.active::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--gold-medium);
+            border-radius: 2px;
+        }
 
         .btn-logout {
             background: none;
@@ -146,23 +234,32 @@ Abaixo está a estrutura completa em um único arquivo (HTML + CSS) que replica 
             font-size: 14px;
             color: var(--text-main);
             font-weight: 500;
+            font-family: var(--font-secondary);
+            transition: all 0.2s;
+        }
+        .btn-logout:hover {
+            background-color: var(--bg-color);
         }
 
-        /* Container Principal */
+        /* ============================================================
+                   CONTAINER PRINCIPAL
+                   ============================================================ */
         .main-content {
-            max-width: 1200px;
+            max-width: 1280px;
             margin: 0 auto;
             padding: 32px 24px;
         }
 
-        /* Cartões de Modo (Tabs horizontais) */
+        /* ============================================================
+                   CARTÕES DE MODO (TABS HORIZONTAIS)
+                   ============================================================ */
         .mode-cards {
             display: flex;
             gap: 16px;
             margin-top: 24px;
             margin-bottom: 40px;
             overflow-x: auto;
-            padding-bottom: 8px; /* Para scrollbar se houver */
+            padding-bottom: 8px;
         }
 
         .mode-card {
@@ -170,26 +267,38 @@ Abaixo está a estrutura completa em um único arquivo (HTML + CSS) que replica 
             border: 1px solid var(--border-color);
             border-radius: var(--radius-md);
             padding: 16px;
-            min-width: 220px;
+            min-width: 200px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.25s ease;
+            flex-shrink: 0;
+        }
+
+        .mode-card:hover {
+            border-color: var(--gold-medium);
         }
 
         .mode-card.active {
-            border-color: var(--primary-blue);
-            background-color: var(--primary-blue-light);
+            border-color: var(--gold-medium);
+            background-color: #f8f5f0; /* Off-white com um toque quente */
         }
 
-        .mode-card.active .card-title { color: var(--primary-blue); }
+        .mode-card.active .card-title { 
+            color: var(--primary-blue); 
+        }
 
         .card-icon {
             margin-bottom: 12px;
-            font-size: 18px; /* Placeholder para ícone real */
+            font-size: 20px; 
+            color: var(--text-muted);
+            transition: color 0.2s;
         }
         
-        .mode-card.active .card-icon { color: var(--primary-blue); }
+        .mode-card.active .card-icon { 
+            color: var(--gold-medium); 
+        }
 
         .card-title {
+            font-family: var(--font-primary);
             font-size: 14px;
             font-weight: 600;
             margin-bottom: 4px;
@@ -202,7 +311,9 @@ Abaixo está a estrutura completa em um único arquivo (HTML + CSS) que replica 
             line-height: 1.4;
         }
 
-        /* Seção Resumo */
+        /* ============================================================
+                   SEÇÃO RESUMO
+                   ============================================================ */
         .section-header {
             display: flex;
             align-items: center;
@@ -211,7 +322,7 @@ Abaixo está a estrutura completa em um único arquivo (HTML + CSS) que replica 
         }
 
         .loading-box {
-            background-color: var(--bg-color); /* Fundo um pouco mais escuro para destaque da borda */
+            background-color: var(--surface-color);
             border: 1px solid var(--border-color);
             border-radius: var(--radius-lg);
             padding: 48px;
@@ -221,7 +332,9 @@ Abaixo está a estrutura completa em um único arquivo (HTML + CSS) que replica 
             margin-bottom: 48px;
         }
 
-        /* Seção Cardápio Compacto */
+        /* ============================================================
+                   SEÇÃO CARDÁPIO COMPACTO
+                   ============================================================ */
         .compact-menu-container {
             background-color: var(--surface-color);
             border-radius: var(--radius-lg);
@@ -234,23 +347,31 @@ Abaixo está a estrutura completa em um único arquivo (HTML + CSS) que replica 
             justify-content: space-between;
             align-items: center;
             margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 12px;
         }
 
+        /* Botão Primário com a identidade NeuraBar */
         .btn-primary {
             background-color: var(--primary-blue);
             color: white;
             border: none;
-            padding: 10px 16px;
+            padding: 10px 18px;
             border-radius: var(--radius-md);
-            font-weight: 500;
+            font-family: var(--font-primary);
+            font-weight: 600;
             font-size: 14px;
             cursor: pointer;
             transition: background-color 0.2s;
         }
 
-        .btn-primary:hover { background-color: #0284c7; }
+        .btn-primary:hover { 
+            background-color: var(--primary-blue-dark); 
+        }
 
-        /* Tabela Simplificada */
+        /* ============================================================
+                   TABELA DE DADOS (SIMPLIFICADA)
+                   ============================================================ */
         .data-table {
             width: 100%;
             border-collapse: collapse;
@@ -262,10 +383,92 @@ Abaixo está a estrutura completa em um único arquivo (HTML + CSS) que replica 
             border-top: 1px solid var(--border-color);
             border-bottom: 1px solid var(--border-color);
             color: var(--text-muted);
-            font-weight: 500;
+            font-weight: 600;
+            font-size: 13px;
+            font-family: var(--font-primary);
+        }
+
+        .data-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
             font-size: 14px;
         }
 
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Estilo para o status "Ativo" */
+        .status-badge {
+            background-color: #e6f7e6;
+            color: #1a7a3a;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-badge.inactive {
+            background-color: #f3f3f3;
+            color: #888;
+        }
+
+        /* ============================================================
+                   RESPONSIVIDADE
+                   ============================================================ */
+        @media (max-width: 768px) {
+            .top-header {
+                flex-wrap: wrap;
+                height: auto;
+                padding: 12px 16px;
+                gap: 12px;
+            }
+            .header-left {
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+            .main-nav {
+                flex-wrap: wrap;
+                gap: 12px 16px;
+                padding: 8px 0;
+            }
+            .main-content {
+                padding: 16px;
+            }
+            .mode-cards {
+                gap: 12px;
+            }
+            .mode-card {
+                min-width: 160px;
+                padding: 12px;
+            }
+            .compact-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .data-table {
+                font-size: 13px;
+            }
+            .data-table th, .data-table td {
+                padding: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .brand-name {
+                font-size: 16px;
+            }
+            .user-info {
+                font-size: 11px;
+                padding-left: 10px;
+            }
+            .main-nav a {
+                font-size: 13px;
+            }
+            .mode-card {
+                min-width: 140px;
+                padding: 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -273,12 +476,13 @@ Abaixo está a estrutura completa em um único arquivo (HTML + CSS) que replica 
     <header class="top-header">
         <div class="header-left">
             <div class="brand-area">
+                <!-- Ícone "N" representando a marca -->
                 <div class="logo-icon">N</div>
-                <div class="brand-name">Neura</div>
+                <div class="brand-name">NeuraBar</div>
             </div>
             <div class="user-info">
                 <span>logado como: <strong>Dono</strong></span>
-                <span>Bar do Zé Id=1</span>
+                <span>Bar do Zé · ID: 1</span>
             </div>
         </div>
 
@@ -289,7 +493,7 @@ Abaixo está a estrutura completa em um único arquivo (HTML + CSS) que replica 
             <a href="#">Atendimento</a>
             <a href="#">Anotar pedidos</a>
             <a href="#">Tela de preparo</a>
-            <a href="#">Gerenciamento de atendimentos</a>
+            <a href="#">Gerenciamento</a>
         </nav>
 
         <button class="btn-logout">
@@ -301,53 +505,62 @@ Abaixo está a estrutura completa em um único arquivo (HTML + CSS) que replica 
     <main class="main-content">
         <header class="page-title">
             <h1>Cardápio</h1>
-            <p>Gerencie o cardápio em diferentes modos</p>
+            <p>Gerencie seu cardápio com inteligência e eficiência.</p>
         </header>
 
+        <!-- ==========================================================
+        CARTÕES DE MODO - NAVEGAÇÃO SECUNDÁRIA
+        ========================================================== -->
         <div class="mode-cards">
             <div class="mode-card active">
                 <div class="card-icon">📊</div>
-                <div class="card-title">Resumo categ...</div>
-                <div class="card-desc"></div>
+                <div class="card-title">Resumo por categoria</div>
+                <div class="card-desc">Visão geral de itens ativos e inativos</div>
             </div>
             <div class="mode-card">
                 <div class="card-icon">🔲</div>
-                <div class="card-title">Cardápio comp...</div>
+                <div class="card-title">Cardápio compacto</div>
                 <div class="card-desc">Ative e desative itens rapidamente</div>
             </div>
             <div class="mode-card">
                 <div class="card-icon">⚙️</div>
-                <div class="card-title">Cardápio comp...</div>
-                <div class="card-desc">Adicione itens, altere variações, preços e...</div>
+                <div class="card-title">Cardápio completo</div>
+                <div class="card-desc">Adicione itens, variações e preços</div>
             </div>
             <div class="mode-card">
                 <div class="card-icon">📱</div>
                 <div class="card-title">Cardápio digital</div>
-                <div class="card-desc">Edite as fotos dos pratos e visualize com...</div>
+                <div class="card-desc">Edite fotos e visualize o layout</div>
             </div>
             <div class="mode-card">
                 <div class="card-icon">👁️</div>
                 <div class="card-title">Versão clientes</div>
-                <div class="card-desc">Veja como o cliente vê o cardápio no celular</div>
+                <div class="card-desc">Veja como o cliente enxerga o cardápio</div>
             </div>
         </div>
 
+        <!-- ==========================================================
+        SEÇÃO: RESUMO POR CATEGORIA
+        ========================================================== -->
         <section>
             <div class="section-header">
                 <h2>📊 Resumo por categoria</h2>
             </div>
-            <p style="margin-bottom: 16px;">Quantidade de itens ativos e inativos por categoria</p>
+            <p style="margin-bottom: 16px;">Quantidade de itens ativos e inativos por categoria.</p>
             
             <div class="loading-box">
                 Carregando resumo...
             </div>
         </section>
 
+        <!-- ==========================================================
+        SEÇÃO: CARDÁPIO COMPACTO
+        ========================================================== -->
         <section class="compact-menu-container">
             <div class="compact-header">
                 <div>
                     <h2>Cardápio Compacto</h2>
-                    <p>Gerencie os itens do seu cardápio</p>
+                    <p>Gerencie os itens do seu cardápio com agilidade.</p>
                 </div>
                 <button class="btn-primary">+ Adicionar produto</button>
             </div>
@@ -360,12 +573,27 @@ Abaixo está a estrutura completa em um único arquivo (HTML + CSS) que replica 
                             <th>Produto</th>
                             <th>Variações</th>
                             <th>Preço</th>
-                            <th>Ativo</th>
+                            <th>Status</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        </tbody>
+                        <!-- Linha de exemplo -->
+                        <tr>
+                            <td><strong>Pudim de Leite</strong></td>
+                            <td>Leite condensado</td>
+                            <td>R$ 12,00</td>
+                            <td><span class="status-badge">Ativo</span></td>
+                            <td>✏️ 🗑️</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Torta de Limão</strong></td>
+                            <td>Merengue</td>
+                            <td>R$ 15,00</td>
+                            <td><span class="status-badge inactive">Inativo</span></td>
+                            <td>✏️ 🗑️</td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
         </section>
@@ -373,11 +601,11 @@ Abaixo está a estrutura completa em um único arquivo (HTML + CSS) que replica 
 
 </body>
 </html>
-
 ```
 
-### Dicas de Implementação
+### Dicas de Implementação para Manter a Consistência da Marca
 
-* **Ícones:** No código acima, usei emojis como marcadores de espaço (placeholders). Para manter o design extremamente simples e alinhado com o estilo ícone e minimalista que sistemas modernos exigem, recomendo a substituição por uma biblioteca de ícones SVG limpos, como o **Phosphor Icons** ou **Lucide Icons**.
-* **Fontes:** O uso do Google Fonts (`<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">`) na tag `<head>` deixará a interface idêntica ao design original.
-* **Escalabilidade:** A estrutura foca na reutilização. As classes `.btn-primary` ou `.surface-color` podem ser reaproveitadas em todo o desenvolvimento do sistema para manter a consistência estética do painel.
+*   **Ícones:** Substitua os emojis por uma biblioteca de ícones SVG como **Phosphor Icons** ou **Lucide Icons** para manter o design profissional e alinhado com a linguagem visual da NeuraBar.
+*   **Tipografia:** Certifique-se de que as fontes **Poppins** e **Manrope** estão carregadas corretamente no seu projeto. A hierarquia tipográfica é fundamental para a identidade da marca.
+*   **Componentes:** A estrutura do código foi pensada para ser reutilizável. Classes como `.btn-primary`, `.mode-card` e `.status-badge` devem ser usadas em todo o sistema para garantir uma experiência consistente e coesa.
+*   **Filosofia:** Lembre-se dos princípios da NeuraBar (Conectividade, Inteligência, Eficiência, Evolução, Experiência) ao desenvolver novas funcionalidades. Cada elemento deve comunicar essa essência.

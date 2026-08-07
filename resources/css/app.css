@@ -1,5 +1,9 @@
-@import '@fontsource/space-grotesk';
-@import '@fontsource/dm-sans';
+@import '@fontsource/poppins/400.css';
+@import '@fontsource/poppins/600.css';
+@import '@fontsource/poppins/700.css';
+@import '@fontsource/manrope/400.css';
+@import '@fontsource/manrope/500.css';
+@import '@fontsource/manrope/700.css';
 
 @tailwind base;
 @tailwind components;

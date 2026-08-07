@@ -7,7 +7,7 @@ import { Toaster } from 'vue-sonner';
         position="bottom-right"
         :toast-options="{
             style: {
-                fontFamily: 'DM Sans, sans-serif',
+                fontFamily: 'Manrope, sans-serif',
             },
         }"
         rich-colors
