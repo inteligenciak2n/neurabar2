@@ -2,7 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Enums\BillingMode;
+use App\Enums\SubscriptionStatus;
 use App\Models\Tenant\Corporation;
+use App\Models\Tenant\CorporationSubscription;
+use App\Models\Tenant\PlanCatalog;
 use App\Models\User;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
@@ -16,6 +20,7 @@ class NoVenueTest extends TestCase
         $user = User::factory()->create([
             'current_venue_id' => null,
             'active' => true,
+            'onboarding_completed_at' => now(),
         ]);
 
         $this->actingAs($user)
@@ -28,6 +33,7 @@ class NoVenueTest extends TestCase
         $user = User::factory()->create([
             'current_venue_id' => null,
             'active' => true,
+            'onboarding_completed_at' => now(),
         ]);
 
         $this->actingAs($user)
@@ -35,12 +41,34 @@ class NoVenueTest extends TestCase
             ->assertOk();
     }
 
-    public function test_owner_can_create_first_venue_from_no_venue_page(): void
+    public function test_user_without_completed_onboarding_is_redirected_to_onboarding_wizard(): void
     {
-        $corporation = Corporation::factory()->create();
         $user = User::factory()->create([
             'current_venue_id' => null,
             'active' => true,
+            'onboarding_completed_at' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertRedirect(route('onboarding.subscription.create'));
+    }
+
+    public function test_owner_can_create_first_venue_from_no_venue_page(): void
+    {
+        $plan = PlanCatalog::factory()->create();
+        $corporation = Corporation::factory()->create();
+        CorporationSubscription::factory()->create([
+            'corporation_id' => $corporation->id,
+            'plan_catalog_id' => $plan->id,
+            'billing_mode' => BillingMode::PerVenue,
+            'status' => SubscriptionStatus::Active,
+        ]);
+
+        $user = User::factory()->create([
+            'current_venue_id' => null,
+            'active' => true,
+            'onboarding_completed_at' => now(),
         ]);
         $corporation->update(['owner_id' => $user->id]);
 

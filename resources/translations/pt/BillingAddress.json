@@ -1,0 +1,17 @@
+{
+    "Billing Address": "Endereço de cobrança",
+    "Number": "Número",
+    "Street": "Logradouro",
+    "Complement": "Complemento",
+    "ZIP Code": "CEP",
+    "State": "Estado",
+    "Neighborhood": "Bairro",
+    "Country": "País",
+    "State Registration": "Inscrição estadual",
+    "Tax Regime": "Regime tributário",
+    "Save": "Salvar",
+    "City": "Cidade",
+    "Back": "Voltar",
+    "Billing Phone": "Telefone de cobrança",
+    "Billing Email": "E-mail de cobrança"
+}

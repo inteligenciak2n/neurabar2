@@ -1,0 +1,21 @@
+{
+    "Invoices": "Invoices",
+    "Venue / Corporation": "Venue / Corporation",
+    "Period": "Period",
+    "Total": "Total",
+    "Due Date": "Due Date",
+    "Status": "Status",
+    "Actions": "Actions",
+    "Back": "Back",
+    "Pay": "Pay",
+    "No invoices found.": "No invoices found.",
+    "Pay Invoice": "Pay Invoice",
+    "Payment Method": "Payment Method",
+    "Saved Card": "Saved Card",
+    "A PIX QR code will be generated after confirmation.": "A PIX QR code will be generated after confirmation.",
+    "A boleto will be generated after confirmation.": "A boleto will be generated after confirmation.",
+    "Cancel": "Cancel",
+    "Confirm": "Confirm",
+    "Venue invoices": "Venue invoices",
+    "Corporation invoices": "Corporation invoices"
+}

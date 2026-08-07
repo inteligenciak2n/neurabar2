@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Enums\UserRole;
 use App\Models\User;
+use App\Services\Billing\BillingStatusService;
 use App\Services\Languages\TranslationService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -73,6 +74,27 @@ class HandleInertiaRequests extends Middleware
                         ->get(['venues.id', 'venues.name'])
                         ->map(fn ($v) => ['id' => $v->id, 'name' => $v->name, 'role' => $v->pivot->role instanceof UserRole ? $v->pivot->role->value : $v->pivot->role])
                         ->toArray();
+                },
+                'tenant' => function () use ($request): ?array {
+                    $user = $request->user();
+
+                    if (! $user instanceof User) {
+                        return null;
+                    }
+
+                    $venue = $user->activeVenue();
+
+                    if (! $venue) {
+                        return null;
+                    }
+
+                    return [
+                        'id' => $venue->id,
+                        'name' => $venue->name,
+                        'modules' => $venue->activeModules(),
+                        'role' => $user->currentVenueRole()?->value,
+                        'blocked' => BillingStatusService::isBlocked($venue),
+                    ];
                 },
             ],
             'venue_switched' => fn () => $request->session()->pull('venue_switched', false),

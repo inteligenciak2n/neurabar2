@@ -34,6 +34,16 @@ class AcceptVenueInvitationAction
 
         if (! $user->current_venue_id) {
             $user->current_venue_id = $invitation->venue_id;
+        }
+
+        // An invited member joins an existing corporation, so the onboarding
+        // wizard must not run for them: it would push the user into creating a
+        // brand new corporation and subscription of their own.
+        if (! $user->onboarding_completed_at) {
+            $user->onboarding_completed_at = now();
+        }
+
+        if ($user->isDirty()) {
             $user->save();
         }
 

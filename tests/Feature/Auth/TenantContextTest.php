@@ -2,9 +2,16 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Enums\ModuleCode;
+use App\Enums\ModuleStatus;
+use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Models\Tenant\Corporation;
+use App\Models\Tenant\CorporationModule;
+use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\Venue;
+use App\Models\Tenant\VenueModule;
+use App\Models\Tenant\VenueSubscription;
 use App\Models\User;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
@@ -16,6 +23,29 @@ class TenantContextTest extends TestCase
     public function test_operational_user_can_access_dashboard_with_venue_context(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
+
+        CorporationSubscription::factory()->create([
+            'corporation_id' => $venue->corporation_id,
+            'status' => SubscriptionStatus::Active,
+        ]);
+
+        VenueSubscription::factory()->create([
+            'venue_id' => $venue->id,
+            'status' => SubscriptionStatus::Active,
+        ]);
+
+        CorporationModule::factory()->create([
+            'corporation_id' => $venue->corporation_id,
+            'module_code' => ModuleCode::Menu->value,
+            'status' => ModuleStatus::Active,
+        ]);
+
+        VenueModule::factory()->create([
+            'venue_id' => $venue->id,
+            'module_code' => ModuleCode::Menu->value,
+            'status' => ModuleStatus::Active,
+        ]);
+
         $user = User::factory()->create([
             'current_venue_id' => $venue->id,
             'active' => true,
@@ -33,6 +63,7 @@ class TenantContextTest extends TestCase
         $user = User::factory()->create([
             'current_venue_id' => null,
             'active' => true,
+            'onboarding_completed_at' => now(),
         ]);
 
         $this->actingAs($user)

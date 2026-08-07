@@ -3,7 +3,7 @@
 namespace App\Actions\Fortify;
 
 use App\Enums\ProfileEnum;
-use App\Enums\UserRole;
+use App\Models\Tenant\PlanCatalog;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -25,11 +25,11 @@ class CreateNewUserPlatform implements CreatesNewUsers
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => $input['password'] ? $this->passwordRules() : 'nullable',
+            'plan_catalog_id' => ['nullable', 'uuid', 'exists:plan_catalogs,id'],
             'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature() ? ['accepted', 'required'] : '',
         ])->validate();
 
-
-        if(!isset($input['profile']) || !in_array($input['profile'], ProfileEnum::values())) {
+        if (! isset($input['profile']) || ! in_array($input['profile'], ProfileEnum::values())) {
             $input['profile'] = ProfileEnum::Client->value;
         }
 
@@ -41,9 +41,13 @@ class CreateNewUserPlatform implements CreatesNewUsers
             'active' => true,
         ]);
 
-        if(isset($input['profile']) && in_array($input['profile'], ProfileEnum::operationalProfiles())) {
+        if (isset($input['profile']) && in_array($input['profile'], ProfileEnum::operationalProfiles())) {
+            $plan = isset($input['plan_catalog_id'])
+                ? PlanCatalog::find($input['plan_catalog_id'])
+                : null;
+
             $action = app(CreateUserOwnerDefinitions::class);
-            $action->handle($user);
+            $action->handle($user, $plan);
         }
 
         return $user;

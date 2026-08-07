@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Kitchen;
 
+use App\Enums\ModuleCode;
+use App\Enums\ModuleStatus;
 use App\Enums\UserRole;
 use App\Events\Kitchen\ItemStatusUpdated;
 use App\Events\Orders\OrderPlaced;
@@ -13,7 +15,9 @@ use App\Models\Orders\Order;
 use App\Models\Orders\OrderItem;
 use App\Models\Settings\KitchenStation;
 use App\Models\Settings\PreparationStatus;
+use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\Venue;
+use App\Models\Tenant\VenueModule;
 use Illuminate\Support\Facades\Event;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
@@ -22,9 +26,26 @@ class KdsTest extends TestCase
 {
     use RefreshAllDatabases;
 
+    private function enableKdsModule(Venue $venue): void
+    {
+        CorporationModule::factory()->create([
+            'corporation_id' => $venue->corporation_id,
+            'module_code' => ModuleCode::Kds->value,
+            'status' => ModuleStatus::Active,
+        ]);
+
+        VenueModule::factory()->create([
+            'venue_id' => $venue->id,
+            'module_code' => ModuleCode::Kds->value,
+            'status' => ModuleStatus::Active,
+        ]);
+    }
+
     public function test_kds_index_returns_correct_page(): void
     {
         $venue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+
         $this->loginAs(UserRole::Attendant, $venue);
 
         $this->get(route('kitchen.kds'))->assertOk()->assertInertia(
@@ -38,6 +59,8 @@ class KdsTest extends TestCase
     public function test_kds_lists_only_items_of_current_tenant(): void
     {
         $venue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+
         $this->loginAs(UserRole::Attendant, $venue);
 
         $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
@@ -60,6 +83,8 @@ class KdsTest extends TestCase
         Event::fake([ItemStatusUpdated::class]);
 
         $venue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+
         $this->loginAs(UserRole::Attendant, $venue);
 
         $status = PreparationStatus::factory()->create(['venue_id' => $venue->id]);
@@ -84,6 +109,8 @@ class KdsTest extends TestCase
         Event::fake([ItemStatusUpdated::class]);
 
         $venue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+
         $this->loginAs(UserRole::Attendant, $venue);
 
         $status = PreparationStatus::factory()->create(['venue_id' => $venue->id, 'name' => 'Ready', 'is_final' => true]);
@@ -105,6 +132,8 @@ class KdsTest extends TestCase
         Event::fake([ItemStatusUpdated::class]);
 
         $venue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+
         $this->loginAs(UserRole::Attendant, $venue);
 
         $status = PreparationStatus::factory()->create(['venue_id' => $venue->id, 'name' => 'In Preparation', 'is_final' => false]);
@@ -124,6 +153,8 @@ class KdsTest extends TestCase
         Event::fake([ItemStatusUpdated::class]);
 
         $venue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+
         $this->loginAs(UserRole::Attendant, $venue);
 
         $otherVenue = Venue::factory()->create();
@@ -143,6 +174,8 @@ class KdsTest extends TestCase
         Event::fake([OrderPlaced::class]);
 
         $venue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+
         $this->loginAs(UserRole::Attendant, $venue);
 
         $menu = Menu::factory()->create(['venue_id' => $venue->id]);
@@ -166,6 +199,8 @@ class KdsTest extends TestCase
         Event::fake([ItemStatusUpdated::class]);
 
         $venue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+
         $this->loginAs(UserRole::Attendant, $venue);
 
         $status = PreparationStatus::factory()->create(['venue_id' => $venue->id, 'is_final' => false]);
@@ -192,6 +227,8 @@ class KdsTest extends TestCase
     public function test_item_status_updated_event_broadcasts_on_public_display_channel(): void
     {
         $venue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+
         $this->loginAs(UserRole::Attendant, $venue);
 
         $status = PreparationStatus::factory()->create(['venue_id' => $venue->id]);
@@ -214,6 +251,8 @@ class KdsTest extends TestCase
     public function test_order_placed_event_broadcasts_on_public_display_channel(): void
     {
         $venue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+
         $this->loginAs(UserRole::Attendant, $venue);
 
         $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
@@ -232,6 +271,8 @@ class KdsTest extends TestCase
         Event::fake([ItemStatusUpdated::class]);
 
         $venue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+
         $this->loginAs(UserRole::Attendant, $venue);
 
         $status = PreparationStatus::factory()->create(['venue_id' => $venue->id, 'is_final' => false]);
@@ -251,6 +292,8 @@ class KdsTest extends TestCase
         Event::fake([ItemStatusUpdated::class]);
 
         $venue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+
         $this->loginAs(UserRole::Attendant, $venue);
 
         $status = PreparationStatus::factory()->create(['venue_id' => $venue->id, 'is_final' => true]);
@@ -270,6 +313,8 @@ class KdsTest extends TestCase
         Event::fake([ItemStatusUpdated::class]);
 
         $venue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+
         $this->loginAs(UserRole::Attendant, $venue);
 
         $status = PreparationStatus::factory()->create(['venue_id' => $venue->id, 'is_final' => false]);
@@ -288,6 +333,8 @@ class KdsTest extends TestCase
     public function test_attendance_show_returns_venue_id(): void
     {
         $venue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+
         $this->loginAs(UserRole::Attendant, $venue);
 
         $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
@@ -304,6 +351,8 @@ class KdsTest extends TestCase
     public function test_attendance_index_returns_venue_id(): void
     {
         $venue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+
         $this->loginAs(UserRole::Attendant, $venue);
 
         $this->get(route('attendances.index'))

@@ -1,11 +1,11 @@
 {
-    "Create a new Venue": "Crie um novo local",
-    "Venue Name": "Nome do local",
-    "Create your first Venue": "Crie seu primeiro local",
+    "Create a new Venue": "Crie um novo Ponto de Venda",
+    "Venue Name": "Nome do Ponto de Venda",
+    "Create your first Venue": "Crie seu primeiro Ponto de Venda",
     "Welcome, :name!": "Bem-vindo, :name!",
-    "You do not have a venue registered yet. Create your first venue to start operating.": "Você ainda não tem um local registrado. Crie seu primeiro local para começar a operar.",
+    "You do not have a venue registered yet. Create your first venue to start operating.": "Você ainda não tem um Ponto de Venda registrado. Crie seu primeiro Ponto de Venda para começar a operar.",
     "Ex: John's Bar": "Ex: John's Bar",
-    "Create Venue": "Criar local",
+    "Create Venue": "Criar Ponto de Venda",
     "Welcome,": "Bem-vindo,",
     "Welcome": "Bem-vindo"
 }

@@ -2,12 +2,14 @@
 import PlatformLayout from '@/Layouts/PlatformLayout.vue';
 import { Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { useCurrency } from '@/Composables/useCurrency';
 
 const props = defineProps({
     corporations: Object,
     filters: Object,
 });
 
+const { formatMoney } = useCurrency();
 const search = ref(props.filters?.search ?? '');
 
 const applySearch = () => {
@@ -55,8 +57,8 @@ const applySearch = () => {
                         >
                             <td class="px-4 py-3 font-medium text-ocean-deep dark:text-gray-100">{{ corp.name }}</td>
                             <td class="px-4 py-3 text-muted-foreground dark:text-gray-400">{{ corp.email }}</td>
-                            <td class="px-4 py-3 dark:text-gray-300">{{ corp.plan_catalog?.name ?? '—' }}</td>
-                            <td class="px-4 py-3 dark:text-gray-300">R$ {{ Number(corp.subscription_value ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</td>
+                            <td class="px-4 py-3 dark:text-gray-300">{{ corp.subscription?.plan_catalog?.name ?? '—' }}</td>
+                            <td class="px-4 py-3 dark:text-gray-300">{{ formatMoney(corp.subscription?.total_value) }}</td>
                             <td class="px-4 py-3">
                                 <span
                                     :class="corp.active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'"
@@ -66,7 +68,7 @@ const applySearch = () => {
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right">
-                                <Link :href="route('platform.corporations.edit', corp.id)" class="text-primary hover:underline text-xs">{{ __('Edit') }}</Link>
+                                <Link :href="route('platform.corporations.edit', corp.id)" prefetch class="text-primary hover:underline text-xs">{{ __('Edit') }}</Link>
                             </td>
                         </tr>
                     </tbody>

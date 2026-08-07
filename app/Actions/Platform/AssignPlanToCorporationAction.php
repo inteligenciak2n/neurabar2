@@ -2,19 +2,101 @@
 
 namespace App\Actions\Platform;
 
+use App\Enums\BillingMode;
+use App\Enums\SubscriptionStatus;
 use App\Models\Tenant\Corporation;
+use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\PlanCatalog;
+use App\Models\Tenant\VenueSubscription;
+use App\Services\Billing\SubscriptionCalculator;
+use App\Services\VenueModuleCache;
+use App\Support\Money;
+use Illuminate\Support\Facades\DB;
 
 class AssignPlanToCorporationAction
 {
+    public function __construct(private readonly SubscriptionCalculator $calculator) {}
+
     public function execute(Corporation $corporation, PlanCatalog $plan, array $data): void
     {
-        $corporation->update([
-            'plan_catalog_id' => $plan->id,
-            'plan_name' => $plan->name,
-            'subscription_value' => $data['subscription_value'] ?? $plan->monthly_price,
-            'plan_start_date' => $data['plan_start_date'] ?? today(),
-            'plan_end_date' => $data['plan_end_date'] ?? null,
-        ]);
+        DB::transaction(function () use ($corporation, $plan, $data): void {
+            $subscription = $corporation->subscription;
+
+            // O formulário envia reais; o catálogo já guarda centavos.
+            $baseValue = isset($data['subscription_value'])
+                ? Money::fromFloat($data['subscription_value'])
+                : (int) $plan->monthly_price;
+            $billingMode = BillingMode::tryFrom($data['billing_mode'] ?? '') ?? BillingMode::PerVenue;
+            $status = SubscriptionStatus::tryFrom($data['status'] ?? '') ?? SubscriptionStatus::Trial;
+
+            // Adicional cobrado apenas de quem opera em infraestrutura dedicada.
+            $dedicatedSurcharge = $corporation->is_dedicated
+                ? (int) ($plan->dedicated_surcharge ?? 0)
+                : 0;
+
+            if ($subscription) {
+                $subscription->update([
+                    'plan_catalog_id' => $plan->id,
+                    'billing_mode' => $billingMode->value,
+                    'status' => $status->value,
+                    'billing_day' => $data['billing_day'] ?? config('billing.default_billing_day', 1),
+                    'grace_period_days' => $data['grace_period_days'] ?? config('billing.grace_period_days', 3),
+                    'started_at' => $data['started_at'] ?? now(),
+                    'trial_ends_at' => $data['trial_ends_at'] ?? null,
+                    'ended_at' => null,
+                ]);
+            } else {
+                $subscription = CorporationSubscription::create([
+                    'corporation_id' => $corporation->id,
+                    'plan_catalog_id' => $plan->id,
+                    'billing_mode' => $billingMode->value,
+                    'status' => $status->value,
+                    'billing_day' => $data['billing_day'] ?? config('billing.default_billing_day', 1),
+                    'grace_period_days' => $data['grace_period_days'] ?? config('billing.grace_period_days', 3),
+                    'started_at' => $data['started_at'] ?? now(),
+                    'trial_ends_at' => $data['trial_ends_at'] ?? now()->addDays(config('billing.trial_days', 14)),
+                    'currency' => $data['currency'] ?? config('billing.currency', 'BRL'),
+                ]);
+            }
+
+            foreach ($corporation->venues as $venue) {
+                $venueSubscription = $venue->subscription;
+
+                if ($venueSubscription) {
+                    $venueSubscription->update([
+                        'corporation_subscription_id' => $subscription->id,
+                        'plan_catalog_id' => $plan->id,
+                        'status' => $status->value,
+                        'base_value' => $baseValue,
+                        'dedicated_surcharge' => $dedicatedSurcharge,
+                        'total_value' => $baseValue
+                            + (int) $venueSubscription->modules_value
+                            + (int) $venueSubscription->metered_value
+                            + $dedicatedSurcharge,
+                        'started_at' => $data['started_at'] ?? now(),
+                        'trial_ends_at' => $subscription->trial_ends_at,
+                        'ended_at' => null,
+                    ]);
+                } else {
+                    VenueSubscription::create([
+                        'venue_id' => $venue->id,
+                        'corporation_subscription_id' => $subscription->id,
+                        'plan_catalog_id' => $plan->id,
+                        'status' => $status->value,
+                        'base_value' => $baseValue,
+                        'modules_value' => 0,
+                        'metered_value' => 0,
+                        'dedicated_surcharge' => $dedicatedSurcharge,
+                        'total_value' => $baseValue + $dedicatedSurcharge,
+                        'started_at' => $data['started_at'] ?? now(),
+                        'trial_ends_at' => $subscription->trial_ends_at,
+                    ]);
+                }
+
+                VenueModuleCache::forget($venue);
+            }
+
+            $this->calculator->refreshCorporationSnapshot($corporation, now()->format('Y-m'));
+        });
     }
 }

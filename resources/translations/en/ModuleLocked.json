@@ -1,0 +1,15 @@
+{
+    "This module": "This module",
+    "The :module module is not part of your plan yet": "The :module module is not part of your plan yet",
+    "The :module module is not enabled for this venue": "The :module module is not enabled for this venue",
+    "The :module module needs another module first": "The :module module needs another module first",
+    "This module is unavailable": "This module is unavailable",
+    "Enable it in your subscription and start using it right away. Billing is prorated, so you only pay for the days you use.": "Enable it in your subscription and start using it right away. Billing is prorated, so you only pay for the days you use.",
+    "Your account already has this module. Turn it on for this venue in the subscription screen.": "Your account already has this module. Turn it on for this venue in the subscription screen.",
+    "Enable the required module below and this one becomes available immediately.": "Enable the required module below and this one becomes available immediately.",
+    "Module unavailable": "Module unavailable",
+    "Required module:": "Required module:",
+    "Manage subscription": "Manage subscription",
+    "Ask an account owner to enable this module.": "Ask an account owner to enable this module.",
+    "Back to dashboard": "Back to dashboard"
+}

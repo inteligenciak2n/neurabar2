@@ -23,6 +23,10 @@ class SetVenueContext
         $venue = $user->currentVenue;
 
         if (! $venue) {
+            if (! $user->onboarding_completed_at) {
+                return redirect()->route('onboarding.subscription.create');
+            }
+
             return redirect()->route('no-venue.index');
         }
 

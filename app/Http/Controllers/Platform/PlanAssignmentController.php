@@ -6,6 +6,7 @@ use App\Actions\Platform\AssignPlanToCorporationAction;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\PlanCatalog;
+use App\Services\Audit\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -16,13 +17,25 @@ class PlanAssignmentController extends Controller
         $validated = $request->validate([
             'plan_catalog_id' => ['required', 'uuid', 'exists:plan_catalogs,id'],
             'subscription_value' => ['required', 'numeric', 'min:0'],
-            'plan_start_date' => ['required', 'date'],
-            'plan_end_date' => ['nullable', 'date', 'after:plan_start_date'],
+            'billing_mode' => ['required', 'in:per_venue,unified'],
+            'billing_day' => ['required', 'integer', 'min:1', 'max:28'],
+            'grace_period_days' => ['required', 'integer', 'min:0', 'max:30'],
+            'started_at' => ['required', 'date'],
+            'trial_ends_at' => ['nullable', 'date', 'after_or_equal:started_at'],
         ]);
 
         $plan = PlanCatalog::findOrFail($validated['plan_catalog_id']);
 
+        $previousPlanId = $corporation->subscription?->plan_catalog_id;
+
         $action->execute($corporation, $plan, $validated);
+
+        AuditLogger::record(
+            'subscription.plan_assigned',
+            $corporation,
+            ['plan_catalog_id' => $previousPlanId],
+            ['plan_catalog_id' => $plan->id, 'subscription_value' => $validated['subscription_value']],
+        );
 
         return back()->with('success', 'Plan assigned successfully.');
     }

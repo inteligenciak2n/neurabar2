@@ -19,6 +19,7 @@ class LoginTest extends TestCase
             'email' => 'owner@test.com',
             'current_venue_id' => $venue->id,
             'active' => true,
+            'onboarding_completed_at' => now(),
         ]);
         $venue->users()->attach($user->id, ['role' => UserRole::Owner->value]);
 

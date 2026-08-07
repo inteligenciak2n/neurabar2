@@ -2,9 +2,16 @@
 
 namespace Tests;
 
+use App\Enums\ModuleCode;
+use App\Enums\ModuleStatus;
 use App\Enums\ProfileEnum;
+use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
+use App\Models\Tenant\CorporationModule;
+use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\Venue;
+use App\Models\Tenant\VenueModule;
+use App\Models\Tenant\VenueSubscription;
 use App\Models\User;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
@@ -33,6 +40,8 @@ abstract class TestCase extends BaseTestCase
     {
         $venue ??= Venue::factory()->create();
 
+        $this->ensureVenueHasSubscriptionAndMenu($venue);
+
         $user = User::factory()->create([
             'current_venue_id' => $venue->id,
         ]);
@@ -45,6 +54,42 @@ abstract class TestCase extends BaseTestCase
         app()->instance('operational_connection', 'operation_default_1');
 
         return $user;
+    }
+
+    protected function ensureVenueHasSubscriptionAndMenu(Venue $venue): void
+    {
+        if (! $venue->corporation->subscription) {
+            $plan = \App\Models\Tenant\PlanCatalog::factory()->create();
+
+            $subscription = CorporationSubscription::factory()->create([
+                'corporation_id' => $venue->corporation_id,
+                'plan_catalog_id' => $plan->id,
+                'status' => SubscriptionStatus::Active,
+            ]);
+
+            VenueSubscription::factory()->create([
+                'venue_id' => $venue->id,
+                'corporation_subscription_id' => $subscription->id,
+                'plan_catalog_id' => $plan->id,
+                'status' => SubscriptionStatus::Active,
+            ]);
+        }
+
+        if (! $venue->corporation->modules()->where('module_code', ModuleCode::Menu->value)->exists()) {
+            CorporationModule::factory()->create([
+                'corporation_id' => $venue->corporation_id,
+                'module_code' => ModuleCode::Menu->value,
+                'status' => ModuleStatus::Active,
+            ]);
+        }
+
+        if (! $venue->modules()->where('module_code', ModuleCode::Menu->value)->exists()) {
+            VenueModule::factory()->create([
+                'venue_id' => $venue->id,
+                'module_code' => ModuleCode::Menu->value,
+                'status' => ModuleStatus::Active,
+            ]);
+        }
     }
 
     /**

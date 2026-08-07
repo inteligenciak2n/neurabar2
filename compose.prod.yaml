@@ -60,7 +60,7 @@ services:
         depends_on:
             - redis
             - app
-        command: ['php', 'artisan', 'queue:work', '--queue=default,broadcasts', '--sleep=3', '--tries=3', '--max-time=3600']
+        command: ['php', 'artisan', 'queue:work', '--queue=default,broadcasts,payments', '--sleep=3', '--tries=3', '--max-time=3600']
         restart: unless-stopped
 
     redis:

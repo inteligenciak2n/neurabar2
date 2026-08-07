@@ -1,9 +1,12 @@
 <script setup>
 import PlatformLayout from '@/Layouts/PlatformLayout.vue';
+import { useCurrency } from '@/Composables/useCurrency';
 
 defineProps({
     summary: Object,
 });
+
+const { formatMoney } = useCurrency();
 </script>
 
 <template>
@@ -28,7 +31,7 @@ defineProps({
             <div class="rounded-xl bg-white shadow-card p-5 dark:bg-gray-800">
                 <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider dark:text-gray-400">{{ __('MRR') }}</p>
                 <p class="mt-2 text-3xl font-bold text-warm-gold">
-                    R$ {{ Number(summary.mrr).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}
+                    {{ formatMoney(summary.mrr) }}
                 </p>
             </div>
         </div>

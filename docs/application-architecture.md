@@ -1,8 +1,10 @@
 # User ↔ Venue Architecture
 
-**Versão:** 1.2 · **Data:** 1 de junho de 2026
+**Versão:** 1.3 · **Data:** 23 de julho de 2026
 
 > Referência técnica do modelo de identidade e acesso do NeuraBar: como usuários se relacionam com Corporations, Venues e roles operacionais.
+
+> **Changelog 1.3:** adiciona o wizard de onboarding (assinatura + empresa) que substitui a criação automática de Corporation/Venue no registro, a arquitetura multi-database (banco `saas` vs. bancos operacionais por tenant) e o módulo de Módulos/Subscriptions/Billing (planos, módulos contratáveis, faturamento e afiliados).
 
 ---
 
@@ -51,6 +53,7 @@ Toda a autenticação usa um **único guard `web`** e um **único model `User`**
 | `active` | boolean | Se falso, login bloqueado |
 | `lang` | varchar default 'pt' | Idioma preferido |
 | `pin` | string nullable | PIN de acesso rápido |
+| `onboarding_completed_at` | timestamp nullable | Nulo enquanto o usuário não concluiu o wizard de onboarding (assinatura + empresa). Ver [Wizard de Onboarding](#wizard-de-onboarding-novo-owner) |
 
 > `role`, `venue_id` e `corporation_id` foram **removidos** da tabela `users` — esses dados vivem no pivot `user_venue`.
 
@@ -144,16 +147,69 @@ $pivot->role // instância de UserRole, não string
 
 ---
 
-## Fluxo de Registro (novo Owner)
+## Wizard de Onboarding (novo Owner)
 
-1. Usuário preenche o formulário de registro com nome, email e senha.
-2. `CreateNewUser` cria o `User` (sem venue ainda).
-3. `CreateUserOwnerDefinitions` (disparado por evento) cria em sequência:
-   - `Corporation` com `owner_id = $user->id`
-   - `Venue` associada à corporation
-   - Entrada em `user_venue` com `role = UserRole::Owner`
-   - Atualiza `users.current_venue_id` para a nova venue
-4. Fortify autentica o usuário e redireciona para `/dashboard`.
+> Substitui o fluxo antigo de criação automática de Corporation/Venue no registro. Desde a Fase de Módulos/Subscriptions, `CreateNewUser` **não cria mais** Corporation nem Venue — o usuário só ganha acesso operacional depois de concluir um wizard de 2 passos.
+
+### Visão Geral
+
+```
+POST /register (Fortify)
+    │  CreateNewUser::create()
+    │  → cria apenas o User (profile=Client, sem Corporation/Venue)
+    ▼
+LoginResponse / VerifyEmailResponse
+    │  user->onboarding_completed_at == null?
+    │       └── SIM → redirect /onboarding/subscription
+    ▼
+Passo 1 — GET/POST /onboarding/subscription   (Onboarding/Subscription.vue)
+    │  Exibe catálogo de módulos (ModuleCatalog) — Cardápio incluso e grátis.
+    │  Usuário escolhe módulos à la carte + quantidade de venues + aceite de termos.
+    │  StartCorporationSubscriptionAction::execute()
+    │       → cria Corporation (sem venues ainda)
+    │       → cria CorporationSubscription (status=trial, billing_mode=per_venue)
+    │       → cria CorporationModule para 'menu' + módulos selecionados (status=trial)
+    │       → grava session('onboarding.venue_count')
+    ▼
+Passo 2 — GET/POST /onboarding/corporation   (Onboarding/Corporation.vue)
+    │  Exibe dados da empresa (nome, tax_id, email, telefone) e N formulários de venue
+    │  (um por venue_count), cada um podendo ser marcado "Preencher depois" (skip).
+    │  FinalizeOnboardingAction::execute()
+    │       → atualiza dados da Corporation
+    │       → cria uma Venue por entrada (dados reais ou fake quando skip=true)
+    │       → define users.current_venue_id = primeira venue criada
+    │       → grava users.onboarding_completed_at = now()
+    ▼
+redirect /dashboard
+```
+
+### Regras e Guardas
+
+- **Idempotência de passo:** cada controller (`SubscriptionController`, `CorporationController`) verifica `onboarding_completed_at` e o estado já persistido (`user->ownedCorporation`) para redirecionar automaticamente para o passo correto — evita repetir um passo já concluído ou pular um passo pendente.
+- **Redirecionamento forçado:** `SetVenueContext` redireciona para `onboarding.subscription.create` sempre que o usuário autenticado não tem `current_venue_id` e ainda não concluiu o onboarding (antes disso caía direto no fallback `/no-venue`).
+- **Sem contexto de tenant:** as rotas `/onboarding/*` usam apenas `auth:sanctum` + `verified` — não passam pelo middleware `tenant`, pois a venue ainda não existe no Passo 1.
+- **Módulos à la carte, sem `PlanCatalog`:** o wizard ativa módulos individualmente via `CorporationModule` (status `trial`), sem vincular a corporation a um `PlanCatalog`. `PlanCatalog.included_modules` continua sendo usado apenas pelo backoffice (`CreateCorporationAction`, `CreateNewUserPlatform`) para criação administrativa/seed.
+- **Skip de venue:** ao marcar uma venue como "preencher depois", `FinalizeOnboardingAction` gera um nome fake (`"{$user->name} - Ponto de Venda {n}"`) e demais campos nulos — a venue é criada normalmente (com módulos, menu e locais default via `CreateVenueAction`/`CreateVenueDefaultsAction`) e pode ser editada depois em `/settings`.
+- **Fluxo legado ainda existe:** `CreateUserOwnerDefinitions` (usada por `CreateNewUserPlatform` e pelo `DatabaseSeeder`) continua criando Corporation + Venue + Subscription de forma síncrona e completa em uma única chamada — reservado a contas de desenvolvimento/seed e criação administrativa de usuários de plataforma, não ao registro público.
+
+### Referência de Arquivos — Wizard de Onboarding
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `routes/web/onboarding.php` | Rotas `onboarding.subscription.*` e `onboarding.corporation.*` |
+| `app/Http/Controllers/Onboarding/SubscriptionController.php` | Passo 1 — exibe módulos e grava seleção |
+| `app/Http/Controllers/Onboarding/CorporationController.php` | Passo 2 — exibe/grava dados da empresa e venues |
+| `app/Actions/Onboarding/StartCorporationSubscriptionAction.php` | Cria Corporation + CorporationSubscription (trial) + CorporationModule por módulo selecionado |
+| `app/Actions/Onboarding/FinalizeOnboardingAction.php` | Atualiza Corporation, cria as Venues e marca `onboarding_completed_at` |
+| `app/Http/Requests/Onboarding/StoreSubscriptionRequest.php` | Valida `module_codes`, `venue_count`, aceite de termos |
+| `app/Http/Requests/Onboarding/StoreCorporationRequest.php` | Valida dados da empresa e array de venues (com `skip`) |
+| `app/Http/Responses/LoginResponse.php` | Redireciona para `onboarding.subscription.create` se `onboarding_completed_at` for nulo |
+| `app/Http/Responses/VerifyEmailResponse.php` | Mesmo redirecionamento após verificação de email |
+| `app/Http/Middleware/SetVenueContext.php` | Redireciona para o onboarding (em vez de `/no-venue`) enquanto ele não foi concluído |
+| `resources/js/Pages/Onboarding/Subscription.vue` | Tela do Passo 1 (seleção de módulos + quantidade de venues) |
+| `resources/js/Pages/Onboarding/Corporation.vue` | Tela do Passo 2 (dados da empresa + formulário por venue) |
+| `database/migrations/saas/2026_07_22_120000_add_onboarding_completed_at_to_users_table.php` | Adiciona a coluna `onboarding_completed_at` |
+| `tests/Feature/OnboardingTest.php` | Cobertura dos dois passos, redirecionamentos e skip de venue |
 
 ---
 
@@ -190,24 +246,31 @@ Owner/GM faz POST /settings/users
 
 ## Contexto de Tenant (Multi-tenancy)
 
-O middleware `SetVenueContext` (alias `tenant`) é responsável por injetar a venue no container:
+O middleware `SetVenueContext` (alias `tenant`) é responsável por injetar a venue e a **conexão de banco operacional** no container:
 
 ```
 Request chega
     │
     ├── Usuário não autenticado → passa adiante (Fortify cuida do redirect)
     │
-    ├── users.current_venue_id = null → redirect para /no-venue
+    ├── users.current_venue_id = null
+    │       ├── onboarding_completed_at = null → redirect para /onboarding/subscription
+    │       └── onboarding concluído          → redirect para /no-venue
     │
     ├── user_venue não tem entrada para esta venue → abort(403)
     │
-    └── OK → app()->instance('tenant', $venue)
+    └── OK → venue->load('corporation')
+             → connectionName = TenantConnectionResolver::resolve($venue)
+             → app()->instance('tenant', $venue)
+             → app()->instance('operational_connection', $connectionName)
+             → app()->instance('operational_is_dedicated', $venue->corporation->is_dedicated)
              → request->merge(['_venue' => $venue])
              → passa adiante
 ```
 
 **Rotas que NÃO usam o middleware `tenant`:**
 - `/login`, `/register` e rotas Fortify
+- `/onboarding/*` — wizard de assinatura/empresa (ver [Wizard de Onboarding](#wizard-de-onboarding-novo-owner))
 - `/venue-select` — troca de venue ativa
 - `/no-venue/*` — fallback sem venue
 - `/invitations/*` — aceitação de convite
@@ -221,6 +284,50 @@ Request chega
 ```php
 $venue = app('tenant'); // instância de Venue
 ```
+
+---
+
+## Multi-Database Tenancy (banco `saas` vs. bancos operacionais)
+
+A aplicação usa **duas famílias de conexão de banco de dados**:
+
+1. **Conexão `saas`** (fixa, única) — banco compartilhado com dados de identidade e comerciais: `users`, `corporations`, `venues`, `user_venue`, `venue_invitations`, todas as entidades de Módulos/Subscriptions/Billing (`corporation_subscriptions`, `venue_subscriptions`, `module_catalogs`, `corporation_modules`, `venue_modules`, `plan_catalogs`, `venue_invoices`, `corporation_invoices`, `affiliate_codes`, etc.) e o módulo de Suporte (via conexão dedicada `support`).
+2. **Conexões operacionais** (dinâmicas, uma por tenant ou grupo de tenants) — bancos com os dados operacionais do dia a dia: cardápio, pedidos, pagamentos, atendimentos, service locations. Nome padrão: `operation_default_1` (compartilhado entre múltiplas corporations) ou `operation_tenant_{slug}` (dedicado a uma única corporation).
+
+```
+Corporation.self_connection = "operation_default_1"   (tenant compartilhado, padrão)
+Corporation.is_dedicated    = false
+
+Corporation.self_connection = "operation_tenant_a1b2c3d4e5f6"  (tenant dedicado)
+Corporation.is_dedicated    = true
+```
+
+### `TenantConnectionResolver`
+
+Resolve, a partir de uma `Venue`, qual conexão operacional deve ser usada — com cache Redis (`venue_connection:{venue_id}`, TTL 3600s) para evitar consultas repetidas por request:
+
+- **Tenant compartilhado:** retorna `corporation->self_connection` (ex.: `operation_default_1`).
+- **Tenant dedicado:** registra dinamicamente a conexão via `Config::set('database.connections.{nome}', ...)` (mesmas credenciais base, banco diferente) e retorna o nome.
+- `invalidate(Venue $venue)` / `invalidateCorporation($corporationId)` — devem ser chamados sempre que `self_connection` ou `is_dedicated` mudarem (ex.: migração de tenant compartilhado → dedicado).
+
+### `HasOperationalConnection` (trait)
+
+Todos os models operacionais (Menu, Category, Product, ProductVariation, ModifierGroup, ModifierOption, Combo, ComboItem, Attendance, Order, OrderItem, OrderItemModifier, Payment, PaymentItem, AttendanceChannel, KitchenStation, PreparationStatus, ServiceLocation) usam o trait `App\Models\Concerns\HasOperationalConnection`, que sobrescreve `getConnectionName()` para ler `app('operational_connection')` no momento da query — permitindo que o **mesmo model** aponte para bancos diferentes conforme a venue ativa no request, sem precisar de multi-tenancy por schema ou parâmetro explícito em cada query.
+
+Fora do ciclo de request HTTP (jobs, seeders, comandos artisan), é necessário registrar manualmente o contexto operacional antes de instanciar esses models — ex.: `CreateUserOwnerDefinitions` faz `DB::connection($operationalConnection)->beginTransaction()` e usa transações espelhadas nas duas conexões (`saas` + operacional) para manter atomicidade cross-database.
+
+> **Atenção:** não há foreign keys entre a conexão `saas` e as conexões operacionais — a relação `Venue → Menu`, por exemplo, é resolvida em código (venue_id como coluna simples), nunca via constraint de banco.
+
+### Referência de Arquivos — Multi-Database Tenancy
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `app/Services/TenantConnectionResolver.php` | Resolve/registra a conexão operacional de uma venue, com cache Redis |
+| `app/Models/Concerns/HasOperationalConnection.php` | Trait que direciona models operacionais para `app('operational_connection')` |
+| `app/Http/Middleware/SetVenueContext.php` | Resolve a conexão e injeta `tenant`/`operational_connection`/`operational_is_dedicated` no container |
+| `config/database.php` | Conexão `saas` fixa + conexão operacional base (`operation_default_1`) |
+| `database/migrations/saas/` | Migrations do banco `saas` (identidade + billing) |
+| `database/migrations/operational/` (ou raiz) | Migrations replicadas em cada banco operacional |
 
 ---
 
@@ -598,6 +705,103 @@ GET    /settings/service-locations/{location}/qr-pdf → qrPdf (download PDF)
 | `resources/views/pdf/service-location-qr.blade.php` | Template do PDF do QR code |
 | `database/migrations/2026_05_22_184250_create_service_locations_table.php` | Criação da tabela |
 | `database/migrations/2026_05_29_182149_add_qr_fields_to_service_locations_table.php` | Adiciona `default_attendance_channel_id` e `qr_token` |
+
+---
+
+## Módulos, Subscriptions e Billing
+
+> Documentação completa em [current_feat/module-subscription-architecture.md](current_feat/module-subscription-architecture.md). Esta seção resume o modelo para referência rápida.
+
+### Visão Geral
+
+O NeuraBar vende funcionalidades como **módulos contratáveis**. Uma `Corporation` habilita módulos com um preço unitário negociado (`CorporationModule`); cada `Venue` ativa individualmente quais desses módulos usa (`VenueModule`). A cobrança é sempre **proporcional ao número de venues** que ativam o módulo.
+
+```
+Corporation ── billing_mode (per_venue | unified) ──► CorporationSubscription (status, trial, grace period)
+   │
+   ├── CorporationModule (module_code, custom_monthly_price, status)
+   │        │
+   │        ▼
+   └── Venue ── VenueModule (module_code, quantity, status)
+          │
+          ├── VenueSubscription (base_value + modules_value + metered_value = total_value)
+          ├── VenueUsageRecord (consumo medido por módulo/período, sempre por venue)
+          └── VenueInvoice (fatura mensal; agrupada em CorporationInvoice no modo unified)
+```
+
+### Entidades (conexão `saas`)
+
+| Entidade | Tabela | Descrição |
+|---|---|---|
+| `ModuleCatalog` | `module_catalogs` | Catálogo de módulos vendáveis: `code`, `billing_type` (fixed/metered/hybrid), `base_monthly_price`, `dependencies`, `required_roles` |
+| `PlanCatalog` | `plan_catalogs` | Pacotes pré-montados por venue (`plan_type` shared/dedicated, `included_modules` — usado só na criação administrativa/seed, não no wizard) |
+| `CorporationSubscription` | `corporation_subscriptions` | Contrato comercial da corporation: `billing_mode`, `status`, `billing_day`, `grace_period_days`, `trial_ends_at` |
+| `VenueSubscription` | `venue_subscriptions` | Faturamento por venue: `base_value`, `modules_value`, `metered_value`, `total_value`, `status` |
+| `CorporationModule` | `corporation_modules` | Módulo habilitado na corporation + preço unitário negociado |
+| `VenueModule` | `venue_modules` | Módulo ativo em uma venue específica + `quantity` licenciada |
+| `ModuleUsageTier` | `module_usage_tiers` | Faixas de preço/limite incluso para módulos `metered`/`hybrid` |
+| `VenueUsageRecord` | `venue_usage_records` | Consumo mensal por venue+módulo+período, com cálculo de excedente |
+| `VenueInvoice` / `CorporationInvoice` | `venue_invoices` / `corporation_invoices` | Faturas (mensais); `is_finalized` trava recálculo após emissão |
+| `PaymentAttempt` | `payment_attempts` | Registro polimórfico de webhooks de gateway (idempotência) |
+| `AffiliateCode` | `affiliate_codes` | Código de indicação, propagado em Corporation/Venue/Subscriptions/Invoices |
+| `CorporationDiscount` | `corporation_discounts` | Descontos negociados (fixo/percentual) por corporation |
+
+### Enums principais
+
+`BillingMode` (`per_venue`, `unified`) · `ModuleBillingType` (`fixed`, `metered`, `hybrid`) · `ModuleStatus` (`trial`, `active`, `suspended`, `canceled`) · `SubscriptionStatus` (`trial`, `active`, `past_due`, `suspended`, `canceled`) · `ModuleCode` (`menu`, `kds`, `taker`, `direct_waiter`, `delivery`, `production_dashboard`, `financial_dashboard`, `direct_print`, `fiscal_note`, `voice_command` — cada um com `dependsOn()` e `label()`).
+
+### Permissionamento por Módulo
+
+O acesso a uma funcionalidade passa por 4 checagens: **tenant ativo** (`SetVenueContext`) → **subscription em dia** (`BillingStatusService::isBlocked()`, respeitando `billing_mode` e grace period) → **módulo contratado** (`RequireModule`) → **role operacional** (`RequireRole`). Não existe tabela de permissão por módulo — os roles permitidos são declarados diretamente nos grupos de rota:
+
+```php
+Route::middleware(['tenant', 'module:kds', 'role:owner,general_manager,section_manager,attendant'])
+    ->prefix('kitchen/kds')->group(function () { ... });
+```
+
+`User::canAccessModule(ModuleCode $module)` replica a mesma lógica para checagens manuais fora de rotas (controllers condicionais, jobs). O middleware alias `module` → `App\Http\Middleware\RequireModule` é registrado em `bootstrap/app.php` junto com `tenant` e `role`.
+
+### Ciclo de Vida da Subscription
+
+```
+trial ──(trial_ends_at)──► past_due ──(grace_period_days expira)──► suspended ──(cancelamento)──► canceled
+  │                              │
+  └────(pagamento confirmado)────┴────────────────────► active ──(fatura vence)──► past_due
+```
+
+- **Trial** inicia automaticamente na criação da `Corporation` (`trial_ends_at = now + billing.trial_days`).
+- **Grace period** (padrão 3 dias, `CorporationSubscription.grace_period_days`) mantém acesso liberado durante `past_due` — só `suspended`/`canceled` bloqueiam.
+- Jobs diários: `ExpireTrialsJob`, `SuspendOverdueSubscriptionsJob`, `MarkInvoicesOverdueJob`, `NotifyTrialEndingSoonJob`, `RecalculateSubscriptionJob`, `GenerateInvoicesJob`, `RecordModuleUsageJob` (todos em `app/Jobs/Billing/`).
+- Sem proration: ativação/desativação de módulo no meio do ciclo cobra/isenta o mês inteiro.
+
+### Cálculo de Fatura (`SubscriptionCalculator`)
+
+`total_value = base_value + modules_value + metered_value (+ dedicated_surcharge)`. `modules_value` soma `custom_monthly_price` (ou `base_monthly_price` do catálogo) de cada módulo ativo × `quantity`. `metered_value` usa `ModuleUsageTier` para calcular excedente sobre `included_quantity` — sempre por venue, mesmo no modo `unified`. Consumo é registrado via listeners de eventos operacionais (ex.: `RecordKdsUsage`, `RecordSignalUsage`, `RecordOrderModuleUsage`) que disparam `RecordModuleUsageJob` (idempotente via `updateOrCreate` por `venue_id`+`module_code`+`period`).
+
+### Cache
+
+`VenueModuleCache` (por venue) e `CorporationModuleCache` (por corporation) usam `Cache::remember` com tags Redis (`Cache::tags(['venue', $id])`), TTL 3600s. Toda action que muda `CorporationModule`/`VenueModule` deve chamar `::forget()` dentro da mesma transação. `BillingStatusService::isBlocked()` também tem cache de 60s, invalidado nas transições de status.
+
+### Referência de Arquivos — Módulos, Subscriptions e Billing
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `app/Enums/ModuleCode.php`, `BillingMode.php`, `ModuleBillingType.php`, `ModuleStatus.php`, `SubscriptionStatus.php` | Enums do domínio |
+| `app/Models/Tenant/ModuleCatalog.php`, `PlanCatalog.php`, `CorporationSubscription.php`, `VenueSubscription.php`, `CorporationModule.php`, `VenueModule.php`, `ModuleUsageTier.php`, `VenueUsageRecord.php`, `VenueInvoice.php`, `CorporationInvoice.php`, `PaymentAttempt.php`, `AffiliateCode.php`, `CorporationDiscount.php` | Models (conexão `saas`) |
+| `app/Http/Middleware/RequireModule.php` | Verifica billing + módulo ativo + dependências |
+| `app/Services/Billing/BillingStatusService.php` | Regra de bloqueio (`isBlocked`) respeitando `billing_mode` e grace period, com cache |
+| `app/Services/Billing/SubscriptionCalculator.php` | Cálculo de `VenueSubscription`/fatura (base + módulos + medido) |
+| `app/Services/VenueModuleCache.php`, `CorporationModuleCache.php` | Cache de módulos ativos com invalidação por tags |
+| `app/Actions/Platform/EnableCorporateModuleAction.php`, `DisableCorporateModuleAction.php` | Habilita/desabilita módulo na corporation |
+| `app/Actions/Platform/ActivateVenueModuleAction.php`, `DeactivateVenueModuleAction.php` | Ativa/desativa módulo em uma venue |
+| `app/Actions/Platform/CreateCorporationAction.php`, `AssignPlanToCorporationAction.php`, `UpdateCorporationSubscriptionAction.php` | Gestão administrativa de corporation/plano/subscription (backoffice) |
+| `app/Jobs/Billing/ExpireTrialsJob.php`, `SuspendOverdueSubscriptionsJob.php`, `MarkInvoicesOverdueJob.php`, `NotifyTrialEndingSoonJob.php`, `RecalculateSubscriptionJob.php`, `GenerateInvoicesJob.php`, `RecordModuleUsageJob.php` | Jobs diários/assíncronos de billing |
+| `app/Listeners/Billing/RecordKdsUsage.php`, `RecordSignalUsage.php`, `RecordOrderModuleUsage.php` | Listeners que traduzem eventos operacionais em consumo medido |
+| `app/Http/Controllers/Platform/CorporationController.php`, `PlanAssignmentController.php`, `SubscriptionController.php`, `CorporationModuleController.php`, `VenueModuleController.php`, `InvoiceController.php`, `ManualInvoiceController.php`, `CorporationDiscountController.php` | Backoffice: gestão de corporations, planos, módulos, faturas e descontos |
+| `resources/js/Composables/useModules.ts` | Composable Vue para checar módulos ativos via shared prop `tenant.modules` |
+| `resources/js/Pages/Platform/Corporations/Edit.vue` | UI do backoffice para plano, assinatura, módulos, descontos, faturas e afiliado |
+| `config/billing.php` | `trial_days`, `grace_period_days`, `default_billing_day`, `currency`, `default_plan_code` |
+| `docs/current_feat/module-subscription-architecture.md` | Documentação técnica completa (entidades, enums, cálculo, ciclo de vida) |
 
 ---
 

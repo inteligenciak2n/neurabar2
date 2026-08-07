@@ -17,5 +17,14 @@
     "Corporation Admin": "Corporation Admin",
     "Section Manager": "Section Manager",
     "Management": "Management",
-    "Support": "Support"
+    "Support": "Support",
+    "API Tokens": "API Tokens",
+    "Modules": "Modules",
+    "Delivery": "Delivery",
+    "Production": "Production",
+    "Finance": "Finance",
+    "Fiscal Note": "Fiscal Note",
+    "Voice Command": "Voice Command",
+    "Direct Waiter": "Direct Waiter",
+    "Direct Print": "Direct Print"
 }

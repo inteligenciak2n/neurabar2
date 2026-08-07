@@ -11,7 +11,7 @@ class StoreUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('manage-users') === true;
     }
 
     /** @return array<string, mixed> */

@@ -2,27 +2,38 @@
 
 namespace App\Actions\Fortify;
 
+use App\Actions\Corporation\CreateVenueDefaultsAction;
+use App\Actions\Corporation\ProvisionPlanModulesAction;
+use App\Enums\BillingMode;
 use App\Enums\ServiceLocationType;
+use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Models\Menu\Category;
 use App\Models\Menu\Combo;
 use App\Models\Menu\Menu;
 use App\Models\Menu\ModifierGroup;
 use App\Models\Menu\Product;
-use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\KitchenStation;
-use App\Models\Settings\PreparationStatus;
 use App\Models\Settings\ServiceLocation;
-use App\Models\Settings\VenueSettings;
 use App\Models\Tenant\Corporation;
+use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\PlanCatalog;
 use App\Models\Tenant\Venue;
+use App\Models\Tenant\VenueSubscription;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class CreateUserOwnerDefinitions
 {
-    public function handle(User $user): void
+    /**
+     * Cria corporation, venue, subscription e dados padrão para um owner.
+     *
+     * Uso restrito a contas de desenvolvimento/seed (disparado por
+     * `CreateNewUserPlatform`, usado apenas em `DatabaseSeeder`). O fluxo real
+     * de onboarding de clientes coleta os dados reais da corporation/venue via
+     * `App\Http\Controllers\Onboarding\*` e `FinalizeOnboardingAction`.
+     */
+    public function handle(User $user, ?PlanCatalog $plan = null): void
     {
         $operationalConnection = 'operation_default_1';
 
@@ -30,7 +41,7 @@ class CreateUserOwnerDefinitions
         DB::connection($operationalConnection)->beginTransaction();
 
         try {
-            $venue = $this->createCorporationAndVenue($user, $operationalConnection);
+            $venue = $this->createCorporationAndVenue($user, $operationalConnection, $plan);
             $menu = $this->createMenu($venue);
             $this->createProductCategories($menu);
             $this->createServiceLocations($venue);
@@ -45,25 +56,39 @@ class CreateUserOwnerDefinitions
         }
     }
 
-    private function createCorporationAndVenue(User $user, string $operationalConnection): Venue
+    private function createCorporationAndVenue(User $user, string $operationalConnection, ?PlanCatalog $plan = null): Venue
     {
-        $plan = PlanCatalog::firstOrCreate(
-            ['code' => 'pro'],
-            ['name' => 'Pro', 'monthly_price' => 99.90, 'active' => true]
+        $plan ??= PlanCatalog::firstOrCreate(
+            ['code' => config('billing.default_plan_code', 'pro')],
+            [
+                'name' => 'Pro',
+                'monthly_price' => 9990,
+                'active' => true,
+                'plan_type' => 'shared',
+            ]
         );
 
         $corporation = Corporation::create([
             'owner_id' => $user->id,
             'tax_id' => '00.000.000/0001-00',
-            'name' => 'Test Corp',
-            'email' => 'corp@test.com',
+            'name' => $user->name.' Corp',
+            'email' => $user->email,
             'contact_phone' => '11999990000',
-            'plan_catalog_id' => $plan->id,
-            'plan_name' => $plan->name,
-            'subscription_value' => $plan->monthly_price,
             'active' => true,
             'self_connection' => $operationalConnection,
             'is_dedicated' => false,
+        ]);
+
+        $corporationSubscription = CorporationSubscription::create([
+            'corporation_id' => $corporation->id,
+            'plan_catalog_id' => $plan->id,
+            'billing_mode' => BillingMode::PerVenue,
+            'status' => SubscriptionStatus::Trial,
+            'billing_day' => config('billing.default_billing_day', 1),
+            'grace_period_days' => config('billing.grace_period_days', 3),
+            'started_at' => now(),
+            'trial_ends_at' => now()->addDays(config('billing.trial_days', 14)),
+            'currency' => config('billing.currency', 'BRL'),
         ]);
 
         $venue = Venue::create([
@@ -78,46 +103,28 @@ class CreateUserOwnerDefinitions
             'active' => true,
         ]);
 
+        VenueSubscription::create([
+            'venue_id' => $venue->id,
+            'corporation_subscription_id' => $corporationSubscription->id,
+            'plan_catalog_id' => $plan->id,
+            'status' => SubscriptionStatus::Trial,
+            'base_value' => $plan->monthly_price,
+            'total_value' => $plan->monthly_price,
+            'started_at' => now(),
+            'trial_ends_at' => $corporationSubscription->trial_ends_at,
+        ]);
+
         // Registra o contexto operacional para que HasOperationalConnection use a conexão correta
         app()->instance('operational_connection', $operationalConnection);
         app()->instance('tenant', $venue);
 
-        VenueSettings::create([
-            'venue_id' => $venue->id,
+        (new CreateVenueDefaultsAction)->execute($venue, [
             'cover_charge' => 10.00,
             'service_fee_percent' => 10.00,
             'table_count' => 30,
         ]);
 
-        foreach (['Cozinha', 'Bar'] as $i => $stationName) {
-            KitchenStation::create([
-                'venue_id' => $venue->id,
-                'name' => $stationName,
-                'sort_order' => $i + 1,
-                'active' => true,
-            ]);
-        }
-
-        $statuses = [
-            ['name' => 'Pendente', 'color' => '#94a3b8', 'sort_order' => 1, 'show_to_customer' => false, 'is_final' => false, 'is_initial' => true],
-            ['name' => 'Em Preparo', 'color' => '#f59e0b', 'sort_order' => 2, 'show_to_customer' => true, 'is_final' => false, 'is_initial' => false],
-            ['name' => 'Pronto', 'color' => '#22c55e', 'sort_order' => 3, 'show_to_customer' => true, 'is_final' => true, 'is_initial' => false],
-        ];
-
-        foreach ($statuses as $status) {
-            PreparationStatus::create(array_merge($status, ['venue_id' => $venue->id]));
-        }
-
-        $attedance_channels = [
-            ['name' => 'Mesa', 'sort_order' => 1],
-            ['name' => 'Balcão', 'sort_order' => 2],
-            ['name' => 'Delivery', 'sort_order' => 3],
-            ['name' => 'Retirada', 'sort_order' => 4],
-        ];
-
-        foreach ($attedance_channels as $channel) {
-            AttendanceChannel::create(array_merge($channel, ['venue_id' => $venue->id, 'active' => true]));
-        }
+        app(ProvisionPlanModulesAction::class)->execute($corporation, $venue, $plan);
 
         $venue->users()->attach($user->id, ['role' => UserRole::Owner->value]);
 
@@ -189,7 +196,7 @@ class CreateUserOwnerDefinitions
         $combo = [
             'X-Bacon',
             'Batata Frita',
-            'Refrigerante Lata',            
+            'Refrigerante Lata',
         ];
 
         $productsCombo = [];
@@ -223,7 +230,7 @@ class CreateUserOwnerDefinitions
 
         $modifier = ModifierGroup::create([
             'venue_id' => $menu->venue_id,
-            'name' => "Queijo Extra",
+            'name' => 'Queijo Extra',
             'required' => false,
             'multiple_selection' => true,
         ]);
@@ -272,7 +279,7 @@ class CreateUserOwnerDefinitions
     private function createUserAttendant(Venue $venue, User $owner): void
     {
         $emailParts = explode('@', $owner->email);
-        $attendantEmail = $emailParts[0].'+attendant@'.$emailParts[1];
+        $attendantEmail = $emailParts[0].'+attendant_'.time().'@'.$emailParts[1];
 
         $attendant = User::create([
             'name' => 'Atendente Padrão',

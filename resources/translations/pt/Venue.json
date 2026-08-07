@@ -1,5 +1,5 @@
 {
-    "Venue Settings": "Configurações do local",
+    "Venue Settings": "Configurações do Ponto de Venda",
     "Address": "Endereço",
     "Basic Information": "Informações básicas",
     "Call Waiter": "Ligue para o garçom",
@@ -16,16 +16,16 @@
     "Number": "Número",
     "Require table number on orders": "Exigir o número da mesa nos pedidos",
     "State": "Estado",
-    "Slug": "Lesma",
+    "Slug": "Identificador",
     "City": "Cidade",
     "Require tab (customer name) on orders": "Exigir guia (nome do cliente) nos pedidos",
-    "ZIP Code": "Código postal",
+    "ZIP Code": "Código postal (CEP)",
     "Used in the public guest QR code URL.": "Usado na URL do código QR do convidado público.",
     "Save Changes": "Salvar alterações",
     "Require service location on orders": "Exigir local de serviço nos pedidos",
     "Longitude": "Longitude",
-    "Require guest geolocation to place orders": "Exigir a geolocalização do hóspede para fazer pedidos",
+    "Require guest geolocation to place orders": "Exigir a geolocalização dos clientes para fazer pedidos",
     "Latitude": "Latitude",
     "Geolocation": "Geolocalização",
-    "Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m.": "Os hóspedes serão questionados sobre sua localização ao acessarem por meio do código QR. Só permita pedidos quando estiver dentro de 200 m."
+    "Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m.": "Os clientes serão questionados sobre sua localização ao acessarem por meio do código QR. Só permita pedidos quando estiver dentro de 200 m."
 }

@@ -27,6 +27,7 @@ class VenueFactory extends Factory
             'state' => fake()->stateAbbr(),
             'timezone' => 'America/Sao_Paulo',
             'active' => true,
+            'call_waiter_slug' => fake()->unique()->slug(),
         ];
     }
 

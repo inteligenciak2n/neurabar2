@@ -1,12 +1,12 @@
 {
     "Create your PIN": "Crie seu PIN",
     "You will use this 4-digit PIN to view your orders.": "Você usará esse PIN de 4 dígitos para visualizar seus pedidos.",
-    "PIN": "ALFINETE",
+    "PIN": "PIN",
     "Access": "Acesso",
     "Confirm PIN": "Confirme o PIN",
     "Saving...": "Salvando...",
-    "Request Bill": "Solicitar fatura",
-    "Call Waiter": "Ligue para o garçom",
+    "Request Bill": "Pedir a conta",
+    "Call Waiter": "Chamar o garçom",
     "Menu & Order": "Menu e pedido",
     "My Order": "Meu pedido",
     "Enter your PIN to view your orders.": "Digite seu PIN para ver seus pedidos.",
@@ -15,10 +15,10 @@
     "No orders yet.": "Ainda não há pedidos.",
     "Order": "Pedido",
     "Qty": "Quantidade",
-    "Yes, request bill": "Sim, solicite uma fatura",
-    "Request Bill?": "Solicitar fatura?",
-    "The waiter will be notified to bring your bill.": "O garçom será notificado para trazer sua conta.",
+    "Yes, request bill": "Sim, pedir a conta",
+    "Request Bill?": "Pedir a conta?",
+    "The waiter will be notified to bring your bill.": "O garçom foi notificado para trazer sua conta.",
     "Cancel": "Cancelar",
     "Sending...": "Enviando...",
-    "Bill requested! The waiter will be with you shortly.": "Projeto de lei solicitado! O garçom estará com você em breve."
+    "Bill requested! The waiter will be with you shortly.": "Conta solicitada! O garçom estará com você em breve."
 }

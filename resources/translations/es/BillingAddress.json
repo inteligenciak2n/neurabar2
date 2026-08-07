@@ -1,0 +1,17 @@
+{
+    "Billing Address": "Dirección de facturación",
+    "Number": "Número",
+    "Street": "Calle",
+    "Complement": "Complemento",
+    "ZIP Code": "Código postal",
+    "State": "Estado",
+    "Neighborhood": "Barrio",
+    "Country": "País",
+    "State Registration": "Registro estatal",
+    "Tax Regime": "Régimen tributario",
+    "Save": "Guardar",
+    "City": "Ciudad",
+    "Back": "Volver",
+    "Billing Phone": "Teléfono de facturación",
+    "Billing Email": "Correo de facturación"
+}

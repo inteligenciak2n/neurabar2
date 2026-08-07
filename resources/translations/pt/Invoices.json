@@ -1,0 +1,21 @@
+{
+    "Invoices": "Faturas",
+    "Venue / Corporation": "Ponto de Venda / Empresa",
+    "Period": "Período",
+    "Total": "Total",
+    "Due Date": "Vencimento",
+    "Status": "Situação",
+    "Actions": "Ações",
+    "Back": "Voltar",
+    "Pay": "Pagar",
+    "No invoices found.": "Nenhuma fatura encontrada.",
+    "Pay Invoice": "Pagar fatura",
+    "Payment Method": "Forma de pagamento",
+    "Saved Card": "Cartão salvo",
+    "A PIX QR code will be generated after confirmation.": "Um QR Code PIX será gerado após a confirmação.",
+    "A boleto will be generated after confirmation.": "Um boleto será gerado após a confirmação.",
+    "Cancel": "Cancelar",
+    "Confirm": "Confirmar",
+    "Venue invoices": "Faturas por Ponto de Venda",
+    "Corporation invoices": "Faturas da empresa"
+}

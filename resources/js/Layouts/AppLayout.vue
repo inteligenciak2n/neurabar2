@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import ApplicationMark from '@/Components/ApplicationMark.vue';
 import Banner from '@/Components/Banner.vue';
@@ -9,11 +9,13 @@ import AppToast from '@/Components/AppToast.vue';
 import CustomHead from '@/Components/CustomHead.vue';
 import { useTranslate } from '@/Composables/useTranslate'
 import { useCheckRole } from '@/Composables/useCheckRole';
+import { useModules } from '@/Composables/useModules';
 import ToggleDark from '@/Components/ToggleDark.vue';
 
 const __ = useTranslate();
 const page = usePage();
 const { isManager } = useCheckRole();
+const { hasModule } = useModules();
 
 defineProps({
     title: String,
@@ -33,12 +35,33 @@ const switchVenue = (id) => {
     });
 };
 
-const navItems = [
-    { label: __('Dashboard'),   routeName: 'dashboard',         activePattern: 'dashboard', roles: ['owner', 'general_manager', 'section_manager', 'attendant'] },
-    { label: __('Attendances'), routeName: 'attendances.index', activePattern: 'attendances.*', roles: ['owner', 'general_manager', 'section_manager', 'attendant'] },
-    { label: __('Kitchen'),     routeName: 'kitchen.kds',       activePattern: 'kitchen.*', roles: ['owner', 'general_manager', 'section_manager'] },
-    { label: __('Menu'),        routeName: 'menu.index',        activePattern: 'menu.*', roles: ['owner', 'general_manager', 'section_manager',] },
+const managerRoles = ['owner', 'general_manager'];
+const operationalRoles = ['owner', 'general_manager', 'section_manager'];
+
+const coreNavItems = [
+    { label: __('Dashboard'),   routeName: 'dashboard',         activePattern: 'dashboard', module: 'menu', roles: [...operationalRoles, 'attendant'] },
+    { label: __('Attendances'), routeName: 'attendances.index', activePattern: 'attendances.*', module: 'menu', roles: [...operationalRoles, 'attendant'] },
+    { label: __('Kitchen'),     routeName: 'kitchen.kds',       activePattern: 'kitchen.*', module: 'kds', roles: operationalRoles },
+    { label: __('Menu'),        routeName: 'menu.index',        activePattern: 'menu.*', module: 'menu', roles: managerRoles },
 ];
+
+// Módulos contratados ganham entrada própria no menu — sem isso as telas só
+// eram alcançáveis digitando a URL.
+const moduleNavItems = [
+    { label: __('Delivery'),      routeName: 'delivery.index',      activePattern: 'delivery.*',      module: 'delivery',             roles: operationalRoles },
+    { label: __('Production'),    routeName: 'production.index',    activePattern: 'production.*',    module: 'production_dashboard', roles: operationalRoles },
+    { label: __('Finance'),       routeName: 'finance.index',       activePattern: 'finance.*',       module: 'financial_dashboard',  roles: managerRoles },
+    { label: __('Fiscal Note'),   routeName: 'fiscal-note.index',   activePattern: 'fiscal-note.*',   module: 'fiscal_note',          roles: managerRoles },
+    { label: __('Voice Command'), routeName: 'voice-command.index', activePattern: 'voice-command.*', module: 'voice_command',        roles: operationalRoles },
+    { label: __('Direct Waiter'), routeName: 'direct-waiter.index', activePattern: 'direct-waiter.*', module: 'direct_waiter',        roles: operationalRoles },
+    { label: __('Direct Print'),  routeName: 'direct-print.index',  activePattern: 'direct-print.*',  module: 'direct_print',         roles: managerRoles },
+];
+
+const isVisible = (item) => item.roles.includes(page.props.defs.current_venue_role)
+    && (! item.module || hasModule(item.module));
+
+const navItems = computed(() => coreNavItems.filter(isVisible));
+const moduleLinks = computed(() => moduleNavItems.filter(isVisible));
 
 const logout = () => {
     router.post(route('logout'));
@@ -166,12 +189,9 @@ const roleLabel = (role) => {
 
                 <!-- Center: Main nav (desktop) -->
                 <nav class="hidden items-center gap-1 lg:flex">
-                    <template                        
+                    <Link
                         v-for="item in navItems"
                         :key="item.label"
-                    >
-                    <Link
-                        v-if="item.roles.includes($page.props.defs.current_venue_role)"
                         :href="route(item.routeName)"
                         :class="[
                             'rounded-md px-3 py-2 text-sm font-body font-medium transition-colors',
@@ -182,7 +202,26 @@ const roleLabel = (role) => {
                     >
                         {{ item.label }}
                     </Link>
-                    </template>
+
+                    <Dropdown v-if="moduleLinks.length" align="left" width="48">
+                        <template #trigger>
+                            <button class="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-body font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-ocean-deep dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100">
+                                {{ __('Modules') }}
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </button>
+                        </template>
+                        <template #content>
+                            <DropdownLink
+                                v-for="item in moduleLinks"
+                                :key="item.label"
+                                :href="route(item.routeName)"
+                            >
+                                {{ item.label }}
+                            </DropdownLink>
+                        </template>
+                    </Dropdown>
                 </nav>
 
                 <!-- Right: User dropdown + mobile toggle -->
@@ -258,12 +297,9 @@ const roleLabel = (role) => {
                 class="sticky top-16 z-10 border-b border-border bg-white px-4 py-3 shadow-card lg:hidden dark:border-gray-700 dark:bg-gray-900"
             >
                 <nav class="flex flex-col gap-1">
-                    <template                         
-                        v-for="item in navItems"
-                        :key="item.label"
-                    >
                     <Link
-                        v-if="item.roles.includes($page.props.defs.current_venue_role)"
+                        v-for="item in [...navItems, ...moduleLinks]"
+                        :key="item.label"
                         :href="route(item.routeName)"
                         :class="[
                             'rounded-md px-3 py-2.5 text-sm font-body font-medium transition-colors',
@@ -275,7 +311,6 @@ const roleLabel = (role) => {
                     >
                         {{ item.label }}
                     </Link>
-                    </template>
                 </nav>
             </div>
 

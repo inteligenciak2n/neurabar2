@@ -21,7 +21,8 @@ class LoginResponse implements LoginResponseContract
 
     private function resolveHome(Request $request): string
     {
-        $profile = $request->user()?->profile;
+        $user = $request->user();
+        $profile = $user?->profile;
 
         if ($profile instanceof ProfileEnum && in_array($profile->value, ProfileEnum::platformProfiles(), true)) {
             $platformPath = config('platform.path', 'backoffice');
@@ -29,6 +30,10 @@ class LoginResponse implements LoginResponseContract
             return url($platformPath);
         }
 
-        return (config('fortify.home', '/dashboard') ?? '/dashboard');
+        if ($user && ! $user->onboarding_completed_at) {
+            return route('onboarding.subscription.create');
+        }
+
+        return config('fortify.home', '/dashboard') ?? '/dashboard';
     }
 }

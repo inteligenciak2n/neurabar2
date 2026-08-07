@@ -1,0 +1,75 @@
+<?php
+
+namespace App\Actions\Onboarding;
+
+use App\Enums\BillingMode;
+use App\Enums\ModuleCode;
+use App\Enums\ModuleStatus;
+use App\Enums\SubscriptionStatus;
+use App\Models\Tenant\Corporation;
+use App\Models\Tenant\CorporationModule;
+use App\Models\Tenant\CorporationSubscription;
+use App\Models\Tenant\PlanCatalog;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+
+class StartCorporationSubscriptionAction
+{
+    /**
+     * Cria a corporation e a assinatura em trial do usuário, ativando os módulos
+     * selecionados à la carte (sem vínculo com PlanCatalog).
+     *
+     * @param  array<int, string>  $moduleCodes
+     */
+    public function execute(User $user, array $moduleCodes, int $venueCount): Corporation
+    {
+        return DB::transaction(function () use ($user, $moduleCodes, $venueCount): Corporation {
+            $corporation = Corporation::create([
+                'owner_id' => $user->id,
+                'affiliate_code_id' => $user->affiliate_code_id,
+                'name' => $user->name,
+                'self_connection' => 'operation_default_1',
+                'is_dedicated' => false,
+                'active' => true,
+            ]);
+
+            $now = now();
+
+            // Sem plano a assinatura nascia com base_value zero e a venue
+            // criada em seguida nunca era cobrada pela mensalidade. Os módulos
+            // continuam sendo escolhidos à la carte; o plano define apenas a
+            // mensalidade base.
+            $defaultPlanId = PlanCatalog::query()
+                ->where('code', config('billing.default_plan_code'))
+                ->where('active', true)
+                ->value('id');
+
+            CorporationSubscription::create([
+                'corporation_id' => $corporation->id,
+                'affiliate_code_id' => $corporation->affiliate_code_id,
+                'plan_catalog_id' => $defaultPlanId,
+                'billing_mode' => BillingMode::PerVenue->value,
+                'status' => SubscriptionStatus::Trial->value,
+                'started_at' => $now,
+                'trial_ends_at' => $now->clone()->addDays((int) config('billing.trial_days')),
+                'currency' => config('billing.currency', 'BRL'),
+                'terms_accepted_at' => $now,
+            ]);
+
+            $codes = array_unique([ModuleCode::Menu->value, ...$moduleCodes]);
+
+            foreach ($codes as $code) {
+                CorporationModule::create([
+                    'corporation_id' => $corporation->id,
+                    'module_code' => $code,
+                    'status' => ModuleStatus::Trial->value,
+                    'started_at' => $now,
+                ]);
+            }
+
+            session(['onboarding.venue_count' => max(1, $venueCount)]);
+
+            return $corporation;
+        });
+    }
+}
