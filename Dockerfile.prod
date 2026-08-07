@@ -104,9 +104,9 @@ RUN mkdir -p storage/framework/{sessions,views,cache/data} \
 
 # Rodar apenas package:discover no build — optimize e view:cache devem ser
 # executados manualmente após `docker compose up` (junto com key:generate e migrate).
-RUN echo "APP_ENV=production\nAPP_KEY=build-placeholder" > .env \
-    && php artisan package:discover --ansi \
-    && rm .env
+# RUN echo "APP_ENV=production\nAPP_KEY=build-placeholder" > .env \
+#     && php artisan package:discover --ansi \
+#     && rm .env
 
 # Permissions — storage e bootstrap/cache são montados como volumes em runtime
 RUN chown -R www-data:www-data storage bootstrap/cache \
