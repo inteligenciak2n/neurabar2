@@ -20,5 +20,13 @@
     "Address Number": "Número do endereço",
     "Add a card below to enable automatic billing.": "Adicione um cartão abaixo para habilitar a cobrança automática.",
     "Remove card": "Remover cartão",
-    "This card will be removed from your account and can no longer be used to pay invoices.": "Este cartão será removido da sua conta e não poderá mais ser usado para pagar faturas."
+    "This card will be removed from your account and can no longer be used to pay invoices.": "Este cartão será removido da sua conta e não poderá mais ser usado para pagar faturas.",
+    "Add a card to enable automatic billing.": "Adicione um cartão para ativar o faturamento automático.",
+    "Holder Information": "Informações do titular",
+    "Billing Address": "Endereço de cobrança",
+    "As shown on card": "Conforme mostrado no cartão",
+    "Card Details": "Detalhes do cartão",
+    "Your card details are securely processed and used for automatic billing.": "Os detalhes do seu cartão são processados com segurança e usados para cobrança automática.",
+    "Cancel": "Cancelar",
+    "Close": "Fechar"
 }

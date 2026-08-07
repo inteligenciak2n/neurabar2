@@ -129,5 +129,22 @@
     "Cancel Subscription": "Cancelar assinatura",
     "Billing Address": "Endereço de cobrança",
     "Fiscal and billing address information.": "Informações de endereço fiscal e de cobrança.",
-    "Manage saved credit cards.": "Gerencie cartões de crédito salvos."
+    "Manage saved credit cards.": "Gerencie cartões de crédito salvos.",
+    "Delivery module scaffold.": "Andaime do módulo de entrega.",
+    "Production Dashboard": "Painel de produção",
+    "Production dashboard module scaffold.": "Andaime do módulo de painel de produção.",
+    "Financial Dashboard": "Painel financeiro",
+    "Financial dashboard module scaffold.": "Andaime do módulo de painel financeiro.",
+    "Voice command module scaffold.": "Andaime do módulo de comando de voz.",
+    "Voice Command": "Comando de voz",
+    "Direct Waiter": "Garçom direto",
+    "Direct waiter module scaffold.": "Andaime com módulo de garçom direto.",
+    "Direct Print": "Impressão direta",
+    "Direct print module scaffold.": "Andaime do módulo de impressão direta.",
+    "Enable Module": "Ativar módulo",
+    "Your trial ends in :days day(s).": "Seu teste termina em:dia (s) dia (s).",
+    "Add a credit card to keep your access after the trial.": "Adicione um cartão de crédito para manter seu acesso após o teste.",
+    "Are you sure you want to cancel your subscription? You will keep access until the end of the current billing period.": "Tem certeza de que deseja cancelar sua assinatura? Você manterá o acesso até o final do período de cobrança atual.",
+    "Activate Automatic Billing": "Ativar o faturamento automático",
+    "To unify your billing, please contact support.": "Para unificar seu faturamento, entre em contato com o suporte."
 }

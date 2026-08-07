@@ -83,7 +83,7 @@ class PaymentMethodSecurityTest extends TestCase
             ->post(route('settings.subscription.payment-methods.store'), [
                 'number' => '4111111111111111',
                 'holder_name' => 'John Doe',
-                'holder_document' => '12345678900',
+                'holder_document' => '12345678909',
                 'holder_email' => 'john@example.com',
                 'holder_postal_code' => '01311000',
                 'holder_address_number' => '100',

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Settings;
 
+use App\Rules\ValidTaxId;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StorePaymentMethodRequest extends FormRequest
@@ -19,7 +20,7 @@ class StorePaymentMethodRequest extends FormRequest
             // Every field below is mandatory for Asaas card tokenization
             // (creditCardHolderInfo). Sending the request without them makes
             // the gateway reject the card with a validation error.
-            'holder_document' => ['required', 'string', 'min:11', 'max:20'],
+            'holder_document' => ['required', 'string', 'min:11', 'max:20', new ValidTaxId],
             'holder_email' => ['required', 'email', 'max:255'],
             'holder_postal_code' => ['required', 'string', 'min:8', 'max:20'],
             'holder_address_number' => ['required', 'string', 'max:50'],
