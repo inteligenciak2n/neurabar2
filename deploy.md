@@ -210,6 +210,19 @@ sudo chown ubuntu:ubuntu /var/www/neurabar
 git clone https://github.com/inteligenciak2n/neurabar2.git /var/www/neurabar
 cd /var/www/neurabar
 
+mkdir -p \
+    bootstrap/cache \
+    storage/framework/cache/data \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    storage/app/private \
+    storage/app/public 
+
+sudo chown -R ubuntu:www-data storage bootstrap/cache
+sudo setfacl -R -m u:ubuntu:rwx,u:www-data:rwx storage bootstrap/cache
+sudo setfacl -dR -m u:ubuntu:rwx,u:www-data:rwx storage bootstrap/cache
+
 composer install \
     --no-dev \
     --prefer-dist \

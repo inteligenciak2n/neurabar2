@@ -80,6 +80,19 @@ EOF
     exit 1
 fi
 
+echo "==> Preparando diretórios graváveis do Laravel..."
+ssh "${SSH_OPTIONS[@]}" "$REMOTE_HOST" \
+    "mkdir -p \
+        '$REMOTE_PATH/bootstrap/cache' \
+        '$REMOTE_PATH/storage/framework/cache/data' \
+        '$REMOTE_PATH/storage/framework/sessions' \
+        '$REMOTE_PATH/storage/framework/views' \
+        '$REMOTE_PATH/storage/logs' && \
+    sudo -n setfacl -R -m u:ubuntu:rwx,u:www-data:rwx \
+        '$REMOTE_PATH/bootstrap/cache' '$REMOTE_PATH/storage' && \
+    sudo -n setfacl -dR -m u:ubuntu:rwx,u:www-data:rwx \
+        '$REMOTE_PATH/bootstrap/cache' '$REMOTE_PATH/storage'"
+
 echo "==> Colocando a aplicação em modo de manutenção..."
 ssh "${SSH_OPTIONS[@]}" "$REMOTE_HOST" \
     "cd '$REMOTE_PATH' && '$REMOTE_PHP' artisan down --retry=60"

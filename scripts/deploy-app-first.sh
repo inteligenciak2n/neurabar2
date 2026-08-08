@@ -5,7 +5,7 @@
 # scripts/deploy-assets.sh.
 #
 # Uso:
-#   scripts/deploy-app.sh
+#   scripts/deploy-app-first.sh
 #
 # Variáveis opcionais:
 #   REMOTE_HOST=neurabar
@@ -58,6 +58,14 @@ EOF
     exit 1
 fi
 
+if ! ssh "${SSH_OPTIONS[@]}" "$REMOTE_HOST" 'sudo -n true'; then
+    cat >&2 <<'EOF'
+Erro: o usuário remoto precisa executar sudo sem prompt para preparar as
+permissões do Laravel. Configure a permissão necessária antes do deploy.
+EOF
+    exit 1
+fi
+
 echo "==> Sincronizando os arquivos da aplicação..."
 rsync -az --delete --checksum \
     --exclude='.env' \
@@ -80,5 +88,18 @@ rsync -az --delete --checksum \
     --exclude='sail/' \
     ./ "$REMOTE_HOST:$REMOTE_PATH/"
 
-DEPLOY_STARTED=false
+echo "==> Preparando diretórios graváveis do Laravel..."
+ssh "${SSH_OPTIONS[@]}" "$REMOTE_HOST" \
+    "mkdir -p \
+        '$REMOTE_PATH/bootstrap/cache' \
+        '$REMOTE_PATH/storage/framework/cache/data' \
+        '$REMOTE_PATH/storage/framework/sessions' \
+        '$REMOTE_PATH/storage/framework/views' \
+        '$REMOTE_PATH/storage/logs' && \
+    sudo -n setfacl -R -m u:ubuntu:rwx,u:www-data:rwx \
+        '$REMOTE_PATH/bootstrap/cache' '$REMOTE_PATH/storage' && \
+    sudo -n setfacl -dR -m u:ubuntu:rwx,u:www-data:rwx \
+        '$REMOTE_PATH/bootstrap/cache' '$REMOTE_PATH/storage'"
+
+echo "==> Primeiro envio concluído; os diretórios do Laravel estão preparados."
 
