@@ -5,8 +5,8 @@ Este runbook instala e opera a produção sem Docker. Topologia adotada:
 - `neurabar.com` e `www.neurabar.com`: landing page estática;
 - `app.neurabar.com`: Laravel 12 via Nginx e PHP-FPM 8.3;
 - PostgreSQL e Redis locais;
-- Soketi local, publicado como WSS pelo Nginx;
-- Supervisor para filas e Soketi; cron para o scheduler.
+- Soketi em um único container Docker, publicado como WSS pelo Nginx;
+- Supervisor para filas; cron para o scheduler.
 
 Os comandos assumem o usuário `ubuntu` e o projeto em `/var/www/neurabar`.
 Troque-os de forma consistente se o servidor usar outros valores.
@@ -27,19 +27,38 @@ Laravel e workers --> PostgreSQL 127.0.0.1:5432
 
 Antes de iniciar:
 
-1. Aponte os registros DNS `A` dos três nomes para o IP do servidor.
-2. Libere somente TCP `22`, `80` e `443` no firewall da nuvem.
-3. Garanta acesso do servidor ao repositório privado.
-4. Faça backup dos bancos e do `.env` da instalação anterior.
+1. Use uma EC2 x86_64. Instâncias AWS Graviton/ARM64 não são suportadas por
+   esta configuração do Soketi.
+2. Aponte os registros DNS `A` dos três nomes para o IP do servidor.
+3. Libere somente TCP `22`, `80` e `443` no firewall da nuvem.
+4. Garanta acesso do servidor ao repositório privado.
+5. Faça backup dos bancos e do `.env` da instalação anterior.
+
+Valide a arquitetura antes de prosseguir:
+
+```bash
+test "$(dpkg --print-architecture)" = amd64 \
+    || { echo 'ERRO: esta stack exige EC2 x86_64/amd64'; exit 1; }
+uname -m
+```
+
+O resultado de `uname -m` deve ser `x86_64`.
 
 ```bash
 sudo ufw allow OpenSSH
-sudo ufw allow 'Nginx Full'
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
 sudo ufw enable
-sudo ufw status
+sudo ufw status verbose
 ```
 
-PostgreSQL, Redis, PHP-FPM e Soketi não devem ficar expostos à Internet.
+O perfil `Nginx Full` só existe depois que o pacote Nginx registra seus perfis
+no UFW. Como o firewall é configurado antes da instalação da stack, as regras
+explícitas acima funcionam também em uma EC2 recém-criada. O status deve listar
+somente as portas `22/tcp`, `80/tcp` e `443/tcp` entre as regras de entrada.
+
+PostgreSQL, Redis, PHP-FPM e a porta do container Soketi não devem ficar
+expostos à Internet.
 
 ## 2. Instalar a stack
 
@@ -52,6 +71,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt upgrade -y
 sudo apt install -y \
     ca-certificates curl git unzip rsync acl \
     nginx postgresql postgresql-contrib redis-server supervisor \
+    docker.io docker-compose-v2 \
     certbot python3-certbot-nginx \
     php8.3-fpm php8.3-cli php8.3-common php8.3-pgsql \
     php8.3-mbstring php8.3-xml php8.3-curl php8.3-zip \
@@ -59,7 +79,8 @@ sudo apt install -y \
     php8.3-opcache
 ```
 
-Instale Node.js 22 LTS, compatível com o Vite 7:
+Instale Node.js 22 LTS somente para o build do Vite. O runtime Node do Soketi
+fica encapsulado em sua imagem Docker:
 
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
@@ -82,8 +103,8 @@ composer --version
 ```
 
 ```bash
-sudo systemctl enable --now php8.3-fpm postgresql redis-server supervisor nginx
-sudo systemctl --no-pager --full status php8.3-fpm postgresql redis-server supervisor nginx
+sudo systemctl enable --now php8.3-fpm postgresql redis-server supervisor nginx docker
+sudo systemctl --no-pager --full status php8.3-fpm postgresql redis-server supervisor nginx docker
 ```
 
 ## 3. Ajustar o PHP-FPM
@@ -223,15 +244,15 @@ sudo chown -R ubuntu:www-data storage bootstrap/cache
 sudo setfacl -R -m u:ubuntu:rwx,u:www-data:rwx storage bootstrap/cache
 sudo setfacl -dR -m u:ubuntu:rwx,u:www-data:rwx storage bootstrap/cache
 
+test -f .env || cp .env.example .env
+chmod 640 .env
+nano .env
+
 composer install \
     --no-dev \
     --prefer-dist \
     --optimize-autoloader \
     --no-interaction
-
-test -f .env || cp .env.example .env
-chmod 640 .env
-nano .env
 ```
 
 Em repositório privado, configure antes uma deploy key ou outro acesso não
@@ -345,33 +366,70 @@ sudo setfacl -dR -m u:ubuntu:rwx,u:www-data:rwx \
 
 Não aplique `777` nem dê escrita ao Nginx sobre todo o projeto.
 
-## 9. Instalar e configurar Soketi
+## 9. Subir o Soketi em Docker
+
+Somente o Soketi roda em container. O arquivo `compose.soketi.yaml` fixa a
+plataforma `linux/amd64`, publica a porta apenas em `127.0.0.1:6001` e configura
+reinício automático. PostgreSQL, Redis, Nginx, PHP-FPM, Laravel e workers
+continuam nativos.
+
+A imagem está fixada por digest da variante `linux/amd64`; assim, uma alteração
+na tag remota não modifica produção silenciosamente. Atualizações devem trocar o
+digest no repositório, passar por validação e só então executar `pull` e `up -d`.
+
+Remova instalações nativas anteriores do Soketi, se existirem:
 
 ```bash
-sudo npm install -g @soketi/soketi
-command -v soketi
-soketi --version
+sudo supervisorctl stop neurabar-soketi 2>/dev/null || true
+sudo rm -f /etc/supervisor/conf.d/neurabar-soketi.conf
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo npm uninstall -g @soketi/soketi || true
+sudo rm -rf /opt/soketi /opt/node-v18.20.8
+```
+
+Crie o arquivo de credenciais do container. Use exatamente os mesmos valores de
+`PUSHER_APP_ID`, `PUSHER_APP_KEY` e `PUSHER_APP_SECRET` do `.env` Laravel:
+
+```bash
 sudo mkdir -p /etc/neurabar
-sudo nano /etc/neurabar/soketi.json
+sudo nano /etc/neurabar/soketi.env
 ```
 
-Use os mesmos valores do `.env`:
-
-```json
-{
-  "debug": false,
-  "default_app_id": "neurabar",
-  "default_app_key": "MESMA_PUSHER_APP_KEY_DO_ENV",
-  "default_app_secret": "MESMO_PUSHER_APP_SECRET_DO_ENV",
-  "host": "127.0.0.1",
-  "port": 6001
-}
+```dotenv
+SOKETI_DEBUG=0
+SOKETI_HOST=0.0.0.0
+SOKETI_PORT=6001
+SOKETI_METRICS_SERVER_PORT=9601
+SOKETI_DEFAULT_APP_ID=neurabar
+SOKETI_DEFAULT_APP_KEY=SUBSTITUA_PELA_MESMA_PUSHER_APP_KEY
+SOKETI_DEFAULT_APP_SECRET=SUBSTITUA_PELO_MESMO_PUSHER_APP_SECRET
 ```
+
+Proteja as credenciais e suba o container:
 
 ```bash
-sudo chown root:ubuntu /etc/neurabar/soketi.json
-sudo chmod 640 /etc/neurabar/soketi.json
+sudo chown root:root /etc/neurabar/soketi.env
+sudo chmod 600 /etc/neurabar/soketi.env
+
+cd /var/www/neurabar
+sudo docker compose -f compose.soketi.yaml pull
+sudo docker compose -f compose.soketi.yaml up -d
+sudo docker compose -f compose.soketi.yaml ps
+sudo docker compose -f compose.soketi.yaml logs --tail=100 soketi
 ```
+
+Confirme a arquitetura do container e o bind local:
+
+```bash
+SOKETI_CONTAINER="$(sudo docker compose -f compose.soketi.yaml ps -q soketi)"
+sudo docker inspect "$SOKETI_CONTAINER" \
+    --format '{{.Platform}} {{.State.Status}} {{.RestartCount}}'
+sudo ss -lntp | grep ':6001'
+```
+
+O resultado esperado contém `linux running 0`, e a porta `6001` deve aparecer
+somente em `127.0.0.1`.
 
 ## 10. Configurar Supervisor
 
@@ -400,37 +458,16 @@ environment=APP_ENV="production"
 `REDIS_QUEUE_RETRY_AFTER=180` deve ser maior que `--timeout=120`, evitando que
 um job ainda em execução seja liberado duas vezes.
 
-Crie `/etc/supervisor/conf.d/neurabar-soketi.conf`. Ajuste o caminho do binário
-conforme o resultado de `command -v soketi`:
-
-```ini
-[program:neurabar-soketi]
-directory=/var/www/neurabar
-command=/usr/local/bin/soketi start --config=/etc/neurabar/soketi.json
-user=ubuntu
-autostart=true
-autorestart=true
-startsecs=5
-stopasgroup=true
-killasgroup=true
-redirect_stderr=true
-stdout_logfile=/var/www/neurabar/storage/logs/soketi.log
-stdout_logfile_maxbytes=20MB
-stdout_logfile_backups=5
-environment=NODE_ENV="production",SOKETI_DEBUG="0"
-```
-
 ```bash
 sudo supervisorctl reread
 sudo supervisorctl update
 sudo supervisorctl restart neurabar-worker:*
-sudo supervisorctl restart neurabar-soketi
 sudo supervisorctl status
 sudo ss -lntp | grep ':6001'
 ```
 
-Todos os processos devem estar `RUNNING`; o Soketi deve ouvir apenas no
-loopback.
+Os workers devem estar `RUNNING`; o Soketi é gerenciado pelo Docker e deve ouvir
+apenas no loopback.
 
 ## 11. Configurar o scheduler
 
@@ -512,6 +549,28 @@ sudo certbot certonly \
 ```
 
 ## 13. Configuração final completa do Nginx
+
+Antes de ativar o virtual host, ajuste os limites globais em
+`/etc/nginx/nginx.conf`. Preserve os demais includes e blocos existentes:
+
+```nginx
+worker_processes auto;
+worker_rlimit_nofile 65535;
+
+events {
+    worker_connections 10000;
+    multi_accept on;
+}
+```
+
+Valide também o limite efetivo do processo após recarregar o Nginx:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+NGINX_PID="$(cat /run/nginx.pid)"
+grep 'Max open files' "/proc/${NGINX_PID}/limits"
+```
 
 Substitua todo `/etc/nginx/sites-available/neurabar` por:
 
@@ -639,7 +698,7 @@ sem 404, um evento WebSocket, um job de fila, e-mail e integrações externas.
 ```bash
 tail -f /var/www/neurabar/storage/logs/laravel.log
 tail -f /var/www/neurabar/storage/logs/worker.log
-tail -f /var/www/neurabar/storage/logs/soketi.log
+sudo docker compose -f /var/www/neurabar/compose.soketi.yaml logs -f soketi
 sudo journalctl -u nginx -u php8.3-fpm -u postgresql -u redis-server -f
 ```
 
@@ -686,7 +745,7 @@ php artisan db:migrate-all --force
 php artisan optimize
 php artisan view:cache
 sudo supervisorctl restart neurabar-worker:*
-sudo supervisorctl restart neurabar-soketi
+sudo docker compose -f compose.soketi.yaml up -d
 sudo systemctl reload php8.3-fpm
 php artisan up
 curl -fsS https://app.neurabar.com/up
@@ -718,8 +777,14 @@ outro servidor ou object storage e teste periodicamente a restauração.
 
 ```bash
 # Estado
-sudo systemctl status nginx php8.3-fpm postgresql redis-server supervisor
+sudo systemctl status nginx php8.3-fpm postgresql redis-server supervisor docker
 sudo supervisorctl status
+
+# Soketi
+sudo docker compose -f compose.soketi.yaml ps
+sudo docker compose -f compose.soketi.yaml logs --tail=100 soketi
+sudo docker compose -f compose.soketi.yaml pull
+sudo docker compose -f compose.soketi.yaml up -d
 
 # Workers, falhas e caches
 php artisan queue:restart
@@ -732,7 +797,7 @@ php artisan view:cache
 ## 17. Critérios de conclusão
 
 - Serviços iniciam automaticamente após reboot.
-- PostgreSQL, Redis e Soketi escutam somente no loopback.
+- PostgreSQL, Redis e a porta publicada do Soketi escutam somente no loopback.
 - Os três databases estão migrados e possuem backup restaurável.
 - Workers `default`, `broadcasts` e `payments` estão `RUNNING`.
 - Scheduler consta no crontab de `ubuntu` e em `schedule:list`.

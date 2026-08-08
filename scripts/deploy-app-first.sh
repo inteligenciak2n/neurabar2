@@ -46,14 +46,15 @@ trap handle_error ERR
 
 echo "==> Validando o ambiente remoto em $REMOTE_HOST..."
 if ! ssh "${SSH_OPTIONS[@]}" "$REMOTE_HOST" \
-    "test -d '$REMOTE_PATH' && test -w '$REMOTE_PATH' && test -x '$REMOTE_PHP' && test -x '$REMOTE_COMPOSER'"; then
+    "test -d '$REMOTE_PATH' && test -w '$REMOTE_PATH' && test -x '$REMOTE_PHP' && test -x '$REMOTE_COMPOSER' && test \"\$(dpkg --print-architecture)\" = amd64"; then
     cat >&2 <<EOF
 Erro: o servidor não está acessível ou o ambiente remoto está incompleto.
 
 Confirme no servidor:
   - $REMOTE_PATH existe e permite escrita pelo usuário SSH;
   - $REMOTE_PHP existe e é executável;
-  - $REMOTE_COMPOSER existe e é executável.
+    - $REMOTE_COMPOSER existe e é executável;
+    - a EC2 usa arquitetura x86_64/amd64.
 EOF
     exit 1
 fi
@@ -95,6 +96,8 @@ ssh "${SSH_OPTIONS[@]}" "$REMOTE_HOST" \
         '$REMOTE_PATH/storage/framework/cache/data' \
         '$REMOTE_PATH/storage/framework/sessions' \
         '$REMOTE_PATH/storage/framework/views' \
+        '$REMOTE_PATH/storage/app/public' \
+        '$REMOTE_PATH/storage/app/private' \
         '$REMOTE_PATH/storage/logs' && \
     sudo -n setfacl -R -m u:ubuntu:rwx,u:www-data:rwx \
         '$REMOTE_PATH/bootstrap/cache' '$REMOTE_PATH/storage' && \

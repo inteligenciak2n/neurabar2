@@ -1,0 +1,24 @@
+name: neurabar-soketi
+
+services:
+    soketi:
+        image: quay.io/soketi/soketi:latest-16-alpine@sha256:dd538407cec44a3e94806872a7917ae143f5036d523c554c2d570f755d67ac5e
+        platform: linux/amd64
+        env_file:
+            - /etc/neurabar/soketi.env
+        ports:
+            - '127.0.0.1:6001:6001'
+        init: true
+        restart: unless-stopped
+        stop_grace_period: 30s
+        ulimits:
+            nofile:
+                soft: 65535
+                hard: 65535
+        logging:
+            driver: json-file
+            options:
+                max-size: 20m
+                max-file: '5'
+        security_opt:
+            - no-new-privileges:true
