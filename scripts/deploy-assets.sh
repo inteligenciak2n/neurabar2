@@ -31,6 +31,24 @@ if ! ssh -o BatchMode=yes -o ConnectTimeout=5 "$REMOTE_HOST" 'test -d '"$REMOTE_
     exit 1
 fi
 
+echo "==> Verificando permissão de escrita em $REMOTE_HOST:$REMOTE_PATH/build..."
+if ! ssh -o BatchMode=yes -o ConnectTimeout=5 "$REMOTE_HOST" \
+    "mkdir -p '$REMOTE_PATH/build' && test -w '$REMOTE_PATH/build'"; then
+    cat >&2 <<EOF
+Erro: o usuário SSH não tem permissão de escrita em $REMOTE_PATH/build.
+
+Isso costuma acontecer porque o Docker criou o diretório do bind mount como
+root na primeira vez que o container 'app' subiu. Corrija uma única vez no
+servidor (usuário com sudo):
+
+    sudo chown -R \$(whoami) $REMOTE_PATH/build
+    sudo chmod -R u+rwX $REMOTE_PATH/build
+
+Depois rode este script novamente.
+EOF
+    exit 1
+fi
+
 echo "==> Instalando dependências do frontend..."
 npm ci
 
