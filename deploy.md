@@ -358,10 +358,8 @@ sudo find /var/www/neurabar -type d -exec chmod 750 {} \;
 sudo find /var/www/neurabar -type f -exec chmod 640 {} \;
 sudo chmod 750 /var/www/neurabar/artisan
 
-sudo setfacl -R -m u:ubuntu:rwx,u:www-data:rwx \
-    /var/www/neurabar/storage /var/www/neurabar/bootstrap/cache
-sudo setfacl -dR -m u:ubuntu:rwx,u:www-data:rwx \
-    /var/www/neurabar/storage /var/www/neurabar/bootstrap/cache
+sudo setfacl -R -m u:ubuntu:rwx,u:www-data:rwx /var/www/neurabar/storage /var/www/neurabar/bootstrap/cache
+sudo setfacl -dR -m u:ubuntu:rwx,u:www-data:rwx /var/www/neurabar/storage /var/www/neurabar/bootstrap/cache
 ```
 
 Não aplique `777` nem dê escrita ao Nginx sobre todo o projeto.
