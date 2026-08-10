@@ -5,6 +5,7 @@ namespace App\Actions\Fortify;
 use App\Actions\Corporation\CreateVenueDefaultsAction;
 use App\Actions\Corporation\ProvisionPlanModulesAction;
 use App\Enums\BillingMode;
+use App\Enums\ProfileEnum;
 use App\Enums\ServiceLocationType;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
@@ -287,6 +288,9 @@ class CreateUserOwnerDefinitions
             'password' => $owner->password,
             'pin' => null,
             'active' => true,
+            'email_verified_at' => now(),
+            'onboarding_completed_at' => now(),
+            'profile' => ProfileEnum::Client->value,
         ]);
 
         $venue->users()->attach($attendant->id, ['role' => UserRole::Attendant->value]);
