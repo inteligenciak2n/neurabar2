@@ -7,12 +7,23 @@ use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/set/translations/{page}', [TranslationsController::class, 'setTranslations'])
-    ->where('page', '[A-Za-z0-9][A-Za-z0-9._-]{0,119}')
-    ->middleware('throttle:60,1')
-    ->name('api.set.translations');
-Route::post('/set/locale', [TranslationsController::class, 'setLocale'])->name('api.set.locale');
-Route::get('/available-languages', [TranslationsController::class, 'availableLanguages'])->name('api.available-languages');
+Route::middleware('web')->group(function (): void {
+    Route::get('/translations', [TranslationsController::class, 'index'])
+        ->middleware('throttle:120,1')
+        ->name('api.translations.index');
+
+    Route::post('/translations', [TranslationsController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('api.translations.store');
+
+    Route::post('/set/translations/{page}', [TranslationsController::class, 'setTranslations'])
+        ->where('page', '[A-Za-z0-9][A-Za-z0-9._-]{0,119}')
+        ->middleware('throttle:60,1')
+        ->name('api.set.translations');
+
+    Route::post('/set/locale', [TranslationsController::class, 'setLocale'])->name('api.set.locale');
+    Route::get('/available-languages', [TranslationsController::class, 'availableLanguages'])->name('api.available-languages');
+});
 
 Route::get('/plans/public', function () {
     $plans = PlanCatalog::where('active', true)

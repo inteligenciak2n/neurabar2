@@ -1,21 +1,16 @@
 import { useTranslate } from "@/Composables/useTranslate"
 
 export default {
-    install: (app, options) => {
-        const __ = ( stringText = null, bindings = {} ) => {
-            return useTranslate()(stringText, bindings)
+    install: (app) => {
+        const __ = ( stringText = null, bindings = {}, componentName = null ) => {
+            return useTranslate()(stringText, bindings, componentName)
         }
 
-        // Para Options API - adiciona às globalProperties
         app.config.globalProperties.__ = __
-
-        // Para Composition API - provide/inject
         app.provide('__', __)
-
-        // Mixin para Options API (não afeta Composition API)
         app.mixin({
             beforeCreate() {
-                if (!this.$options.setup) { // Só aplica se não for Composition API
+                if (!this.$options.setup) {
                     this.__ = __
                 }
             }
