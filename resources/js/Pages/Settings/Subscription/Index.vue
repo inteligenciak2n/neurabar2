@@ -275,6 +275,14 @@ const statusLabel = (status) => ({
                     <p class="font-heading font-semibold">{{ __('Billing Address') }}</p>
                     <p class="mt-1 text-xs text-muted-foreground">{{ __('Fiscal and billing address information.') }}</p>
                 </Link>
+                <Link
+                    :href="route('settings.subscription.usage')"
+                    prefetch
+                    class="rounded-xl border border-border bg-white p-5 shadow-card transition-shadow hover:shadow-ocean"
+                >
+                    <p class="font-heading font-semibold">{{ __('Usage') }}</p>
+                    <p class="mt-1 text-xs text-muted-foreground">{{ __('View your subscription usage.') }}</p>
+                </Link>
             </div>
 
             <div class="rounded-xl border border-border bg-white p-6 shadow-card">
