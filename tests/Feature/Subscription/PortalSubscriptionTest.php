@@ -110,6 +110,9 @@ class PortalSubscriptionTest extends TestCase
                 ->component('Settings/Subscription/Usage')
                 ->where('plan.name', $plan->name)
                 ->where('plan.minimum_monthly_price', 24900)
+                ->has('recommendations', 1)
+                ->where('recommendations.0.projected_total', 25900)
+                ->where('recommendations.0.is_recommended', true)
                 ->where('usage.0.quantity', 700)
                 ->where('usage.0.overage_quantity', 200)
             );

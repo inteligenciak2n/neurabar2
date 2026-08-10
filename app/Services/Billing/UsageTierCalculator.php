@@ -4,14 +4,15 @@ namespace App\Services\Billing;
 
 use App\Models\Tenant\ModuleUsageTier;
 use App\Models\Tenant\PlanModuleUsageTier;
+use App\Models\Tenant\VenueModuleUsageTierOverride;
 use App\Support\Money;
 use Illuminate\Support\Collection;
 
 class UsageTierCalculator
 {
     /**
-     * @param  Collection<int, ModuleUsageTier|PlanModuleUsageTier>  $tiers
-     * @return array{included_quantity: int, overage_quantity: int, base_price: int, overage_price: int, total_price: int, last_tier: ModuleUsageTier|PlanModuleUsageTier|null}
+     * @param  Collection<int, ModuleUsageTier|PlanModuleUsageTier|VenueModuleUsageTierOverride>  $tiers
+     * @return array{included_quantity: int, overage_quantity: int, base_price: int, overage_price: int, total_price: int, last_tier: ModuleUsageTier|PlanModuleUsageTier|VenueModuleUsageTierOverride|null}
      */
     public function calculate(Collection $tiers, int $quantity): array
     {

@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\ModuleCatalog;
-use App\Models\Tenant\PlanCatalogVersion;
 use App\Models\Tenant\VenueUsageRecord;
+use App\Services\Billing\PlanCostRecommendationService;
 use App\Services\Billing\UsagePricingResolver;
 use App\Services\Billing\UsageTierCalculator;
 use Illuminate\Http\Request;
@@ -19,6 +19,7 @@ class SubscriptionUsageController extends Controller
 {
     public function __invoke(
         Request $request,
+        PlanCostRecommendationService $recommendationService,
         UsagePricingResolver $pricingResolver,
         UsageTierCalculator $tierCalculator,
     ): Response {
@@ -55,33 +56,31 @@ class SubscriptionUsageController extends Controller
             ->whereIn('code', $records->pluck('module_code'))
             ->get()
             ->keyBy('code');
+        $recommendations = $recommendationService->recommend($venue, $period, $nextCycle);
 
         return Inertia::render('Settings/Subscription/Usage', [
             'venues' => $corporation->venues()->orderBy('name')->get(['id', 'name']),
             'filters' => ['venue_id' => $venue->id, 'period' => $period],
             'plan' => $assignment ? [
                 'id' => $assignment->plan_catalog_id,
+                'version_id' => $assignment->plan_catalog_version_id,
                 'name' => $assignment->planCatalogVersion->planCatalog->name,
                 'version' => $assignment->planCatalogVersion->version,
                 'minimum_monthly_price' => $assignment->planCatalogVersion->minimum_monthly_price,
                 'infrastructure_type' => $assignment->planCatalogVersion->infrastructure_type,
             ] : null,
-            'availablePlans' => PlanCatalogVersion::query()
-                ->where('status', 'published')
-                ->whereDate('effective_from', '<=', $nextCycle)
-                ->where(fn ($query) => $query->whereNull('effective_until')->orWhereDate('effective_until', '>=', $nextCycle))
-                ->whereHas('planCatalog', fn ($query) => $query->where('active', true))
-                ->with('planCatalog:id,name')
-                ->latest('effective_from')
-                ->get()
-                ->unique('plan_catalog_id')
-                ->map(fn (PlanCatalogVersion $version): array => [
-                    'id' => $version->plan_catalog_id,
-                    'name' => $version->planCatalog->name,
-                    'version' => $version->version,
-                    'minimum_monthly_price' => $version->minimum_monthly_price,
-                    'infrastructure_type' => $version->infrastructure_type,
+            'availablePlans' => $recommendations
+                ->where('is_available', true)
+                ->map(fn (array $recommendation): array => [
+                    'id' => $recommendation['plan_id'],
+                    'version_id' => $recommendation['version_id'],
+                    'name' => $recommendation['name'],
+                    'version' => $recommendation['version'],
+                    'minimum_monthly_price' => $recommendation['minimum_monthly_price'],
+                    'infrastructure_type' => $recommendation['infrastructure_type'],
+                    'is_current' => $recommendation['is_current'],
                 ])->values(),
+            'recommendations' => $recommendations,
             'pendingPlanChange' => $venue->planChangeRequests()
                 ->where('status', 'pending')
                 ->with('requestedPlanCatalog:id,name')

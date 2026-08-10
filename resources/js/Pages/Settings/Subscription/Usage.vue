@@ -12,6 +12,7 @@ const props = defineProps({
     filters: Object,
     plan: Object,
     availablePlans: Array,
+    recommendations: Array,
     pendingPlanChange: Object,
     nextCycle: String,
     usage: Array,
@@ -47,6 +48,12 @@ const requestPlanChange = () => {
         preserveScroll: true,
         onSuccess: () => planChangeForm.reset('plan_catalog_id', 'reason'),
     });
+};
+
+const selectPlan = (recommendation) => {
+    if (recommendation.is_available && !recommendation.is_current) {
+        planChangeForm.plan_catalog_id = recommendation.plan_id;
+    }
 };
 
 const cancelPlanChange = () => {
@@ -85,6 +92,57 @@ const cancelPlanChange = () => {
                 </div>
             </AppCard>
 
+            <section class="flex flex-col gap-4 border-b border-border pb-6 dark:border-gray-700">
+                <div class="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+                    <div>
+                        <h2 class="font-heading text-lg font-semibold text-ocean-deep dark:text-gray-100">{{ __('Projected plan cost') }}</h2>
+                        <p class="text-sm text-muted-foreground">{{ filters.period }} · {{ __('plan commitment and measured usage') }}</p>
+                    </div>
+                </div>
+
+                <div class="grid gap-3 lg:grid-cols-3">
+                    <article
+                        v-for="recommendation in recommendations"
+                        :key="recommendation.version_id"
+                        class="flex min-h-56 flex-col gap-4 rounded-md border bg-white p-5 dark:bg-gray-800"
+                        :class="recommendation.is_recommended ? 'border-primary shadow-card' : 'border-border dark:border-gray-700'"
+                    >
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <h3 class="truncate font-heading font-semibold text-ocean-deep dark:text-gray-100">{{ recommendation.name }}</h3>
+                                <p class="text-xs text-muted-foreground">v{{ recommendation.version }} · {{ recommendation.infrastructure_type === 'dedicated' ? __('Dedicated recommended') : __('Shared') }}</p>
+                            </div>
+                            <span v-if="recommendation.is_recommended" class="rounded-full bg-primary-light px-2 py-1 text-xs font-medium text-primary dark:bg-primary/20">{{ __('Recommended') }}</span>
+                            <span v-else-if="recommendation.is_current" class="rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground dark:bg-gray-700">{{ __('Current') }}</span>
+                        </div>
+
+                        <div>
+                            <strong class="font-heading text-2xl text-ocean-deep dark:text-gray-100">{{ formatMoney(recommendation.projected_total) }}</strong>
+                            <span class="text-xs text-muted-foreground"> / {{ __('month') }}</span>
+                        </div>
+
+                        <dl class="grid grid-cols-2 gap-3 text-sm">
+                            <div><dt class="text-muted-foreground">{{ __('Commitment') }}</dt><dd class="font-semibold">{{ formatMoney(recommendation.minimum_monthly_price) }}</dd></div>
+                            <div><dt class="text-muted-foreground">{{ __('Measured usage') }}</dt><dd class="font-semibold">{{ formatMoney(recommendation.projected_usage_price) }}</dd></div>
+                        </dl>
+
+                        <div class="mt-auto flex items-center justify-between gap-3">
+                            <span class="text-xs font-medium" :class="recommendation.savings_vs_current > 0 ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'">
+                                {{ recommendation.savings_vs_current > 0 ? `${formatMoney(recommendation.savings_vs_current)} ${__('savings')}` : '' }}
+                            </span>
+                            <button
+                                v-if="recommendation.is_available && !recommendation.is_current"
+                                type="button"
+                                class="text-sm font-medium text-primary hover:underline"
+                                @click="selectPlan(recommendation)"
+                            >
+                                {{ __('Select') }}
+                            </button>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
             <section class="border-b border-border pb-6 dark:border-gray-700">
                 <div class="flex flex-col justify-between gap-4 md:flex-row md:items-start">
                     <div class="max-w-xl">
@@ -107,8 +165,8 @@ const cancelPlanChange = () => {
                         <div class="flex flex-col gap-1">
                             <select v-model="planChangeForm.plan_catalog_id" required class="rounded-md border-border dark:border-gray-600 dark:bg-gray-800">
                                 <option value="" disabled>{{ __('Select a plan') }}</option>
-                                <option v-for="availablePlan in availablePlans" :key="availablePlan.id" :value="availablePlan.id" :disabled="availablePlan.id === plan?.id">
-                                    {{ availablePlan.name }} · {{ formatMoney(availablePlan.minimum_monthly_price) }}
+                                <option v-for="availablePlan in availablePlans" :key="availablePlan.version_id" :value="availablePlan.id" :disabled="availablePlan.is_current">
+                                    {{ availablePlan.name }} · v{{ availablePlan.version }} · {{ formatMoney(availablePlan.minimum_monthly_price) }}
                                 </option>
                             </select>
                             <span v-if="planChangeForm.errors.plan_catalog_id" class="text-xs text-destructive">{{ planChangeForm.errors.plan_catalog_id }}</span>
