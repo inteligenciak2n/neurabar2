@@ -19,6 +19,7 @@ const platformNavItems = [
     { label: 'Tutoriais',    routeName: 'platform.support.tutorials.index',          activePattern: 'platform.support.tutorials.*' },
     { label: 'Corporations', routeName: 'platform.corporations.index',  activePattern: 'platform.corporations.*' },
     { label: 'Plans',        routeName: 'platform.plans.index',         activePattern: 'platform.plans.*' },
+    { label: 'Modules',      routeName: 'platform.modules.index',       activePattern: 'platform.modules.*' },
     { label: 'Users',        routeName: 'platform.users.index',         activePattern: 'platform.users.*' },
 ];
 </script>

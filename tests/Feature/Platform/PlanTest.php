@@ -4,6 +4,7 @@ namespace Tests\Feature\Platform;
 
 use App\Enums\ProfileEnum;
 use App\Models\AuditLog;
+use App\Models\Tenant\ModuleCatalog;
 use App\Models\Tenant\PlanCatalog;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
@@ -23,11 +24,16 @@ class PlanTest extends TestCase
     {
         $this->loginAsPlatformUser(ProfileEnum::SuperAdmin);
 
+        ModuleCatalog::factory()->create(['code' => 'menu']);
+        ModuleCatalog::factory()->create(['code' => 'kds']);
+
         $this->post(route('platform.plans.store'), [
             'code' => 'STARTER',
             'name' => 'Starter',
             'monthly_price' => 99.00,
             'dedicated_surcharge' => 50.00,
+            'plan_type' => 'dedicated',
+            'included_modules' => ['menu', 'kds'],
             'sort_order' => 1,
             'active' => true,
         ])->assertRedirect();
@@ -36,7 +42,14 @@ class PlanTest extends TestCase
             'code' => 'STARTER',
             'monthly_price' => 9900,
             'dedicated_surcharge' => 5000,
+            'plan_type' => 'dedicated',
+            'sort_order' => 1,
         ]);
+
+        $this->assertSame(
+            ['menu', 'kds'],
+            PlanCatalog::query()->where('code', 'STARTER')->firstOrFail()->included_modules,
+        );
     }
 
     public function test_super_admin_can_update_plan(): void
@@ -50,6 +63,8 @@ class PlanTest extends TestCase
             'name' => 'Updated Name',
             // O formulário envia reais; o catálogo guarda centavos.
             'monthly_price' => 149.00,
+            'plan_type' => 'shared',
+            'included_modules' => [],
             'sort_order' => 1,
             'active' => true,
         ])->assertRedirect();
@@ -78,6 +93,8 @@ class PlanTest extends TestCase
             'code' => $plan->code,
             'name' => $plan->name,
             'monthly_price' => 149.00,
+            'plan_type' => 'shared',
+            'included_modules' => [],
             'sort_order' => 1,
             'active' => true,
         ])->assertRedirect();

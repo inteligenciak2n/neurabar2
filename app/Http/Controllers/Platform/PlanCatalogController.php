@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Platform;
 
+use App\Enums\ProfileEnum;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Platform\PlanCatalogRequest;
+use App\Models\Tenant\ModuleCatalog;
 use App\Models\Tenant\PlanCatalog;
 use App\Services\Audit\AuditLogger;
 use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -15,7 +18,8 @@ class PlanCatalogController extends Controller
 {
     /** @var list<string> */
     private const AUDITED_ATTRIBUTES = [
-        'code', 'name', 'monthly_price', 'dedicated_surcharge', 'sort_order', 'active',
+        'code', 'name', 'description', 'monthly_price', 'dedicated_surcharge',
+        'plan_type', 'included_modules', 'sort_order', 'active',
     ];
 
     public function index(): Response
@@ -24,20 +28,19 @@ class PlanCatalogController extends Controller
 
         return Inertia::render('Platform/Plans/Index', [
             'plans' => $plans,
+            'modules' => ModuleCatalog::query()
+                ->orderBy('sort_order')
+                ->get(['code', 'name', 'active']),
+            'canManage' => in_array(Auth::user()?->profile, [
+                ProfileEnum::SuperAdmin,
+                ProfileEnum::Finance,
+            ], true),
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(PlanCatalogRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'code' => ['required', 'string', 'max:50', 'unique:plan_catalogs,code'],
-            'name' => ['required', 'string', 'max:100'],
-            'description' => ['nullable', 'string'],
-            'monthly_price' => ['required', 'numeric', 'min:0'],
-            'dedicated_surcharge' => ['nullable', 'numeric', 'min:0'],
-            'sort_order' => ['required', 'integer', 'min:0'],
-            'active' => ['boolean'],
-        ]);
+        $validated = $request->validated();
 
         $validated['monthly_price'] = Money::fromFloat($validated['monthly_price']);
         $validated['dedicated_surcharge'] = Money::fromFloat($validated['dedicated_surcharge'] ?? 0);
@@ -49,17 +52,9 @@ class PlanCatalogController extends Controller
         return back()->with('success', 'Plan created successfully.');
     }
 
-    public function update(Request $request, PlanCatalog $plan): RedirectResponse
+    public function update(PlanCatalogRequest $request, PlanCatalog $plan): RedirectResponse
     {
-        $validated = $request->validate([
-            'code' => ['required', 'string', 'max:50', 'unique:plan_catalogs,code,'.$plan->id],
-            'name' => ['required', 'string', 'max:100'],
-            'description' => ['nullable', 'string'],
-            'monthly_price' => ['required', 'numeric', 'min:0'],
-            'dedicated_surcharge' => ['nullable', 'numeric', 'min:0'],
-            'sort_order' => ['required', 'integer', 'min:0'],
-            'active' => ['boolean'],
-        ]);
+        $validated = $request->validated();
 
         $validated['monthly_price'] = Money::fromFloat($validated['monthly_price']);
         $validated['dedicated_surcharge'] = Money::fromFloat($validated['dedicated_surcharge'] ?? 0);

@@ -8,6 +8,7 @@ use App\Http\Controllers\Platform\CorporationModuleController;
 use App\Http\Controllers\Platform\DashboardController as PlatformDashboardController;
 use App\Http\Controllers\Platform\InvoiceController;
 use App\Http\Controllers\Platform\ManualInvoiceController;
+use App\Http\Controllers\Platform\ModuleCatalogController;
 use App\Http\Controllers\Platform\PlanAssignmentController;
 use App\Http\Controllers\Platform\PlanCatalogController;
 use App\Http\Controllers\Platform\PlatformUserController;
@@ -55,11 +56,15 @@ Route::prefix($platformPath)->name('platform.')->group(function () {
         Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
 
         Route::get('/plans', [PlanCatalogController::class, 'index'])->name('plans.index');
+        Route::get('/modules', [ModuleCatalogController::class, 'index'])->name('modules.index');
 
         Route::middleware(['platform_role:super_admin,finance'])->group(function () {
             Route::post('/plans', [PlanCatalogController::class, 'store'])->name('plans.store');
             Route::put('/plans/{plan}', [PlanCatalogController::class, 'update'])->name('plans.update');
             Route::delete('/plans/{plan}', [PlanCatalogController::class, 'destroy'])->name('plans.destroy');
+            Route::post('/modules', [ModuleCatalogController::class, 'store'])->name('modules.store');
+            Route::put('/modules/{module}', [ModuleCatalogController::class, 'update'])->name('modules.update');
+            Route::delete('/modules/{module}', [ModuleCatalogController::class, 'destroy'])->name('modules.destroy');
         });
 
         Route::middleware(['platform_role:super_admin'])->group(function () {
