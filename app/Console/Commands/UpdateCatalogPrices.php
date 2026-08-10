@@ -12,7 +12,7 @@ use Throwable;
 class UpdateCatalogPrices extends Command
 {
     protected $signature = 'billing:update-prices
-                            {--defaults : Atualiza preços de planos e módulos para os valores padrão}
+                            {--defaults : Atualiza preços e faixas de consumo para os valores padrão}
                             {--plan=* : Preço de plano no formato CODIGO=VALOR_EM_REAIS}
                             {--module=* : Preço de módulo no formato CODIGO=VALOR_EM_REAIS}
                             {--effective-from= : Início da vigência das novas versões (Y-m-d)}
@@ -20,6 +20,11 @@ class UpdateCatalogPrices extends Command
 
     protected $description = 'Atualiza preços de módulos e publica novas versões de preços dos planos';
 
+    /**
+     * Planos, módulos e valores fixos usam centavos; preços unitários das faixas usam micros.
+     *
+     * @var array<string, mixed>
+     */
     protected $defaults = [
         'plans' => [
             'basic' => 14900,
@@ -33,30 +38,52 @@ class UpdateCatalogPrices extends Command
             'waiter-printer' => 3000,
             'self-ordering' => 3000,
             'self-ordering-printer' => 3000,
-        ]
+        ],
+        'usage_tiers' => [
+            'basic' => [
+                'modules' => ['kds', 'kitchen-printer', 'waiter-app', 'waiter-printer', 'self-ordering', 'self-ordering-printer'],
+                'tiers' => [
+                    ['min_quantity' => 0, 'max_quantity' => null, 'included_quantity' => 1000, 'price_per_unit' => 0, 'flat_price' => null, 'overage_price_per_unit' => 500, 'overage_flat_fee' => 0],
+                ],
+            ],
+            'pro' => [
+                'modules' => ['kds', 'kitchen-printer', 'waiter-app', 'waiter-printer', 'self-ordering', 'self-ordering-printer'],
+                'tiers' => [
+                    ['min_quantity' => 0, 'max_quantity' => null, 'included_quantity' => 5000, 'price_per_unit' => 0, 'flat_price' => null, 'overage_price_per_unit' => 500, 'overage_flat_fee' => 0],
+                ],
+            ],
+            'enterprise' => [
+                'modules' => ['kds', 'kitchen-printer', 'waiter-app', 'waiter-printer', 'self-ordering', 'self-ordering-printer'],
+                'tiers' => [
+                    ['min_quantity' => 0, 'max_quantity' => null, 'included_quantity' => 10000, 'price_per_unit' => 0, 'flat_price' => null, 'overage_price_per_unit' => 500, 'overage_flat_fee' => 0],
+                ],
+            ],
+        ],
     ];
 
     public function handle(UpdateCatalogPricesAction $action): int
     {
-        if ($this->option('defaults')) {
-            $planPrices = $this->defaults['plans'];
-            $modulePrices = $this->defaults['modules'];
-            $effectiveFrom = $this->effectiveFrom(true);
-        } else {
-            try {
+        try {
+            if ($this->option('defaults')) {
+                $planPrices = $this->defaults['plans'];
+                $modulePrices = $this->defaults['modules'];
+                $planUsageTiers = $this->expandDefaultUsageTiers();
+                $effectiveFrom = $this->effectiveFrom(true);
+            } else {
                 $planPrices = $this->parsePrices((array) $this->option('plan'), 'plano');
                 $modulePrices = $this->parsePrices((array) $this->option('module'), 'módulo');
+                $planUsageTiers = [];
 
                 if ($planPrices === [] && $modulePrices === []) {
                     throw new InvalidArgumentException('Informe ao menos uma opção --plan ou --module.');
                 }
 
                 $effectiveFrom = $this->effectiveFrom($planPrices !== []);
-            } catch (InvalidArgumentException $exception) {
-                $this->components->error($exception->getMessage());
-
-                return self::FAILURE;
             }
+        } catch (InvalidArgumentException $exception) {
+            $this->components->error($exception->getMessage());
+
+            return self::FAILURE;
         }
 
         $this->table(
@@ -71,6 +98,15 @@ class UpdateCatalogPrices extends Command
             $this->line('Vigência das novas versões: '.$effectiveFrom->toDateString());
         }
 
+        if ($planUsageTiers !== []) {
+            $this->newLine();
+            $this->components->info('Faixas de consumo');
+            $this->table(
+                ['Plano', 'Módulo', 'Faixa', 'Incluso', 'Base/un.', 'Excedente/un.'],
+                $this->usageTierRows($planUsageTiers),
+            );
+        }
+
         if (! $this->option('force') && ! $this->confirm('Confirma a atualização dos preços?')) {
             $this->components->warn('Operação cancelada.');
 
@@ -78,7 +114,7 @@ class UpdateCatalogPrices extends Command
         }
 
         try {
-            $result = $action->execute($planPrices, $modulePrices, $effectiveFrom);
+            $result = $action->execute($planPrices, $modulePrices, $effectiveFrom, $planUsageTiers);
         } catch (Throwable $exception) {
             $this->components->error($exception->getMessage());
 
@@ -86,10 +122,10 @@ class UpdateCatalogPrices extends Command
         }
 
         $this->components->info(sprintf(
-            'Preços atualizados: %d planos, %d módulos e %d faixas copiadas.',
+            'Preços atualizados: %d planos, %d módulos e %d faixas criadas.',
             $result['plans_updated'],
             $result['modules_updated'],
-            $result['tiers_copied'],
+            $result['tiers_created'],
         ));
 
         return self::SUCCESS;
@@ -155,5 +191,49 @@ class UpdateCatalogPrices extends Command
             ->map(fn (int $price, string $code): array => [$type, $code, Money::format($price)])
             ->values()
             ->all();
+    }
+
+    /** @return array<string, list<array<string, int|string|null>>> */
+    private function expandDefaultUsageTiers(): array
+    {
+        $expanded = [];
+
+        foreach ($this->defaults['usage_tiers'] as $planCode => $configuration) {
+            foreach ($configuration['modules'] as $moduleCode) {
+                foreach ($configuration['tiers'] as $tier) {
+                    $expanded[$planCode][] = [
+                        'module_code' => $moduleCode,
+                        ...$tier,
+                        'currency' => 'BRL',
+                    ];
+                }
+            }
+        }
+
+        return $expanded;
+    }
+
+    /**
+     * @param  array<string, list<array<string, int|string|null>>>  $planUsageTiers
+     * @return list<array{string, string, string, int, string, string}>
+     */
+    private function usageTierRows(array $planUsageTiers): array
+    {
+        $rows = [];
+
+        foreach ($planUsageTiers as $planCode => $tiers) {
+            foreach ($tiers as $tier) {
+                $rows[] = [
+                    $planCode,
+                    (string) $tier['module_code'],
+                    $tier['min_quantity'].' - '.($tier['max_quantity'] ?? '∞'),
+                    (int) $tier['included_quantity'],
+                    Money::format((int) $tier['price_per_unit'], Money::MICRO_SCALE),
+                    Money::format((int) $tier['overage_price_per_unit'], Money::MICRO_SCALE),
+                ];
+            }
+        }
+
+        return $rows;
     }
 }
