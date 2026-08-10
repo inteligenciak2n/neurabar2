@@ -15,7 +15,8 @@ class VenueUsageRecord extends Model
 
     protected $fillable = [
         'venue_id', 'module_code', 'period', 'quantity',
-        'included_quantity', 'overage_quantity', 'tier_id',
+        'included_quantity', 'overage_quantity', 'tier_id', 'plan_module_usage_tier_id',
+        'venue_plan_assignment_id', 'plan_catalog_version_id',
         'base_calculated_price', 'overage_calculated_price', 'total_calculated_price',
     ];
 

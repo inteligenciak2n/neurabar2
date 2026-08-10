@@ -6,6 +6,7 @@ use App\Enums\ProfileEnum;
 use App\Models\AuditLog;
 use App\Models\Tenant\ModuleCatalog;
 use App\Models\Tenant\PlanCatalog;
+use App\Models\Tenant\PlanCatalogVersion;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
@@ -105,5 +106,61 @@ class PlanTest extends TestCase
         $this->assertSame($actor->id, $log->actor_id);
         $this->assertSame(9900, $log->before['monthly_price']);
         $this->assertSame(14900, $log->after['monthly_price']);
+    }
+
+    public function test_finance_can_create_and_publish_a_plan_pricing_version(): void
+    {
+        $this->loginAsPlatformUser(ProfileEnum::Finance);
+        $plan = PlanCatalog::factory()->create();
+
+        $this->post(route('platform.plans.usage-pricing.store', $plan), [
+            'effective_from' => today()->addMonth()->startOfMonth()->format('Y-m-d'),
+            'minimum_monthly_price' => 249.00,
+            'infrastructure_type' => 'shared',
+            'currency' => 'BRL',
+            'tiers' => [[
+                'module_code' => 'kds',
+                'min_quantity' => 0,
+                'max_quantity' => null,
+                'included_quantity' => 500,
+                'price_per_unit' => 0,
+                'flat_price' => null,
+                'overage_price_per_unit' => 0.05,
+                'overage_flat_fee' => null,
+            ]],
+        ])->assertRedirect();
+
+        $version = PlanCatalogVersion::query()->where('plan_catalog_id', $plan->id)->firstOrFail();
+
+        $this->assertSame(24900, $version->minimum_monthly_price);
+        $this->assertDatabaseHas('plan_module_usage_tiers', [
+            'plan_catalog_version_id' => $version->id,
+            'module_code' => 'kds',
+            'included_quantity' => 500,
+            'overage_price_per_unit' => 500,
+        ]);
+
+        $this->post(route('platform.plans.usage-pricing.publish', [$plan, $version]))->assertRedirect();
+
+        $this->assertDatabaseHas('plan_catalog_versions', ['id' => $version->id, 'status' => 'published']);
+    }
+
+    public function test_plan_pricing_rejects_gaps_between_tiers(): void
+    {
+        $this->loginAsPlatformUser(ProfileEnum::Finance);
+        $plan = PlanCatalog::factory()->create();
+
+        $this->post(route('platform.plans.usage-pricing.store', $plan), [
+            'effective_from' => today()->addMonth()->startOfMonth()->format('Y-m-d'),
+            'minimum_monthly_price' => 249.00,
+            'infrastructure_type' => 'shared',
+            'currency' => 'BRL',
+            'tiers' => [
+                ['module_code' => 'kds', 'min_quantity' => 0, 'max_quantity' => 100, 'included_quantity' => 100, 'price_per_unit' => 0, 'overage_price_per_unit' => 0.05],
+                ['module_code' => 'kds', 'min_quantity' => 102, 'max_quantity' => null, 'included_quantity' => 0, 'price_per_unit' => 0, 'overage_price_per_unit' => 0.03],
+            ],
+        ])->assertSessionHasErrors('tiers');
+
+        $this->assertDatabaseMissing('plan_catalog_versions', ['plan_catalog_id' => $plan->id]);
     }
 }

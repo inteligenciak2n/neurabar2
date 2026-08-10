@@ -14,10 +14,15 @@ use App\Jobs\Subscription\ProcessGatewayWebhookJob;
 use App\Models\Tenant\CorporationInvoice;
 use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\ModuleCatalog;
+use App\Models\Tenant\PlanCatalog;
+use App\Models\Tenant\PlanCatalogVersion;
+use App\Models\Tenant\PlanModuleUsageTier;
 use App\Models\Tenant\UserPaymentMethod;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueInvoice;
 use App\Models\Tenant\VenueModule;
+use App\Models\Tenant\VenuePlanAssignment;
+use App\Models\Tenant\VenueUsageRecord;
 use App\Models\User;
 use App\Notifications\Subscription\GatewayAccessTokenExpiringSoon;
 use Illuminate\Support\Facades\Notification;
@@ -63,6 +68,49 @@ class PortalSubscriptionTest extends TestCase
         $this->actingAs($attendant)
             ->get(route('settings.subscription.index'))
             ->assertForbidden();
+    }
+
+    public function test_owner_can_view_usage_for_a_venue_in_their_corporation(): void
+    {
+        $plan = PlanCatalog::factory()->create();
+        $version = PlanCatalogVersion::factory()->create([
+            'plan_catalog_id' => $plan->id,
+            'minimum_monthly_price' => 24900,
+            'effective_from' => '2026-01-01',
+        ]);
+        VenuePlanAssignment::factory()->create([
+            'venue_id' => $this->venue->id,
+            'plan_catalog_id' => $plan->id,
+            'plan_catalog_version_id' => $version->id,
+            'starts_on' => '2026-01-01',
+        ]);
+        PlanModuleUsageTier::factory()->create([
+            'plan_catalog_version_id' => $version->id,
+            'module_code' => ModuleCode::Kds->value,
+            'included_quantity' => 500,
+            'overage_price_per_unit' => 500,
+        ]);
+        VenueUsageRecord::create([
+            'venue_id' => $this->venue->id,
+            'module_code' => ModuleCode::Kds->value,
+            'period' => '2026-08',
+            'quantity' => 700,
+            'included_quantity' => 500,
+            'overage_quantity' => 200,
+            'overage_calculated_price' => 1000,
+            'total_calculated_price' => 1000,
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('settings.subscription.usage', ['venue_id' => $this->venue->id, 'period' => '2026-08']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Settings/Subscription/Usage')
+                ->where('plan.name', $plan->name)
+                ->where('plan.minimum_monthly_price', 24900)
+                ->where('usage.0.quantity', 700)
+                ->where('usage.0.overage_quantity', 200)
+            );
     }
 
     public function test_owner_can_activate_module_for_venue(): void

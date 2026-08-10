@@ -28,6 +28,7 @@ use App\Http\Controllers\Settings\SubscriptionBillingAddressController;
 use App\Http\Controllers\Settings\SubscriptionController;
 use App\Http\Controllers\Settings\SubscriptionInvoiceController;
 use App\Http\Controllers\Settings\SubscriptionPaymentMethodController;
+use App\Http\Controllers\Settings\SubscriptionUsageController;
 use App\Http\Controllers\Settings\UserController;
 use App\Http\Controllers\Settings\VenueController;
 use App\Http\Controllers\Settings\VenueSettingsController;
@@ -164,6 +165,7 @@ Route::middleware([
     // must still be able to reach billing to pay and restore access.
     Route::prefix('settings/subscription')->name('settings.subscription.')->middleware(['role:owner,general_manager'])->group(function () {
         Route::get('/', [SubscriptionController::class, 'index'])->name('index');
+        Route::get('/usage', SubscriptionUsageController::class)->name('usage');
         Route::post('/cancel', [SubscriptionController::class, 'cancel'])->name('cancel');
         Route::post('/gateway/activate', [SubscriptionController::class, 'activateGateway'])->name('gateway.activate');
         Route::post('/venues/{venue}/modules', [SubscriptionController::class, 'store'])->name('modules.store');

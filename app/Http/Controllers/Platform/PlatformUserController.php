@@ -38,7 +38,9 @@ class PlatformUserController extends Controller
             'active' => ['boolean'],
         ]);
 
-        $user = User::create($validated);
+        $user = User::create(array_merge($validated, [
+            'onboarding_completed_at' => now(),
+        ]));
 
         AuditLogger::record('platform_user.created', $user, null, AuditLogger::snapshot($user, self::AUDITED_ATTRIBUTES));
 

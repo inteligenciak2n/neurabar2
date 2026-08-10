@@ -6,9 +6,11 @@ use App\Enums\ModuleStatus;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\ModuleUsageTier;
+use App\Models\Tenant\PlanModuleUsageTier;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueInvoice;
 use App\Models\Tenant\VenueModule;
+use App\Models\Tenant\VenuePlanAssignment;
 use App\Models\Tenant\VenueSubscription;
 use App\Models\Tenant\VenueUsageRecord;
 use App\Support\Money;
@@ -20,6 +22,10 @@ use Illuminate\Support\Facades\DB;
 
 class SubscriptionCalculator
 {
+    private readonly UsagePricingResolver $usagePricingResolver;
+
+    private readonly UsageTierCalculator $usageTierCalculator;
+
     /**
      * Fora de um lote o cache fica desligado: telas e ações alteram módulos e
      * recalculam na mesma instância, e um valor memoizado ali seria obsoleto.
@@ -28,6 +34,14 @@ class SubscriptionCalculator
 
     /** @var array<string, mixed> */
     private array $memo = [];
+
+    public function __construct(
+        ?UsagePricingResolver $usagePricingResolver = null,
+        ?UsageTierCalculator $usageTierCalculator = null,
+    ) {
+        $this->usagePricingResolver = $usagePricingResolver ?? new UsagePricingResolver;
+        $this->usageTierCalculator = $usageTierCalculator ?? new UsageTierCalculator;
+    }
 
     /**
      * Executa o callback com memoização de catálogo/módulos/faixas ativa.
@@ -87,7 +101,11 @@ class SubscriptionCalculator
 
         $usagePeriod ??= self::usagePeriodFor($period);
 
-        $base = (int) $subscription->base_value;
+        $planAssignment = $this->remember(
+            'plan-assignment:'.$venue->id.':'.$period,
+            fn () => $this->usagePricingResolver->resolveAssignment($venue, $period),
+        );
+        $base = (int) ($planAssignment?->planCatalogVersion?->minimum_monthly_price ?? $subscription->base_value);
         $proratedModules = $this->calculateModules($venue, $period, prorate: true);
         $modulesValue = $proratedModules['total'];
         $recurringModulesValue = $this->calculateModules($venue, $period, prorate: false)['total'];
@@ -143,6 +161,7 @@ class SubscriptionCalculator
                 ->first();
 
             $subscription?->update([
+                'base_value' => $calculated['base'],
                 'modules_value' => $calculated['recurring_modules'],
                 'metered_value' => $calculated['metered'],
                 'total_value' => $calculated['recurring_total'],
@@ -424,7 +443,7 @@ class SubscriptionCalculator
             ->get();
 
         foreach ($records as $record) {
-            $recordTotal = $this->calculateRecord($record);
+            $recordTotal = $this->calculateRecord($record, $venue, $period);
             $total += $recordTotal;
 
             if ($recordTotal === 0) {
@@ -450,95 +469,50 @@ class SubscriptionCalculator
      * unidade a mais podia baratear a fatura. Somando as faixas o valor só
      * pode crescer com a quantidade.
      */
-    private function calculateRecord(VenueUsageRecord $record): int
+    private function calculateRecord(VenueUsageRecord $record, Venue $venue, string $period): int
     {
         $quantity = max(0, (int) $record->quantity);
-        $tiers = $this->resolveTiers((string) $record->module_code, $quantity);
+        $pricing = $this->resolvePricing($venue, (string) $record->module_code, $period, $quantity);
+        $tiers = $pricing['tiers'];
 
         if ($tiers->isEmpty()) {
             return 0;
         }
 
-        $basePrice = 0;
-        $overagePrice = 0;
-        $includedQuantity = 0;
-        $overageQuantity = 0;
-        $lastTierId = null;
-        $consumedUnits = 0;
-
-        foreach ($tiers as $tier) {
-            $upperBound = $tier->max_quantity !== null
-                ? min($quantity, (int) $tier->max_quantity)
-                : $quantity;
-
-            $unitsInTier = max(0, $upperBound - $consumedUnits);
-            $consumedUnits = max($consumedUnits, $upperBound);
-
-            if ($unitsInTier === 0) {
-                continue;
-            }
-
-            $lastTierId = $tier->id;
-
-            $tierIncluded = min($unitsInTier, max(0, (int) ($tier->included_quantity ?? 0)));
-            $tierOverage = $unitsInTier - $tierIncluded;
-
-            $includedQuantity += $tierIncluded;
-            $overageQuantity += $tierOverage;
-
-            // price_per_unit cobra apenas as unidades dentro do limite incluso
-            // da faixa; o excedente da faixa é cobrado exclusivamente via
-            // overage_price_per_unit/overage_flat_fee, evitando duplicidade.
-            // Os preços unitários estão em centésimos de centavo e só viram
-            // centavos depois de multiplicados pela quantidade.
-            $basePrice += $tier->flat_price !== null
-                ? (int) $tier->flat_price
-                : Money::fromMicros((int) $tier->price_per_unit * $tierIncluded);
-
-            if ($tierOverage > 0) {
-                $overagePrice += (int) ($tier->overage_flat_fee ?? 0);
-                $overagePrice += Money::fromMicros($tierOverage * (int) $tier->overage_price_per_unit);
-            }
-        }
+        $calculated = $this->usageTierCalculator->calculate($tiers, $quantity);
+        $lastTier = $calculated['last_tier'];
 
         $record->update([
-            'tier_id' => $lastTierId,
-            'included_quantity' => $includedQuantity,
-            'overage_quantity' => $overageQuantity,
-            'base_calculated_price' => $basePrice,
-            'overage_calculated_price' => $overagePrice,
-            'total_calculated_price' => $basePrice + $overagePrice,
+            'tier_id' => $lastTier instanceof ModuleUsageTier ? $lastTier->id : null,
+            'plan_module_usage_tier_id' => $lastTier instanceof PlanModuleUsageTier ? $lastTier->id : null,
+            'venue_plan_assignment_id' => $pricing['assignment']?->id,
+            'plan_catalog_version_id' => $pricing['assignment']?->plan_catalog_version_id,
+            'included_quantity' => $calculated['included_quantity'],
+            'overage_quantity' => $calculated['overage_quantity'],
+            'base_calculated_price' => $calculated['base_price'],
+            'overage_calculated_price' => $calculated['overage_price'],
+            'total_calculated_price' => $calculated['total_price'],
         ]);
 
-        return $basePrice + $overagePrice;
+        return $calculated['total_price'];
     }
 
     /**
      * Todas as faixas alcançadas pela quantidade, da menor para a maior.
      *
-     * @return Collection<int, ModuleUsageTier>
+     * @return array{assignment: VenuePlanAssignment|null, tiers: Collection<int, ModuleUsageTier|PlanModuleUsageTier>}
      */
-    private function resolveTiers(string $moduleCode, int $quantity): Collection
+    private function resolvePricing(Venue $venue, string $moduleCode, string $period, int $quantity): array
     {
-        if (! $this->batching) {
-            return ModuleUsageTier::query()
-                ->where('module_code', $moduleCode)
-                ->where('min_quantity', '<=', $quantity)
-                ->orderBy('min_quantity')
-                ->get();
-        }
-
-        /** @var Collection<int, ModuleUsageTier> $tiers */
-        $tiers = $this->remember(
-            'tiers:'.$moduleCode,
-            fn (): Collection => ModuleUsageTier::query()
-                ->where('module_code', $moduleCode)
-                ->orderBy('min_quantity')
-                ->get(),
+        $pricing = $this->remember(
+            'usage-pricing:'.$venue->id.':'.$moduleCode.':'.$period,
+            fn (): array => $this->usagePricingResolver->resolve($venue, $moduleCode, $period),
         );
 
-        return $tiers
-            ->filter(fn (ModuleUsageTier $tier): bool => (int) $tier->min_quantity <= $quantity)
+        $pricing['tiers'] = $pricing['tiers']
+            ->filter(fn (ModuleUsageTier|PlanModuleUsageTier $tier): bool => (int) $tier->min_quantity <= $quantity)
             ->values();
+
+        return $pricing;
     }
 }

@@ -1,7 +1,7 @@
 <script setup>
 import PlatformLayout from '@/Layouts/PlatformLayout.vue';
 import InputError from '@/Components/InputError.vue';
-import { useForm } from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
 import { useCurrency } from '@/Composables/useCurrency';
@@ -243,6 +243,9 @@ const destroy = (plan) => {
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right">
+                                <Link :href="route('platform.plans.usage-pricing.show', plan.id)" class="text-primary hover:underline text-xs mr-3">
+                                    {{ __('Usage tiers') }}
+                                </Link>
                                 <template v-if="canManage">
                                     <button @click="startEdit(plan)" class="text-primary hover:underline text-xs mr-3">{{ __('Edit') }}</button>
                                     <button @click="destroy(plan)" class="text-destructive hover:underline text-xs">{{ __('Delete') }}</button>

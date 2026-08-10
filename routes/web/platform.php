@@ -11,6 +11,7 @@ use App\Http\Controllers\Platform\ManualInvoiceController;
 use App\Http\Controllers\Platform\ModuleCatalogController;
 use App\Http\Controllers\Platform\PlanAssignmentController;
 use App\Http\Controllers\Platform\PlanCatalogController;
+use App\Http\Controllers\Platform\PlanCatalogVersionController;
 use App\Http\Controllers\Platform\PlatformUserController;
 use App\Http\Controllers\Platform\SubscriptionController;
 use App\Http\Controllers\Platform\VenueModuleController;
@@ -56,12 +57,16 @@ Route::prefix($platformPath)->name('platform.')->group(function () {
         Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
 
         Route::get('/plans', [PlanCatalogController::class, 'index'])->name('plans.index');
+        Route::get('/plans/{plan}/usage-pricing', [PlanCatalogVersionController::class, 'show'])->name('plans.usage-pricing.show');
         Route::get('/modules', [ModuleCatalogController::class, 'index'])->name('modules.index');
 
         Route::middleware(['platform_role:super_admin,finance'])->group(function () {
             Route::post('/plans', [PlanCatalogController::class, 'store'])->name('plans.store');
             Route::put('/plans/{plan}', [PlanCatalogController::class, 'update'])->name('plans.update');
             Route::delete('/plans/{plan}', [PlanCatalogController::class, 'destroy'])->name('plans.destroy');
+            Route::post('/plans/{plan}/usage-pricing', [PlanCatalogVersionController::class, 'store'])->name('plans.usage-pricing.store');
+            Route::post('/plans/{plan}/usage-pricing/{version}/publish', [PlanCatalogVersionController::class, 'publish'])->name('plans.usage-pricing.publish');
+            Route::delete('/plans/{plan}/usage-pricing/{version}', [PlanCatalogVersionController::class, 'destroy'])->name('plans.usage-pricing.destroy');
             Route::post('/modules', [ModuleCatalogController::class, 'store'])->name('modules.store');
             Route::put('/modules/{module}', [ModuleCatalogController::class, 'update'])->name('modules.update');
             Route::delete('/modules/{module}', [ModuleCatalogController::class, 'destroy'])->name('modules.destroy');

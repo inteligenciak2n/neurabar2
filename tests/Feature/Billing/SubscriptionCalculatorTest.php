@@ -13,9 +13,13 @@ use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\ModuleCatalog;
 use App\Models\Tenant\ModuleUsageTier;
+use App\Models\Tenant\PlanCatalog;
+use App\Models\Tenant\PlanCatalogVersion;
+use App\Models\Tenant\PlanModuleUsageTier;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueInvoice;
 use App\Models\Tenant\VenueModule;
+use App\Models\Tenant\VenuePlanAssignment;
 use App\Models\Tenant\VenueSubscription;
 use App\Models\Tenant\VenueUsageRecord;
 use App\Services\Billing\SubscriptionCalculator;
@@ -49,6 +53,36 @@ class SubscriptionCalculatorTest extends TestCase
             'id' => $venue->subscription->id,
             'base_value' => 9990,
             'total_value' => 9990,
+        ]);
+    }
+
+    public function test_calculate_venue_uses_the_minimum_commitment_from_the_assigned_plan_version(): void
+    {
+        $venue = $this->createVenueWithSubscription(baseValue: 9990);
+        $plan = PlanCatalog::factory()->create();
+        $version = PlanCatalogVersion::factory()->create([
+            'plan_catalog_id' => $plan->id,
+            'effective_from' => '2026-01-01',
+            'minimum_monthly_price' => 24900,
+        ]);
+        VenuePlanAssignment::factory()->create([
+            'venue_id' => $venue->id,
+            'plan_catalog_id' => $plan->id,
+            'plan_catalog_version_id' => $version->id,
+            'starts_on' => '2026-01-01',
+        ]);
+
+        $result = $this->calculator->calculateVenue($venue, '2026-07');
+
+        $this->assertSame(24900, $result['base']);
+        $this->assertSame(24900, $result['total']);
+
+        $this->calculator->refreshVenueSnapshot($venue, '2026-07');
+
+        $this->assertDatabaseHas('venue_subscriptions', [
+            'id' => $venue->subscription->id,
+            'base_value' => 24900,
+            'total_value' => 24900,
         ]);
     }
 
@@ -142,6 +176,68 @@ class SubscriptionCalculatorTest extends TestCase
 
         // 1.000 unidades na primeira faixa (R$ 0,05) + 500 na segunda (R$ 0,03).
         $this->assertSame(5000 + 1500, $result['metered']);
+    }
+
+    public function test_metered_uses_the_plan_version_assigned_to_each_venue(): void
+    {
+        $smallVenue = $this->createVenueWithSubscription(baseValue: 0);
+        $largeVenue = $this->createVenueWithSubscription(baseValue: 0);
+
+        foreach ([$smallVenue, $largeVenue] as $venue) {
+            $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 0);
+            $this->createUsageRecord($venue, ModuleCode::Kds, '2026-06', quantity: 300);
+        }
+
+        $smallPlan = PlanCatalog::factory()->create(['code' => 'small']);
+        $largePlan = PlanCatalog::factory()->create(['code' => 'large']);
+        $smallVersion = PlanCatalogVersion::factory()->create([
+            'plan_catalog_id' => $smallPlan->id,
+            'effective_from' => '2026-01-01',
+        ]);
+        $largeVersion = PlanCatalogVersion::factory()->create([
+            'plan_catalog_id' => $largePlan->id,
+            'effective_from' => '2026-01-01',
+        ]);
+
+        PlanModuleUsageTier::factory()->create([
+            'plan_catalog_version_id' => $smallVersion->id,
+            'included_quantity' => 100,
+            'overage_price_per_unit' => 1000,
+        ]);
+        PlanModuleUsageTier::factory()->create([
+            'plan_catalog_version_id' => $largeVersion->id,
+            'included_quantity' => 300,
+            'overage_price_per_unit' => 500,
+        ]);
+
+        $smallAssignment = VenuePlanAssignment::factory()->create([
+            'venue_id' => $smallVenue->id,
+            'plan_catalog_id' => $smallPlan->id,
+            'plan_catalog_version_id' => $smallVersion->id,
+            'starts_on' => '2026-01-01',
+        ]);
+        $largeAssignment = VenuePlanAssignment::factory()->create([
+            'venue_id' => $largeVenue->id,
+            'plan_catalog_id' => $largePlan->id,
+            'plan_catalog_version_id' => $largeVersion->id,
+            'starts_on' => '2026-01-01',
+        ]);
+
+        $this->assertSame(2000, $this->calculator->calculateVenue($smallVenue, '2026-07')['metered']);
+        $this->assertSame(0, $this->calculator->calculateVenue($largeVenue, '2026-07')['metered']);
+
+        $this->assertDatabaseHas('venue_usage_records', [
+            'venue_id' => $smallVenue->id,
+            'venue_plan_assignment_id' => $smallAssignment->id,
+            'plan_catalog_version_id' => $smallVersion->id,
+            'overage_quantity' => 200,
+        ]);
+        $this->assertDatabaseHas('venue_usage_records', [
+            'venue_id' => $largeVenue->id,
+            'venue_plan_assignment_id' => $largeAssignment->id,
+            'plan_catalog_version_id' => $largeVersion->id,
+            'overage_quantity' => 0,
+        ]);
     }
 
     public function test_metered_price_never_decreases_when_quantity_grows(): void

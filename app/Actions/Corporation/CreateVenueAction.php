@@ -9,6 +9,7 @@ use App\Jobs\Venue\CreateVenueDefaultsJob;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueModule;
+use App\Models\Tenant\VenuePlanAssignment;
 use App\Models\Tenant\VenueSubscription;
 use App\Services\Billing\SubscriptionCalculator;
 use App\Services\VenueModuleCache;
@@ -30,6 +31,15 @@ class CreateVenueAction
         }
 
         $plan = $corporationSubscription->planCatalog;
+        $planVersion = $plan?->versions()
+            ->where('status', 'published')
+            ->whereDate('effective_from', '<=', today())
+            ->where(function ($query): void {
+                $query->whereNull('effective_until')->orWhereDate('effective_until', '>=', today());
+            })
+            ->latest('version')
+            ->first();
+        $baseValue = (int) ($planVersion?->minimum_monthly_price ?? $plan?->monthly_price ?? 0);
 
         // Adicional cobrado apenas de quem opera em infraestrutura dedicada.
         $dedicatedSurcharge = $corporation->is_dedicated
@@ -52,12 +62,22 @@ class CreateVenueAction
             'affiliate_code_id' => $venue->affiliate_code_id,
             'plan_catalog_id' => $plan?->id,
             'status' => $corporationSubscription->status,
-            'base_value' => $plan?->monthly_price ?? 0,
+            'base_value' => $baseValue,
             'dedicated_surcharge' => $dedicatedSurcharge,
-            'total_value' => ($plan?->monthly_price ?? 0) + $dedicatedSurcharge,
+            'total_value' => $baseValue + $dedicatedSurcharge,
             'started_at' => now(),
             'trial_ends_at' => $corporationSubscription->trial_ends_at,
         ]);
+
+        if ($plan && $planVersion) {
+            VenuePlanAssignment::create([
+                'venue_id' => $venue->id,
+                'plan_catalog_id' => $plan->id,
+                'plan_catalog_version_id' => $planVersion->id,
+                'starts_on' => today(),
+                'source' => 'onboarding',
+            ]);
+        }
 
         // Dezenas de inserts (cardápio, mesas, estações) não precisam segurar
         // o request de criação da venue.

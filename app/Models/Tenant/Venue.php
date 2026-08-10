@@ -169,6 +169,11 @@ class Venue extends Model
         return $this->hasMany(VenueUsageRecord::class);
     }
 
+    public function planAssignments(): HasMany
+    {
+        return $this->hasMany(VenuePlanAssignment::class);
+    }
+
     public function menus(): HasMany
     {
         return $this->hasMany(Menu::class);

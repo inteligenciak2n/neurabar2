@@ -166,6 +166,11 @@ const statusLabel = (status) => ({
         </template>
 
         <div class="space-y-6">
+            <div class="flex justify-end">
+                <Link :href="route('settings.subscription.usage')" class="text-sm font-medium text-primary hover:underline">
+                    {{ __('View usage and limits') }}
+                </Link>
+            </div>
             <div v-if="blocked" class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                 {{ __('Your access is suspended due to billing issues. Please pay the overdue invoices.') }}
             </div>

@@ -30,6 +30,7 @@ class CreateUserAction
             'password' => Hash::make($data['password']),
             'pin' => $data['pin'] ?? null,
             'active' => $data['active'] ?? true,
+            'onboarding_completed_at' => now(),
         ]);
 
         $venue->users()->attach($user->id, ['role' => $role->value]);

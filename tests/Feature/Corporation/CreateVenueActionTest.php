@@ -13,6 +13,7 @@ use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\ModuleCatalog;
 use App\Models\Tenant\PlanCatalog;
+use App\Models\Tenant\PlanCatalogVersion;
 use Illuminate\Support\Facades\Queue;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
@@ -59,6 +60,38 @@ class CreateVenueActionTest extends TestCase
             'venue_id' => $venue->id,
             'module_code' => ModuleCode::Menu->value,
             'status' => ModuleStatus::Active->value,
+        ]);
+    }
+
+    public function test_it_assigns_the_current_plan_version_to_a_new_venue(): void
+    {
+        $plan = PlanCatalog::factory()->create(['monthly_price' => 19900]);
+        $version = PlanCatalogVersion::factory()->create([
+            'plan_catalog_id' => $plan->id,
+            'effective_from' => today()->subMonth(),
+            'minimum_monthly_price' => 24900,
+        ]);
+        $corporation = Corporation::factory()->create();
+        CorporationSubscription::factory()->create([
+            'corporation_id' => $corporation->id,
+            'plan_catalog_id' => $plan->id,
+            'status' => SubscriptionStatus::Active,
+        ]);
+
+        $venue = app(CreateVenueAction::class)->execute($corporation, [
+            'name' => 'Venue Versionada',
+            'timezone' => 'America/Sao_Paulo',
+        ]);
+
+        $this->assertDatabaseHas('venue_subscriptions', [
+            'venue_id' => $venue->id,
+            'base_value' => 24900,
+        ]);
+        $this->assertDatabaseHas('venue_plan_assignments', [
+            'venue_id' => $venue->id,
+            'plan_catalog_id' => $plan->id,
+            'plan_catalog_version_id' => $version->id,
+            'source' => 'onboarding',
         ]);
     }
 

@@ -51,4 +51,9 @@ class PlanCatalog extends Model
     {
         return $this->hasMany(Corporation::class);
     }
+
+    public function versions(): HasMany
+    {
+        return $this->hasMany(PlanCatalogVersion::class);
+    }
 }
