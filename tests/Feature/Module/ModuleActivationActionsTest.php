@@ -18,10 +18,13 @@ use App\Models\Tenant\ModuleCatalog;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueModule;
 use App\Models\Tenant\VenueSubscription;
+use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
 class ModuleActivationActionsTest extends TestCase
 {
+    use RefreshAllDatabases;
+
     public function test_enable_corporate_module_action_activates_module(): void
     {
         $venue = Venue::factory()->create();
