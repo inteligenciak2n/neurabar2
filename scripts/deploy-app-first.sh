@@ -98,11 +98,14 @@ ssh "${SSH_OPTIONS[@]}" "$REMOTE_HOST" \
         '$REMOTE_PATH/storage/framework/views' \
         '$REMOTE_PATH/storage/app/public' \
         '$REMOTE_PATH/storage/app/private' \
-        '$REMOTE_PATH/storage/logs' && \
+        '$REMOTE_PATH/storage/logs' \
+        '$REMOTE_PATH/resources/translations' && \
     sudo -n setfacl -R -m u:ubuntu:rwx,u:www-data:rwx \
-        '$REMOTE_PATH/bootstrap/cache' '$REMOTE_PATH/storage' && \
+        '$REMOTE_PATH/bootstrap/cache' '$REMOTE_PATH/storage' \
+        '$REMOTE_PATH/resources/translations' && \
     sudo -n setfacl -dR -m u:ubuntu:rwx,u:www-data:rwx \
-        '$REMOTE_PATH/bootstrap/cache' '$REMOTE_PATH/storage'"
+        '$REMOTE_PATH/bootstrap/cache' '$REMOTE_PATH/storage' \
+        '$REMOTE_PATH/resources/translations'"
 
 echo "==> Primeiro envio concluído; os diretórios do Laravel estão preparados."
 

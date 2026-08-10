@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
+use InvalidArgumentException;
 
 
 class TranslationService
@@ -13,9 +14,9 @@ class TranslationService
     protected string $storage_path;
     const DEFAULT_LOCALE = 'en';
 
-    public function __construct()
+    public function __construct(?string $storagePath = null)
     {
-        $this->storage_path = resource_path('translations');
+        $this->storage_path = $storagePath ?? resource_path('translations');
         // Constructor can be used for dependency injection if needed
     }
 
@@ -50,8 +51,12 @@ class TranslationService
         return array_column($languages, 'value');
     }
 
-    public function setTranslations(Request $request, string $route)
+    public function setTranslations(Request $request, string $route): void
     {
+        if (preg_match('/\A[A-Za-z0-9][A-Za-z0-9._-]{0,119}\z/', $route) !== 1) {
+            throw new InvalidArgumentException('Nome de arquivo de tradução inválido.');
+        }
+
         $locale = SELF::DEFAULT_LOCALE;
         $file_path = $this->storage_path . "/{$locale}/{$route}.json";
         $dir = dirname($file_path);

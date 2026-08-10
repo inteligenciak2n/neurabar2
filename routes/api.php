@@ -7,7 +7,10 @@ use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/set/translations/{page}', [TranslationsController::class, 'setTranslations'])->name('api.set.translations');
+Route::post('/set/translations/{page}', [TranslationsController::class, 'setTranslations'])
+    ->where('page', '[A-Za-z0-9][A-Za-z0-9._-]{0,119}')
+    ->middleware('throttle:60,1')
+    ->name('api.set.translations');
 Route::post('/set/locale', [TranslationsController::class, 'setLocale'])->name('api.set.locale');
 Route::get('/available-languages', [TranslationsController::class, 'availableLanguages'])->name('api.available-languages');
 

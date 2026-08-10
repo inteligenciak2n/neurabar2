@@ -358,11 +358,25 @@ sudo find /var/www/neurabar -type d -exec chmod 750 {} \;
 sudo find /var/www/neurabar -type f -exec chmod 640 {} \;
 sudo chmod 750 /var/www/neurabar/artisan
 
-sudo setfacl -R -m u:ubuntu:rwx,u:www-data:rwx /var/www/neurabar/storage /var/www/neurabar/bootstrap/cache
-sudo setfacl -dR -m u:ubuntu:rwx,u:www-data:rwx /var/www/neurabar/storage /var/www/neurabar/bootstrap/cache
+sudo setfacl -R -m u:ubuntu:rwx,u:www-data:rwx \
+    /var/www/neurabar/storage \
+    /var/www/neurabar/bootstrap/cache \
+    /var/www/neurabar/resources/translations
+sudo setfacl -dR -m u:ubuntu:rwx,u:www-data:rwx \
+    /var/www/neurabar/storage \
+    /var/www/neurabar/bootstrap/cache \
+    /var/www/neurabar/resources/translations
+
+sudo -u www-data touch /var/www/neurabar/resources/translations/.permission-test
+sudo -u www-data rm /var/www/neurabar/resources/translations/.permission-test
+sudo -u www-data test -w /var/www/neurabar/resources/translations/en
 ```
 
-Não aplique `777` nem dê escrita ao Nginx sobre todo o projeto.
+O serviço de tradução cria e edita JSON em `resources/translations`; por isso,
+esse é o único subdiretório de `resources` gravável por `www-data`. As ACLs
+padrão garantem que novos arquivos continuem editáveis pelo PHP-FPM e pelo
+usuário de deploy. Não aplique `777` nem dê escrita ao Nginx sobre todo o
+projeto.
 
 ## 9. Subir o Soketi em Docker
 
@@ -546,6 +560,27 @@ sudo certbot certonly \
     --email contato@neurabar.com --agree-tos --no-eff-email
 ```
 
+O modo `certonly --webroot` emite o certificado sem alterar o virtual host e
+pode não copiar o snippet TLS do plugin Nginx para `/etc/letsencrypt`. Instale
+explicitamente o template fornecido pelo pacote `python3-certbot-nginx` e gere
+os parâmetros Diffie-Hellman localmente:
+
+```bash
+CERTBOT_OPTIONS_SOURCE="$(dpkg -L python3-certbot-nginx | grep '/options-ssl-nginx.conf$' | head -n 1)"
+test -n "$CERTBOT_OPTIONS_SOURCE" && test -f "$CERTBOT_OPTIONS_SOURCE"
+
+sudo install -o root -g root -m 644 "$CERTBOT_OPTIONS_SOURCE" /etc/letsencrypt/options-ssl-nginx.conf
+if ! sudo test -s /etc/letsencrypt/ssl-dhparams.pem; then
+    sudo openssl dhparam -out /etc/letsencrypt/ssl-dhparams.pem 2048
+fi
+sudo chown root:root /etc/letsencrypt/ssl-dhparams.pem
+sudo chmod 644 /etc/letsencrypt/ssl-dhparams.pem
+```
+
+No Ubuntu 24.04, o pacote fornece `options-ssl-nginx.conf`, mas não inclui
+`ssl-dhparams.pem`. A geração pode levar alguns minutos e só precisa ser feita
+se o arquivo ainda não existir.
+
 ## 13. Configuração final completa do Nginx
 
 Antes de ativar o virtual host, ajuste os limites globais em
@@ -651,7 +686,6 @@ server {
     }
 
     location ~ \.php$ {
-        try_files $uri =404;
         include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/run/php/php8.3-fpm.sock;
         fastcgi_read_timeout 120s;
@@ -669,7 +703,14 @@ server {
 }
 ```
 
+Antes de testar o Nginx, confirme que todos os arquivos referenciados pelo
+virtual host existem:
+
 ```bash
+sudo test -f /etc/letsencrypt/live/neurabar.com/fullchain.pem
+sudo test -f /etc/letsencrypt/live/neurabar.com/privkey.pem
+sudo test -f /etc/letsencrypt/options-ssl-nginx.conf
+sudo test -f /etc/letsencrypt/ssl-dhparams.pem
 sudo nginx -t
 sudo systemctl reload nginx
 sudo certbot renew --dry-run
@@ -704,8 +745,11 @@ sudo journalctl -u nginx -u php8.3-fpm -u postgresql -u redis-server -f
 
 O script `scripts/deploy-app.sh` automatiza o deploy do backend via SSH e rsync.
 Ele preserva `.env`, `storage`, `bootstrap/cache`, `vendor` e `public/build`,
+além de `resources/translations`, que contém dados mutáveis em produção. Ele
 executa Composer e migrations no servidor, reconstrói os caches, reinicia os
-workers e recarrega o PHP-FPM.
+workers e recarrega o PHP-FPM. O primeiro envio sincroniza os JSON iniciais e
+aplica as ACLs; deploys recorrentes não sobrescrevem traduções editadas pela
+aplicação.
 
 Como `public/build` é implantado separadamente, execute os scripts nesta ordem:
 
