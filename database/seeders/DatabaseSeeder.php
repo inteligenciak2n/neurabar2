@@ -32,15 +32,18 @@ class DatabaseSeeder extends Seeder
             'active' => true,
         ]);
 
-        $action = new CreateNewUser;
-        $action->create([
-            'name' => 'Jose Owner',
-            'email' => 'jose.owner@test.com',
-            'password' => '@belha22',
-            'password_confirmation' => '@belha22',
-            'terms' => true,
-            'profile' => ProfileEnum::Client->value,
-            'active' => true,
-        ]);
+        if(! app()->environment('production')) {
+            $action = new CreateNewUser;
+            $action->create([
+                'name' => 'Jose Owner',
+                'email' => 'jose.owner@test.com',
+                'password' => '@belha22',
+                'password_confirmation' => '@belha22',
+                'terms' => true,
+                'profile' => ProfileEnum::Client->value,
+                'active' => true,
+            ]);
+        }
+            
     }
 }

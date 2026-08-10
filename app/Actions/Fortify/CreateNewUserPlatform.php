@@ -39,6 +39,7 @@ class CreateNewUserPlatform implements CreatesNewUsers
             'profile' => $input['profile'],
             'password' => Hash::make($this->resolvePassword($input['password'] ?? null)),
             'active' => true,
+            'email_verified_at' => now(),
         ]);
 
         if (isset($input['profile']) && in_array($input['profile'], ProfileEnum::operationalProfiles())) {
