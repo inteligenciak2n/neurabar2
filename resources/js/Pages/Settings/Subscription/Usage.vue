@@ -4,12 +4,16 @@ import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import { useCurrency } from '@/Composables/useCurrency';
 import { useTranslate } from '@/Composables/useTranslate';
 import { router } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 const props = defineProps({
     venues: Array,
     filters: Object,
     plan: Object,
+    availablePlans: Array,
+    pendingPlanChange: Object,
+    nextCycle: String,
     usage: Array,
 });
 
@@ -17,6 +21,11 @@ const __ = useTranslate();
 const { formatMoney } = useCurrency();
 const venueId = ref(props.filters.venue_id);
 const period = ref(props.filters.period);
+const planChangeForm = useForm({
+    venue_id: props.filters.venue_id,
+    plan_catalog_id: '',
+    reason: '',
+});
 
 const totalUsage = computed(() => props.usage.reduce((total, item) => total + item.total_calculated_price, 0));
 const percentage = (item) => {
@@ -31,6 +40,20 @@ const refresh = () => router.get(route('settings.subscription.usage'), {
     venue_id: venueId.value,
     period: period.value,
 }, { preserveState: true, replace: true });
+
+const requestPlanChange = () => {
+    planChangeForm.venue_id = venueId.value;
+    planChangeForm.post(route('settings.subscription.plan-change-requests.store'), {
+        preserveScroll: true,
+        onSuccess: () => planChangeForm.reset('plan_catalog_id', 'reason'),
+    });
+};
+
+const cancelPlanChange = () => {
+    if (confirm(__('Cancel this plan change request?'))) {
+        router.delete(route('settings.subscription.plan-change-requests.destroy', props.pendingPlanChange.id), { preserveScroll: true });
+    }
+};
 </script>
 
 <template>
@@ -61,6 +84,41 @@ const refresh = () => router.get(route('settings.subscription.usage'), {
                     <div><span class="block text-muted-foreground">{{ __('Infrastructure') }}</span><strong>{{ plan.infrastructure_type === 'dedicated' ? __('Dedicated recommended') : __('Shared') }}</strong></div>
                 </div>
             </AppCard>
+
+            <section class="border-b border-border pb-6 dark:border-gray-700">
+                <div class="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+                    <div class="max-w-xl">
+                        <h2 class="font-heading text-lg font-semibold text-ocean-deep dark:text-gray-100">{{ __('Plan change') }}</h2>
+                        <p class="text-sm text-muted-foreground">{{ __('Changes approved by the backoffice take effect on') }} <strong>{{ nextCycle }}</strong>.</p>
+                    </div>
+
+                    <div v-if="pendingPlanChange" class="w-full max-w-xl rounded-md border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
+                        <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                            <div>
+                                <p class="text-xs font-medium uppercase text-amber-700 dark:text-amber-300">{{ __('Pending approval') }}</p>
+                                <p class="font-semibold text-ocean-deep dark:text-gray-100">{{ pendingPlanChange.requested_plan_catalog.name }}</p>
+                                <p class="text-xs text-muted-foreground">{{ __('Effective on') }} {{ pendingPlanChange.effective_on }}</p>
+                            </div>
+                            <button type="button" class="text-sm font-medium text-destructive hover:underline" @click="cancelPlanChange">{{ __('Cancel request') }}</button>
+                        </div>
+                    </div>
+
+                    <form v-else class="grid w-full max-w-xl gap-3 sm:grid-cols-[minmax(0,1fr)_auto]" @submit.prevent="requestPlanChange">
+                        <div class="flex flex-col gap-1">
+                            <select v-model="planChangeForm.plan_catalog_id" required class="rounded-md border-border dark:border-gray-600 dark:bg-gray-800">
+                                <option value="" disabled>{{ __('Select a plan') }}</option>
+                                <option v-for="availablePlan in availablePlans" :key="availablePlan.id" :value="availablePlan.id" :disabled="availablePlan.id === plan?.id">
+                                    {{ availablePlan.name }} · {{ formatMoney(availablePlan.minimum_monthly_price) }}
+                                </option>
+                            </select>
+                            <span v-if="planChangeForm.errors.plan_catalog_id" class="text-xs text-destructive">{{ planChangeForm.errors.plan_catalog_id }}</span>
+                        </div>
+                        <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-50" :disabled="planChangeForm.processing || !planChangeForm.plan_catalog_id">
+                            {{ __('Request change') }}
+                        </button>
+                    </form>
+                </div>
+            </section>
 
             <div v-if="usage.length" class="grid gap-4 lg:grid-cols-2">
                 <article v-for="item in usage" :key="item.module_code" class="flex min-h-52 flex-col gap-4 rounded-lg border border-border bg-white p-5 shadow-card dark:border-gray-700 dark:bg-gray-800">

@@ -19,6 +19,7 @@ use App\Models\Tenant\PlanModuleUsageTier;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueInvoice;
 use App\Models\Tenant\VenueModule;
+use App\Models\Tenant\VenueModuleUsageTierOverride;
 use App\Models\Tenant\VenuePlanAssignment;
 use App\Models\Tenant\VenueSubscription;
 use App\Models\Tenant\VenueUsageRecord;
@@ -81,6 +82,7 @@ class SubscriptionCalculatorTest extends TestCase
 
         $this->assertDatabaseHas('venue_subscriptions', [
             'id' => $venue->subscription->id,
+            'plan_catalog_id' => $plan->id,
             'base_value' => 24900,
             'total_value' => 24900,
         ]);
@@ -237,6 +239,50 @@ class SubscriptionCalculatorTest extends TestCase
             'venue_plan_assignment_id' => $largeAssignment->id,
             'plan_catalog_version_id' => $largeVersion->id,
             'overage_quantity' => 0,
+        ]);
+    }
+
+    public function test_metered_uses_venue_override_instead_of_plan_tiers(): void
+    {
+        $venue = $this->createVenueWithSubscription(baseValue: 0);
+        $this->enableModuleForVenue($venue, ModuleCode::Kds, basePrice: 0);
+        $this->createUsageRecord($venue, ModuleCode::Kds, '2026-06', quantity: 300);
+        $plan = PlanCatalog::factory()->create();
+        $version = PlanCatalogVersion::factory()->create([
+            'plan_catalog_id' => $plan->id,
+            'effective_from' => '2026-01-01',
+        ]);
+        $planTier = PlanModuleUsageTier::factory()->create([
+            'plan_catalog_version_id' => $version->id,
+            'module_code' => ModuleCode::Kds->value,
+            'included_quantity' => 100,
+            'overage_price_per_unit' => 1000,
+        ]);
+        $assignment = VenuePlanAssignment::factory()->create([
+            'venue_id' => $venue->id,
+            'plan_catalog_id' => $plan->id,
+            'plan_catalog_version_id' => $version->id,
+            'starts_on' => '2026-01-01',
+        ]);
+        $override = VenueModuleUsageTierOverride::factory()->create([
+            'venue_plan_assignment_id' => $assignment->id,
+            'module_code' => ModuleCode::Kds->value,
+            'included_quantity' => 300,
+            'overage_price_per_unit' => 500,
+        ]);
+
+        $result = $this->calculator->calculateVenue($venue, '2026-07');
+
+        $this->assertSame(0, $result['metered']);
+        $this->assertDatabaseHas('venue_usage_records', [
+            'venue_id' => $venue->id,
+            'plan_module_usage_tier_id' => null,
+            'venue_module_usage_tier_override_id' => $override->id,
+            'overage_quantity' => 0,
+        ]);
+        $this->assertDatabaseMissing('venue_usage_records', [
+            'venue_id' => $venue->id,
+            'plan_module_usage_tier_id' => $planTier->id,
         ]);
     }
 

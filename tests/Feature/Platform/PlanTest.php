@@ -7,6 +7,8 @@ use App\Models\AuditLog;
 use App\Models\Tenant\ModuleCatalog;
 use App\Models\Tenant\PlanCatalog;
 use App\Models\Tenant\PlanCatalogVersion;
+use App\Models\Tenant\Venue;
+use App\Models\Tenant\VenuePlanAssignment;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
@@ -19,6 +21,44 @@ class PlanTest extends TestCase
         $this->loginAsPlatformUser(ProfileEnum::Finance);
 
         $this->get(route('platform.plans.index'))->assertOk();
+    }
+
+    public function test_finance_user_can_save_usage_tier_overrides_for_a_venue_assignment(): void
+    {
+        $this->loginAsPlatformUser(ProfileEnum::Finance);
+        $venue = Venue::factory()->create();
+        $plan = PlanCatalog::factory()->create();
+        $version = PlanCatalogVersion::factory()->create([
+            'plan_catalog_id' => $plan->id,
+            'effective_from' => now()->startOfYear(),
+        ]);
+        $assignment = VenuePlanAssignment::factory()->create([
+            'venue_id' => $venue->id,
+            'plan_catalog_id' => $plan->id,
+            'plan_catalog_version_id' => $version->id,
+        ]);
+
+        $this->post(route('platform.corporations.venues.usage-pricing.store', [$venue->corporation_id, $venue->id]), [
+            'venue_plan_assignment_id' => $assignment->id,
+            'module_code' => 'kds',
+            'tiers' => [[
+                'min_quantity' => 0,
+                'max_quantity' => null,
+                'included_quantity' => 500,
+                'price_per_unit' => 0.05,
+                'flat_price' => null,
+                'overage_price_per_unit' => 0.10,
+                'overage_flat_fee' => null,
+            ]],
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('venue_module_usage_tier_overrides', [
+            'venue_plan_assignment_id' => $assignment->id,
+            'module_code' => 'kds',
+            'included_quantity' => 500,
+            'price_per_unit' => 500,
+            'overage_price_per_unit' => 1000,
+        ]);
     }
 
     public function test_super_admin_can_create_plan(): void

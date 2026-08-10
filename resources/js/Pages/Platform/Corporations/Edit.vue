@@ -1,6 +1,6 @@
 <script setup>
 import PlatformLayout from '@/Layouts/PlatformLayout.vue';
-import { Deferred, router, useForm } from '@inertiajs/vue3';
+import { Deferred, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { useTranslate } from '@/Composables/useTranslate';
@@ -333,7 +333,10 @@ const getStatusClass = (status) => {
                     <ul class="space-y-2">
                         <li v-for="venue in corporation.venues" :key="venue.id" class="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm dark:border-gray-700">
                             <span class="font-medium text-ocean-deep dark:text-gray-100">{{ venue.name }}</span>
-                            <span :class="venue.active ? 'text-green-600' : 'text-muted-foreground'" class="text-xs">{{ venue.active ? __('Active') : __('Inactive') }}</span>
+                            <div class="flex items-center gap-3">
+                                <Link :href="route('platform.corporations.venues.usage-pricing.show', [corporation.id, venue.id])" class="text-xs font-medium text-primary hover:underline">{{ __('Usage limits') }}</Link>
+                                <span :class="venue.active ? 'text-green-600' : 'text-muted-foreground'" class="text-xs">{{ venue.active ? __('Active') : __('Inactive') }}</span>
+                            </div>
                         </li>
                         <li v-if="!corporation.venues?.length" class="text-sm text-muted-foreground">{{ __('No venues yet.') }}</li>
                     </ul>

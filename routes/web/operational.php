@@ -31,6 +31,7 @@ use App\Http\Controllers\Settings\SubscriptionPaymentMethodController;
 use App\Http\Controllers\Settings\SubscriptionUsageController;
 use App\Http\Controllers\Settings\UserController;
 use App\Http\Controllers\Settings\VenueController;
+use App\Http\Controllers\Settings\VenuePlanChangeRequestController;
 use App\Http\Controllers\Settings\VenueSettingsController;
 use App\Http\Controllers\Support\SupportDashboardController;
 use App\Http\Controllers\Support\TicketController;
@@ -166,6 +167,8 @@ Route::middleware([
     Route::prefix('settings/subscription')->name('settings.subscription.')->middleware(['role:owner,general_manager'])->group(function () {
         Route::get('/', [SubscriptionController::class, 'index'])->name('index');
         Route::get('/usage', SubscriptionUsageController::class)->name('usage');
+        Route::post('/plan-change-requests', [VenuePlanChangeRequestController::class, 'store'])->name('plan-change-requests.store');
+        Route::delete('/plan-change-requests/{changeRequest}', [VenuePlanChangeRequestController::class, 'destroy'])->name('plan-change-requests.destroy');
         Route::post('/cancel', [SubscriptionController::class, 'cancel'])->name('cancel');
         Route::post('/gateway/activate', [SubscriptionController::class, 'activateGateway'])->name('gateway.activate');
         Route::post('/venues/{venue}/modules', [SubscriptionController::class, 'store'])->name('modules.store');

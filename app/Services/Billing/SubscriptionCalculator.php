@@ -10,6 +10,7 @@ use App\Models\Tenant\PlanModuleUsageTier;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueInvoice;
 use App\Models\Tenant\VenueModule;
+use App\Models\Tenant\VenueModuleUsageTierOverride;
 use App\Models\Tenant\VenuePlanAssignment;
 use App\Models\Tenant\VenueSubscription;
 use App\Models\Tenant\VenueUsageRecord;
@@ -114,6 +115,7 @@ class SubscriptionCalculator
         $dedicatedSurcharge = (int) ($subscription->dedicated_surcharge ?? 0);
 
         return [
+            'plan_catalog_id' => $planAssignment?->plan_catalog_id,
             'base' => $base,
             'modules' => $modulesValue,
             'metered' => $metered,
@@ -161,6 +163,7 @@ class SubscriptionCalculator
                 ->first();
 
             $subscription?->update([
+                'plan_catalog_id' => $calculated['plan_catalog_id'] ?? $subscription->plan_catalog_id,
                 'base_value' => $calculated['base'],
                 'modules_value' => $calculated['recurring_modules'],
                 'metered_value' => $calculated['metered'],
@@ -485,6 +488,7 @@ class SubscriptionCalculator
         $record->update([
             'tier_id' => $lastTier instanceof ModuleUsageTier ? $lastTier->id : null,
             'plan_module_usage_tier_id' => $lastTier instanceof PlanModuleUsageTier ? $lastTier->id : null,
+            'venue_module_usage_tier_override_id' => $lastTier instanceof VenueModuleUsageTierOverride ? $lastTier->id : null,
             'venue_plan_assignment_id' => $pricing['assignment']?->id,
             'plan_catalog_version_id' => $pricing['assignment']?->plan_catalog_version_id,
             'included_quantity' => $calculated['included_quantity'],
@@ -500,7 +504,7 @@ class SubscriptionCalculator
     /**
      * Todas as faixas alcançadas pela quantidade, da menor para a maior.
      *
-     * @return array{assignment: VenuePlanAssignment|null, tiers: Collection<int, ModuleUsageTier|PlanModuleUsageTier>}
+     * @return array{assignment: VenuePlanAssignment|null, tiers: Collection<int, ModuleUsageTier|PlanModuleUsageTier|VenueModuleUsageTierOverride>}
      */
     private function resolvePricing(Venue $venue, string $moduleCode, string $period, int $quantity): array
     {
@@ -510,7 +514,7 @@ class SubscriptionCalculator
         );
 
         $pricing['tiers'] = $pricing['tiers']
-            ->filter(fn (ModuleUsageTier|PlanModuleUsageTier $tier): bool => (int) $tier->min_quantity <= $quantity)
+            ->filter(fn (ModuleUsageTier|PlanModuleUsageTier|VenueModuleUsageTierOverride $tier): bool => (int) $tier->min_quantity <= $quantity)
             ->values();
 
         return $pricing;

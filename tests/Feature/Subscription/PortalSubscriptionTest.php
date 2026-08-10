@@ -10,6 +10,7 @@ use App\Enums\PaymentSaasMethod;
 use App\Enums\ProfileEnum;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
+use App\Enums\VenuePlanChangeStatus;
 use App\Jobs\Subscription\ProcessGatewayWebhookJob;
 use App\Models\Tenant\CorporationInvoice;
 use App\Models\Tenant\CorporationModule;
@@ -22,6 +23,7 @@ use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueInvoice;
 use App\Models\Tenant\VenueModule;
 use App\Models\Tenant\VenuePlanAssignment;
+use App\Models\Tenant\VenuePlanChangeRequest;
 use App\Models\Tenant\VenueUsageRecord;
 use App\Models\User;
 use App\Notifications\Subscription\GatewayAccessTokenExpiringSoon;
@@ -111,6 +113,73 @@ class PortalSubscriptionTest extends TestCase
                 ->where('usage.0.quantity', 700)
                 ->where('usage.0.overage_quantity', 200)
             );
+    }
+
+    public function test_owner_can_request_a_plan_change_for_the_next_month(): void
+    {
+        $this->travelTo('2026-07-15');
+        $currentPlan = PlanCatalog::factory()->create();
+        $currentVersion = PlanCatalogVersion::factory()->create([
+            'plan_catalog_id' => $currentPlan->id,
+            'effective_from' => '2026-01-01',
+        ]);
+        VenuePlanAssignment::factory()->create([
+            'venue_id' => $this->venue->id,
+            'plan_catalog_id' => $currentPlan->id,
+            'plan_catalog_version_id' => $currentVersion->id,
+            'starts_on' => '2026-01-01',
+        ]);
+        $requestedPlan = PlanCatalog::factory()->create(['active' => true]);
+        $requestedVersion = PlanCatalogVersion::factory()->create([
+            'plan_catalog_id' => $requestedPlan->id,
+            'effective_from' => '2026-01-01',
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('settings.subscription.plan-change-requests.store'), [
+                'venue_id' => $this->venue->id,
+                'plan_catalog_id' => $requestedPlan->id,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('venue_plan_change_requests', [
+            'venue_id' => $this->venue->id,
+            'pending_venue_id' => $this->venue->id,
+            'requested_plan_catalog_version_id' => $requestedVersion->id,
+            'status' => VenuePlanChangeStatus::Pending->value,
+            'effective_on' => '2026-08-01',
+        ]);
+    }
+
+    public function test_owner_cannot_request_a_plan_change_for_another_corporation_or_twice(): void
+    {
+        $requestedPlan = PlanCatalog::factory()->create(['active' => true]);
+        $requestedVersion = PlanCatalogVersion::factory()->create([
+            'plan_catalog_id' => $requestedPlan->id,
+            'effective_from' => now()->startOfYear(),
+        ]);
+        VenuePlanChangeRequest::factory()->create([
+            'venue_id' => $this->venue->id,
+            'pending_venue_id' => $this->venue->id,
+            'requested_plan_catalog_id' => $requestedPlan->id,
+            'requested_plan_catalog_version_id' => $requestedVersion->id,
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('settings.subscription.plan-change-requests.store'), [
+                'venue_id' => $this->venue->id,
+                'plan_catalog_id' => $requestedPlan->id,
+            ])
+            ->assertSessionHasErrors('plan_catalog_id');
+
+        $foreignVenue = Venue::factory()->create();
+
+        $this->actingAs($this->user)
+            ->post(route('settings.subscription.plan-change-requests.store'), [
+                'venue_id' => $foreignVenue->id,
+                'plan_catalog_id' => $requestedPlan->id,
+            ])
+            ->assertNotFound();
     }
 
     public function test_owner_can_activate_module_for_venue(): void

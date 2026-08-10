@@ -15,6 +15,8 @@ use App\Http\Controllers\Platform\PlanCatalogVersionController;
 use App\Http\Controllers\Platform\PlatformUserController;
 use App\Http\Controllers\Platform\SubscriptionController;
 use App\Http\Controllers\Platform\VenueModuleController;
+use App\Http\Controllers\Platform\VenuePlanChangeRequestController;
+use App\Http\Controllers\Platform\VenueUsageTierOverrideController;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Support\Facades\Route;
 
@@ -51,12 +53,16 @@ Route::prefix($platformPath)->name('platform.')->group(function () {
             Route::get('/corporations/{corporation}/venues/{venue}/modules', [VenueModuleController::class, 'index'])->name('corporations.venues.modules.index');
             Route::post('/corporations/{corporation}/venues/{venue}/modules', [VenueModuleController::class, 'store'])->name('corporations.venues.modules.store');
             Route::delete('/corporations/{corporation}/venues/{venue}/modules/{module}', [VenueModuleController::class, 'destroy'])->name('corporations.venues.modules.destroy');
+            Route::get('/corporations/{corporation}/venues/{venue}/usage-pricing', [VenueUsageTierOverrideController::class, 'show'])->name('corporations.venues.usage-pricing.show');
+            Route::post('/corporations/{corporation}/venues/{venue}/usage-pricing', [VenueUsageTierOverrideController::class, 'store'])->name('corporations.venues.usage-pricing.store');
+            Route::delete('/corporations/{corporation}/venues/{venue}/usage-pricing/{assignment}/{moduleCode}', [VenueUsageTierOverrideController::class, 'destroy'])->name('corporations.venues.usage-pricing.destroy');
         });
 
         Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
 
         Route::get('/plans', [PlanCatalogController::class, 'index'])->name('plans.index');
+        Route::get('/plan-change-requests', [VenuePlanChangeRequestController::class, 'index'])->name('plan-change-requests.index');
         Route::get('/plans/{plan}/usage-pricing', [PlanCatalogVersionController::class, 'show'])->name('plans.usage-pricing.show');
         Route::get('/modules', [ModuleCatalogController::class, 'index'])->name('modules.index');
 
@@ -67,6 +73,8 @@ Route::prefix($platformPath)->name('platform.')->group(function () {
             Route::post('/plans/{plan}/usage-pricing', [PlanCatalogVersionController::class, 'store'])->name('plans.usage-pricing.store');
             Route::post('/plans/{plan}/usage-pricing/{version}/publish', [PlanCatalogVersionController::class, 'publish'])->name('plans.usage-pricing.publish');
             Route::delete('/plans/{plan}/usage-pricing/{version}', [PlanCatalogVersionController::class, 'destroy'])->name('plans.usage-pricing.destroy');
+            Route::post('/plan-change-requests/{changeRequest}/approve', [VenuePlanChangeRequestController::class, 'approve'])->name('plan-change-requests.approve');
+            Route::post('/plan-change-requests/{changeRequest}/reject', [VenuePlanChangeRequestController::class, 'reject'])->name('plan-change-requests.reject');
             Route::post('/modules', [ModuleCatalogController::class, 'store'])->name('modules.store');
             Route::put('/modules/{module}', [ModuleCatalogController::class, 'update'])->name('modules.update');
             Route::delete('/modules/{module}', [ModuleCatalogController::class, 'destroy'])->name('modules.destroy');
