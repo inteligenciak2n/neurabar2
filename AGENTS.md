@@ -236,3 +236,31 @@ Vue components must have a single root element.
 - IMPORTANT: Activate `inertia-vue-development` when working with Inertia Vue client-side patterns.
 
 </laravel-boost-guidelines>
+
+## Cursor Cloud specific instructions
+
+The boost guidelines above assume Laravel Sail (Docker). The Cursor Cloud VM does **not** use Docker/Sail — everything runs **natively**. Translate any `vendor/bin/sail <x>` command to run it directly: `vendor/bin/sail artisan ...` → `php artisan ...`, `vendor/bin/sail npm ...` → `npm ...`, `vendor/bin/sail composer ...` → `composer ...`, `vendor/bin/sail bin pint ...` → `vendor/bin/pint ...`.
+
+### Product
+NeuraBar — a multi-tenant SaaS for bars/restaurants (Laravel 12 + Inertia + Vue 3, PT/ES UI). It uses a **multi-database** layout: a central `saas` DB plus operational pools (`operation_default_1`, `operation_default_2`), all on PostgreSQL. See `docs/application-architecture.md`.
+
+### Services (start these each session; the update script does NOT start them)
+Postgres and Redis are not managed by systemd here, so start them manually. App processes are best run in separate `tmux` sessions.
+
+- PostgreSQL: `sudo pg_ctlcluster 16 main start` (data, migrations and seed data persist on disk)
+- Redis: `sudo redis-server --daemonize yes`
+- Web server: `php artisan serve --host=0.0.0.0 --port=8000` (app at `http://localhost:8000`)
+- Vite dev server: `npm run dev`
+- Queue worker: `php artisan queue:work --queue=default,broadcasts,payments`
+- Soketi (WebSockets, optional — only for realtime KDS/guest): see gotcha below.
+
+### Non-obvious gotchas
+- **Migrations:** never use plain `php artisan migrate`. Use `php artisan db:migrate-all` (creates missing PG DBs and migrates the `saas` + operational connections). Add `--seed` for catalog + seed users, `--fresh` to reset.
+- **Frontend build required for Inertia page rendering:** Feature tests and any request that renders a Vue page need `public/build/manifest.json`. Run `npm run build` once (or keep `npm run dev` running). Without it you get "Vite manifest not found".
+- **Tests** use dedicated DBs (`testing_saas`, `testing_op_1`, `testing_op_2`) and rebuild them via `db:migrate-all --fresh` (trait `RefreshAllDatabases`). Run e.g. `php artisan test --compact tests/Feature/AuthenticationTest.php`. The Node test is `npm run test:translations`.
+- **Soketi needs Node 18:** its `uWebSockets.js` does not support the VM's Node 22. A Node-18 install (via nvm) plus a Soketi install lives in `~/soketi-runtime`. Start it with: `SOKETI_DEFAULT_APP_ID=neurabar SOKETI_DEFAULT_APP_KEY=neurabarkey SOKETI_DEFAULT_APP_SECRET=neurabarsecret SOKETI_PORT=6001 ~/.nvm/versions/node/v18.20.8/bin/node ~/soketi-runtime/node_modules/@soketi/soketi/bin/server.js start`. Broadcast/KDS/guest realtime is the only thing that needs it; core flows work without it.
+- **DB credentials (from `.env`):** host `127.0.0.1:5432`, user `sail`, password `password`. The `.env` (gitignored) is already configured for native dev, with `LARAOWL_ENABLED=false` to silence the external observability 401 noise.
+
+### Seeded logins (after `db:migrate-all --seed`)
+- Platform admin → `/backoffice`: `rdgo.serafim@gmail.com` / `@belha22`
+- Client owner (needs email verification + onboarding before `/dashboard`): `jose.owner@test.com` / `@belha22`
