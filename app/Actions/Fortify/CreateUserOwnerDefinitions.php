@@ -93,7 +93,6 @@ class CreateUserOwnerDefinitions
         ]);
 
         $venue = Venue::create([
-            'call_waiter_slug' => strtolower(str_replace(' ', '-', $user->name)).'-call-attendant',
             'corporation_id' => $corporation->id,
             'name' => $user->name.' ponto de venda',
             'tax_id' => '00.000.000/0001-00',

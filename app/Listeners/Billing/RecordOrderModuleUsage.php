@@ -17,7 +17,11 @@ class RecordOrderModuleUsage
             return;
         }
 
-        RecordModuleUsageJob::dispatch($venueId, ModuleCode::Taker->value);
+        // created_by é nulo quando o pedido veio do próprio visitante (self-order);
+        // quando um usuário staff lança o pedido (Taker), created_by é o seu id.
+        $moduleCode = $order->created_by !== null ? ModuleCode::Taker : ModuleCode::SelfOrder;
+
+        RecordModuleUsageJob::dispatch($venueId, $moduleCode->value);
         RecordModuleUsageJob::dispatch($venueId, ModuleCode::DirectPrint->value);
     }
 }

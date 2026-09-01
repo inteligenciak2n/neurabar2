@@ -55,12 +55,6 @@ function reload() {
 
 let kitchenChannel = null;
 
-const guestSignals = ref([]);
-
-function dismissSignal(index) {
-    guestSignals.value.splice(index, 1);
-}
-
 onMounted(() => {
     if (!venueId.value) return;
 
@@ -71,15 +65,6 @@ onMounted(() => {
         })
         .listen('.ItemStatusUpdated', () => {
             reload();
-        })
-        .listen('.GuestSignaled', (event) => {
-            guestSignals.value.push({
-                id: Date.now(),
-                location_name: event.location_name,
-                message: event.message,
-                signal_only: event.signal_only,
-            });
-            playSound();
         });
 });
 
@@ -108,31 +93,6 @@ const allStations = computed(() => {
         </template>
 
         <div class="py-6 px-4 sm:px-6">
-            <!-- Guest signal banners -->
-            <div class="mb-4 space-y-2">
-                <div
-                    v-for="(signal, index) in guestSignals"
-                    :key="signal.id"
-                    class="flex items-start justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 shadow-sm"
-                >
-                    <div class="flex items-start gap-2">
-                        <span class="mt-0.5 text-lg">🔔</span>
-                        <div>
-                            <p class="text-sm font-semibold text-amber-900">{{ signal.location_name }}</p>
-                            <p class="text-xs text-amber-700">{{ signal.message || __('Waiter signal') }}</p>
-                        </div>
-                    </div>
-                    <button
-                        class="shrink-0 rounded-full p-1 text-amber-600 hover:bg-amber-100"
-                        @click="dismissSignal(index)"
-                    >
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
             <!-- Empty state -->
             <AppEmptyState
                 v-if="allStations.length === 0"

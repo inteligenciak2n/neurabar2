@@ -49,9 +49,6 @@ class Venue extends Model
         'require_table',
         'require_tab',
         'require_location',
-        'call_waiter_header_url',
-        'call_waiter_passphrase',
-        'call_waiter_slug',
         'evolution_api_url',
         'evolution_api_key',
         'evolution_api_instance',
@@ -65,7 +62,6 @@ class Venue extends Model
     ];
 
     protected $hidden = [
-        'call_waiter_passphrase',
         'evolution_api_key',
         'evolution_api_instance',
     ];

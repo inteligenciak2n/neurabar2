@@ -17,6 +17,7 @@ use App\Http\Controllers\Menu\ProductVariationController;
 use App\Http\Controllers\NoVenueController;
 use App\Http\Controllers\Orders\AttendanceController;
 use App\Http\Controllers\Orders\OrderController;
+use App\Http\Controllers\Orders\ServiceRequestController;
 use App\Http\Controllers\Payment\PaymentController;
 use App\Http\Controllers\Production\DashboardController as ProductionDashboardController;
 use App\Http\Controllers\Settings\AttendanceChannelController;
@@ -117,6 +118,14 @@ Route::middleware([
 
     // Order Taker
     Route::get('/orders/take/{attendance}', [OrderController::class, 'create'])->name('orders.take')->middleware('module:taker');
+
+    // Service requests — shared by the Direct Garçom panel and the Attendances panel,
+    // deliberately outside module:direct_waiter/module:taker (ServiceRequest is already
+    // scoped to the current venue via TenantScope).
+    Route::prefix('service-requests')->name('service-requests.')->group(function () {
+        Route::put('/{serviceRequest}/acknowledge', [ServiceRequestController::class, 'acknowledge'])->name('acknowledge');
+        Route::put('/{serviceRequest}/resolve', [ServiceRequestController::class, 'resolve'])->name('resolve');
+    });
 
     // Kitchen KDS
     Route::prefix('kitchen')->name('kitchen.')->middleware('module:kds')->group(function () {

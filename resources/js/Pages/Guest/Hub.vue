@@ -2,6 +2,7 @@
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import { ref, computed, onMounted } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
+import { useServiceRequestMessages } from '@/Composables/useServiceRequestMessages';
 import axios from 'axios';
 
 const props = defineProps({
@@ -11,9 +12,13 @@ const props = defineProps({
     attendanceChannel: Object,
     hasSession: Boolean,
     geolocationVerified: Boolean,
+    hasSelfOrder: Boolean,
+    hasDirectWaiter: Boolean,
+    hasTaker: Boolean,
 });
 
 const __ = useTranslate();
+const { predefinedMessages } = useServiceRequestMessages();
 
 // ── State ──────────────────────────────────────────────────────────────────
 const view = ref(props.hasSession ? 'hub' : 'pin-setup');
@@ -117,6 +122,23 @@ async function sendSignal() {
         // noop
     } finally {
         signalLoading.value = false;
+    }
+}
+
+// ── Call waiter to take my order ────────────────────────────────────────────
+const orderAssistanceLoading = ref(false);
+const orderAssistanceSent = ref(false);
+
+async function requestOrderAssistance() {
+    orderAssistanceLoading.value = true;
+    try {
+        await axios.post(`/g/${props.token}/request-order`);
+        orderAssistanceSent.value = true;
+        setTimeout(() => { orderAssistanceSent.value = false; }, 4000);
+    } catch {
+        // noop
+    } finally {
+        orderAssistanceLoading.value = false;
     }
 }
 
@@ -260,6 +282,11 @@ onMounted(() => {
                 {{ __('Waiter notified!') }}
             </div>
 
+            <!-- Order assistance sent toast -->
+            <div v-if="orderAssistanceSent" class="mb-4 rounded-xl bg-accent/10 border border-accent/30 px-4 py-3 text-sm text-accent font-medium">
+                {{ __('A waiter is on their way to take your order!') }}
+            </div>
+
             <!-- Checkout done toast -->
             <div v-if="checkoutDone" class="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 font-medium">
                 {{ __('Bill requested! The waiter will be with you shortly.') }}
@@ -270,6 +297,7 @@ onMounted(() => {
 
                 <!-- Chamar atendente -->
                 <button
+                    v-if="hasDirectWaiter"
                     class="flex flex-col items-center gap-3 rounded-2xl bg-white p-5 shadow-card active:scale-95 transition-transform col-span-2 sm:col-span-1"
                     @click="signalOpen = !signalOpen"
                 >
@@ -281,8 +309,24 @@ onMounted(() => {
                     <span class="text-sm font-semibold text-ocean-deep">{{ __('Call Waiter') }}</span>
                 </button>
 
+                <!-- Chamar atendente pra anotar pedido -->
+                <button
+                    v-if="hasTaker"
+                    :disabled="orderAssistanceLoading"
+                    class="flex flex-col items-center gap-3 rounded-2xl bg-white p-5 shadow-card active:scale-95 transition-transform col-span-2 sm:col-span-1 disabled:opacity-60"
+                    @click="requestOrderAssistance"
+                >
+                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+                        <svg class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </div>
+                    <span class="text-sm font-semibold text-ocean-deep">{{ __('Call Waiter to Order') }}</span>
+                </button>
+
                 <!-- Ver cardápio -->
                 <a
+                    v-if="hasSelfOrder"
                     :href="`/g/${token}/menu`"
                     class="flex flex-col items-center gap-3 rounded-2xl bg-white p-5 shadow-card active:scale-95 transition-transform col-span-2 sm:col-span-1"
                 >
@@ -332,14 +376,27 @@ onMounted(() => {
                     <span class="text-sm text-ocean-deep">{{ __('Signal only (no message)') }}</span>
                 </label>
 
-                <textarea
-                    v-if="!signalOnly"
-                    v-model="signalMessage"
-                    rows="3"
-                    maxlength="500"
-                    :placeholder="__('Type your message to the waiter...')"
-                    class="w-full resize-none rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
+                <template v-if="!signalOnly">
+                    <div class="mb-3 flex flex-wrap gap-2">
+                        <button
+                            v-for="msg in predefinedMessages"
+                            :key="msg"
+                            type="button"
+                            class="rounded-full border border-border px-3 py-1.5 text-sm text-ocean-deep hover:bg-muted hover:border-primary transition-colors"
+                            @click="signalMessage = msg"
+                        >
+                            {{ msg }}
+                        </button>
+                    </div>
+
+                    <textarea
+                        v-model="signalMessage"
+                        rows="3"
+                        maxlength="500"
+                        :placeholder="__('Type your message to the waiter...')"
+                        class="w-full resize-none rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                </template>
 
                 <button
                     :disabled="signalLoading || (!signalOnly && !signalMessage.trim())"

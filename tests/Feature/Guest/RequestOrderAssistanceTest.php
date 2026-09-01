@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Event;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
-class GuestSignalTest extends TestCase
+class RequestOrderAssistanceTest extends TestCase
 {
     use RefreshAllDatabases;
 
@@ -23,27 +23,41 @@ class GuestSignalTest extends TestCase
         return rtrim(base64_encode(json_encode(['v' => $venue->id])), '=');
     }
 
-    private function activateDirectWaiter(Venue $venue): void
+    private function activateTaker(Venue $venue): void
     {
         CorporationModule::factory()->create([
             'corporation_id' => $venue->corporation_id,
-            'module_code' => ModuleCode::DirectWaiter->value,
+            'module_code' => ModuleCode::Taker->value,
             'status' => ModuleStatus::Active,
         ]);
 
         VenueModule::factory()->create([
             'venue_id' => $venue->id,
-            'module_code' => ModuleCode::DirectWaiter->value,
+            'module_code' => ModuleCode::Taker->value,
             'status' => ModuleStatus::Active,
         ]);
     }
 
-    public function test_signal_creates_a_message_service_request(): void
+    public function test_returns_not_found_when_taker_module_is_inactive(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $token = $this->makeToken($venue);
+
+        $this->postJson("/g/{$token}/session", ['pin' => '1234'])->assertOk();
+        $session = GuestSession::withoutGlobalScopes()->where('venue_id', $venue->id)->latest()->first();
+
+        $this->withCredentials()
+            ->withUnencryptedCookie('guest_token', $session->guest_token)
+            ->postJson("/g/{$token}/request-order")
+            ->assertStatus(404);
+    }
+
+    public function test_creates_a_call_to_order_service_request_when_taker_is_active(): void
     {
         Event::fake([ServiceRequestCreated::class]);
 
         $venue = Venue::factory()->create(['active' => true]);
-        $this->activateDirectWaiter($venue);
+        $this->activateTaker($venue);
         $token = $this->makeToken($venue);
 
         $this->postJson("/g/{$token}/session", ['pin' => '1234'])->assertOk();
@@ -51,33 +65,21 @@ class GuestSignalTest extends TestCase
 
         $this->withCredentials()
             ->withUnencryptedCookie('guest_token', $session->guest_token)
-            ->postJson("/g/{$token}/signal", ['message' => 'Falta de água', 'signal_only' => false])
+            ->postJson("/g/{$token}/request-order")
             ->assertOk();
-
-        Event::assertDispatched(ServiceRequestCreated::class, fn ($event) => $event->serviceRequest->type === ServiceRequestType::Message
-            && $event->serviceRequest->message === 'Falta de água'
-            && $event->serviceRequest->venue_id === $venue->id);
 
         $this->assertDatabaseHas('service_requests', [
             'venue_id' => $venue->id,
-            'type' => ServiceRequestType::Message->value,
-            'message' => 'Falta de água',
+            'type' => ServiceRequestType::CallToOrder->value,
         ]);
+
+        Event::assertDispatched(ServiceRequestCreated::class, fn ($event) => $event->serviceRequest->type === ServiceRequestType::CallToOrder);
     }
 
-    public function test_signal_without_session_returns_forbidden(): void
+    public function test_does_not_record_direct_waiter_usage_for_call_to_order(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
-        $this->activateDirectWaiter($venue);
-        $token = $this->makeToken($venue);
-
-        $this->postJson("/g/{$token}/signal", ['signal_only' => true])
-            ->assertStatus(403);
-    }
-
-    public function test_signal_returns_not_found_when_direct_waiter_is_inactive(): void
-    {
-        $venue = Venue::factory()->create(['active' => true]);
+        $this->activateTaker($venue);
         $token = $this->makeToken($venue);
 
         $this->postJson("/g/{$token}/session", ['pin' => '1234'])->assertOk();
@@ -85,7 +87,9 @@ class GuestSignalTest extends TestCase
 
         $this->withCredentials()
             ->withUnencryptedCookie('guest_token', $session->guest_token)
-            ->postJson("/g/{$token}/signal", ['message' => 'Falta de água'])
-            ->assertStatus(404);
+            ->postJson("/g/{$token}/request-order")
+            ->assertOk();
+
+        $this->assertDatabaseCount('venue_usage_records', 0);
     }
 }

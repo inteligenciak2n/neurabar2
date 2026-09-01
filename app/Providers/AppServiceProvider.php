@@ -6,22 +6,19 @@ use App\Contracts\Subscription\PaymentGatewayContract;
 use App\Enums\ProfileEnum;
 use App\Enums\UserRole;
 use App\Events\Kitchen\ItemStatusUpdated;
-use App\Events\Orders\GuestSignaled;
 use App\Events\Orders\OrderPlaced;
+use App\Events\Orders\ServiceRequestCreated;
 use App\Listeners\Billing\RecordKdsUsage;
 use App\Listeners\Billing\RecordOrderModuleUsage;
-use App\Listeners\Billing\RecordSignalUsage;
+use App\Listeners\Billing\RecordServiceRequestUsage;
 use App\Listeners\Kitchen\BroadcastNewOrderByStation;
 use App\Models\User;
 use App\Services\Subscription\AsaasPaymentGateway;
 use App\Services\Subscription\FakePaymentGateway;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
 
@@ -80,19 +77,8 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(OrderPlaced::class, BroadcastNewOrderByStation::class);
         Event::listen(OrderPlaced::class, RecordOrderModuleUsage::class);
         Event::listen(ItemStatusUpdated::class, RecordKdsUsage::class);
-        Event::listen(GuestSignaled::class, RecordSignalUsage::class);
+        Event::listen(ServiceRequestCreated::class, RecordServiceRequestUsage::class);
         Event::listen(Registered::class, SendEmailVerificationNotification::class);
-
-        RateLimiter::for('call-waiter', function (Request $request) {
-            $slug = $request->route('slug', '');
-            $identifier = $request->input('customer_identifier', '');
-
-            return Limit::perMinute(1)
-                ->by($request->ip().'|'.$slug.'|'.$identifier)
-                ->response(fn () => response()->json([
-                    'message' => 'Too many requests. Please wait before sending another request.',
-                ], 429));
-        });
 
         // The operational role lives in the `user_venue` pivot, never on the user
         // row: gates defined over `$user->role` read a non-existent attribute and

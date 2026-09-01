@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Orders;
 
 use App\Actions\Orders\OpenAttendanceAction;
+use App\Enums\ServiceRequestType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Orders\StoreAttendanceRequest;
 use App\Http\Requests\Orders\UpdateAttendanceRequest;
 use App\Models\Orders\Attendance;
+use App\Models\Orders\ServiceRequest;
 use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\ServiceLocation;
 use Illuminate\Http\JsonResponse;
@@ -34,11 +36,18 @@ class AttendanceController extends Controller
             ->orderBy('sort_order')
             ->get(['id', 'name']);
 
+        // Chamados de "chamar garçom p/ anotar pedido" e "fechar conta" — as
+        // mensagens de texto do Direct Garçom têm painel próprio (/direct-waiter).
+        $serviceCallRequests = ServiceRequest::open()
+            ->where('type', '!=', ServiceRequestType::Message)
+            ->get(['id', 'service_location_id', 'attendance_id', 'type', 'status', 'created_at']);
+
         return Inertia::render('Attendances/Index', [
             'attendances' => $attendances,
             'serviceLocations' => $serviceLocations,
             'channels' => $channels,
             'venueId' => $venue->id,
+            'serviceCallRequests' => $serviceCallRequests,
         ]);
     }
 

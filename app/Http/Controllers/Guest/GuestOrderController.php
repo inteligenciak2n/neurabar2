@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Guest;
 
 use App\Actions\Guest\PlaceGuestOrderAction;
+use App\Enums\ModuleCode;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Guest\StoreGuestOrderRequest;
 use App\Services\GuestTokenService;
@@ -17,6 +18,8 @@ class GuestOrderController extends Controller
     public function store(string $token, StoreGuestOrderRequest $request, PlaceGuestOrderAction $action): JsonResponse
     {
         ['venue' => $venue] = $this->tokenService->decode($token);
+
+        abort_unless(in_array(ModuleCode::SelfOrder->value, $venue->activeModules(), true), 404);
 
         $session = $this->tokenService->resolveSession($request, $venue);
 
@@ -38,6 +41,8 @@ class GuestOrderController extends Controller
         $request->validate(['pin' => ['required', 'string', 'digits:4']]);
 
         ['venue' => $venue] = $this->tokenService->decode($token);
+
+        abort_unless(in_array(ModuleCode::SelfOrder->value, $venue->activeModules(), true), 404);
 
         $session = $this->tokenService->resolveSession($request, $venue);
 

@@ -7,6 +7,7 @@ enum ModuleCode: string
     case Menu = 'menu';
     case Kds = 'kds';
     case Taker = 'taker';
+    case SelfOrder = 'self_order';
     case DirectWaiter = 'direct_waiter';
     case Delivery = 'delivery';
     case ProductionDashboard = 'production_dashboard';
@@ -19,7 +20,7 @@ enum ModuleCode: string
     {
         return match ($this) {
             self::Menu => [],
-            self::Kds, self::Taker, self::Delivery,
+            self::Kds, self::Taker, self::SelfOrder, self::Delivery,
             self::ProductionDashboard, self::FinancialDashboard,
             self::DirectPrint, self::FiscalNote, self::VoiceCommand => [self::Menu],
             self::DirectWaiter => [],
@@ -32,6 +33,7 @@ enum ModuleCode: string
             self::Menu => 'Cardápio',
             self::Kds => 'KDS',
             self::Taker => 'Anotar Pedido',
+            self::SelfOrder => 'Auto Serviço de Pedido',
             self::DirectWaiter => 'Direct Garçom',
             self::Delivery => 'Delivery',
             self::ProductionDashboard => 'Dashboard de Produção',

@@ -9,6 +9,7 @@ use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\CorporationSubscription;
+use App\Models\Tenant\PlanCatalog;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueModule;
 use App\Models\Tenant\VenueSubscription;
@@ -59,7 +60,7 @@ abstract class TestCase extends BaseTestCase
     protected function ensureVenueHasSubscriptionAndMenu(Venue $venue): void
     {
         if (! $venue->corporation->subscription) {
-            $plan = \App\Models\Tenant\PlanCatalog::factory()->create();
+            $plan = PlanCatalog::factory()->create();
 
             $subscription = CorporationSubscription::factory()->create([
                 'corporation_id' => $venue->corporation_id,
@@ -130,6 +131,7 @@ abstract class TestCase extends BaseTestCase
         'order_item_modifiers',
         'attendances',
         'attendance_channels',
+        'service_requests',
         'payments',
         'payment_items',
     ];

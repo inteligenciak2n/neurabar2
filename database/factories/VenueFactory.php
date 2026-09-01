@@ -29,9 +29,4 @@ class VenueFactory extends Factory
             'active' => true,
         ];
     }
-
-    public function withSlug(string $slug): static
-    {
-        return $this->state(['call_waiter_slug' => $slug]);
-    }
 }

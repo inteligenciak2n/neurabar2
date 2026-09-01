@@ -12,9 +12,34 @@ const props = defineProps({
     serviceLocations: Array,
     channels: Array,
     venueId: String,
+    serviceCallRequests: Array,
 });
 
 const showForm = ref(false);
+const serviceCallRequests = ref([...(props.serviceCallRequests ?? [])]);
+
+function requestsForLocation(locationId) {
+    return serviceCallRequests.value.filter((r) => r.service_location_id === locationId);
+}
+
+function acknowledgeRequest(request) {
+    router.put(route('service-requests.acknowledge', request.id), {}, { preserveScroll: true });
+}
+
+function resolveRequest(request) {
+    router.put(route('service-requests.resolve', request.id), {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            serviceCallRequests.value = serviceCallRequests.value.filter((r) => r.id !== request.id);
+        },
+    });
+}
+
+function updateServiceLocation(attendance, serviceLocationId) {
+    router.put(route('attendances.update', attendance.id), { service_location_id: serviceLocationId || null }, {
+        preserveScroll: true,
+    });
+}
 
 const form = useForm({
     attendance_channel_id: '',
@@ -77,6 +102,20 @@ const submit = () => {
 };
 
 let kitchenChannel = null;
+let serviceRequestsChannel = null;
+
+let notificationSound = null;
+
+function playSound() {
+    try {
+        if (!notificationSound) {
+            notificationSound = new Audio('/sounds/new-order.mp3');
+        }
+        notificationSound.play().catch(() => {});
+    } catch {
+        // Audio not available
+    }
+}
 
 onMounted(() => {
     if (!props.venueId) return;
@@ -85,11 +124,35 @@ onMounted(() => {
         .listen('.OrderPlaced', () => {
             router.reload({ only: ['attendances'] });
         });
+
+    serviceRequestsChannel = window.Echo.private(`venue.${props.venueId}.service-requests`)
+        .listen('.ServiceRequestCreated', (event) => {
+            if (event.type === 'message') return;
+            serviceCallRequests.value.push({
+                id: event.id,
+                service_location_id: event.service_location_id,
+                type: event.type,
+                status: event.status,
+                created_at: event.created_at,
+            });
+            playSound();
+        })
+        .listen('.ServiceRequestUpdated', (event) => {
+            if (event.status === 'resolved') {
+                serviceCallRequests.value = serviceCallRequests.value.filter((r) => r.id !== event.id);
+            } else {
+                const request = serviceCallRequests.value.find((r) => r.id === event.id);
+                if (request) request.status = event.status;
+            }
+        });
 });
 
 onUnmounted(() => {
     if (props.venueId && kitchenChannel) {
         window.Echo.leaveChannel(`venue.${props.venueId}.kitchen`);
+    }
+    if (props.venueId && serviceRequestsChannel) {
+        window.Echo.leaveChannel(`venue.${props.venueId}.service-requests`);
     }
 });
 </script>
@@ -232,6 +295,30 @@ onUnmounted(() => {
                         <p class="mt-0.5 text-xs text-muted-foreground">
                             {{ __('Total:') }} R$ {{ ordersTotal(attendance) }}
                         </p>
+
+                        <div class="mt-2">
+                            <label class="mr-2 text-xs text-muted-foreground">{{ __('Service Location') }}</label>
+                            <select
+                                class="rounded-md border border-border px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                                :value="attendance.service_location?.id ?? ''"
+                                @change="updateServiceLocation(attendance, $event.target.value)"
+                            >
+                                <option value="">{{ __('None') }}</option>
+                                <option v-for="loc in serviceLocations" :key="loc.id" :value="loc.id">{{ loc.name }}</option>
+                            </select>
+                        </div>
+
+                        <div v-if="requestsForLocation(attendance.service_location?.id).length" class="mt-2 space-y-1">
+                            <div
+                                v-for="request in requestsForLocation(attendance.service_location?.id)"
+                                :key="request.id"
+                                class="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-800"
+                            >
+                                <span>{{ request.type === 'checkout' ? __('Requesting the bill') : __('Wants to place an order') }}</span>
+                                <button v-if="request.status === 'pending'" class="underline" @click="acknowledgeRequest(request)">{{ __('Acknowledge') }}</button>
+                                <button class="underline" @click="resolveRequest(request)">{{ __('Resolve') }}</button>
+                            </div>
+                        </div>
                     </div>
                     <AppBadge :label="__('Open')" color="#22c55e" />
                 </div>

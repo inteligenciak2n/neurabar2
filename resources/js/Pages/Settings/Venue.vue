@@ -24,7 +24,6 @@ const form = useForm({
     require_table: props.venue.require_table ?? false,
     require_tab: props.venue.require_tab ?? false,
     require_location: props.venue.require_location ?? false,
-    call_waiter_slug: props.venue.call_waiter_slug ?? '',
     logo_url: props.venue.logo_url ?? '',
     latitude: props.venue.latitude ?? '',
     longitude: props.venue.longitude ?? '',
@@ -218,18 +217,6 @@ const submit = () => {
                             <span class="text-sm text-ocean-deep dark:text-gray-100">{{ __('Require guest geolocation to place orders') }}</span>
                         </label>
                         <p class="text-xs text-muted-foreground">{{ __('Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m.') }}</p>
-                    </div>
-                </AppCard>
-
-                <AppCard :title="__('Call Waiter')">
-                    <div>
-                        <label class="block text-sm font-medium text-ocean-deep dark:text-gray-100 mb-1">{{ __('Slug') }}</label>
-                        <input
-                            v-model="form.call_waiter_slug"
-                            type="text"
-                            class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
-                        />
-                        <p class="mt-1 text-xs text-muted-foreground">{{ __('Used in the public guest QR code URL.') }}</p>
                     </div>
                 </AppCard>
 

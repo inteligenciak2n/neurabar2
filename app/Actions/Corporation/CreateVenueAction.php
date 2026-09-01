@@ -13,7 +13,6 @@ use App\Models\Tenant\VenuePlanAssignment;
 use App\Models\Tenant\VenueSubscription;
 use App\Services\Billing\SubscriptionCalculator;
 use App\Services\VenueModuleCache;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 class CreateVenueAction
@@ -46,13 +45,10 @@ class CreateVenueAction
             ? (int) ($plan?->dedicated_surcharge ?? 0)
             : 0;
 
-        $slug = Str::slug($data['name']).'-'.Str::lower(Str::random(6));
-
         $venue = Venue::create([
             ...$data,
             'corporation_id' => $corporation->id,
             'affiliate_code_id' => $data['affiliate_code_id'] ?? $corporation->affiliate_code_id,
-            'call_waiter_slug' => $slug,
             'active' => true,
         ]);
 

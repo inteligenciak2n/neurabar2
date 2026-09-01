@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers\Guest;
 
-use App\Events\Orders\GuestSignaled;
+use App\Actions\Orders\CreateServiceRequestAction;
+use App\Enums\ModuleCode;
+use App\Enums\ServiceRequestType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Guest\StoreGuestSignalRequest;
+use App\Models\Orders\Attendance;
+use App\Models\Settings\ServiceLocation;
+use App\Models\Tenant\Venue;
 use App\Services\GeolocationService;
 use App\Services\GuestTokenService;
 use Illuminate\Http\JsonResponse;
@@ -21,6 +26,7 @@ class GuestHubController extends Controller
         ['venue' => $venue, 'serviceLocation' => $serviceLocation, 'attendanceChannel' => $attendanceChannel] = $this->tokenService->decode($token);
 
         $session = $this->tokenService->resolveSession($request, $venue);
+        $activeModules = $venue->activeModules();
 
         return Inertia::render('Guest/Hub', [
             'token' => $token,
@@ -29,12 +35,17 @@ class GuestHubController extends Controller
             'attendanceChannel' => $attendanceChannel?->only('id', 'name'),
             'hasSession' => $session !== null && $session->hasPin(),
             'geolocationVerified' => $session?->geolocation_verified ?? false,
+            'hasSelfOrder' => in_array(ModuleCode::SelfOrder->value, $activeModules, true),
+            'hasDirectWaiter' => in_array(ModuleCode::DirectWaiter->value, $activeModules, true),
+            'hasTaker' => in_array(ModuleCode::Taker->value, $activeModules, true),
         ]);
     }
 
-    public function signal(string $token, StoreGuestSignalRequest $request): JsonResponse
+    public function signal(string $token, StoreGuestSignalRequest $request, CreateServiceRequestAction $action): JsonResponse
     {
         ['venue' => $venue, 'serviceLocation' => $serviceLocation] = $this->tokenService->decode($token);
+
+        abort_unless(in_array(ModuleCode::DirectWaiter->value, $venue->activeModules(), true), 404);
 
         $session = $this->tokenService->resolveSession($request, $venue);
 
@@ -42,14 +53,34 @@ class GuestHubController extends Controller
 
         $validated = $request->validated();
 
-        $locationName = $serviceLocation?->name ?? 'Visitante';
+        $action->execute(
+            $venue,
+            $serviceLocation,
+            $this->resolveOpenAttendance($venue, $serviceLocation),
+            ServiceRequestType::Message,
+            $validated['message'] ?? null,
+        );
 
-        event(new GuestSignaled(
-            venueId: $venue->id,
-            locationName: $locationName,
-            message: $validated['message'] ?? null,
-            signalOnly: (bool) ($validated['signal_only'] ?? false),
-        ));
+        return response()->json(['ok' => true]);
+    }
+
+    public function requestOrderAssistance(string $token, Request $request, CreateServiceRequestAction $action): JsonResponse
+    {
+        ['venue' => $venue, 'serviceLocation' => $serviceLocation] = $this->tokenService->decode($token);
+
+        abort_unless(in_array(ModuleCode::Taker->value, $venue->activeModules(), true), 404);
+
+        $session = $this->tokenService->resolveSession($request, $venue);
+
+        abort_if($session === null, 403, 'No active session.');
+
+        $action->execute(
+            $venue,
+            $serviceLocation,
+            $this->resolveOpenAttendance($venue, $serviceLocation),
+            ServiceRequestType::CallToOrder,
+            null,
+        );
 
         return response()->json(['ok' => true]);
     }
@@ -87,5 +118,23 @@ class GuestHubController extends Controller
         }
 
         return response()->json(['allowed' => $allowed, 'distance' => $distance]);
+    }
+
+    /**
+     * Resolve the open Attendance for this service location, if any, so the
+     * request can snapshot the attendant currently responsible for the table.
+     */
+    private function resolveOpenAttendance(Venue $venue, ?ServiceLocation $serviceLocation): ?Attendance
+    {
+        if ($serviceLocation === null) {
+            return null;
+        }
+
+        return Attendance::withoutGlobalScopes()
+            ->where('venue_id', $venue->id)
+            ->where('service_location_id', $serviceLocation->id)
+            ->where('status', 'open')
+            ->latest()
+            ->first();
     }
 }
