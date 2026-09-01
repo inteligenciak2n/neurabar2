@@ -1,8 +1,10 @@
 # User ↔ Venue Architecture
 
-**Versão:** 1.3 · **Data:** 23 de julho de 2026
+**Versão:** 1.4 · **Data:** 1 de setembro de 2026
 
 > Referência técnica do modelo de identidade e acesso do NeuraBar: como usuários se relacionam com Corporations, Venues e roles operacionais.
+
+> **Changelog 1.4:** unifica os chamados do Guest Hub (mensagem, chamar para anotar pedido, solicitar conta) no model `ServiceRequest`, substituindo o evento efêmero `GuestSignaled`; adiciona o módulo `self_order` (protege autopedido via QR, antes sem nenhuma checagem); corrige `RecordOrderModuleUsage` para distinguir pedidos de staff (`taker`) e de visitante (`self_order`).
 
 > **Changelog 1.3:** adiciona o wizard de onboarding (assinatura + empresa) que substitui a criação automática de Corporation/Venue no registro, a arquitetura multi-database (banco `saas` vs. bancos operacionais por tenant) e o módulo de Módulos/Subscriptions/Billing (planos, módulos contratáveis, faturamento e afiliados).
 
@@ -748,7 +750,9 @@ Corporation ── billing_mode (per_venue | unified) ──► CorporationSubsc
 
 ### Enums principais
 
-`BillingMode` (`per_venue`, `unified`) · `ModuleBillingType` (`fixed`, `metered`, `hybrid`) · `ModuleStatus` (`trial`, `active`, `suspended`, `canceled`) · `SubscriptionStatus` (`trial`, `active`, `past_due`, `suspended`, `canceled`) · `ModuleCode` (`menu`, `kds`, `taker`, `direct_waiter`, `delivery`, `production_dashboard`, `financial_dashboard`, `direct_print`, `fiscal_note`, `voice_command` — cada um com `dependsOn()` e `label()`).
+`BillingMode` (`per_venue`, `unified`) · `ModuleBillingType` (`fixed`, `metered`, `hybrid`) · `ModuleStatus` (`trial`, `active`, `suspended`, `canceled`) · `SubscriptionStatus` (`trial`, `active`, `past_due`, `suspended`, `canceled`) · `ModuleCode` (`menu`, `kds`, `taker`, `self_order`, `direct_waiter`, `delivery`, `production_dashboard`, `financial_dashboard`, `direct_print`, `fiscal_note`, `voice_command` — cada um com `dependsOn()` e `label()`).
+
+> `self_order` protege o autopedido do visitante via QR (`PublicMenuController::show()`, `GuestOrderController::store()`/`index()`) — antes desse módulo essas rotas não tinham nenhuma proteção. Ver [Guest Hub](#guest-hub).
 
 ### Permissionamento por Módulo
 
@@ -776,7 +780,10 @@ trial ──(trial_ends_at)──► past_due ──(grace_period_days expira)�
 
 ### Cálculo de Fatura (`SubscriptionCalculator`)
 
-`total_value = base_value + modules_value + metered_value (+ dedicated_surcharge)`. `modules_value` soma `custom_monthly_price` (ou `base_monthly_price` do catálogo) de cada módulo ativo × `quantity`. `metered_value` usa `ModuleUsageTier` para calcular excedente sobre `included_quantity` — sempre por venue, mesmo no modo `unified`. Consumo é registrado via listeners de eventos operacionais (ex.: `RecordKdsUsage`, `RecordSignalUsage`, `RecordOrderModuleUsage`) que disparam `RecordModuleUsageJob` (idempotente via `updateOrCreate` por `venue_id`+`module_code`+`period`).
+`total_value = base_value + modules_value + metered_value (+ dedicated_surcharge)`. `modules_value` soma `custom_monthly_price` (ou `base_monthly_price` do catálogo) de cada módulo ativo × `quantity`. `metered_value` usa `ModuleUsageTier` para calcular excedente sobre `included_quantity` — sempre por venue, mesmo no modo `unified`. Consumo é registrado via listeners de eventos operacionais (ex.: `RecordKdsUsage`, `RecordServiceRequestUsage`, `RecordOrderModuleUsage`) que disparam `RecordModuleUsageJob` (idempotente via `updateOrCreate` por `venue_id`+`module_code`+`period`).
+
+- `RecordServiceRequestUsage` (substituiu `RecordSignalUsage`) só fatura `direct_waiter` quando o `ServiceRequest` é do tipo `message` — chamados `call_to_order` (Taker) e `checkout` não geram cobrança própria.
+- `RecordOrderModuleUsage` distingue a origem do pedido por `Order.created_by`: fatura `taker` quando o pedido foi lançado por um usuário staff, e `self_order` quando `created_by` é nulo (pedido feito pelo próprio visitante).
 
 ### Cache
 
@@ -796,7 +803,7 @@ trial ──(trial_ends_at)──► past_due ──(grace_period_days expira)�
 | `app/Actions/Platform/ActivateVenueModuleAction.php`, `DeactivateVenueModuleAction.php` | Ativa/desativa módulo em uma venue |
 | `app/Actions/Platform/CreateCorporationAction.php`, `AssignPlanToCorporationAction.php`, `UpdateCorporationSubscriptionAction.php` | Gestão administrativa de corporation/plano/subscription (backoffice) |
 | `app/Jobs/Billing/ExpireTrialsJob.php`, `SuspendOverdueSubscriptionsJob.php`, `MarkInvoicesOverdueJob.php`, `NotifyTrialEndingSoonJob.php`, `RecalculateSubscriptionJob.php`, `GenerateInvoicesJob.php`, `RecordModuleUsageJob.php` | Jobs diários/assíncronos de billing |
-| `app/Listeners/Billing/RecordKdsUsage.php`, `RecordSignalUsage.php`, `RecordOrderModuleUsage.php` | Listeners que traduzem eventos operacionais em consumo medido |
+| `app/Listeners/Billing/RecordKdsUsage.php`, `RecordServiceRequestUsage.php`, `RecordOrderModuleUsage.php` | Listeners que traduzem eventos operacionais em consumo medido |
 | `app/Http/Controllers/Platform/CorporationController.php`, `PlanAssignmentController.php`, `SubscriptionController.php`, `CorporationModuleController.php`, `VenueModuleController.php`, `InvoiceController.php`, `ManualInvoiceController.php`, `CorporationDiscountController.php` | Backoffice: gestão de corporations, planos, módulos, faturas e descontos |
 | `resources/js/Composables/useModules.ts` | Composable Vue para checar módulos ativos via shared prop `tenant.modules` |
 | `resources/js/Pages/Platform/Corporations/Edit.vue` | UI do backoffice para plano, assinatura, módulos, descontos, faturas e afiliado |
@@ -831,9 +838,25 @@ GET /g/{token}   → GuestHubController::show()   → Guest/Hub.vue
 
 Quando `venue.require_geolocation = true`, o Hub solicita a posição GPS do cliente antes de liberar ações. O `POST /g/{token}/verify-location` usa `GeolocationService` para calcular a distância entre o cliente e as coordenadas da venue (`venues.latitude`, `venues.longitude`). Se dentro do raio permitido, marca `geolocation_verified = true` na sessão.
 
-### Sinalizações (Chamada de Atendente)
+### Chamados de Atendimento (`ServiceRequest`)
 
-O cliente pode enviar um sinal ao atendente via `POST /g/{token}/signal`, que dispara o evento `GuestSignaled`. Esse evento é transmitido via WebSocket para os atendentes da venue.
+O Hub mostra até 3 ações, cada uma protegida por um módulo diferente da venue (`$venue->activeModules()`, calculado em `GuestHubController::show()` e passado como `hasSelfOrder`/`hasDirectWaiter`/`hasTaker`):
+
+- **Ver cardápio / autopedido** (`self_order`) — link para `/g/{token}/menu`.
+- **Chamar garçom para anotar pedido** (`taker`) — `POST /g/{token}/request-order`, cria um `ServiceRequest` do tipo `call_to_order` (sem mensagem).
+- **Chamar garçom por mensagem** (`direct_waiter`) — `POST /g/{token}/signal`, cria um `ServiceRequest` do tipo `message`, com mensagens pré-definidas (`useServiceRequestMessages` composable) ou texto livre.
+
+Um quarto tipo, `checkout` ("Solicitar conta"), é criado por `POST /g/{token}/checkout` e não depende de nenhum módulo — é uma ação core sempre disponível.
+
+Os três tipos são persistidos na tabela `service_requests` (unificando o antigo evento efêmero `GuestSignaled`, removido) via `CreateServiceRequestAction`, que também resolve o atendimento (`Attendance`) aberto para o `service_location` do token e faz snapshot do atendente responsável (`Attendance.created_by`) em `assigned_user_id`. A criação dispara `ServiceRequestCreated` (`ShouldBroadcast`) no canal privado `venue.{id}.service-requests` (e também em `App.Models.User.{assigned_user_id}` quando há atendente responsável).
+
+**Onde os chamados aparecem para a equipe:**
+- `type=message` → painel dedicado `/direct-waiter` (módulo `direct_waiter`), com ações de reconhecer/concluir.
+- `type=call_to_order` e `type=checkout` → badges em tempo real no painel `/attendances` (sempre visível, módulo base `menu`).
+
+As ações de reconhecer/concluir (`PUT /service-requests/{id}/acknowledge|resolve`) são compartilhadas pelos dois painéis e ficam fora dos grupos `module:direct_waiter`/`module:taker` — o próprio `ServiceRequest` já é escopado à venue atual via `TenantScope`.
+
+Só `type=message` gera cobrança (`RecordServiceRequestUsage` → módulo `direct_waiter`); `call_to_order` e `checkout` não são faturados.
 
 ### Fluxo Completo
 
@@ -853,34 +876,57 @@ Cliente escaneia QR
                 ├── serviceLocation (id, name, type)
                 ├── attendanceChannel (id, name)
                 ├── hasSession: bool
-                └── geolocationVerified: bool
+                ├── geolocationVerified: bool
+                └── hasSelfOrder / hasDirectWaiter / hasTaker: bool (a partir de venue->activeModules())
 
-Cliente chama atendente
+Cliente chama atendente por mensagem
     └── POST /g/{token}/signal
+            → abort 404 se módulo direct_waiter inativo
             → valida sessão ativa (abort 403 se não há sessão)
-            → dispara GuestSignaled(venueId, locationName, message, signalOnly)
+            → CreateServiceRequestAction::execute(..., ServiceRequestType::Message, $message)
+
+Cliente chama atendente para anotar pedido
+    └── POST /g/{token}/request-order
+            → abort 404 se módulo taker inativo
+            → CreateServiceRequestAction::execute(..., ServiceRequestType::CallToOrder, null)
+
+Cliente solicita a conta
+    └── POST /g/{token}/checkout
+            → CreateServiceRequestAction::execute(..., ServiceRequestType::Checkout, 'Solicitou fechamento de conta')
 ```
 
 ### Rotas do Guest Hub
 
 ```
 GET  /g/{token}                   → show (exibe o Hub)
-POST /g/{token}/signal            → signal (chama atendente)
+GET  /g/{token}/menu              → PublicMenuController::show (gated por self_order)
+POST /g/{token}/orders            → GuestOrderController::store (gated por self_order)
+POST /g/{token}/signal            → signal (chama atendente por mensagem — gated por direct_waiter)
+POST /g/{token}/request-order     → requestOrderAssistance (chama atendente p/ anotar pedido — gated por taker)
+POST /g/{token}/checkout          → GuestCheckoutController::store (solicita a conta — sem gate de módulo)
 POST /g/{token}/verify-location   → verifyLocation (valida GPS)
 ```
 
-> Essas rotas **não usam** o middleware `tenant` nem requerem autenticação de `User`.
+> Essas rotas **não usam** o middleware `tenant` nem requerem autenticação de `User`. Como não passam pelo middleware `module:`, a checagem de módulo (`self_order`/`direct_waiter`/`taker`) é feita manualmente em cada controller via `in_array(ModuleCode::X->value, $venue->activeModules(), true)`.
 
 ### Referência de Arquivos — Guest Hub
 
 | Arquivo | Responsabilidade |
 |---|---|
-| `app/Http/Controllers/Guest/GuestHubController.php` | Controller do hub público |
+| `app/Http/Controllers/Guest/GuestHubController.php` | Controller do hub público (`show`, `signal`, `requestOrderAssistance`, `verifyLocation`) |
+| `app/Http/Controllers/Guest/GuestCheckoutController.php` | Solicitação de fechamento de conta (`ServiceRequestType::Checkout`) |
 | `app/Services/GuestTokenService.php` | Decodificação do token e resolução de sessão |
 | `app/Services/GeolocationService.php` | Cálculo de distância e verificação de raio |
-| `app/Events/Orders/GuestSignaled.php` | Evento de sinalização transmitido via WebSocket |
-| `app/Http/Requests/Guest/StoreGuestSignalRequest.php` | Validação do payload de sinalização |
-| `resources/js/Pages/Guest/Hub.vue` | Interface pública do cliente |
+| `app/Models/Orders/ServiceRequest.php` | Model persistente dos chamados (`type`, `status`, `assigned_user_id`) |
+| `app/Enums/ServiceRequestType.php`, `ServiceRequestStatus.php` | Enums do domínio de chamados |
+| `app/Actions/Orders/CreateServiceRequestAction.php`, `AcknowledgeServiceRequestAction.php`, `ResolveServiceRequestAction.php` | Criação e transição de status dos chamados |
+| `app/Events/Orders/ServiceRequestCreated.php`, `ServiceRequestUpdated.php` | Eventos `ShouldBroadcast` no canal `venue.{id}.service-requests` |
+| `app/Http/Requests/Guest/StoreGuestSignalRequest.php` | Validação do payload de sinalização (mensagem) |
+| `app/Http/Controllers/DirectWaiter/DashboardController.php` | Painel `/direct-waiter` (só `type=message`) |
+| `app/Http/Controllers/Orders/ServiceRequestController.php` | Rotas compartilhadas de acknowledge/resolve |
+| `resources/js/Pages/Guest/Hub.vue` | Interface pública do cliente (3 ações condicionais por módulo) |
+| `resources/js/Pages/DirectWaiter/Index.vue` | Painel de mensagens do Direct Garçom em tempo real |
+| `resources/js/Composables/useServiceRequestMessages.js` | Lista fixa de mensagens pré-definidas |
 
 ---
 

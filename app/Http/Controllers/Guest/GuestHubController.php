@@ -111,7 +111,12 @@ class GuestHubController extends Controller
             (float) $venue->longitude,
         );
 
-        $allowed = $service->isWithinRange($venue, (float) $request->lat, (float) $request->lng);
+        $allowed = $service->isWithinRange(
+            (float) $venue->latitude,
+            (float) $venue->longitude,
+            (float) $request->lat,
+            (float) $request->lng,
+        );
 
         if ($allowed) {
             $session->update(['geolocation_verified' => true]);
