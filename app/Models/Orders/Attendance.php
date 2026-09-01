@@ -70,6 +70,11 @@ class Attendance extends Model
         return $this->hasOne(Payment::class);
     }
 
+    public function deliveryOrder(): HasOne
+    {
+        return $this->hasOne(DeliveryOrder::class);
+    }
+
     public function scopeOpen(Builder $query): Builder
     {
         return $query->where('status', AttendanceStatus::Open);

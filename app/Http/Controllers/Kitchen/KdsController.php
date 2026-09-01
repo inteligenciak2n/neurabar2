@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Kitchen;
 
+use App\Actions\Kitchen\AdvanceDeliveryOrderStatusAction;
 use App\Actions\Kitchen\UpdateItemStatusAction;
 use App\Enums\AttendanceStatus;
+use App\Enums\OrderStatus;
+use App\Models\Orders\Order;
 use App\Models\Orders\OrderItem;
 use App\Models\Settings\KitchenStation;
 use App\Models\Settings\PreparationStatus;
@@ -39,11 +42,28 @@ class KdsController
             ->get()
             ->groupBy(fn ($item) => $item->product?->kitchen_station_id ?? 'unassigned');
 
+        // Itens somem do board acima assim que o pedido fica Ready (ready_at preenchido);
+        // pedidos de delivery/retirada precisam de uma lane própria para o staff avançar o status.
+        $readyDeliveryOrders = Order::with(['attendance.deliveryOrder', 'items.product'])
+            ->whereIn('status', [OrderStatus::Ready, OrderStatus::OutForDelivery])
+            ->whereHas('attendance', fn ($q) => $q->where('venue_id', $venueId))
+            ->whereHas('attendance.deliveryOrder')
+            ->orderBy('created_at')
+            ->get();
+
         return Inertia::render('Kitchen/Kds', [
             'stations' => $stations,
             'preparationStatuses' => $preparationStatuses,
             'openItems' => $openItems,
+            'readyDeliveryOrders' => $readyDeliveryOrders,
         ]);
+    }
+
+    public function advanceDeliveryStatus(Order $order, AdvanceDeliveryOrderStatusAction $action): RedirectResponse
+    {
+        $action->execute($order);
+
+        return back();
     }
 
     public function updateItemStatus(Request $request, OrderItem $item, UpdateItemStatusAction $action): RedirectResponse

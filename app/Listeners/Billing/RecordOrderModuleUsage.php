@@ -17,9 +17,13 @@ class RecordOrderModuleUsage
             return;
         }
 
-        // created_by é nulo quando o pedido veio do próprio visitante (self-order);
-        // quando um usuário staff lança o pedido (Taker), created_by é o seu id.
-        $moduleCode = $order->created_by !== null ? ModuleCode::Taker : ModuleCode::SelfOrder;
+        // created_by é nulo tanto no self-order quanto no delivery/retirada (ambos anônimos);
+        // a existência de um DeliveryOrder na attendance é o que diferencia os dois.
+        $moduleCode = match (true) {
+            $order->created_by !== null => ModuleCode::Taker,
+            $order->attendance->deliveryOrder()->exists() => ModuleCode::Delivery,
+            default => ModuleCode::SelfOrder,
+        };
 
         RecordModuleUsageJob::dispatch($venueId, $moduleCode->value);
         RecordModuleUsageJob::dispatch($venueId, ModuleCode::DirectPrint->value);

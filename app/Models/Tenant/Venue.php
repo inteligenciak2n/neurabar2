@@ -7,6 +7,7 @@ use App\Enums\SubscriptionStatus;
 use App\Models\Menu\Menu;
 use App\Models\Orders\Attendance;
 use App\Models\Settings\AttendanceChannel;
+use App\Models\Settings\DeliveryFeeZone;
 use App\Models\Settings\KitchenStation;
 use App\Models\Settings\PreparationStatus;
 use App\Models\Settings\ServiceLocation;
@@ -183,5 +184,10 @@ class Venue extends Model
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    public function deliveryFeeZones(): HasMany
+    {
+        return $this->hasMany(DeliveryFeeZone::class);
     }
 }

@@ -50,6 +50,7 @@ class RegisterPaymentAction
                 'items_total' => $totals['items_total'],
                 'cover_charge_total' => $totals['cover_charge_total'],
                 'service_fee_total' => $totals['service_fee_total'],
+                'delivery_fee_total' => $totals['delivery_fee_total'],
                 'grand_total' => $totals['grand_total'],
                 'party_size' => $partySize,
                 'created_by' => $request->user()->id,

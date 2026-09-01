@@ -14,6 +14,15 @@ use Illuminate\Support\Str;
 class GuestTokenService
 {
     /**
+     * Encode a deterministic, venue-only token (no service_location/channel).
+     * Used for fixed public links such as the Delivery/Takeaway ordering page.
+     */
+    public function encodeVenueOnly(Venue $venue): string
+    {
+        return rtrim(base64_encode(json_encode(['v' => $venue->id])), '=');
+    }
+
+    /**
      * Decode a QR token into its components.
      *
      * @return array{venue: Venue, serviceLocation: ?ServiceLocation, attendanceChannel: ?AttendanceChannel}

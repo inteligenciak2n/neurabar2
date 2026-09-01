@@ -12,6 +12,7 @@ const props = defineProps({
     stations: Array,
     preparationStatuses: Array,
     openItems: Object,
+    readyDeliveryOrders: Array,
 });
 
 const page = usePage();
@@ -50,7 +51,23 @@ function playSound() {
 }
 
 function reload() {
-    router.reload({ only: ['openItems'] });
+    router.reload({ only: ['openItems', 'readyDeliveryOrders'] });
+}
+
+function advanceDeliveryStatus(order) {
+    router.put(route('kitchen.orders.advance-delivery-status', order.id), {}, {
+        preserveScroll: true,
+    });
+}
+
+function deliveryActionLabel(order) {
+    const isDelivery = order.attendance?.delivery_order?.fulfillment_type === 'delivery';
+
+    if (order.status === 'ready') {
+        return isDelivery ? __('Mark as out for delivery') : __('Mark as picked up');
+    }
+
+    return __('Mark as delivered');
 }
 
 let kitchenChannel = null;
@@ -64,6 +81,9 @@ onMounted(() => {
             reload();
         })
         .listen('.ItemStatusUpdated', () => {
+            reload();
+        })
+        .listen('.OrderStatusUpdated', () => {
             reload();
         });
 });
@@ -93,6 +113,29 @@ const allStations = computed(() => {
         </template>
 
         <div class="py-6 px-4 sm:px-6">
+            <!-- Ready for delivery/pickup lane -->
+            <div v-if="readyDeliveryOrders?.length" class="mb-6">
+                <h3 class="font-heading font-semibold text-sm text-ocean-deep dark:text-gray-100 mb-2">
+                    {{ __('Ready for delivery/pickup') }}
+                </h3>
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <div
+                        v-for="order in readyDeliveryOrders"
+                        :key="order.id"
+                        class="rounded-lg bg-white shadow-card p-4 flex flex-col gap-2 dark:bg-gray-800"
+                    >
+                        <p class="font-heading font-semibold text-sm text-ocean-deep dark:text-gray-100">
+                            {{ order.attendance?.customer_identifier ?? __('Guest') }}
+                        </p>
+                        <p class="text-xs text-muted-foreground">{{ __('Order') }} #{{ order.order_number }}</p>
+                        <AppBadge :label="order.status" variant="primary" />
+                        <AppButton size="sm" @click="advanceDeliveryStatus(order)">
+                            {{ deliveryActionLabel(order) }}
+                        </AppButton>
+                    </div>
+                </div>
+            </div>
+
             <!-- Empty state -->
             <AppEmptyState
                 v-if="allStations.length === 0"

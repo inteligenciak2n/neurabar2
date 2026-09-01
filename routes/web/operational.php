@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\VenueSelectorController;
 use App\Http\Controllers\Delivery\DashboardController as DeliveryDashboardController;
+use App\Http\Controllers\Delivery\FeeZoneController as DeliveryFeeZoneController;
 use App\Http\Controllers\DirectPrint\DashboardController as DirectPrintDashboardController;
 use App\Http\Controllers\DirectWaiter\DashboardController as DirectWaiterDashboardController;
 use App\Http\Controllers\Finance\DashboardController as FinanceDashboardController;
@@ -131,10 +132,17 @@ Route::middleware([
     Route::prefix('kitchen')->name('kitchen.')->middleware('module:kds')->group(function () {
         Route::get('/kds', [KdsController::class, 'index'])->name('kds');
         Route::put('/items/{item}/status', [KdsController::class, 'updateItemStatus'])->name('items.status');
+        Route::put('/orders/{order}/advance-delivery-status', [KdsController::class, 'advanceDeliveryStatus'])->name('orders.advance-delivery-status');
     });
 
     // Module scaffolds
-    Route::get('/delivery', [DeliveryDashboardController::class, 'index'])->name('delivery.index')->middleware('module:delivery');
+    Route::prefix('delivery')->name('delivery.')->middleware('module:delivery')->group(function () {
+        Route::get('/', [DeliveryDashboardController::class, 'index'])->name('index');
+        Route::put('/settings', [DeliveryDashboardController::class, 'updateSettings'])->name('settings.update');
+        Route::post('/fee-zones', [DeliveryFeeZoneController::class, 'store'])->name('fee-zones.store');
+        Route::put('/fee-zones/{feeZone}', [DeliveryFeeZoneController::class, 'update'])->name('fee-zones.update');
+        Route::delete('/fee-zones/{feeZone}', [DeliveryFeeZoneController::class, 'destroy'])->name('fee-zones.destroy');
+    });
     Route::get('/fiscal-note', [FiscalNoteDashboardController::class, 'index'])->name('fiscal-note.index')->middleware('module:fiscal_note');
     Route::get('/voice-command', [VoiceCommandDashboardController::class, 'index'])->name('voice-command.index')->middleware('module:voice_command');
     Route::get('/production', [ProductionDashboardController::class, 'index'])->name('production.index')->middleware('module:production_dashboard');
