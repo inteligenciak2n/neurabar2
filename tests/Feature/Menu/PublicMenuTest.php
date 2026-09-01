@@ -3,12 +3,16 @@
 namespace Tests\Feature\Menu;
 
 use App\Enums\BillingMode;
+use App\Enums\ModuleCode;
+use App\Enums\ModuleStatus;
 use App\Enums\SubscriptionStatus;
 use App\Models\Menu\Category;
 use App\Models\Menu\Menu;
 use App\Models\Menu\Product;
+use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\Venue;
+use App\Models\Tenant\VenueModule;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
@@ -19,6 +23,21 @@ class PublicMenuTest extends TestCase
     private function makeToken(Venue $venue): string
     {
         return rtrim(base64_encode(json_encode(['v' => $venue->id])), '=');
+    }
+
+    private function activateSelfOrder(Venue $venue): void
+    {
+        CorporationModule::factory()->create([
+            'corporation_id' => $venue->corporation_id,
+            'module_code' => ModuleCode::SelfOrder->value,
+            'status' => ModuleStatus::Active,
+        ]);
+
+        VenueModule::factory()->create([
+            'venue_id' => $venue->id,
+            'module_code' => ModuleCode::SelfOrder->value,
+            'status' => ModuleStatus::Active,
+        ]);
     }
 
     public function test_suspended_venue_cannot_serve_the_public_menu(): void
@@ -38,6 +57,7 @@ class PublicMenuTest extends TestCase
     public function test_public_menu_returns_active_products_without_authentication(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
+        $this->activateSelfOrder($venue);
         $menu = Menu::factory()->create(['venue_id' => $venue->id, 'active' => true]);
         $category = Category::factory()->create(['menu_id' => $menu->id]);
         Product::factory()->create(['category_id' => $category->id, 'active' => true, 'name' => 'Visible']);
@@ -61,6 +81,7 @@ class PublicMenuTest extends TestCase
     public function test_inactive_products_do_not_appear_in_public_menu(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
+        $this->activateSelfOrder($venue);
         $menu = Menu::factory()->create(['venue_id' => $venue->id, 'active' => true]);
         $category = Category::factory()->create(['menu_id' => $menu->id]);
         Product::factory()->create(['category_id' => $category->id, 'active' => true, 'name' => 'Active Product']);
