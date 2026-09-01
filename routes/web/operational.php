@@ -145,8 +145,8 @@ Route::middleware([
     });
     Route::get('/fiscal-note', [FiscalNoteDashboardController::class, 'index'])->name('fiscal-note.index')->middleware('module:fiscal_note');
     Route::get('/voice-command', [VoiceCommandDashboardController::class, 'index'])->name('voice-command.index')->middleware('module:voice_command');
-    Route::get('/production', [ProductionDashboardController::class, 'index'])->name('production.index')->middleware('module:production_dashboard');
-    Route::get('/finance', [FinanceDashboardController::class, 'index'])->name('finance.index')->middleware('module:financial_dashboard');
+    Route::get('/production', [ProductionDashboardController::class, 'index'])->name('production.index')->middleware(['module:production_dashboard', 'role:owner,general_manager,section_manager']);
+    Route::get('/finance', [FinanceDashboardController::class, 'index'])->name('finance.index')->middleware(['module:financial_dashboard', 'role:owner,general_manager']);
     Route::get('/direct-waiter', [DirectWaiterDashboardController::class, 'index'])->name('direct-waiter.index')->middleware('module:direct_waiter');
     Route::get('/direct-print', [DirectPrintDashboardController::class, 'index'])->name('direct-print.index')->middleware('module:direct_print');
 

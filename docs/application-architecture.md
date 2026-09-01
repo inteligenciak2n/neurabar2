@@ -1,8 +1,10 @@
 # User ↔ Venue Architecture
 
-**Versão:** 1.4 · **Data:** 1 de setembro de 2026
+**Versão:** 1.5 · **Data:** 1 de setembro de 2026
 
 > Referência técnica do modelo de identidade e acesso do NeuraBar: como usuários se relacionam com Corporations, Venues e roles operacionais.
+
+> **Changelog 1.5:** implementa os módulos `financial_dashboard` (`/finance`) e `production_dashboard` (`/production`), antes apenas escafoldados — métricas financeiras (receita, ticket médio, forma de pagamento, comparação com período anterior, consolidação por corporation) e de produção (itens mais vendidos, picos de venda, velocidade por estação, ranking de atendentes); adiciona middleware `role:` às duas rotas (gap: o catálogo já declarava `required_roles`, mas não havia enforcement); introduz Chart.js/vue-chartjs como lib de gráficos do frontend.
 
 > **Changelog 1.4:** unifica os chamados do Guest Hub (mensagem, chamar para anotar pedido, solicitar conta) no model `ServiceRequest`, substituindo o evento efêmero `GuestSignaled`; adiciona o módulo `self_order` (protege autopedido via QR, antes sem nenhuma checagem); corrige `RecordOrderModuleUsage` para distinguir pedidos de staff (`taker`) e de visitante (`self_order`).
 
@@ -1101,6 +1103,92 @@ POST   /backoffice/support/tutorials/{tutorialId}/toggle-published → platform.
 | `app/Console/Commands/SupportMigrate.php` | Comando `support:migrate` com `--fresh` e `--seed` |
 | `database/migrations/support/` | 7 migrations do banco `laravel_support` |
 | `resources/js/Pages/Support/Dashboard.vue` | Dashboard do cliente com chamados e tutoriais |
+
+---
+
+## Dashboards Financeiro e de Produção
+
+### Visão Geral
+
+Dois módulos analíticos, ambos dependentes só de `menu` e com preço `fixed` no catálogo:
+
+- **`financial_dashboard`** (`/finance`) — métricas financeiras com visão isolada por venue ou consolidada por corporation (toggle na mesma tela). Roles: `owner`, `general_manager`.
+- **`production_dashboard`** (`/production`) — métricas operacionais da cozinha/salão, sempre por venue (sem consolidado). Roles: `owner`, `general_manager`, `section_manager`.
+
+```
+GET /finance?period=30d&scope=venue|corporation&from=&to=
+    │
+    SetVenueContext → app('tenant') = Venue atual
+    │
+    ├── module:financial_dashboard  (RequireModule)
+    ├── role:owner,general_manager  (RequireRole)
+    │
+    DateRangeResolver::resolve(period, from, to)
+        → [from, to, previous_from, previous_to]
+    │
+    scope=venue        → FinancialMetricsService::forVenue()
+    scope=corporation  → FinancialMetricsService::forCorporation() (só se a corporation tiver >1 venue)
+    │
+    Inertia::render('Finance/Index', ['filters', 'canViewCorporation', 'metrics'])
+
+GET /production?period=30d&from=&to=
+    │
+    ├── module:production_dashboard  (RequireModule)
+    ├── role:owner,general_manager,section_manager  (RequireRole)
+    │
+    ProductionMetricsService::forVenue()
+    │
+    Inertia::render('Production/Index', ['filters', 'metrics'])
+```
+
+### Multi-venue na mesma conexão operacional
+
+Todas as venues de uma `Corporation` compartilham a **mesma conexão operacional** (`Corporation.self_connection` — não há conexão por venue). Isso permite ao `FinancialMetricsService::forCorporation()` agregar dados de múltiplas venues com uma única query (`whereIn('attendances.venue_id', $venueIds)`), sem precisar resolver conexões diferentes por venue — mesmo padrão já usado por `CorporationDashboardController`.
+
+### Métricas — Dashboard Financeiro
+
+Calculadas a partir de `payments`/`payment_items` (join com `attendances` para escopo por venue):
+
+| Métrica | Origem |
+|---|---|
+| `gross_revenue` | `sum(payments.grand_total)` no período |
+| `average_ticket` | `gross_revenue / attendances_count` |
+| `attendances_count` | `count(payments)` (1 payment por atendimento fechado) |
+| `payment_method_breakdown` | `payment_items.method` agrupado, com `%` sobre o total |
+| `revenue_trend` | `sum(grand_total)` por dia, com dias sem receita preenchidos com zero |
+| `previous_period` | variação percentual de cada KPI vs. período anterior de mesma duração |
+| `venues_breakdown` (só `scope=corporation`) | mesmas métricas quebradas por venue |
+
+### Métricas — Dashboard de Produção
+
+Calculadas a partir de `order_items`/`orders`/`attendances` (sempre escopadas à venue atual):
+
+| Métrica | Origem |
+|---|---|
+| `top_items` | `order_items` agrupado por `product_id`, ordenado por quantidade (top 10), com receita (`quantity * unit_price`) |
+| `peak_hours` / `peak_weekdays` | `count(orders)` agrupado por `extract(hour\|dow from orders.created_at)` (Postgres) — arrays fixos de 24h / 7 dias |
+| `station_speed` | `avg(extract(epoch from (ready_at - order_items.created_at)) / 60)` agrupado por `kitchen_station_id`, só itens com `ready_at` preenchido |
+| `top_attendants` | `attendances` agrupado por `created_by`, com `count` de atendimentos e `sum(payments.grand_total)`; atendimentos com `created_by` nulo (self-order) são excluídos |
+
+Nomes de produto/estação/usuário são resolvidos numa segunda consulta (`whereIn('id', ...)`) porque `users` vive na conexão `saas`, separada da conexão operacional.
+
+### Referência de Arquivos — Dashboards Financeiro e de Produção
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `app/Support/DateRangeResolver.php` | Resolve presets de período (`today`, `7d`, `30d`, `month`, `custom`) em datas atuais + período anterior equivalente |
+| `app/Http/Requests/Dashboard/DashboardPeriodRequest.php` | Validação compartilhada de `period`/`from`/`to`/`scope` |
+| `app/Services/Finance/FinancialMetricsService.php` | `forVenue()` / `forCorporation()` — KPIs, breakdown por forma de pagamento, tendência, comparação com período anterior |
+| `app/Services/Production/ProductionMetricsService.php` | `forVenue()` — itens mais vendidos, picos de venda, velocidade por estação, ranking de atendentes |
+| `app/Http/Controllers/Finance/DashboardController.php` | Resolve escopo (venue/corporation) e período, renderiza `Finance/Index` |
+| `app/Http/Controllers/Production/DashboardController.php` | Resolve período, renderiza `Production/Index` |
+| `resources/js/Components/Charts/{LineChart,BarChart,DoughnutChart}.vue` | Wrappers Chart.js/vue-chartjs reutilizados pelos dois dashboards |
+| `resources/js/Components/PeriodFilter.vue` | Seletor de período (presets + range custom) |
+| `resources/js/Components/StatCard.vue` | Card de KPI com indicador de variação percentual |
+| `resources/js/Pages/Finance/Index.vue` | UI do dashboard financeiro (toggle de escopo, KPIs, gráficos, breakdown por venue) |
+| `resources/js/Pages/Production/Index.vue` | UI do dashboard de produção (KPIs, gráficos de pico, tabelas de estação/atendentes) |
+| `tests/Feature/Finance/FinancialDashboardTest.php` | Cálculo de métricas, gate de módulo/role, escopo consolidado |
+| `tests/Feature/Production/ProductionDashboardTest.php` | Ranking de itens/atendentes, picos por hora/dia, velocidade por estação, gate de módulo/role |
 | `resources/js/Pages/Support/Tickets/Index.vue` | Lista paginada de chamados do cliente |
 | `resources/js/Pages/Support/Tickets/Create.vue` | Formulário de abertura de chamado |
 | `resources/js/Pages/Support/Tickets/Show.vue` | Thread do chamado com resposta e avaliação |
