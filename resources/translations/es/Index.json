@@ -196,5 +196,19 @@
     "Requested by": "Solicitado por",
     "Decision": "Decisión",
     "Approve": "Aprobar",
-    "Reject": "Rechazar"
+    "Reject": "Rechazar",
+    "Your trial ends today.": "El período de prueba finaliza hoy.",
+    "Inactive": "Inactivo",
+    ":mins min ago": ":minutos atrás",
+    "Acknowledge": "Reconocer",
+    "Resolve": "Resolver",
+    "No messages right now": "No hay mensajes en este momento",
+    "Guest messages sent through the QR code hub will show up here in real time.": "Los mensajes de los huéspedes enviados a través del centro de códigos QR se mostrarán aquí en tiempo real.",
+    "just now": "justo ahora",
+    "(no message)": "(sin mensaje)",
+    "acknowledged": "reconocido",
+    "Wants to place an order": "Quiere hacer un pedido",
+    "Assign to me": "Asignarme",
+    "Assigned to you": "Asignado a usted",
+    "Release table": "Tabla de lanzamientos"
 }
