@@ -196,5 +196,7 @@
     "Requested by": "Requested by",
     "Decision": "Decision",
     "Approve": "Approve",
-    "Reject": "Reject"
+    "Reject": "Reject",
+    "Your trial ends today.": "Your trial ends today.",
+    "Inactive": "Inactive"
 }

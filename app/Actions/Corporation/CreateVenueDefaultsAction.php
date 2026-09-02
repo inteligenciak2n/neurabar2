@@ -2,6 +2,7 @@
 
 namespace App\Actions\Corporation;
 
+use App\Enums\ProfileEnum;
 use App\Enums\ServiceLocationType;
 use App\Enums\UserRole;
 use App\Models\Menu\Category;
@@ -272,6 +273,9 @@ class CreateVenueDefaultsAction
                 'password' => $owner->password,
                 'pin' => null,
                 'active' => true,
+                'profile' => ProfileEnum::Client->value,
+                'email_verified_at' => now(),
+                'onboarding_completed_at' => now(),
             ]
         );
 
