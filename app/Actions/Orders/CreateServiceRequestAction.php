@@ -23,9 +23,9 @@ class CreateServiceRequestAction
             'venue_id' => $venue->id,
             'service_location_id' => $serviceLocation?->id,
             'attendance_id' => $attendance?->id,
-            // Snapshot de quem abriu o atendimento: pode ser nulo quando a Attendance
-            // foi auto-criada pelo próprio fluxo guest (sem staff ter aberto antes).
-            'assigned_user_id' => $attendance?->created_by,
+            // Só preenchido quando um atendente já reivindicou essa sessão (claim);
+            // nulo significa visível a todos no board do Direct Garçom.
+            'assigned_user_id' => $attendance?->claimed_by_user_id,
             'type' => $type,
             'message' => $message,
             'status' => ServiceRequestStatus::Pending,

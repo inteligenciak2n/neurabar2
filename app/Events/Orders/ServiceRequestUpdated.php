@@ -39,12 +39,20 @@ class ServiceRequestUpdated implements ShouldBroadcast
     /** @return array<string, mixed> */
     public function broadcastWith(): array
     {
+        $this->serviceRequest->loadMissing('serviceLocation');
+
         return [
             'id' => $this->serviceRequest->id,
             'type' => $this->serviceRequest->type->value,
+            'message' => $this->serviceRequest->message,
             'status' => $this->serviceRequest->status->value,
+            'location_name' => $this->serviceRequest->serviceLocation?->name,
+            'service_location_id' => $this->serviceRequest->service_location_id,
+            'attendance_id' => $this->serviceRequest->attendance_id,
+            'assigned_user_id' => $this->serviceRequest->assigned_user_id,
             'acknowledged_by' => $this->serviceRequest->acknowledged_by,
             'resolved_by' => $this->serviceRequest->resolved_by,
+            'created_at' => $this->serviceRequest->created_at?->toISOString(),
         ];
     }
 }

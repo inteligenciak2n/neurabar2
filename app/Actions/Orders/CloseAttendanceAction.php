@@ -25,6 +25,8 @@ class CloseAttendanceAction
         $attendance->update([
             'status' => AttendanceStatus::Closed,
             'closed_at' => now(),
+            // reset the claim so the next guest at this location can be picked up by anyone.
+            'claimed_by_user_id' => null,
         ]);
 
         return $attendance->fresh();

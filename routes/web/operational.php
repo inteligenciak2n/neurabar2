@@ -126,6 +126,8 @@ Route::middleware([
     Route::prefix('service-requests')->name('service-requests.')->group(function () {
         Route::put('/{serviceRequest}/acknowledge', [ServiceRequestController::class, 'acknowledge'])->name('acknowledge');
         Route::put('/{serviceRequest}/resolve', [ServiceRequestController::class, 'resolve'])->name('resolve');
+        Route::put('/{serviceRequest}/assign', [ServiceRequestController::class, 'assign'])->name('assign');
+        Route::put('/{serviceRequest}/release', [ServiceRequestController::class, 'release'])->name('release');
     });
 
     // Kitchen KDS

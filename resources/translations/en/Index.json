@@ -198,5 +198,17 @@
     "Approve": "Approve",
     "Reject": "Reject",
     "Your trial ends today.": "Your trial ends today.",
-    "Inactive": "Inactive"
+    "Inactive": "Inactive",
+    ":mins min ago": ":mins min ago",
+    "Acknowledge": "Acknowledge",
+    "Resolve": "Resolve",
+    "No messages right now": "No messages right now",
+    "Guest messages sent through the QR code hub will show up here in real time.": "Guest messages sent through the QR code hub will show up here in real time.",
+    "just now": "just now",
+    "(no message)": "(no message)",
+    "acknowledged": "acknowledged",
+    "Wants to place an order": "Wants to place an order",
+    "Assign to me": "Assign to me",
+    "Assigned to you": "Assigned to you",
+    "Release table": "Release table"
 }

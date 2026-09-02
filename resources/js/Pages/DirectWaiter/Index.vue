@@ -8,8 +8,10 @@ import { router, usePage } from '@inertiajs/vue3';
 import { onMounted, onUnmounted, ref, computed } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
 import { useNotificationSound } from '@/Composables/useNotificationSound';
+import { useDirectWaiterNotifications } from '@/Composables/useDirectWaiterNotifications';
 
 const __ = useTranslate();
+const { reset: resetDirectWaiterNotifications } = useDirectWaiterNotifications();
 
 const props = defineProps({
     requests: Array,
@@ -40,16 +42,28 @@ function resolve(request) {
     router.put(route('service-requests.resolve', request.id), {}, { preserveScroll: true });
 }
 
+function assignToMe(request) {
+    router.put(route('service-requests.assign', request.id), {}, { preserveScroll: true });
+}
+
+function release(request) {
+    router.put(route('service-requests.release', request.id), {}, { preserveScroll: true });
+}
+
 const { playSound } = useNotificationSound();
 
 let channel = null;
 
 onMounted(() => {
+    resetDirectWaiterNotifications();
+
     if (!venueId.value) return;
 
     channel = window.Echo.private(`venue.${venueId.value}.service-requests`)
         .listen('.ServiceRequestCreated', (event) => {
             if (event.type !== 'message') return;
+            // Reivindicada por outro atendente: só ele deve ser notificado a partir de agora.
+            if (event.assigned_user_id && event.assigned_user_id !== currentUserId.value) return;
             requests.value.unshift({
                 id: event.id,
                 type: event.type,
@@ -57,19 +71,49 @@ onMounted(() => {
                 status: event.status,
                 created_at: event.created_at,
                 assigned_user_id: event.assigned_user_id,
+                attendance_id: event.attendance_id,
                 service_location: event.location_name ? { name: event.location_name } : null,
                 assigned_user: null,
                 acknowledged_by: null,
             });
             playSound();
+            // Já está vendo a mensagem nesta página, não precisa contar no sino do header.
+            resetDirectWaiterNotifications();
         })
         .listen('.ServiceRequestUpdated', (event) => {
-            const request = requests.value.find((r) => r.id === event.id);
-            if (!request) return;
+            if (event.type !== 'message') return;
+
             if (event.status === 'resolved') {
                 requests.value = requests.value.filter((r) => r.id !== event.id);
-            } else {
+                return;
+            }
+
+            const visibleToMe = ! event.assigned_user_id || event.assigned_user_id === currentUserId.value;
+            const request = requests.value.find((r) => r.id === event.id);
+
+            if (! visibleToMe) {
+                // Reivindicada por outro atendente: sai do meu board.
+                if (request) requests.value = requests.value.filter((r) => r.id !== event.id);
+                return;
+            }
+
+            if (request) {
                 request.status = event.status;
+                request.assigned_user_id = event.assigned_user_id;
+            } else {
+                // Voltou pra fila comum (mesa liberada) ou passou a ser minha sem eu ter visto a criação.
+                requests.value.unshift({
+                    id: event.id,
+                    type: event.type,
+                    message: event.message,
+                    status: event.status,
+                    created_at: event.created_at,
+                    assigned_user_id: event.assigned_user_id,
+                    attendance_id: event.attendance_id,
+                    service_location: event.location_name ? { name: event.location_name } : null,
+                    assigned_user: null,
+                    acknowledged_by: null,
+                });
             }
         });
 });
@@ -88,6 +132,7 @@ onUnmounted(() => {
         </template>
 
         <div class="py-6 px-4 sm:px-6">
+            
             <AppEmptyState
                 v-if="requests.length === 0"
                 :title="__('No messages right now')"
@@ -115,12 +160,28 @@ onUnmounted(() => {
                         variant="primary"
                     />
 
-                    <div class="mt-4 flex gap-2">
+                    <div class="mt-4 flex flex-wrap gap-2">
                         <AppButton v-if="request.status === 'pending'" size="sm" variant="secondary" @click="acknowledge(request)">
                             {{ __('Acknowledge') }}
                         </AppButton>
                         <AppButton size="sm" @click="resolve(request)">
                             {{ __('Resolve') }}
+                        </AppButton>
+                        <AppButton
+                            v-if="request.assigned_user_id === null && request.attendance_id"
+                            size="sm"
+                            variant="secondary"
+                            @click="assignToMe(request)"
+                        >
+                            {{ __('Assign to me') }}
+                        </AppButton>
+                        <AppButton
+                            v-if="request.assigned_user_id === currentUserId"
+                            size="sm"
+                            variant="secondary"
+                            @click="release(request)"
+                        >
+                            {{ __('Release table') }}
                         </AppButton>
                     </div>
                 </AppCard>

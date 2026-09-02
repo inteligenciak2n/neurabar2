@@ -30,5 +30,6 @@
     "Signal only (no message)": "Signal only (no message)",
     "Type your message to the waiter...": "Type your message to the waiter...",
     "Send": "Send",
-    "Waiter notified!": "Waiter notified!"
+    "Waiter notified!": "Waiter notified!",
+    "A waiter is on their way to take your order!": "A waiter is on their way to take your order!"
 }

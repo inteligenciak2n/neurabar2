@@ -19,6 +19,7 @@ class ServiceRequestResource extends JsonResource
             'message' => $this->message,
             'status' => $this->status,
             'assigned_user_id' => $this->assigned_user_id,
+            'attendance_id' => $this->attendance_id,
             'created_at' => $this->created_at,
             'service_location' => $this->whenLoaded('serviceLocation', fn () => [
                 'id' => $this->serviceLocation->id,

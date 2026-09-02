@@ -33,6 +33,7 @@ class Attendance extends Model
         'party_size',
         'notes',
         'created_by',
+        'claimed_by_user_id',
         'closed_at',
     ];
 
@@ -58,6 +59,11 @@ class Attendance extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function claimedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'claimed_by_user_id');
     }
 
     public function orders(): HasMany

@@ -48,6 +48,7 @@ class ServiceRequestCreated implements ShouldBroadcast
             'status' => $this->serviceRequest->status->value,
             'location_name' => $this->serviceRequest->serviceLocation?->name,
             'service_location_id' => $this->serviceRequest->service_location_id,
+            'attendance_id' => $this->serviceRequest->attendance_id,
             'assigned_user_id' => $this->serviceRequest->assigned_user_id,
             'created_at' => $this->serviceRequest->created_at?->toISOString(),
         ];
