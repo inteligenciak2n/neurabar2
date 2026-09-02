@@ -3,5 +3,14 @@
     "One or more payment methods are not accepted by this venue.": "Uno o más métodos de pago no son aceptados por este establecimiento.",
     "The sum of payment methods does not match the grand total.": "La suma de los métodos de pago no coincide con el total del pedido.",
     "Error placing order.": "Error al enviar el pedido.",
-    "Error looking up delivery fee.": "Error al consultar la tarifa de envío."
+    "Error looking up delivery fee.": "Error al consultar la tarifa de envío.",
+    "Send verification code to reuse my data": "Enviar código para reutilizar mis datos",
+    "Sending code...": "Enviando código...",
+    "Verification code": "Código de verificación",
+    "Verify": "Verificar",
+    "Verifying...": "Verificando...",
+    "Invalid or expired code.": "Código inválido o expirado.",
+    "Phone verified! Your saved data was filled in.": "¡Teléfono verificado! Tus datos guardados fueron completados.",
+    "Error sending verification code.": "Error al enviar el código de verificación.",
+    "Error verifying code.": "Error al verificar el código."
 }

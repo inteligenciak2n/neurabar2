@@ -3,5 +3,14 @@
     "One or more payment methods are not accepted by this venue.": "One or more payment methods are not accepted by this venue.",
     "The sum of payment methods does not match the grand total.": "The sum of payment methods does not match the grand total.",
     "Error placing order.": "Error placing order.",
-    "Error looking up delivery fee.": "Error looking up delivery fee."
+    "Error looking up delivery fee.": "Error looking up delivery fee.",
+    "Send verification code to reuse my data": "Send verification code to reuse my data",
+    "Sending code...": "Sending code...",
+    "Verification code": "Verification code",
+    "Verify": "Verify",
+    "Verifying...": "Verifying...",
+    "Invalid or expired code.": "Invalid or expired code.",
+    "Phone verified! Your saved data was filled in.": "Phone verified! Your saved data was filled in.",
+    "Error sending verification code.": "Error sending verification code.",
+    "Error verifying code.": "Error verifying code."
 }

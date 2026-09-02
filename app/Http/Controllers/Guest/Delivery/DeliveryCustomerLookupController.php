@@ -30,4 +30,33 @@ class DeliveryCustomerLookupController extends Controller
 
         return response()->json(['found' => $found]);
     }
+
+    /**
+     * Reveal the saved name/address for a phone, only once its ownership was
+     * proven via OTP (GuestSession::isPhoneVerifiedFor) — never before.
+     */
+    public function reveal(string $token, Request $request): JsonResponse
+    {
+        $request->validate(['phone' => ['required', 'string', 'max:20']]);
+
+        ['venue' => $venue] = $this->tokenService->decode($token);
+
+        abort_unless(in_array(ModuleCode::Delivery->value, $venue->activeModules(), true), 404);
+
+        $phone = $request->query('phone');
+        $session = $this->tokenService->resolveSession($request, $venue);
+
+        abort_unless($session?->isPhoneVerifiedFor($phone), 403, 'Phone not verified.');
+
+        $customer = Customer::withoutGlobalScopes()
+            ->where('corporation_id', $venue->corporation_id)
+            ->where('phone', $phone)
+            ->first();
+
+        abort_if($customer === null, 404);
+
+        $address = $customer->addresses()->orderByDesc('is_default')->latest()->first();
+
+        return response()->json(['name' => $customer->name, 'address' => $address]);
+    }
 }

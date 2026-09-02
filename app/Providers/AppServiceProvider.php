@@ -20,9 +20,12 @@ use App\Services\Subscription\AsaasPaymentGateway;
 use App\Services\Subscription\FakePaymentGateway;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
 use Twilio\Rest\Client as TwilioClient;
@@ -35,7 +38,10 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(PaymentGatewayContract::class, $this->resolvePaymentGateway());
-        $this->app->bind(SmsProviderContract::class, $this->resolveSmsProvider());
+
+        // Lazy: only resolves (and only throws if Twilio credentials are missing) once
+        // something actually requests SmsProviderContract, instead of on every boot.
+        $this->app->bind(SmsProviderContract::class, fn () => $this->app->make($this->resolveSmsProvider()));
 
         $this->app->singleton(TwilioClient::class, fn () => new TwilioClient(
             config('services.twilio.sid'),
@@ -159,5 +165,23 @@ class AppServiceProvider extends ServiceProvider
             UserRole::Owner,
             UserRole::GeneralManager,
         ], true));
+
+        RateLimiter::for('delivery-customer-lookup', fn (Request $request) => [
+            Limit::perMinute(5)->by('phone:'.$this->normalizePhoneForRateLimit((string) $request->query('phone'))),
+            Limit::perMinute(20)->by('ip:'.$request->ip()),
+        ]);
+
+        RateLimiter::for('delivery-phone-otp', fn (Request $request) => [
+            Limit::perMinutes(10, 3)->by('phone:'.$this->normalizePhoneForRateLimit((string) $request->input('phone'))),
+            Limit::perMinute(20)->by('ip:'.$request->ip()),
+        ]);
+    }
+
+    /**
+     * Strip formatting so "(11) 99999-8888" and "11999998888" share the same rate-limit bucket.
+     */
+    private function normalizePhoneForRateLimit(string $phone): string
+    {
+        return preg_replace('/\D+/', '', $phone) ?? '';
     }
 }

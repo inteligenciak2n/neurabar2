@@ -94,19 +94,22 @@ class GuestTokenService
 
     /**
      * Create a new GuestSession with a unique token (PIN set separately).
+     *
+     * $pin is null for flows that don't use a PIN (e.g. the Delivery phone
+     * OTP flow, which authenticates via phone verification instead).
      */
     public function createSession(
         Venue $venue,
         ?ServiceLocation $serviceLocation,
         ?AttendanceChannel $attendanceChannel,
-        string $pin
+        ?string $pin = null
     ): GuestSession {
         return GuestSession::withoutGlobalScopes()->create([
             'venue_id' => $venue->id,
             'service_location_id' => $serviceLocation?->id,
             'attendance_channel_id' => $attendanceChannel?->id,
             'guest_token' => (string) Str::uuid(),
-            'pin' => bcrypt($pin),
+            'pin' => $pin !== null ? bcrypt($pin) : null,
             'expires_at' => now()->addHours(24),
         ]);
     }

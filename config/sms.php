@@ -9,10 +9,10 @@ return [
     | The provider implementation resolved behind the App\Facades\Sms facade.
     | Must implement App\Contracts\Sms\SmsProviderContract.
     |
-    | There is deliberately NO default value: booting production without an
-    | explicit provider would silently fall back to the fake implementation,
-    | "sending" SMS/OTP codes without ever reaching the customer's phone.
-    | AppServiceProvider aborts the boot when this is empty outside local/testing.
+    | This value only takes effect in local/testing (to swap the fake driver
+    | for something else). Outside those environments AppServiceProvider always
+    | resolves TwilioSmsProvider and ignores this value entirely, aborting the
+    | boot instead if TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN are missing.
     |
     */
     'provider' => env('SMS_PROVIDER'),

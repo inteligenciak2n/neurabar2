@@ -112,6 +112,18 @@ class AdvanceDeliveryOrderStatusTest extends TestCase
         $this->put(route('kitchen.orders.advance-delivery-status', $order->id))->assertNotFound();
     }
 
+    public function test_returns_forbidden_when_kds_module_is_inactive(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Attendant, $venue);
+
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
+        $order = Order::factory()->create(['attendance_id' => $attendance->id, 'status' => 'ready']);
+        DeliveryOrder::factory()->create(['venue_id' => $venue->id, 'attendance_id' => $attendance->id]);
+
+        $this->put(route('kitchen.orders.advance-delivery-status', $order->id))->assertForbidden();
+    }
+
     public function test_delivering_a_pickup_order_charges_the_payment_methods_chosen_at_checkout(): void
     {
         $venue = Venue::factory()->create();

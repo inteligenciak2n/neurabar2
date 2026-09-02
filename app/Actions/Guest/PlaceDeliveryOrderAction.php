@@ -55,84 +55,20 @@ class PlaceDeliveryOrderAction
         $order = DB::connection($connection)->transaction(function () use (
             $venue, $validated, $fulfillmentType, $deliveryFeeZone, $deliveryFee, $resolvedItems
         ): Order {
-            $customer = Customer::withoutGlobalScopes()->updateOrCreate(
-                ['corporation_id' => $venue->corporation_id, 'phone' => $validated['customer']['phone']],
-                ['name' => $validated['customer']['name']]
-            );
+            $customer = $this->createCustomer($venue, $validated['customer']);
 
             $customerAddress = $fulfillmentType === FulfillmentType::Delivery
                 ? $this->persistAddressIfRequested($customer, $validated['address'])
                 : null;
 
-            $channelName = $fulfillmentType === FulfillmentType::Delivery ? 'Delivery' : 'Retirada';
+            $attendanceChannel = $this->createOrRetrieveAttendanceChannel($venue, $fulfillmentType);
+            $attendance = $this->createAttendance($venue, $attendanceChannel, $validated['customer']['name']);
+            $order = $this->createOrderWithItems($venue, $attendance, $resolvedItems);
 
-            $attendanceChannel = AttendanceChannel::withoutGlobalScopes()->firstOrCreate(
-                ['venue_id' => $venue->id, 'name' => $channelName],
-                ['is_trackable' => true, 'requires_customer_identifier' => true, 'active' => true, 'sort_order' => 99]
+            $this->createDeliveryOrderWithPaymentMethods(
+                $venue, $attendance, $fulfillmentType, $customer, $customerAddress,
+                $deliveryFeeZone, $deliveryFee, $validated
             );
-
-            $attendance = Attendance::withoutGlobalScopes()->create([
-                'venue_id' => $venue->id,
-                'attendance_channel_id' => $attendanceChannel->id,
-                'customer_identifier' => $validated['customer']['name'],
-                'status' => AttendanceStatus::Open,
-            ]);
-
-            $orderNumber = Order::where('attendance_id', $attendance->id)->max('order_number') + 1;
-
-            $order = Order::create([
-                'attendance_id' => $attendance->id,
-                'order_number' => $orderNumber,
-                'status' => OrderStatus::Open,
-                'created_by' => null,
-            ]);
-
-            foreach ($resolvedItems as $itemData) {
-                $item = OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $itemData['product_id'],
-                    'variation_id' => $itemData['variation_id'],
-                    'quantity' => $itemData['quantity'],
-                    'unit_price' => $itemData['unit_price'],
-                    'notes' => $itemData['notes'],
-                    'preparation_status_id' => $venue->initialStatus?->id,
-                ]);
-
-                foreach ($itemData['modifiers'] as $modifier) {
-                    $item->modifiers()->create($modifier);
-                }
-            }
-
-            $deliveryOrder = DeliveryOrder::withoutGlobalScopes()->create([
-                'venue_id' => $venue->id,
-                'attendance_id' => $attendance->id,
-                'fulfillment_type' => $fulfillmentType,
-                'customer_id' => $customer->id,
-                'customer_address_id' => $customerAddress?->id,
-                'delivery_fee_zone_id' => $deliveryFeeZone?->id,
-                'delivery_fee' => $deliveryFee,
-                'customer_name' => $validated['customer']['name'],
-                'customer_phone' => $validated['customer']['phone'],
-                'address_street' => $validated['address']['street'] ?? null,
-                'address_number' => $validated['address']['number'] ?? null,
-                'address_complement' => $validated['address']['complement'] ?? null,
-                'address_neighborhood' => $validated['address']['neighborhood'] ?? null,
-                'address_city' => $validated['address']['city'] ?? null,
-                'address_state' => $validated['address']['state'] ?? null,
-                'address_zip_code' => $validated['address']['zip_code'] ?? null,
-                'address_reference_point' => $validated['address']['reference_point'] ?? null,
-            ]);
-
-            // The charge itself is only recognized once the order is Delivered
-            // (see AdvanceDeliveryOrderStatusAction) — here we only record what the
-            // guest picked, so it can't be counted as revenue before it's fulfilled.
-            foreach ($validated['methods'] as $methodData) {
-                $deliveryOrder->paymentMethods()->create([
-                    'method' => $methodData['type'],
-                    'amount' => $methodData['amount'],
-                    'notes' => $methodData['notes'] ?? null,
-                ]);
-            }
 
             return $order;
         });
@@ -140,6 +76,117 @@ class PlaceDeliveryOrderAction
         event(new OrderPlaced($order->load('attendance')));
 
         return $order;
+    }
+
+    /**
+     * @param  array{name: string, phone: string}  $customerData
+     */
+    private function createCustomer(Venue $venue, array $customerData): Customer
+    {
+        return Customer::withoutGlobalScopes()->updateOrCreate(
+            ['corporation_id' => $venue->corporation_id, 'phone' => $customerData['phone']],
+            ['name' => $customerData['name']]
+        );
+    }
+
+    private function createOrRetrieveAttendanceChannel(Venue $venue, FulfillmentType $fulfillmentType): AttendanceChannel
+    {
+        $channelName = $fulfillmentType === FulfillmentType::Delivery ? 'Delivery' : 'Retirada';
+
+        return AttendanceChannel::withoutGlobalScopes()->firstOrCreate(
+            ['venue_id' => $venue->id, 'name' => $channelName],
+            ['is_trackable' => true, 'requires_customer_identifier' => true, 'active' => true, 'sort_order' => 99]
+        );
+    }
+
+    private function createAttendance(Venue $venue, AttendanceChannel $attendanceChannel, string $customerName): Attendance
+    {
+        return Attendance::withoutGlobalScopes()->create([
+            'venue_id' => $venue->id,
+            'attendance_channel_id' => $attendanceChannel->id,
+            'customer_identifier' => $customerName,
+            'status' => AttendanceStatus::Open,
+        ]);
+    }
+
+    /**
+     * @param  array<int, array{product_id: ?string, variation_id: ?string, quantity: int, unit_price: float, notes: ?string, modifiers: array<int, array<string, mixed>>}>  $resolvedItems
+     */
+    private function createOrderWithItems(Venue $venue, Attendance $attendance, array $resolvedItems): Order
+    {
+        $orderNumber = Order::where('attendance_id', $attendance->id)->max('order_number') + 1;
+
+        $order = Order::create([
+            'attendance_id' => $attendance->id,
+            'order_number' => $orderNumber,
+            'status' => OrderStatus::Open,
+            'created_by' => null,
+        ]);
+
+        foreach ($resolvedItems as $itemData) {
+            $item = OrderItem::create([
+                'order_id' => $order->id,
+                'product_id' => $itemData['product_id'],
+                'variation_id' => $itemData['variation_id'],
+                'quantity' => $itemData['quantity'],
+                'unit_price' => $itemData['unit_price'],
+                'notes' => $itemData['notes'],
+                'preparation_status_id' => $venue->initialStatus?->id,
+            ]);
+
+            foreach ($itemData['modifiers'] as $modifier) {
+                $item->modifiers()->create($modifier);
+            }
+        }
+
+        return $order;
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function createDeliveryOrderWithPaymentMethods(
+        Venue $venue,
+        Attendance $attendance,
+        FulfillmentType $fulfillmentType,
+        Customer $customer,
+        ?CustomerAddress $customerAddress,
+        ?DeliveryFeeZone $deliveryFeeZone,
+        float $deliveryFee,
+        array $validated
+    ): DeliveryOrder {
+        $deliveryOrder = DeliveryOrder::withoutGlobalScopes()->create([
+            'venue_id' => $venue->id,
+            'attendance_id' => $attendance->id,
+            'fulfillment_type' => $fulfillmentType,
+            'customer_id' => $customer->id,
+            'customer_address_id' => $customerAddress?->id,
+            'delivery_fee_zone_id' => $deliveryFeeZone?->id,
+            'delivery_fee' => $deliveryFee,
+            'customer_name' => $validated['customer']['name'],
+            'customer_phone' => $validated['customer']['phone'],
+            'address_street' => $validated['address']['street'] ?? null,
+            'address_number' => $validated['address']['number'] ?? null,
+            'address_complement' => $validated['address']['complement'] ?? null,
+            'address_neighborhood' => $validated['address']['neighborhood'] ?? null,
+            'address_city' => $validated['address']['city'] ?? null,
+            'address_state' => $validated['address']['state'] ?? null,
+            'address_zip_code' => $validated['address']['zip_code'] ?? null,
+            'address_reference_point' => $validated['address']['reference_point'] ?? null,
+        ]);
+
+        // The charge itself is only recognized once the order is Delivered
+        // (see AdvanceDeliveryOrderStatusAction) — here we only record what the
+        // guest picked, so it can't be counted as revenue before it's fulfilled.
+        foreach ($validated['methods'] as $methodData) {
+            $deliveryOrder->paymentMethods()->create([
+                'method' => $methodData['type'],
+                'amount' => $methodData['amount'],
+                'notes' => $methodData['notes'] ?? null,
+            ]);
+        }
+
+        return $deliveryOrder;
     }
 
     /**

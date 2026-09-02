@@ -28,6 +28,13 @@ const customerPhone = ref('');
 const lookingUpCustomer = ref(false);
 const customerFound = ref(false);
 
+const otpReferenceId = ref(null);
+const otpCode = ref('');
+const sendingOtp = ref(false);
+const verifyingOtp = ref(false);
+const otpError = ref(null);
+const phoneVerified = ref(false);
+
 const address = ref({
     street: '',
     number: '',
@@ -92,6 +99,67 @@ async function lookupCustomer() {
         customerFound.value = Boolean(data.found);
     } finally {
         lookingUpCustomer.value = false;
+    }
+}
+
+// Editing the phone after verification invalidates it — it belonged to the previous number.
+watch(customerPhone, () => {
+    phoneVerified.value = false;
+    otpReferenceId.value = null;
+    otpCode.value = '';
+    otpError.value = null;
+});
+
+async function requestOtp() {
+    otpError.value = null;
+    sendingOtp.value = true;
+    try {
+        const { data } = await axios.post(`/delivery/${props.token}/phone/otp`, { phone: customerPhone.value });
+        otpReferenceId.value = data.reference_id;
+    } catch (e) {
+        otpError.value = __(e.response?.data?.message ?? 'Error sending verification code.');
+    } finally {
+        sendingOtp.value = false;
+    }
+}
+
+async function verifyOtp() {
+    if (!otpCode.value) return;
+
+    otpError.value = null;
+    verifyingOtp.value = true;
+    try {
+        const { data } = await axios.post(`/delivery/${props.token}/phone/otp/verify`, {
+            phone: customerPhone.value,
+            reference_id: otpReferenceId.value,
+            code: otpCode.value,
+        });
+
+        if (!data.verified) {
+            otpError.value = __('Invalid or expired code.');
+            return;
+        }
+
+        phoneVerified.value = true;
+
+        const { data: saved } = await axios.get(`/delivery/${props.token}/customer/data`, { params: { phone: customerPhone.value } });
+        if (saved.name) customerName.value = saved.name;
+        if (saved.address) {
+            address.value = {
+                street: saved.address.street ?? '',
+                number: saved.address.number ?? '',
+                complement: saved.address.complement ?? '',
+                neighborhood: saved.address.neighborhood ?? '',
+                city: saved.address.city ?? '',
+                state: saved.address.state ?? '',
+                zip_code: saved.address.zip_code ?? '',
+                reference_point: saved.address.reference_point ?? '',
+            };
+        }
+    } catch (e) {
+        otpError.value = __(e.response?.data?.message ?? 'Error verifying code.');
+    } finally {
+        verifyingOtp.value = false;
     }
 }
 
@@ -213,6 +281,27 @@ function close() {
                                 <input v-model="customerPhone" type="tel" :placeholder="__('Phone')" class="flex-1 rounded-lg border border-border px-3 py-2 text-sm" @blur="lookupCustomer" />
                             </div>
                             <p v-if="customerFound" class="text-xs text-muted-foreground">{{ __('Welcome back! Please confirm your details below.') }}</p>
+
+                            <div v-if="customerFound && !phoneVerified" class="space-y-2">
+                                <button
+                                    v-if="!otpReferenceId"
+                                    type="button"
+                                    class="text-xs font-medium text-primary disabled:opacity-50"
+                                    :disabled="sendingOtp"
+                                    @click="requestOtp"
+                                >{{ sendingOtp ? __('Sending code...') : __('Send verification code to reuse my data') }}</button>
+                                <div v-else class="flex gap-2">
+                                    <input v-model="otpCode" type="text" inputmode="numeric" :placeholder="__('Verification code')" class="flex-1 rounded-lg border border-border px-3 py-2 text-sm" />
+                                    <button
+                                        type="button"
+                                        class="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                                        :disabled="verifyingOtp || !otpCode"
+                                        @click="verifyOtp"
+                                    >{{ verifyingOtp ? __('Verifying...') : __('Verify') }}</button>
+                                </div>
+                                <p v-if="otpError" class="text-xs text-destructive">{{ otpError }}</p>
+                            </div>
+                            <p v-if="phoneVerified" class="text-xs text-green-700">{{ __('Phone verified! Your saved data was filled in.') }}</p>
                         </div>
 
                         <!-- Address -->
