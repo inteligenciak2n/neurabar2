@@ -9,6 +9,7 @@ import { onMounted, onUnmounted, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import axios from 'axios';
 import { useTranslate } from '@/Composables/useTranslate';
+import { useNotificationSound } from '@/Composables/useNotificationSound';
 
 const props = defineProps({
     attendance: Object,
@@ -35,18 +36,7 @@ const statusName = (status) => ({
 
 const channelsLabel = (channel) => channel;
 
-let notificationSound = null;
-
-function playSound() {
-    try {
-        if (!notificationSound) {
-            notificationSound = new Audio('/sounds/new-order.mp3');
-        }
-        notificationSound.play().catch(() => {});
-    } catch {
-        // Audio not available
-    }
-}
+const { playSound } = useNotificationSound();
 
 async function fetchOrders() {
     const { data } = await axios.get(route('attendances.orders', props.attendance.id));

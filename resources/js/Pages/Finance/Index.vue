@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { router } from '@inertiajs/vue3';
+import { useTranslate } from '@/Composables/useTranslate';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import AppCard from '@/Components/AppCard.vue';
 import AppTable from '@/Components/AppTable.vue';
@@ -8,6 +9,8 @@ import StatCard from '@/Components/StatCard.vue';
 import PeriodFilter from '@/Components/PeriodFilter.vue';
 import LineChart from '@/Components/Charts/LineChart.vue';
 import DoughnutChart from '@/Components/Charts/DoughnutChart.vue';
+
+const __ = useTranslate();
 
 const props = defineProps({
     filters: Object,

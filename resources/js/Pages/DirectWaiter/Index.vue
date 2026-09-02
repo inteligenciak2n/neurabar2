@@ -6,6 +6,10 @@ import AppCard from '@/Components/AppCard.vue';
 import AppEmptyState from '@/Components/AppEmptyState.vue';
 import { router, usePage } from '@inertiajs/vue3';
 import { onMounted, onUnmounted, ref, computed } from 'vue';
+import { useTranslate } from '@/Composables/useTranslate';
+import { useNotificationSound } from '@/Composables/useNotificationSound';
+
+const __ = useTranslate();
 
 const props = defineProps({
     requests: Array,
@@ -36,18 +40,7 @@ function resolve(request) {
     router.put(route('service-requests.resolve', request.id), {}, { preserveScroll: true });
 }
 
-let notificationSound = null;
-
-function playSound() {
-    try {
-        if (!notificationSound) {
-            notificationSound = new Audio('/sounds/new-order.mp3');
-        }
-        notificationSound.play().catch(() => {});
-    } catch {
-        // Audio not available
-    }
-}
+const { playSound } = useNotificationSound();
 
 let channel = null;
 

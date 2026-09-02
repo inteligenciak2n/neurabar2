@@ -19,9 +19,11 @@ class RecordOrderModuleUsage
 
         // created_by é nulo tanto no self-order quanto no delivery/retirada (ambos anônimos);
         // a existência de um DeliveryOrder na attendance é o que diferencia os dois.
+        $order->loadMissing('attendance.deliveryOrder');
+
         $moduleCode = match (true) {
             $order->created_by !== null => ModuleCode::Taker,
-            $order->attendance->deliveryOrder()->exists() => ModuleCode::Delivery,
+            $order->attendance->deliveryOrder !== null => ModuleCode::Delivery,
             default => ModuleCode::SelfOrder,
         };
 

@@ -54,7 +54,7 @@ function removeFromCart(index) {
 function handleOrderPlaced(orderId) {
     cartItems.value = [];
     checkoutOpen.value = false;
-    window.location.href = `/order/${orderId}/track`;
+    window.location.href = route('orders.track', orderId);
 }
 </script>
 

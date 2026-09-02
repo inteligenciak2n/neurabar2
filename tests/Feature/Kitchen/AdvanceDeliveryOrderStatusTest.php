@@ -10,6 +10,7 @@ use App\Models\Orders\Attendance;
 use App\Models\Orders\DeliveryOrder;
 use App\Models\Orders\Order;
 use App\Models\Payment\Payment;
+use App\Models\Settings\VenueSettings;
 use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueModule;
@@ -95,5 +96,41 @@ class AdvanceDeliveryOrderStatusTest extends TestCase
         DeliveryOrder::factory()->create(['venue_id' => $venue->id, 'attendance_id' => $attendance->id]);
 
         $this->put(route('kitchen.orders.advance-delivery-status', $order->id))->assertSessionHasErrors();
+    }
+
+    public function test_cannot_advance_an_order_belonging_to_another_venue(): void
+    {
+        $venue = Venue::factory()->create();
+        $otherVenue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+        $this->loginAs(UserRole::Attendant, $venue);
+
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $otherVenue->id]);
+        $order = Order::factory()->create(['attendance_id' => $attendance->id, 'status' => 'ready']);
+        DeliveryOrder::factory()->create(['venue_id' => $otherVenue->id, 'attendance_id' => $attendance->id]);
+
+        $this->put(route('kitchen.orders.advance-delivery-status', $order->id))->assertNotFound();
+    }
+
+    public function test_delivering_a_pickup_order_charges_the_payment_methods_chosen_at_checkout(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+        $this->loginAs(UserRole::Attendant, $venue);
+        VenueSettings::factory()->create(['venue_id' => $venue->id, 'service_fee_percent' => 0]);
+
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
+        $order = Order::factory()->create(['attendance_id' => $attendance->id, 'status' => 'ready']);
+        $deliveryOrder = DeliveryOrder::factory()->create([
+            'venue_id' => $venue->id,
+            'attendance_id' => $attendance->id,
+            'delivery_fee' => 0,
+        ]);
+        $deliveryOrder->paymentMethods()->create(['method' => 'cash', 'amount' => 40]);
+
+        $this->put(route('kitchen.orders.advance-delivery-status', $order->id))->assertRedirect();
+
+        $this->assertNotNull($attendance->fresh()->payment);
+        $this->assertDatabaseHas('payment_items', ['method' => 'cash', 'amount' => 40]);
     }
 }

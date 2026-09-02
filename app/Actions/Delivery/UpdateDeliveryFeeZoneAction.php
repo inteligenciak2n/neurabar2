@@ -2,14 +2,16 @@
 
 namespace App\Actions\Delivery;
 
-use App\Http\Requests\Delivery\UpdateDeliveryFeeZoneRequest;
 use App\Models\Settings\DeliveryFeeZone;
 
 class UpdateDeliveryFeeZoneAction
 {
-    public function execute(DeliveryFeeZone $zone, UpdateDeliveryFeeZoneRequest $request): DeliveryFeeZone
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function execute(DeliveryFeeZone $zone, array $data): DeliveryFeeZone
     {
-        $zone->update($request->validated());
+        $zone->update($data);
 
         return $zone;
     }

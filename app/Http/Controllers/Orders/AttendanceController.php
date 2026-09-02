@@ -40,6 +40,8 @@ class AttendanceController extends Controller
         // mensagens de texto do Direct Garçom têm painel próprio (/direct-waiter).
         $serviceCallRequests = ServiceRequest::open()
             ->where('type', '!=', ServiceRequestType::Message)
+            ->latest()
+            ->limit(50)
             ->get(['id', 'service_location_id', 'attendance_id', 'type', 'status', 'created_at']);
 
         return Inertia::render('Attendances/Index', [

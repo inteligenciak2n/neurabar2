@@ -2,13 +2,11 @@
 
 namespace App\Actions\Guest;
 
+use App\Actions\Orders\ResolveOrderItemsAction;
 use App\Enums\AttendanceStatus;
 use App\Enums\OrderStatus;
 use App\Events\Orders\OrderPlaced;
 use App\Models\GuestSession;
-use App\Models\Menu\ModifierOption;
-use App\Models\Menu\Product;
-use App\Models\Menu\ProductVariation;
 use App\Models\Orders\Order;
 use App\Models\Orders\OrderItem;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +14,8 @@ use Illuminate\Validation\ValidationException;
 
 class PlaceGuestOrderAction
 {
+    public function __construct(private readonly ResolveOrderItemsAction $resolveOrderItemsAction) {}
+
     /**
      * @param  array{items: array<int, array{product_id: string, variation_id: ?string, quantity: int, notes: ?string, modifiers: ?array<int, string>}>}  $validated
      */
@@ -35,7 +35,9 @@ class PlaceGuestOrderAction
 
         $venue = $attendance->venue()->withoutGlobalScopes()->with('initialStatus')->first();
 
-        $order = DB::transaction(function () use ($attendance, $venue, $validated): Order {
+        $resolvedItems = $this->resolveOrderItemsAction->execute($venue, $validated['items']);
+
+        $order = DB::transaction(function () use ($attendance, $venue, $resolvedItems): Order {
             $orderNumber = Order::where('attendance_id', $attendance->id)->max('order_number') + 1;
 
             $order = Order::create([
@@ -45,33 +47,19 @@ class PlaceGuestOrderAction
                 'created_by' => null,
             ]);
 
-            foreach ($validated['items'] as $itemData) {
-                $product = Product::withoutGlobalScopes()->findOrFail($itemData['product_id']);
-
-                $unitPrice = $product->price;
-
-                if (! empty($itemData['variation_id'])) {
-                    $variation = ProductVariation::withoutGlobalScopes()->findOrFail($itemData['variation_id']);
-                    $unitPrice = $variation->price;
-                }
-
+            foreach ($resolvedItems as $itemData) {
                 $item = OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $itemData['product_id'],
-                    'variation_id' => $itemData['variation_id'] ?? null,
+                    'variation_id' => $itemData['variation_id'],
                     'quantity' => $itemData['quantity'],
-                    'unit_price' => $unitPrice,
-                    'notes' => $itemData['notes'] ?? null,
+                    'unit_price' => $itemData['unit_price'],
+                    'notes' => $itemData['notes'],
                     'preparation_status_id' => $venue->initialStatus?->id,
                 ]);
 
-                foreach ($itemData['modifiers'] ?? [] as $modifierOptionId) {
-                    $modifierOption = ModifierOption::withoutGlobalScopes()->findOrFail($modifierOptionId);
-
-                    $item->modifiers()->create([
-                        'modifier_option_id' => $modifierOptionId,
-                        'extra_price_snapshot' => $modifierOption->extra_price,
-                    ]);
+                foreach ($itemData['modifiers'] as $modifier) {
+                    $item->modifiers()->create($modifier);
                 }
             }
 

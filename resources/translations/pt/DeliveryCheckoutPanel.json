@@ -1,0 +1,7 @@
+{
+    "This address is outside the delivery area.": "Este endereço está fora da área de entrega.",
+    "One or more payment methods are not accepted by this venue.": "Uma ou mais formas de pagamento não são aceitas por este estabelecimento.",
+    "The sum of payment methods does not match the grand total.": "A soma das formas de pagamento não corresponde ao total do pedido.",
+    "Error placing order.": "Erro ao enviar o pedido.",
+    "Error looking up delivery fee.": "Erro ao consultar a taxa de entrega."
+}

@@ -11,9 +11,8 @@ const props = defineProps({
     deliveryLink: String,
     feeZones: Array,
     settings: Object,
+    availablePaymentMethods: Array,
 });
-
-const allPaymentMethods = ['cash', 'credit_card', 'debit_card', 'pix', 'other'];
 
 const settingsForm = useForm({
     accepted_delivery_payment_methods: props.settings.accepted_delivery_payment_methods,
@@ -127,7 +126,7 @@ function deleteZone() {
 
                 <p class="text-sm font-medium text-ocean-deep mb-2">{{ __('Accepted payment methods') }}</p>
                 <div class="flex flex-wrap gap-3 mb-4">
-                    <label v-for="method in allPaymentMethods" :key="method" class="flex items-center gap-2 text-sm">
+                    <label v-for="method in availablePaymentMethods" :key="method" class="flex items-center gap-2 text-sm">
                         <input
                             type="checkbox"
                             :checked="settingsForm.accepted_delivery_payment_methods.includes(method)"

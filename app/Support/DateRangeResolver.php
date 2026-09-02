@@ -22,7 +22,9 @@ class DateRangeResolver
         };
 
         // Período anterior tem a mesma duração, imediatamente antes de $start.
-        $days = $start->diffInDays($end) + 1;
+        // Normaliza para meia-noite antes de diffInDays(): comparar horários (ex.: 00:00:00
+        // vs 23:59:59) devolve um float fracionário, que quebra subDays() com precisão de ponto flutuante.
+        $days = $start->copy()->startOfDay()->diffInDays($end->copy()->startOfDay()) + 1;
         $previousEnd = $start->copy()->subDay()->endOfDay();
         $previousStart = $previousEnd->copy()->subDays($days - 1)->startOfDay();
 

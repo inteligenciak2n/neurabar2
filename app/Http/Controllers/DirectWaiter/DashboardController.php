@@ -4,6 +4,7 @@ namespace App\Http\Controllers\DirectWaiter;
 
 use App\Enums\ServiceRequestType;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ServiceRequestResource;
 use App\Models\Orders\ServiceRequest;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,7 +20,7 @@ class DashboardController extends Controller
             ->get();
 
         return Inertia::render('DirectWaiter/Index', [
-            'requests' => $requests,
+            'requests' => ServiceRequestResource::collection($requests),
         ]);
     }
 }

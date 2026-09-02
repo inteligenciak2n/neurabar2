@@ -15,6 +15,7 @@ use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueModule;
+use App\Services\GuestTokenService;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
@@ -24,7 +25,7 @@ class PlaceDeliveryOrderTest extends TestCase
 
     private function makeToken(Venue $venue): string
     {
-        return rtrim(base64_encode(json_encode(['v' => $venue->id])), '=');
+        return app(GuestTokenService::class)->encodeVenueOnly($venue);
     }
 
     private function activateDelivery(Venue $venue): void
@@ -106,8 +107,12 @@ class PlaceDeliveryOrderTest extends TestCase
 
         $this->assertNotNull($attendance);
         $this->assertEquals('open', $attendance->status->value);
-        $this->assertNotNull($attendance->payment);
-        $this->assertEquals(40, (float) $attendance->payment->grand_total);
+        // Payment is only created once the order is marked Delivered (AdvanceDeliveryOrderStatusAction).
+        $this->assertNull($attendance->payment);
+        $this->assertDatabaseHas('delivery_order_payment_methods', [
+            'method' => 'cash',
+            'amount' => 40,
+        ]);
     }
 
     public function test_guest_can_place_a_delivery_order_within_a_fee_zone(): void
@@ -188,6 +193,57 @@ class PlaceDeliveryOrderTest extends TestCase
         $response = $this->postJson("/delivery/{$token}/orders", $payload);
 
         $response->assertStatus(422);
+        // Total is validated before anything is written, so nothing should be left behind.
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseCount('attendances', 0);
+        $this->assertDatabaseCount('delivery_orders', 0);
+    }
+
+    public function test_variation_that_does_not_belong_to_the_product_is_rejected(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->activateDelivery($venue);
+        VenueSettings::factory()->create([
+            'venue_id' => $venue->id,
+            'service_fee_percent' => 0,
+            'accepted_delivery_payment_methods' => ['cash'],
+        ]);
+        $product = $this->makeDeliverableProduct($venue);
+        $otherProduct = $this->makeDeliverableProduct($venue);
+        $otherProductVariation = $otherProduct->variations()->create(['name' => 'Cheap variation', 'price' => 1, 'active' => true]);
+        $token = $this->makeToken($venue);
+
+        $payload = $this->basePayload($product);
+        $payload['items'] = [
+            ['product_id' => $product->id, 'variation_id' => $otherProductVariation->id, 'quantity' => 2],
+        ];
+
+        $response = $this->postJson("/delivery/{$token}/orders", $payload);
+
+        $response->assertStatus(422);
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_product_from_another_venue_in_the_same_corporation_is_rejected(): void
+    {
+        $corporation = Corporation::factory()->create();
+        $venueA = Venue::factory()->create(['active' => true, 'corporation_id' => $corporation->id]);
+        $venueB = Venue::factory()->create(['active' => true, 'corporation_id' => $corporation->id]);
+        $this->activateDelivery($venueA);
+        VenueSettings::factory()->create([
+            'venue_id' => $venueA->id,
+            'service_fee_percent' => 0,
+            'accepted_delivery_payment_methods' => ['cash'],
+        ]);
+        $productFromVenueB = $this->makeDeliverableProduct($venueB);
+        $token = $this->makeToken($venueA);
+
+        $payload = $this->basePayload($productFromVenueB);
+
+        $response = $this->postJson("/delivery/{$token}/orders", $payload);
+
+        $response->assertStatus(422);
+        $this->assertDatabaseCount('orders', 0);
     }
 
     public function test_product_not_available_for_delivery_is_rejected(): void

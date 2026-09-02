@@ -21,33 +21,13 @@ class DeliveryCustomerLookupController extends Controller
 
         abort_unless(in_array(ModuleCode::Delivery->value, $venue->activeModules(), true), 404);
 
-        $customer = Customer::withoutGlobalScopes()
+        // Only confirm whether the phone is known; returning the customer's name/address
+        // here would leak PII to anyone holding the publicly-shared delivery link.
+        $found = Customer::withoutGlobalScopes()
             ->where('corporation_id', $venue->corporation_id)
             ->where('phone', $request->query('phone'))
-            ->with(['addresses' => fn ($q) => $q->latest()])
-            ->first();
+            ->exists();
 
-        if ($customer === null) {
-            return response()->json(['customer' => null]);
-        }
-
-        return response()->json([
-            'customer' => [
-                'name' => $customer->name,
-                'phone' => $customer->phone,
-                'addresses' => $customer->addresses->map(fn ($address) => [
-                    'id' => $address->id,
-                    'label' => $address->label,
-                    'street' => $address->street,
-                    'number' => $address->number,
-                    'complement' => $address->complement,
-                    'neighborhood' => $address->neighborhood,
-                    'city' => $address->city,
-                    'state' => $address->state,
-                    'zip_code' => $address->zip_code,
-                    'reference_point' => $address->reference_point,
-                ]),
-            ],
-        ]);
+        return response()->json(['found' => $found]);
     }
 }

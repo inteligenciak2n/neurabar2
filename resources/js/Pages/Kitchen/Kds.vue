@@ -7,6 +7,10 @@ import AppSkeleton from '@/Components/AppSkeleton.vue';
 import { router, usePage } from '@inertiajs/vue3';
 import { onMounted, onUnmounted, ref, computed } from 'vue';
 import axios from 'axios';
+import { useTranslate } from '@/Composables/useTranslate';
+import { useNotificationSound } from '@/Composables/useNotificationSound';
+
+const __ = useTranslate();
 
 const props = defineProps({
     stations: Array,
@@ -37,18 +41,7 @@ function updateStatus(item, statusId) {
     });
 }
 
-let notificationSound = null;
-
-function playSound() {
-    try {
-        if (!notificationSound) {
-            notificationSound = new Audio('/sounds/new-order.mp3');
-        }
-        notificationSound.play().catch(() => {});
-    } catch {
-        // Audio not available
-    }
-}
+const { playSound } = useNotificationSound();
 
 function reload() {
     router.reload({ only: ['openItems', 'readyDeliveryOrders'] });

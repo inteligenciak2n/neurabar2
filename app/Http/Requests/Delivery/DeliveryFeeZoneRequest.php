@@ -4,7 +4,7 @@ namespace App\Http\Requests\Delivery;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreDeliveryFeeZoneRequest extends FormRequest
+class DeliveryFeeZoneRequest extends FormRequest
 {
     public function authorize(): bool
     {

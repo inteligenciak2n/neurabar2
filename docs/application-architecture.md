@@ -932,6 +932,72 @@ POST /g/{token}/verify-location   → verifyLocation (valida GPS)
 
 ---
 
+## Módulo Delivery/Retirada
+
+### Visão Geral
+
+Módulo `delivery` (dependente de `menu`) permite ao cliente final fazer pedidos de entrega ou retirada por um link público **fixo por venue** (`/delivery/{token}`), sem escanear QR code de mesa. O token é gerado por `GuestTokenService::encodeVenueOnly()` e reutiliza o mesmo `decode()` do Guest Hub.
+
+```
+GET  /delivery/{token}                      → menu público (Guest/Delivery/Menu.vue)
+GET  /delivery/{token}/customer             → lookup por telefone (throttle:20,1)
+GET  /delivery/{token}/fee-zones/lookup     → taxa de entrega por CEP (throttle:30,1)
+POST /delivery/{token}/orders               → checkout (throttle:20,1)
+```
+
+### Assinatura do token
+
+`GuestTokenService::encodeVenueOnly()` inclui uma assinatura HMAC-SHA256 (`hash_hmac` com `config('app.key')`) no payload. `decode()` valida a assinatura quando presente (`payload['s']`), mas continua aceitando tokens legados sem assinatura — retrocompatibilidade obrigatória, pois `decode()` também é usado pelo `qr_token` de `ServiceLocation` (`GenerateQrTokenAction`), já impresso em QR codes físicos de produção.
+
+### Lookup de cliente — payload mínimo
+
+`DeliveryCustomerLookupController` responde apenas `{ "found": boolean }`. Nome, telefone e endereços **nunca** são devolvidos por esse endpoint — o link de delivery é distribuído publicamente por design (o lojista divulga o mesmo link para todos os clientes), então qualquer payload com PII permitiria colher a base de clientes da corporation. Se no futuro for necessário reativar autopreenchimento, isso deve ser condicionado a uma verificação de posse do telefone (OTP) — ver `SmsProviderContract` abaixo.
+
+### Resolução de itens do pedido — escopo de venue
+
+`ResolveOrderItemsAction` (compartilhada com o fluxo de pedido via QR, `PlaceGuestOrderAction`) resolve produtos, variações e modificadores em 3 queries `whereIn` (sem N+1 por item do carrinho), validando:
+- Produto pertence ao menu ativo da venue (`whereHas('category.menu', fn ($q) => $q->where('venue_id', ...)->where('active', true))`).
+- Variação pertence ao produto informado (`variation->product_id === product->id`).
+- Modificador pertence a um grupo vinculado ao produto (`modifierOption->modifierGroup->products`).
+
+Qualquer divergência lança `ValidationException` (422). Sem essa validação, o checkout aceitava `variation_id`/`product_id` de qualquer venue da mesma conexão operacional — manipulação de preço e injeção cross-venue.
+
+### Zonas de taxa por CEP
+
+`DeliveryFeeZone` (por venue) define faixas de CEP (`zip_code_start`/`zip_code_end`) com uma taxa fixa. `PlaceDeliveryOrderAction` resolve a zona **antes** de qualquer escrita; se o CEP não cai em nenhuma zona ativa, rejeita com 422.
+
+### Pagamento — só na entrega
+
+O checkout não cria `Payment`/`PaymentItem` (isso inflaria o dashboard financeiro com pedidos ainda não entregues ou cancelados). Em vez disso, grava `DeliveryOrderPaymentMethod` (um registro por método escolhido no carrinho). `AdvanceDeliveryOrderStatusAction`, ao transicionar o pedido para `Delivered`, recalcula os totais (`PaymentService::calculateTotal()`) e só então cria `Payment` + `PaymentItem`s a partir dos métodos salvos (idempotente — pula se já existir `Payment` para a attendance).
+
+### Transação na conexão operacional
+
+`PlaceDeliveryOrderAction` valida tudo (zona de entrega, métodos aceitos, escopo de itens, soma dos métodos vs. total) **antes** de abrir qualquer transação, e usa `DB::connection(OperationalConnection::current())->transaction()` explicitamente. `DB::transaction()` sem conexão explícita usa a conexão default (`saas`) — diferente da conexão dos models operacionais (`Attendance`, `Order`, `DeliveryOrder`) — então nunca protegia de fato essas escritas contra um `ValidationException` levantado no meio do fluxo.
+
+### Lane de delivery no KDS
+
+`KdsController::index()` expõe `readyDeliveryOrders` (pedidos `Ready`/`OutForDelivery` com `DeliveryOrder` associado) como uma lane separada. `advanceDeliveryStatus` avança Pickup direto para `Delivered`; Delivery passa por `OutForDelivery` antes de `Delivered`. Guard explícito de venue (`abort_unless($order->attendance->venue_id === app('tenant')->id, 404)`) — `Order` não tem `TenantScope` própria, então o route model binding sozinho aceitaria um pedido de qualquer venue da mesma conexão.
+
+### Referência de Arquivos — Delivery/Retirada
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `app/Actions/Guest/PlaceDeliveryOrderAction.php` | Checkout completo (valida antes de escrever; cria Attendance/Order/DeliveryOrder/DeliveryOrderPaymentMethod) |
+| `app/Actions/Orders/ResolveOrderItemsAction.php` | Resolução de itens escopada à venue, compartilhada com `PlaceGuestOrderAction` |
+| `app/Actions/Kitchen/AdvanceDeliveryOrderStatusAction.php` | Transições de status do KDS + criação do Payment na entrega |
+| `app/Models/Orders/DeliveryOrder.php`, `DeliveryOrderPaymentMethod.php` | Dados do pedido de delivery e métodos de pagamento pendentes |
+| `app/Models/Settings/DeliveryFeeZone.php` | Zonas de taxa por faixa de CEP |
+| `app/Services/GuestTokenService.php` | Token assinado (HMAC), compartilhado com o Guest Hub |
+| `app/Http/Controllers/Guest/Delivery/*` | Controllers públicos (menu, lookup de cliente, lookup de zona, checkout) |
+| `app/Http/Controllers/Delivery/{DashboardController,FeeZoneController}.php` | Configuração da venue (link, métodos aceitos, zonas) |
+| `app/Http/Resources/DeliveryFeeZoneResource.php`, `ReadyDeliveryOrderResource.php` | Contrato explícito do payload Inertia |
+| `app/Contracts/Sms/SmsProviderContract.php`, `app/Services/Sms/{Fake,Twilio}SmsProvider.php`, `app/Facades/Sms.php` | Abstração de provider de SMS/OTP (driver real: Twilio), preparada para um futuro gate de verificação no lookup de cliente |
+| `resources/js/Pages/Delivery/Index.vue` | Painel do lojista (link, zonas, métodos aceitos) |
+| `resources/js/Pages/Guest/Delivery/Menu.vue`, `Components/Guest/Delivery/DeliveryCheckoutPanel.vue` | Fluxo público de pedido |
+| `tests/Feature/Guest/Delivery/*`, `tests/Feature/Kitchen/AdvanceDeliveryOrderStatusTest.php` | Cobertura de segurança (escopo cross-venue, payload do lookup) e da semântica de pagamento na entrega |
+
+---
+
 ## Módulo de Suporte
 
 ### Visão Geral

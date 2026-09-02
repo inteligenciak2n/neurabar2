@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DeliveryOrder extends Model
 {
@@ -54,5 +55,10 @@ class DeliveryOrder extends Model
     public function deliveryFeeZone(): BelongsTo
     {
         return $this->belongsTo(DeliveryFeeZone::class);
+    }
+
+    public function paymentMethods(): HasMany
+    {
+        return $this->hasMany(DeliveryOrderPaymentMethod::class);
     }
 }

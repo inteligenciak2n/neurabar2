@@ -1,0 +1,7 @@
+{
+    "This address is outside the delivery area.": "This address is outside the delivery area.",
+    "One or more payment methods are not accepted by this venue.": "One or more payment methods are not accepted by this venue.",
+    "The sum of payment methods does not match the grand total.": "The sum of payment methods does not match the grand total.",
+    "Error placing order.": "Error placing order.",
+    "Error looking up delivery fee.": "Error looking up delivery fee."
+}

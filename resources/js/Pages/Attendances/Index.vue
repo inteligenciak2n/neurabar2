@@ -6,6 +6,7 @@ import AppBadge from '@/Components/AppBadge.vue';
 import AppEmptyState from '@/Components/AppEmptyState.vue';
 import { useForm, Link, router } from '@inertiajs/vue3';
 import { onMounted, onUnmounted, ref } from 'vue';
+import { useNotificationSound } from '@/Composables/useNotificationSound';
 
 const props = defineProps({
     attendances: Array,
@@ -104,18 +105,7 @@ const submit = () => {
 let kitchenChannel = null;
 let serviceRequestsChannel = null;
 
-let notificationSound = null;
-
-function playSound() {
-    try {
-        if (!notificationSound) {
-            notificationSound = new Audio('/sounds/new-order.mp3');
-        }
-        notificationSound.play().catch(() => {});
-    } catch {
-        // Audio not available
-    }
-}
+const { playSound } = useNotificationSound();
 
 onMounted(() => {
     if (!props.venueId) return;

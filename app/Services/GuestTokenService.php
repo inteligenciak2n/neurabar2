@@ -16,14 +16,25 @@ class GuestTokenService
     /**
      * Encode a deterministic, venue-only token (no service_location/channel).
      * Used for fixed public links such as the Delivery/Takeaway ordering page.
+     *
+     * Signed with an HMAC so a leaked/guessed venue id alone can't forge a
+     * valid token; see decode() for the (backward-compatible) verification.
      */
     public function encodeVenueOnly(Venue $venue): string
     {
-        return rtrim(base64_encode(json_encode(['v' => $venue->id])), '=');
+        $payload = ['v' => $venue->id];
+        $payload['s'] = $this->sign($payload);
+
+        return rtrim(base64_encode(json_encode($payload)), '=');
     }
 
     /**
      * Decode a QR token into its components.
+     *
+     * Tokens carrying a signature ('s') have it verified against the rest of
+     * the payload; unsigned tokens (e.g. service_location QR codes already
+     * printed before this signature was introduced) are still accepted to
+     * avoid invalidating physical QR codes in production.
      *
      * @return array{venue: Venue, serviceLocation: ?ServiceLocation, attendanceChannel: ?AttendanceChannel}
      */
@@ -39,6 +50,13 @@ class GuestTokenService
 
         if (! is_array($payload) || empty($payload['v'])) {
             abort(404);
+        }
+
+        if (isset($payload['s'])) {
+            $signature = $payload['s'];
+            unset($payload['s']);
+
+            abort_unless(hash_equals($this->sign($payload), $signature), 404);
         }
 
         $venue = Venue::withoutGlobalScopes()->find($payload['v'] ?? null);
@@ -112,5 +130,15 @@ class GuestTokenService
         $session->update(['attendance_id' => $attendance->id]);
 
         return $attendance;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function sign(array $payload): string
+    {
+        ksort($payload);
+
+        return hash_hmac('sha256', json_encode($payload), config('app.key'));
     }
 }

@@ -136,6 +136,7 @@ abstract class TestCase extends BaseTestCase
         'payment_items',
         'delivery_fee_zones',
         'delivery_orders',
+        'delivery_order_payment_methods',
     ];
 
     /** Resolve a conexão correta para a tabela: operacional ou saas. */

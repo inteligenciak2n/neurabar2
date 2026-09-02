@@ -26,6 +26,7 @@ const fulfillmentType = ref(props.deliveryEnabled ? 'delivery' : 'pickup');
 const customerName = ref('');
 const customerPhone = ref('');
 const lookingUpCustomer = ref(false);
+const customerFound = ref(false);
 
 const address = ref({
     street: '',
@@ -37,8 +38,9 @@ const address = ref({
     zip_code: '',
     reference_point: '',
 });
+const saveAddress = ref(true);
 
-const feeZone = ref({ fee: 0, label: null, loading: false, error: null });
+const feeZone = ref({ fee: null, label: null, loading: false, error: null });
 
 const methods = ref([{ type: props.acceptedPaymentMethods?.[0] ?? 'cash', amount: 0 }]);
 
@@ -73,7 +75,7 @@ watch(() => address.value.zip_code, (zip) => {
             const { data } = await axios.get(`/delivery/${props.token}/fee-zones/lookup`, { params: { zip_code: zip } });
             feeZone.value = { fee: data.fee, label: data.label, loading: false, error: null };
         } catch (e) {
-            feeZone.value = { fee: 0, label: null, loading: false, error: e.response?.data?.message ?? 'Error looking up delivery fee.' };
+            feeZone.value = { fee: null, label: null, loading: false, error: __(e.response?.data?.message ?? 'Error looking up delivery fee.') };
         }
     }, 500);
 });
@@ -83,14 +85,11 @@ async function lookupCustomer() {
 
     lookingUpCustomer.value = true;
     try {
+        // The endpoint only confirms whether the phone is known — it never returns
+        // name/address, so nothing is prefilled here (avoids leaking PII to whoever
+        // holds the publicly-shared delivery link).
         const { data } = await axios.get(`/delivery/${props.token}/customer`, { params: { phone: customerPhone.value } });
-        if (data.customer) {
-            customerName.value = data.customer.name;
-            const defaultAddress = data.customer.addresses?.[0];
-            if (defaultAddress) {
-                address.value = { ...address.value, ...defaultAddress };
-            }
-        }
+        customerFound.value = Boolean(data.found);
     } finally {
         lookingUpCustomer.value = false;
     }
@@ -111,7 +110,7 @@ const canGoToPayment = computed(() => {
     if (fulfillmentType.value === 'delivery') {
         return address.value.street && address.value.number && address.value.neighborhood
             && address.value.city && address.value.state && address.value.zip_code
-            && feeZone.value.fee !== null && !feeZone.value.error;
+            && !feeZone.value.loading && feeZone.value.fee !== null && !feeZone.value.error;
     }
     return true;
 });
@@ -126,7 +125,7 @@ async function submitOrder() {
         const payload = {
             fulfillment_type: fulfillmentType.value,
             customer: { name: customerName.value, phone: customerPhone.value },
-            address: fulfillmentType.value === 'delivery' ? address.value : undefined,
+            address: fulfillmentType.value === 'delivery' ? { ...address.value, save_address: saveAddress.value } : undefined,
             items: props.items.map((item) => ({
                 product_id: item.product_id,
                 variation_id: item.variation_id,
@@ -140,7 +139,7 @@ async function submitOrder() {
         const { data } = await axios.post(`/delivery/${props.token}/orders`, payload);
         emit('order-placed', data.order_id);
     } catch (e) {
-        submitError.value = e.response?.data?.message ?? 'Error placing order.';
+        submitError.value = __(e.response?.data?.message ?? 'Error placing order.');
     } finally {
         submitting.value = false;
     }
@@ -213,6 +212,7 @@ function close() {
                             <div class="flex gap-2">
                                 <input v-model="customerPhone" type="tel" :placeholder="__('Phone')" class="flex-1 rounded-lg border border-border px-3 py-2 text-sm" @blur="lookupCustomer" />
                             </div>
+                            <p v-if="customerFound" class="text-xs text-muted-foreground">{{ __('Welcome back! Please confirm your details below.') }}</p>
                         </div>
 
                         <!-- Address -->
@@ -234,6 +234,10 @@ function close() {
                                 <input v-model="address.state" type="text" maxlength="2" :placeholder="__('State')" class="flex-1 rounded-lg border border-border px-3 py-2 text-sm" />
                             </div>
                             <input v-model="address.reference_point" type="text" :placeholder="__('Reference point')" class="w-full rounded-lg border border-border px-3 py-2 text-sm" />
+                            <label class="flex items-center gap-2 text-xs text-muted-foreground">
+                                <input v-model="saveAddress" type="checkbox" class="rounded border-border" />
+                                {{ __('Save this address for next time') }}
+                            </label>
                         </div>
                     </template>
 

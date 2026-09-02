@@ -62,6 +62,16 @@ class FinancialDashboardTest extends TestCase
         $this->get(route('finance.index'))->assertForbidden();
     }
 
+    public function test_rejects_a_custom_range_wider_than_366_days(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->activateFinancialDashboard($venue);
+        $this->loginAs(UserRole::Owner, $venue);
+
+        $this->get(route('finance.index', ['period' => 'custom', 'from' => '1900-01-01', 'to' => '2100-01-01']))
+            ->assertSessionHasErrors('to');
+    }
+
     public function test_returns_gross_revenue_average_ticket_and_attendances_count(): void
     {
         $venue = Venue::factory()->create();

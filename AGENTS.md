@@ -236,3 +236,14 @@ Vue components must have a single root element.
 - IMPORTANT: Activate `inertia-vue-development` when working with Inertia Vue client-side patterns.
 
 </laravel-boost-guidelines>
+
+## Project Learnings (Delivery module security/correctness review, 2026-09-01)
+
+- `DB::transaction()` without an explicit connection uses the **default** connection (`saas`), not the connection of the models being written inside the closure. Models using `HasOperationalConnection` (or any non-default connection) must open the transaction via `DB::connection($name)->transaction(...)` — otherwise a later exception inside the closure won't roll back those writes at all.
+- Guest-facing tokens (`GuestTokenService::decode()`) are shared infrastructure for both the Guest Hub (`/g/{token}`, table QR codes already printed in production) and the Delivery link (`/delivery/{token}`). Adding a signature (HMAC) must stay **backward-compatible** (validate only when present) — a hard requirement breaks every physical QR code already in the field.
+- `App\Http\Resources` didn't exist in this codebase before this change. `JsonResource::collection()` wraps output under a `"data"` key by default (via `toResponse()`); Inertia's prop resolver calls `toResponse()` for anything `Responsable`, so **every** Resource used as an Inertia prop needs `JsonResource::withoutWrapping()` (set once in `AppServiceProvider::boot()`) or the frontend receives `{data: [...]}` instead of a flat array.
+- New external provider integrations (SMS/OTP, payment gateways, etc.) follow the `Contract + Fake + Real driver` pattern already established by `App\Contracts\Subscription\PaymentGatewayContract`: bind in `AppServiceProvider::register()`, fallback to the Fake driver only in `local`/`testing`, abort boot in other environments when the real driver's config is missing.
+- `App\Support\DateRangeResolver::resolve()` used `Carbon::diffInDays()` directly on timestamps with different times-of-day (e.g. `00:00:00` vs `23:59:59`), which returns a **float** and silently breaks `subDays()` precision for the "previous period" calculation. Always normalize both bounds to `startOfDay()` before diffing whole-day ranges.
+- Laravel's `ValidationException::withMessages()` puts the raw message directly into the JSON `message` key (not a generic string) **only when there's exactly one error message across all fields** — safe to rely on for single-message Action-level validation, but don't assume it for FormRequests with multiple rules failing at once.
+- This project's i18n is 100% frontend-driven (`useTranslate()` + `resources/translations/{locale}/{Component}.json`, keyed by the literal English string, graceful fallback to the key itself). Backend error messages meant for guest-facing UI should stay as plain English sentences and be wrapped with `__()` on the Vue side — no backend `lang/` directory exists or is expected.
+

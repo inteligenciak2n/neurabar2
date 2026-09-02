@@ -1,5 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue';
+import { useTranslate } from '@/Composables/useTranslate';
+
+const __ = useTranslate();
 
 const props = defineProps({
     // { period: 'today'|'7d'|'30d'|'month'|'custom', from: String|null, to: String|null }
