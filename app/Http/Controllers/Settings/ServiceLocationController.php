@@ -30,18 +30,20 @@ class ServiceLocationController extends Controller
 
         return Inertia::render('Settings/ServiceLocations', [
             'locations' => $venue
-                                ->serviceLocations()
-                                ->with('defaultAttendanceChannel:id,name')
-                                ->get()
-                                ->map(fn ($location) => [
-                                    'id' => $location->id,
-                                    'name' => $location->name,
-                                    'type' => $location->type->value,
-                                    'active' => $location->active,
-                                    'default_attendance_channel' => $location->defaultAttendanceChannel,
-                                    'qr_token' => $location->qr_token,
-                                    'hub_url' => url('/g/'.$location->qr_token)
-                                ]),
+                ->serviceLocations()
+                ->with('defaultAttendanceChannel:id,name')
+                ->get()
+                ->map(fn ($location) => [
+                    'id' => $location->id,
+                    'name' => $location->name,
+                    'type' => $location->type->value,
+                    'active' => $location->active,
+                    'default_attendance_channel' => $location->defaultAttendanceChannel,
+                    'qr_token' => $location->qr_token,
+                    'hub_url' => $location->qr_token
+                        ? url('/g/'.$location->qr_token)
+                        : null,
+                ]),
             'locationTypes' => array_column(ServiceLocationType::cases(), 'value'),
             'attendanceChannels' => $venue->attendanceChannels()->where('active', true)->get(['id', 'name']),
         ]);
@@ -74,7 +76,9 @@ class ServiceLocationController extends Controller
     {
         $action->execute($location);
 
-        return back()->with('success', 'QR code generated.');
+        return redirect()
+            ->route('settings.service-locations.index')
+            ->with('success', 'QR code generated.');
     }
 
     public function qrPdf(ServiceLocation $location): HttpResponse

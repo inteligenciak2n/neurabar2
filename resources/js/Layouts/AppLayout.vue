@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import ApplicationMark from '@/Components/ApplicationMark.vue';
 import Banner from '@/Components/Banner.vue';
@@ -11,8 +11,12 @@ import { useTranslate } from '@/Composables/useTranslate'
 import { useCheckRole } from '@/Composables/useCheckRole';
 import { useModules } from '@/Composables/useModules';
 import ToggleDark from '@/Components/ToggleDark.vue';
+import { ensureTranslations } from '@/Translations/translationStore';
 
-const __ = useTranslate();
+defineOptions({ name: 'AppLayout' });
+
+const translate = useTranslate();
+const __ = (text, bindings = {}) => translate(text, bindings, 'AppLayout');
 const page = usePage();
 const { isManager } = useCheckRole();
 const { hasModule } = useModules();
@@ -67,6 +71,10 @@ const logout = () => {
     router.post(route('logout'));
 };
 
+onMounted(() => {
+    ensureTranslations(['AppLayout']).catch(() => {});
+});
+
 watch(
     () => page.props.venue_switched,
     (switched) => {
@@ -110,13 +118,17 @@ const roleLabel = (role) => {
                     <div v-if="$page.props.defs.venue" class="relative hidden sm:block">
                         <button
                             @click="venueDropdownOpen = !venueDropdownOpen"
-                            class="flex items-center gap-1.5 rounded-md border border-border bg-muted px-3 py-1.5 hover:bg-border/60 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
+                            class="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-1 hover:bg-border/60 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
                         >
-                            <span class="text-xs font-body text-muted-foreground dark:text-gray-400">{{ __('Venue:') }}</span>
-                            <span class="text-xs font-heading font-semibold text-ocean-deep truncate max-w-[140px] dark:text-gray-100">
-                                {{ $page.props.defs.venue.name }}
+                            <span class="flex min-w-0 flex-col items-start leading-tight">
+                                <span class="max-w-[180px] truncate font-heading text-sm font-bold text-ocean-deep dark:text-gray-100">
+                                    {{ $page.props.defs.venue.name }}
+                                </span>
+                                <span class="max-w-[180px] truncate font-body text-xs text-muted-foreground dark:text-gray-400">
+                                    {{ $page.props.auth.user.name }}
+                                </span>
                             </span>
-                            <svg class="h-3 w-3 text-muted-foreground shrink-0 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="h-3 w-3 shrink-0 text-muted-foreground dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                             </svg>
                         </button>
@@ -191,7 +203,7 @@ const roleLabel = (role) => {
                 <nav class="hidden items-center gap-1 lg:flex">
                     <Link
                         v-for="item in navItems"
-                        :key="item.label"
+                        :key="item.routeName"
                         :href="route(item.routeName)"
                         :class="[
                             'rounded-md px-3 py-2 text-sm font-body font-medium transition-colors',
@@ -203,8 +215,7 @@ const roleLabel = (role) => {
                         {{ item.label }}
                     </Link>
 
-                    <Dropdown v-if="moduleLinks.length & false" align="left" width="48">
-                        <!-- menu removido porque a maioria dos modulos ainda não está disponível. Alem disso o acesso a estes recursos será diferente -->
+                    <Dropdown v-if="moduleLinks.length" align="left" width="48">
                         <template #trigger>
                             <button class="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-body font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-ocean-deep dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100">
                                 {{ __('Modules') }}
@@ -216,7 +227,7 @@ const roleLabel = (role) => {
                         <template #content>
                             <DropdownLink
                                 v-for="item in moduleLinks"
-                                :key="item.label"
+                                :key="item.routeName"
                                 :href="route(item.routeName)"
                             >
                                 {{ item.label }}
@@ -231,7 +242,7 @@ const roleLabel = (role) => {
                 <ToggleDark />
 
                     <!-- User dropdown -->
-                    <Dropdown align="right" width="48">
+                    <Dropdown align="right" width="96" :content-classes="['py-1', 'bg-white dark:bg-gray-800']">
                         <template #trigger>
                             <button class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-body text-ocean-deep hover:bg-muted transition-colors dark:text-gray-100 dark:hover:bg-gray-800">
                                 <img
@@ -239,7 +250,7 @@ const roleLabel = (role) => {
                                     :src="$page.props.auth.user.profile_photo_url"
                                     :alt="$page.props.auth.user.name"
                                 >
-                                <span class="hidden sm:block font-medium">{{ $page.props.auth.user.name }}</span>
+                                <span class="hidden sm:block font-medium">{{ __('Configure the System') }}</span>
                                 <svg class="h-4 w-4 text-muted-foreground dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                                 </svg>
@@ -247,34 +258,42 @@ const roleLabel = (role) => {
                         </template>
 
                         <template #content>
-                            <div class="block px-4 py-2 text-xs text-muted-foreground dark:text-gray-400">{{ __('Manage Account') }}</div>
-                            <DropdownLink 
-                            :href="route('profile.show')">
+                            <DropdownLink
+                                :href="route('profile.show')"
+                                :description="__('Edit your access profile information')"
+                            >
                                 {{ __('Profile') }}
                             </DropdownLink>
 
-                            <DropdownLink 
-                            v-if="isManager()"
-                            :href="route('settings.index')">
+                            <DropdownLink
+                                v-if="isManager()"
+                                :href="route('settings.index')"
+                                :description="__('Manage the venue, users and preferences')"
+                            >
                                 {{ __('Settings') }}
                             </DropdownLink>
-                            
-                            
-                            <DropdownLink 
-                            v-if="isManager()"
-                            :href="route('support.dashboard')">
+
+                            <DropdownLink
+                                v-if="isManager()"
+                                :href="route('support.dashboard')"
+                                :description="__('Open tickets and browse tutorials')"
+                            >
                                 {{ __('Support') }}
                             </DropdownLink>
 
-                            <DropdownLink 
-                            v-if="$page.props.jetstream.hasApiFeatures" 
-                            :href="route('api-tokens.index')">
+                            <DropdownLink
+                                v-if="$page.props.jetstream.hasApiFeatures"
+                                :href="route('api-tokens.index')"
+                                :description="__('Manage API access tokens')"
+                            >
                                 {{ __('API Tokens') }}
                             </DropdownLink>
 
-                            <div class="border-t border-border dark:border-gray-700" />
+                            <div class="mx-1 my-1 border-t border-border dark:border-gray-600" />
                             <form @submit.prevent="logout">
-                                <DropdownLink as="button">{{ __('Log Out') }}</DropdownLink>
+                                <DropdownLink as="button" :description="__('End the current session')">
+                                    {{ __('Log Out') }}
+                                </DropdownLink>
                             </form>
                         </template>
                     </Dropdown>
@@ -299,8 +318,8 @@ const roleLabel = (role) => {
             >
                 <nav class="flex flex-col gap-1">
                     <Link
-                        v-for="item in [...navItems, ...moduleLinks]"
-                        :key="item.label"
+                        v-for="item in navItems"
+                        :key="item.routeName"
                         :href="route(item.routeName)"
                         :class="[
                             'rounded-md px-3 py-2.5 text-sm font-body font-medium transition-colors',
@@ -312,6 +331,26 @@ const roleLabel = (role) => {
                     >
                         {{ item.label }}
                     </Link>
+
+                    <template v-if="moduleLinks.length">
+                        <p class="px-3 pt-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-gray-400">
+                            {{ __('Modules') }}
+                        </p>
+                        <Link
+                            v-for="item in moduleLinks"
+                            :key="item.routeName"
+                            :href="route(item.routeName)"
+                            :class="[
+                                'rounded-md px-3 py-2.5 text-sm font-body font-medium transition-colors',
+                                route().current(item.activePattern)
+                                    ? 'bg-primary-light text-primary dark:bg-primary/20'
+                                    : 'text-muted-foreground hover:bg-muted hover:text-ocean-deep dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100',
+                            ]"
+                            @click="mobileMenuOpen = false"
+                        >
+                            {{ item.label }}
+                        </Link>
+                    </template>
                 </nav>
             </div>
 

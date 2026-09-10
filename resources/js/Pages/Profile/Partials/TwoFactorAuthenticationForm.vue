@@ -111,7 +111,10 @@ const disableTwoFactorAuthentication = () => {
         </template>
 
         <template #description>
-            {{ __('Add additional security to your account using two factor authentication.') }}
+            <p>{{ __('Add additional security to your account using two factor authentication.') }}</p>
+            <p class="mt-2">
+                {{ __('We strongly recommend using two factor authentication to prevent unauthorized access to your system.') }}
+            </p>
         </template>
 
         <template #content>

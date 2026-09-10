@@ -1,4 +1,14 @@
 {
-    "Manage modules, invoices and payment methods.": "Gerencie módulos, faturas e formas de pagamento.",
-    "Subscription": "Assinatura"
+    "Manage modules, invoices and payment methods.":  "Módulos — ative funções extras para deixar seu sistema ainda mais completo\nFaturas — acompanhe e pague as faturas da sua assinatura\n  Forma de pagamento — escolha como prefere pagar pelo sistema",
+    "Subscription":  "Assinatura",
+    "Settings":  "Configurações",
+    "Configure the system to best serve your establishment.":  "Configure o sistema para atender o seu estabelecimento da melhor forma.",
+    "Describe whether you serve at the counter, the tables you have, and so on.":  "Escreva se tem atendimento de \"Balcão\" às \"Mesas\" que você possui etc..",
+    "Venue Info":  "Informações do estabelecimento",
+    "General":  "Geral",
+    "Kitchen Stations":  "Estações de cozinha",
+    "Preparation Statuses":  "Status de preparação",
+    "Service Locations":  "Locais de serviço",
+    "Attendance Channels":  "Canais de atendimento",
+    "Users":  "Usuários"
 }

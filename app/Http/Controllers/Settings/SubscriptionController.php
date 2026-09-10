@@ -7,12 +7,12 @@ use App\Actions\Subscription\CancelSubscriptionAction;
 use App\Actions\Subscription\SubscribeModuleAction;
 use App\Actions\Subscription\UnsubscribeModuleAction;
 use App\Enums\BillingMode;
-use App\Enums\ModuleCode;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\StoreSubscriptionModuleRequest;
 use App\Models\Tenant\Corporation;
 use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\CorporationSubscription;
+use App\Models\Tenant\ModuleCatalog;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueModule;
 use App\Services\Billing\BillingStatusService;
@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use InvalidArgumentException;
 
 class SubscriptionController extends Controller
 {
@@ -78,16 +79,19 @@ class SubscriptionController extends Controller
 
     private function availableModules(Corporation $corporation): array
     {
-        return CorporationModule::query()
+        $customPrices = CorporationModule::query()
             ->where('corporation_id', $corporation->id)
-            ->whereIn('status', ['active', 'trial'])
-            ->with('catalog:id,code,name,description,base_monthly_price')
-            ->get()
-            ->map(fn (CorporationModule $m) => [
-                'code' => $m->module_code,
-                'name' => $m->catalog?->name ?? ModuleCode::tryFrom($m->module_code)?->label(),
-                'description' => $m->catalog?->description,
-                'monthly_price' => (int) ($m->custom_monthly_price ?? $m->catalog?->base_monthly_price ?? 0),
+            ->pluck('custom_monthly_price', 'module_code');
+
+        return ModuleCatalog::query()
+            ->where('active', true)
+            ->orderBy('sort_order')
+            ->get(['code', 'name', 'description', 'base_monthly_price'])
+            ->map(fn (ModuleCatalog $module) => [
+                'code' => $module->code,
+                'name' => $module->name,
+                'description' => $module->description,
+                'monthly_price' => (int) ($customPrices[$module->code] ?? $module->base_monthly_price ?? 0),
             ])
             ->values()
             ->all();
@@ -122,7 +126,12 @@ class SubscriptionController extends Controller
         Gate::authorize('manageSubscription', $venue);
 
         $validated = $request->validated();
-        $action->execute($venue, $validated['module_code'], $validated['quantity'] ?? 1);
+
+        try {
+            $action->execute($venue, $validated['module_code'], $validated['quantity'] ?? 1);
+        } catch (InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
 
         return back()->with('success', __('Module activated successfully.'));
     }
