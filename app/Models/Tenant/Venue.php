@@ -7,6 +7,7 @@ use App\Enums\SubscriptionStatus;
 use App\Models\Menu\Menu;
 use App\Models\Orders\Attendance;
 use App\Models\Settings\AttendanceChannel;
+use App\Models\Settings\DeliveryFeeZone;
 use App\Models\Settings\KitchenStation;
 use App\Models\Settings\PreparationStatus;
 use App\Models\Settings\ServiceLocation;
@@ -49,9 +50,6 @@ class Venue extends Model
         'require_table',
         'require_tab',
         'require_location',
-        'call_waiter_header_url',
-        'call_waiter_passphrase',
-        'call_waiter_slug',
         'evolution_api_url',
         'evolution_api_key',
         'evolution_api_instance',
@@ -65,7 +63,6 @@ class Venue extends Model
     ];
 
     protected $hidden = [
-        'call_waiter_passphrase',
         'evolution_api_key',
         'evolution_api_instance',
     ];
@@ -187,5 +184,10 @@ class Venue extends Model
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    public function deliveryFeeZones(): HasMany
+    {
+        return $this->hasMany(DeliveryFeeZone::class);
     }
 }

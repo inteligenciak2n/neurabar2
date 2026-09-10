@@ -4,7 +4,7 @@ namespace App\Http\Requests\Guest;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreServiceRequestRequest extends FormRequest
+class VerifyDeliveryPhoneOtpRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -15,9 +15,9 @@ class StoreServiceRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'message' => ['required', 'string', 'max:500'],
-            'customer_identifier' => ['nullable', 'string', 'max:100'],
-            'passphrase' => ['nullable', 'string'],
+            'phone' => ['required', 'string', 'max:20'],
+            'reference_id' => ['required', 'string'],
+            'code' => ['required', 'string', 'max:10'],
         ];
     }
 }

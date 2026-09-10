@@ -2,28 +2,33 @@
 
 namespace App\Providers;
 
+use App\Contracts\Sms\SmsProviderContract;
 use App\Contracts\Subscription\PaymentGatewayContract;
 use App\Enums\ProfileEnum;
 use App\Enums\UserRole;
 use App\Events\Kitchen\ItemStatusUpdated;
-use App\Events\Orders\GuestSignaled;
 use App\Events\Orders\OrderPlaced;
+use App\Events\Orders\ServiceRequestCreated;
 use App\Listeners\Billing\RecordKdsUsage;
 use App\Listeners\Billing\RecordOrderModuleUsage;
-use App\Listeners\Billing\RecordSignalUsage;
+use App\Listeners\Billing\RecordServiceRequestUsage;
 use App\Listeners\Kitchen\BroadcastNewOrderByStation;
 use App\Models\User;
+use App\Services\Sms\FakeSmsProvider;
+use App\Services\Sms\TwilioSmsProvider;
 use App\Services\Subscription\AsaasPaymentGateway;
 use App\Services\Subscription\FakePaymentGateway;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
+use Twilio\Rest\Client as TwilioClient;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -33,6 +38,15 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(PaymentGatewayContract::class, $this->resolvePaymentGateway());
+
+        // Lazy: only resolves (and only throws if Twilio credentials are missing) once
+        // something actually requests SmsProviderContract, instead of on every boot.
+        $this->app->bind(SmsProviderContract::class, fn () => $this->app->make($this->resolveSmsProvider()));
+
+        $this->app->singleton(TwilioClient::class, fn () => new TwilioClient(
+            config('services.twilio.sid'),
+            config('services.twilio.token'),
+        ));
     }
 
     /**
@@ -73,26 +87,43 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
+     * Resolve the configured SMS/OTP provider implementation.
+     *
+     * Falling back to the fake provider outside local/testing would let a
+     * production deploy "send" SMS/OTP codes without ever reaching the
+     * customer's phone, so the boot is aborted instead.
+     *
+     * @return class-string<SmsProviderContract>
+     */
+    private function resolveSmsProvider(): string
+    {
+        $isLocal = $this->app->environment(['local', 'testing']);
+
+        if (! $isLocal) {
+            if (! config('services.twilio.sid') || ! config('services.twilio.token')) {
+                throw new RuntimeException('TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN must be configured in non-local environments.');
+            }
+
+            return TwilioSmsProvider::class;
+        }
+
+        return config('sms.provider') ?: FakeSmsProvider::class;
+    }
+
+    /**
      * Bootstrap any application services.
      */
     public function boot(): void
     {
+        // Inertia props are plain arrays/objects everywhere in this app (no existing
+        // Resource used the "data" envelope); keep new Resources consistent with that.
+        JsonResource::withoutWrapping();
+
         Event::listen(OrderPlaced::class, BroadcastNewOrderByStation::class);
         Event::listen(OrderPlaced::class, RecordOrderModuleUsage::class);
         Event::listen(ItemStatusUpdated::class, RecordKdsUsage::class);
-        Event::listen(GuestSignaled::class, RecordSignalUsage::class);
+        Event::listen(ServiceRequestCreated::class, RecordServiceRequestUsage::class);
         Event::listen(Registered::class, SendEmailVerificationNotification::class);
-
-        RateLimiter::for('call-waiter', function (Request $request) {
-            $slug = $request->route('slug', '');
-            $identifier = $request->input('customer_identifier', '');
-
-            return Limit::perMinute(1)
-                ->by($request->ip().'|'.$slug.'|'.$identifier)
-                ->response(fn () => response()->json([
-                    'message' => 'Too many requests. Please wait before sending another request.',
-                ], 429));
-        });
 
         // The operational role lives in the `user_venue` pivot, never on the user
         // row: gates defined over `$user->role` read a non-existent attribute and
@@ -134,5 +165,23 @@ class AppServiceProvider extends ServiceProvider
             UserRole::Owner,
             UserRole::GeneralManager,
         ], true));
+
+        RateLimiter::for('delivery-customer-lookup', fn (Request $request) => [
+            Limit::perMinute(5)->by('phone:'.$this->normalizePhoneForRateLimit((string) $request->query('phone'))),
+            Limit::perMinute(20)->by('ip:'.$request->ip()),
+        ]);
+
+        RateLimiter::for('delivery-phone-otp', fn (Request $request) => [
+            Limit::perMinutes(10, 3)->by('phone:'.$this->normalizePhoneForRateLimit((string) $request->input('phone'))),
+            Limit::perMinute(20)->by('ip:'.$request->ip()),
+        ]);
+    }
+
+    /**
+     * Strip formatting so "(11) 99999-8888" and "11999998888" share the same rate-limit bucket.
+     */
+    private function normalizePhoneForRateLimit(string $phone): string
+    {
+        return preg_replace('/\D+/', '', $phone) ?? '';
     }
 }

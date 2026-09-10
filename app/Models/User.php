@@ -53,6 +53,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'lang',
         'profile',
         'affiliate_code_id',
+        'onboarding_completed_at',
+        'email_verified_at',
     ];
 
     /**

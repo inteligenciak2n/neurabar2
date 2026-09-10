@@ -7,11 +7,16 @@ import AppSkeleton from '@/Components/AppSkeleton.vue';
 import { router, usePage } from '@inertiajs/vue3';
 import { onMounted, onUnmounted, ref, computed } from 'vue';
 import axios from 'axios';
+import { useTranslate } from '@/Composables/useTranslate';
+import { useNotificationSound } from '@/Composables/useNotificationSound';
+
+const __ = useTranslate();
 
 const props = defineProps({
     stations: Array,
     preparationStatuses: Array,
     openItems: Object,
+    readyDeliveryOrders: Array,
 });
 
 const page = usePage();
@@ -36,30 +41,29 @@ function updateStatus(item, statusId) {
     });
 }
 
-let notificationSound = null;
-
-function playSound() {
-    try {
-        if (!notificationSound) {
-            notificationSound = new Audio('/sounds/new-order.mp3');
-        }
-        notificationSound.play().catch(() => {});
-    } catch {
-        // Audio not available
-    }
-}
+const { playSound } = useNotificationSound();
 
 function reload() {
-    router.reload({ only: ['openItems'] });
+    router.reload({ only: ['openItems', 'readyDeliveryOrders'] });
+}
+
+function advanceDeliveryStatus(order) {
+    router.put(route('kitchen.orders.advance-delivery-status', order.id), {}, {
+        preserveScroll: true,
+    });
+}
+
+function deliveryActionLabel(order) {
+    const isDelivery = order.attendance?.delivery_order?.fulfillment_type === 'delivery';
+
+    if (order.status === 'ready') {
+        return isDelivery ? __('Mark as out for delivery') : __('Mark as picked up');
+    }
+
+    return __('Mark as delivered');
 }
 
 let kitchenChannel = null;
-
-const guestSignals = ref([]);
-
-function dismissSignal(index) {
-    guestSignals.value.splice(index, 1);
-}
 
 onMounted(() => {
     if (!venueId.value) return;
@@ -72,14 +76,8 @@ onMounted(() => {
         .listen('.ItemStatusUpdated', () => {
             reload();
         })
-        .listen('.GuestSignaled', (event) => {
-            guestSignals.value.push({
-                id: Date.now(),
-                location_name: event.location_name,
-                message: event.message,
-                signal_only: event.signal_only,
-            });
-            playSound();
+        .listen('.OrderStatusUpdated', () => {
+            reload();
         });
 });
 
@@ -108,28 +106,26 @@ const allStations = computed(() => {
         </template>
 
         <div class="py-6 px-4 sm:px-6">
-            <!-- Guest signal banners -->
-            <div class="mb-4 space-y-2">
-                <div
-                    v-for="(signal, index) in guestSignals"
-                    :key="signal.id"
-                    class="flex items-start justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 shadow-sm"
-                >
-                    <div class="flex items-start gap-2">
-                        <span class="mt-0.5 text-lg">🔔</span>
-                        <div>
-                            <p class="text-sm font-semibold text-amber-900">{{ signal.location_name }}</p>
-                            <p class="text-xs text-amber-700">{{ signal.message || __('Waiter signal') }}</p>
-                        </div>
-                    </div>
-                    <button
-                        class="shrink-0 rounded-full p-1 text-amber-600 hover:bg-amber-100"
-                        @click="dismissSignal(index)"
+            <!-- Ready for delivery/pickup lane -->
+            <div v-if="readyDeliveryOrders?.length" class="mb-6">
+                <h3 class="font-heading font-semibold text-sm text-ocean-deep dark:text-gray-100 mb-2">
+                    {{ __('Ready for delivery/pickup') }}
+                </h3>
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <div
+                        v-for="order in readyDeliveryOrders"
+                        :key="order.id"
+                        class="rounded-lg bg-white shadow-card p-4 flex flex-col gap-2 dark:bg-gray-800"
                     >
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+                        <p class="font-heading font-semibold text-sm text-ocean-deep dark:text-gray-100">
+                            {{ order.attendance?.customer_identifier ?? __('Guest') }}
+                        </p>
+                        <p class="text-xs text-muted-foreground">{{ __('Order') }} #{{ order.order_number }}</p>
+                        <AppBadge :label="order.status" variant="primary" />
+                        <AppButton size="sm" @click="advanceDeliveryStatus(order)">
+                            {{ deliveryActionLabel(order) }}
+                        </AppButton>
+                    </div>
                 </div>
             </div>
 

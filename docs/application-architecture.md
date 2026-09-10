@@ -1,8 +1,12 @@
 # User ↔ Venue Architecture
 
-**Versão:** 1.3 · **Data:** 23 de julho de 2026
+**Versão:** 1.5 · **Data:** 1 de setembro de 2026
 
 > Referência técnica do modelo de identidade e acesso do NeuraBar: como usuários se relacionam com Corporations, Venues e roles operacionais.
+
+> **Changelog 1.5:** implementa os módulos `financial_dashboard` (`/finance`) e `production_dashboard` (`/production`), antes apenas escafoldados — métricas financeiras (receita, ticket médio, forma de pagamento, comparação com período anterior, consolidação por corporation) e de produção (itens mais vendidos, picos de venda, velocidade por estação, ranking de atendentes); adiciona middleware `role:` às duas rotas (gap: o catálogo já declarava `required_roles`, mas não havia enforcement); introduz Chart.js/vue-chartjs como lib de gráficos do frontend.
+
+> **Changelog 1.4:** unifica os chamados do Guest Hub (mensagem, chamar para anotar pedido, solicitar conta) no model `ServiceRequest`, substituindo o evento efêmero `GuestSignaled`; adiciona o módulo `self_order` (protege autopedido via QR, antes sem nenhuma checagem); corrige `RecordOrderModuleUsage` para distinguir pedidos de staff (`taker`) e de visitante (`self_order`).
 
 > **Changelog 1.3:** adiciona o wizard de onboarding (assinatura + empresa) que substitui a criação automática de Corporation/Venue no registro, a arquitetura multi-database (banco `saas` vs. bancos operacionais por tenant) e o módulo de Módulos/Subscriptions/Billing (planos, módulos contratáveis, faturamento e afiliados).
 
@@ -748,7 +752,9 @@ Corporation ── billing_mode (per_venue | unified) ──► CorporationSubsc
 
 ### Enums principais
 
-`BillingMode` (`per_venue`, `unified`) · `ModuleBillingType` (`fixed`, `metered`, `hybrid`) · `ModuleStatus` (`trial`, `active`, `suspended`, `canceled`) · `SubscriptionStatus` (`trial`, `active`, `past_due`, `suspended`, `canceled`) · `ModuleCode` (`menu`, `kds`, `taker`, `direct_waiter`, `delivery`, `production_dashboard`, `financial_dashboard`, `direct_print`, `fiscal_note`, `voice_command` — cada um com `dependsOn()` e `label()`).
+`BillingMode` (`per_venue`, `unified`) · `ModuleBillingType` (`fixed`, `metered`, `hybrid`) · `ModuleStatus` (`trial`, `active`, `suspended`, `canceled`) · `SubscriptionStatus` (`trial`, `active`, `past_due`, `suspended`, `canceled`) · `ModuleCode` (`menu`, `kds`, `taker`, `self_order`, `direct_waiter`, `delivery`, `production_dashboard`, `financial_dashboard`, `direct_print`, `fiscal_note`, `voice_command` — cada um com `dependsOn()` e `label()`).
+
+> `self_order` protege o autopedido do visitante via QR (`PublicMenuController::show()`, `GuestOrderController::store()`/`index()`) — antes desse módulo essas rotas não tinham nenhuma proteção. Ver [Guest Hub](#guest-hub).
 
 ### Permissionamento por Módulo
 
@@ -776,7 +782,10 @@ trial ──(trial_ends_at)──► past_due ──(grace_period_days expira)�
 
 ### Cálculo de Fatura (`SubscriptionCalculator`)
 
-`total_value = base_value + modules_value + metered_value (+ dedicated_surcharge)`. `modules_value` soma `custom_monthly_price` (ou `base_monthly_price` do catálogo) de cada módulo ativo × `quantity`. `metered_value` usa `ModuleUsageTier` para calcular excedente sobre `included_quantity` — sempre por venue, mesmo no modo `unified`. Consumo é registrado via listeners de eventos operacionais (ex.: `RecordKdsUsage`, `RecordSignalUsage`, `RecordOrderModuleUsage`) que disparam `RecordModuleUsageJob` (idempotente via `updateOrCreate` por `venue_id`+`module_code`+`period`).
+`total_value = base_value + modules_value + metered_value (+ dedicated_surcharge)`. `modules_value` soma `custom_monthly_price` (ou `base_monthly_price` do catálogo) de cada módulo ativo × `quantity`. `metered_value` usa `ModuleUsageTier` para calcular excedente sobre `included_quantity` — sempre por venue, mesmo no modo `unified`. Consumo é registrado via listeners de eventos operacionais (ex.: `RecordKdsUsage`, `RecordServiceRequestUsage`, `RecordOrderModuleUsage`) que disparam `RecordModuleUsageJob` (idempotente via `updateOrCreate` por `venue_id`+`module_code`+`period`).
+
+- `RecordServiceRequestUsage` (substituiu `RecordSignalUsage`) só fatura `direct_waiter` quando o `ServiceRequest` é do tipo `message` — chamados `call_to_order` (Taker) e `checkout` não geram cobrança própria.
+- `RecordOrderModuleUsage` distingue a origem do pedido por `Order.created_by`: fatura `taker` quando o pedido foi lançado por um usuário staff, e `self_order` quando `created_by` é nulo (pedido feito pelo próprio visitante).
 
 ### Cache
 
@@ -796,7 +805,7 @@ trial ──(trial_ends_at)──► past_due ──(grace_period_days expira)�
 | `app/Actions/Platform/ActivateVenueModuleAction.php`, `DeactivateVenueModuleAction.php` | Ativa/desativa módulo em uma venue |
 | `app/Actions/Platform/CreateCorporationAction.php`, `AssignPlanToCorporationAction.php`, `UpdateCorporationSubscriptionAction.php` | Gestão administrativa de corporation/plano/subscription (backoffice) |
 | `app/Jobs/Billing/ExpireTrialsJob.php`, `SuspendOverdueSubscriptionsJob.php`, `MarkInvoicesOverdueJob.php`, `NotifyTrialEndingSoonJob.php`, `RecalculateSubscriptionJob.php`, `GenerateInvoicesJob.php`, `RecordModuleUsageJob.php` | Jobs diários/assíncronos de billing |
-| `app/Listeners/Billing/RecordKdsUsage.php`, `RecordSignalUsage.php`, `RecordOrderModuleUsage.php` | Listeners que traduzem eventos operacionais em consumo medido |
+| `app/Listeners/Billing/RecordKdsUsage.php`, `RecordServiceRequestUsage.php`, `RecordOrderModuleUsage.php` | Listeners que traduzem eventos operacionais em consumo medido |
 | `app/Http/Controllers/Platform/CorporationController.php`, `PlanAssignmentController.php`, `SubscriptionController.php`, `CorporationModuleController.php`, `VenueModuleController.php`, `InvoiceController.php`, `ManualInvoiceController.php`, `CorporationDiscountController.php` | Backoffice: gestão de corporations, planos, módulos, faturas e descontos |
 | `resources/js/Composables/useModules.ts` | Composable Vue para checar módulos ativos via shared prop `tenant.modules` |
 | `resources/js/Pages/Platform/Corporations/Edit.vue` | UI do backoffice para plano, assinatura, módulos, descontos, faturas e afiliado |
@@ -831,9 +840,25 @@ GET /g/{token}   → GuestHubController::show()   → Guest/Hub.vue
 
 Quando `venue.require_geolocation = true`, o Hub solicita a posição GPS do cliente antes de liberar ações. O `POST /g/{token}/verify-location` usa `GeolocationService` para calcular a distância entre o cliente e as coordenadas da venue (`venues.latitude`, `venues.longitude`). Se dentro do raio permitido, marca `geolocation_verified = true` na sessão.
 
-### Sinalizações (Chamada de Atendente)
+### Chamados de Atendimento (`ServiceRequest`)
 
-O cliente pode enviar um sinal ao atendente via `POST /g/{token}/signal`, que dispara o evento `GuestSignaled`. Esse evento é transmitido via WebSocket para os atendentes da venue.
+O Hub mostra até 3 ações, cada uma protegida por um módulo diferente da venue (`$venue->activeModules()`, calculado em `GuestHubController::show()` e passado como `hasSelfOrder`/`hasDirectWaiter`/`hasTaker`):
+
+- **Ver cardápio / autopedido** (`self_order`) — link para `/g/{token}/menu`.
+- **Chamar garçom para anotar pedido** (`taker`) — `POST /g/{token}/request-order`, cria um `ServiceRequest` do tipo `call_to_order` (sem mensagem).
+- **Chamar garçom por mensagem** (`direct_waiter`) — `POST /g/{token}/signal`, cria um `ServiceRequest` do tipo `message`, com mensagens pré-definidas (`useServiceRequestMessages` composable) ou texto livre.
+
+Um quarto tipo, `checkout` ("Solicitar conta"), é criado por `POST /g/{token}/checkout` e não depende de nenhum módulo — é uma ação core sempre disponível.
+
+Os três tipos são persistidos na tabela `service_requests` (unificando o antigo evento efêmero `GuestSignaled`, removido) via `CreateServiceRequestAction`, que também resolve o atendimento (`Attendance`) aberto para o `service_location` do token e faz snapshot do atendente responsável (`Attendance.created_by`) em `assigned_user_id`. A criação dispara `ServiceRequestCreated` (`ShouldBroadcast`) no canal privado `venue.{id}.service-requests` (e também em `App.Models.User.{assigned_user_id}` quando há atendente responsável).
+
+**Onde os chamados aparecem para a equipe:**
+- `type=message` → painel dedicado `/direct-waiter` (módulo `direct_waiter`), com ações de reconhecer/concluir.
+- `type=call_to_order` e `type=checkout` → badges em tempo real no painel `/attendances` (sempre visível, módulo base `menu`).
+
+As ações de reconhecer/concluir (`PUT /service-requests/{id}/acknowledge|resolve`) são compartilhadas pelos dois painéis e ficam fora dos grupos `module:direct_waiter`/`module:taker` — o próprio `ServiceRequest` já é escopado à venue atual via `TenantScope`.
+
+Só `type=message` gera cobrança (`RecordServiceRequestUsage` → módulo `direct_waiter`); `call_to_order` e `checkout` não são faturados.
 
 ### Fluxo Completo
 
@@ -853,34 +878,123 @@ Cliente escaneia QR
                 ├── serviceLocation (id, name, type)
                 ├── attendanceChannel (id, name)
                 ├── hasSession: bool
-                └── geolocationVerified: bool
+                ├── geolocationVerified: bool
+                └── hasSelfOrder / hasDirectWaiter / hasTaker: bool (a partir de venue->activeModules())
 
-Cliente chama atendente
+Cliente chama atendente por mensagem
     └── POST /g/{token}/signal
+            → abort 404 se módulo direct_waiter inativo
             → valida sessão ativa (abort 403 se não há sessão)
-            → dispara GuestSignaled(venueId, locationName, message, signalOnly)
+            → CreateServiceRequestAction::execute(..., ServiceRequestType::Message, $message)
+
+Cliente chama atendente para anotar pedido
+    └── POST /g/{token}/request-order
+            → abort 404 se módulo taker inativo
+            → CreateServiceRequestAction::execute(..., ServiceRequestType::CallToOrder, null)
+
+Cliente solicita a conta
+    └── POST /g/{token}/checkout
+            → CreateServiceRequestAction::execute(..., ServiceRequestType::Checkout, 'Solicitou fechamento de conta')
 ```
 
 ### Rotas do Guest Hub
 
 ```
 GET  /g/{token}                   → show (exibe o Hub)
-POST /g/{token}/signal            → signal (chama atendente)
+GET  /g/{token}/menu              → PublicMenuController::show (gated por self_order)
+POST /g/{token}/orders            → GuestOrderController::store (gated por self_order)
+POST /g/{token}/signal            → signal (chama atendente por mensagem — gated por direct_waiter)
+POST /g/{token}/request-order     → requestOrderAssistance (chama atendente p/ anotar pedido — gated por taker)
+POST /g/{token}/checkout          → GuestCheckoutController::store (solicita a conta — sem gate de módulo)
 POST /g/{token}/verify-location   → verifyLocation (valida GPS)
 ```
 
-> Essas rotas **não usam** o middleware `tenant` nem requerem autenticação de `User`.
+> Essas rotas **não usam** o middleware `tenant` nem requerem autenticação de `User`. Como não passam pelo middleware `module:`, a checagem de módulo (`self_order`/`direct_waiter`/`taker`) é feita manualmente em cada controller via `in_array(ModuleCode::X->value, $venue->activeModules(), true)`.
 
 ### Referência de Arquivos — Guest Hub
 
 | Arquivo | Responsabilidade |
 |---|---|
-| `app/Http/Controllers/Guest/GuestHubController.php` | Controller do hub público |
+| `app/Http/Controllers/Guest/GuestHubController.php` | Controller do hub público (`show`, `signal`, `requestOrderAssistance`, `verifyLocation`) |
+| `app/Http/Controllers/Guest/GuestCheckoutController.php` | Solicitação de fechamento de conta (`ServiceRequestType::Checkout`) |
 | `app/Services/GuestTokenService.php` | Decodificação do token e resolução de sessão |
 | `app/Services/GeolocationService.php` | Cálculo de distância e verificação de raio |
-| `app/Events/Orders/GuestSignaled.php` | Evento de sinalização transmitido via WebSocket |
-| `app/Http/Requests/Guest/StoreGuestSignalRequest.php` | Validação do payload de sinalização |
-| `resources/js/Pages/Guest/Hub.vue` | Interface pública do cliente |
+| `app/Models/Orders/ServiceRequest.php` | Model persistente dos chamados (`type`, `status`, `assigned_user_id`) |
+| `app/Enums/ServiceRequestType.php`, `ServiceRequestStatus.php` | Enums do domínio de chamados |
+| `app/Actions/Orders/CreateServiceRequestAction.php`, `AcknowledgeServiceRequestAction.php`, `ResolveServiceRequestAction.php` | Criação e transição de status dos chamados |
+| `app/Events/Orders/ServiceRequestCreated.php`, `ServiceRequestUpdated.php` | Eventos `ShouldBroadcast` no canal `venue.{id}.service-requests` |
+| `app/Http/Requests/Guest/StoreGuestSignalRequest.php` | Validação do payload de sinalização (mensagem) |
+| `app/Http/Controllers/DirectWaiter/DashboardController.php` | Painel `/direct-waiter` (só `type=message`) |
+| `app/Http/Controllers/Orders/ServiceRequestController.php` | Rotas compartilhadas de acknowledge/resolve |
+| `resources/js/Pages/Guest/Hub.vue` | Interface pública do cliente (3 ações condicionais por módulo) |
+| `resources/js/Pages/DirectWaiter/Index.vue` | Painel de mensagens do Direct Garçom em tempo real |
+| `resources/js/Composables/useServiceRequestMessages.js` | Lista fixa de mensagens pré-definidas |
+
+---
+
+## Módulo Delivery/Retirada
+
+### Visão Geral
+
+Módulo `delivery` (dependente de `menu`) permite ao cliente final fazer pedidos de entrega ou retirada por um link público **fixo por venue** (`/delivery/{token}`), sem escanear QR code de mesa. O token é gerado por `GuestTokenService::encodeVenueOnly()` e reutiliza o mesmo `decode()` do Guest Hub.
+
+```
+GET  /delivery/{token}                      → menu público (Guest/Delivery/Menu.vue)
+GET  /delivery/{token}/customer             → lookup por telefone (throttle:20,1)
+GET  /delivery/{token}/fee-zones/lookup     → taxa de entrega por CEP (throttle:30,1)
+POST /delivery/{token}/orders               → checkout (throttle:20,1)
+```
+
+### Assinatura do token
+
+`GuestTokenService::encodeVenueOnly()` inclui uma assinatura HMAC-SHA256 (`hash_hmac` com `config('app.key')`) no payload. `decode()` valida a assinatura quando presente (`payload['s']`), mas continua aceitando tokens legados sem assinatura — retrocompatibilidade obrigatória, pois `decode()` também é usado pelo `qr_token` de `ServiceLocation` (`GenerateQrTokenAction`), já impresso em QR codes físicos de produção.
+
+### Lookup de cliente — payload mínimo
+
+`DeliveryCustomerLookupController` responde apenas `{ "found": boolean }`. Nome, telefone e endereços **nunca** são devolvidos por esse endpoint — o link de delivery é distribuído publicamente por design (o lojista divulga o mesmo link para todos os clientes), então qualquer payload com PII permitiria colher a base de clientes da corporation. Se no futuro for necessário reativar autopreenchimento, isso deve ser condicionado a uma verificação de posse do telefone (OTP) — ver `SmsProviderContract` abaixo.
+
+### Resolução de itens do pedido — escopo de venue
+
+`ResolveOrderItemsAction` (compartilhada com o fluxo de pedido via QR, `PlaceGuestOrderAction`) resolve produtos, variações e modificadores em 3 queries `whereIn` (sem N+1 por item do carrinho), validando:
+- Produto pertence ao menu ativo da venue (`whereHas('category.menu', fn ($q) => $q->where('venue_id', ...)->where('active', true))`).
+- Variação pertence ao produto informado (`variation->product_id === product->id`).
+- Modificador pertence a um grupo vinculado ao produto (`modifierOption->modifierGroup->products`).
+
+Qualquer divergência lança `ValidationException` (422). Sem essa validação, o checkout aceitava `variation_id`/`product_id` de qualquer venue da mesma conexão operacional — manipulação de preço e injeção cross-venue.
+
+### Zonas de taxa por CEP
+
+`DeliveryFeeZone` (por venue) define faixas de CEP (`zip_code_start`/`zip_code_end`) com uma taxa fixa. `PlaceDeliveryOrderAction` resolve a zona **antes** de qualquer escrita; se o CEP não cai em nenhuma zona ativa, rejeita com 422.
+
+### Pagamento — só na entrega
+
+O checkout não cria `Payment`/`PaymentItem` (isso inflaria o dashboard financeiro com pedidos ainda não entregues ou cancelados). Em vez disso, grava `DeliveryOrderPaymentMethod` (um registro por método escolhido no carrinho). `AdvanceDeliveryOrderStatusAction`, ao transicionar o pedido para `Delivered`, recalcula os totais (`PaymentService::calculateTotal()`) e só então cria `Payment` + `PaymentItem`s a partir dos métodos salvos (idempotente — pula se já existir `Payment` para a attendance).
+
+### Transação na conexão operacional
+
+`PlaceDeliveryOrderAction` valida tudo (zona de entrega, métodos aceitos, escopo de itens, soma dos métodos vs. total) **antes** de abrir qualquer transação, e usa `DB::connection(OperationalConnection::current())->transaction()` explicitamente. `DB::transaction()` sem conexão explícita usa a conexão default (`saas`) — diferente da conexão dos models operacionais (`Attendance`, `Order`, `DeliveryOrder`) — então nunca protegia de fato essas escritas contra um `ValidationException` levantado no meio do fluxo.
+
+### Lane de delivery no KDS
+
+`KdsController::index()` expõe `readyDeliveryOrders` (pedidos `Ready`/`OutForDelivery` com `DeliveryOrder` associado) como uma lane separada. `advanceDeliveryStatus` avança Pickup direto para `Delivered`; Delivery passa por `OutForDelivery` antes de `Delivered`. Guard explícito de venue (`abort_unless($order->attendance->venue_id === app('tenant')->id, 404)`) — `Order` não tem `TenantScope` própria, então o route model binding sozinho aceitaria um pedido de qualquer venue da mesma conexão.
+
+### Referência de Arquivos — Delivery/Retirada
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `app/Actions/Guest/PlaceDeliveryOrderAction.php` | Checkout completo (valida antes de escrever; cria Attendance/Order/DeliveryOrder/DeliveryOrderPaymentMethod) |
+| `app/Actions/Orders/ResolveOrderItemsAction.php` | Resolução de itens escopada à venue, compartilhada com `PlaceGuestOrderAction` |
+| `app/Actions/Kitchen/AdvanceDeliveryOrderStatusAction.php` | Transições de status do KDS + criação do Payment na entrega |
+| `app/Models/Orders/DeliveryOrder.php`, `DeliveryOrderPaymentMethod.php` | Dados do pedido de delivery e métodos de pagamento pendentes |
+| `app/Models/Settings/DeliveryFeeZone.php` | Zonas de taxa por faixa de CEP |
+| `app/Services/GuestTokenService.php` | Token assinado (HMAC), compartilhado com o Guest Hub |
+| `app/Http/Controllers/Guest/Delivery/*` | Controllers públicos (menu, lookup de cliente, lookup de zona, checkout) |
+| `app/Http/Controllers/Delivery/{DashboardController,FeeZoneController}.php` | Configuração da venue (link, métodos aceitos, zonas) |
+| `app/Http/Resources/DeliveryFeeZoneResource.php`, `ReadyDeliveryOrderResource.php` | Contrato explícito do payload Inertia |
+| `app/Contracts/Sms/SmsProviderContract.php`, `app/Services/Sms/{Fake,Twilio}SmsProvider.php`, `app/Facades/Sms.php` | Abstração de provider de SMS/OTP (driver real: Twilio), preparada para um futuro gate de verificação no lookup de cliente |
+| `resources/js/Pages/Delivery/Index.vue` | Painel do lojista (link, zonas, métodos aceitos) |
+| `resources/js/Pages/Guest/Delivery/Menu.vue`, `Components/Guest/Delivery/DeliveryCheckoutPanel.vue` | Fluxo público de pedido |
+| `tests/Feature/Guest/Delivery/*`, `tests/Feature/Kitchen/AdvanceDeliveryOrderStatusTest.php` | Cobertura de segurança (escopo cross-venue, payload do lookup) e da semântica de pagamento na entrega |
 
 ---
 
@@ -1055,6 +1169,92 @@ POST   /backoffice/support/tutorials/{tutorialId}/toggle-published → platform.
 | `app/Console/Commands/SupportMigrate.php` | Comando `support:migrate` com `--fresh` e `--seed` |
 | `database/migrations/support/` | 7 migrations do banco `laravel_support` |
 | `resources/js/Pages/Support/Dashboard.vue` | Dashboard do cliente com chamados e tutoriais |
+
+---
+
+## Dashboards Financeiro e de Produção
+
+### Visão Geral
+
+Dois módulos analíticos, ambos dependentes só de `menu` e com preço `fixed` no catálogo:
+
+- **`financial_dashboard`** (`/finance`) — métricas financeiras com visão isolada por venue ou consolidada por corporation (toggle na mesma tela). Roles: `owner`, `general_manager`.
+- **`production_dashboard`** (`/production`) — métricas operacionais da cozinha/salão, sempre por venue (sem consolidado). Roles: `owner`, `general_manager`, `section_manager`.
+
+```
+GET /finance?period=30d&scope=venue|corporation&from=&to=
+    │
+    SetVenueContext → app('tenant') = Venue atual
+    │
+    ├── module:financial_dashboard  (RequireModule)
+    ├── role:owner,general_manager  (RequireRole)
+    │
+    DateRangeResolver::resolve(period, from, to)
+        → [from, to, previous_from, previous_to]
+    │
+    scope=venue        → FinancialMetricsService::forVenue()
+    scope=corporation  → FinancialMetricsService::forCorporation() (só se a corporation tiver >1 venue)
+    │
+    Inertia::render('Finance/Index', ['filters', 'canViewCorporation', 'metrics'])
+
+GET /production?period=30d&from=&to=
+    │
+    ├── module:production_dashboard  (RequireModule)
+    ├── role:owner,general_manager,section_manager  (RequireRole)
+    │
+    ProductionMetricsService::forVenue()
+    │
+    Inertia::render('Production/Index', ['filters', 'metrics'])
+```
+
+### Multi-venue na mesma conexão operacional
+
+Todas as venues de uma `Corporation` compartilham a **mesma conexão operacional** (`Corporation.self_connection` — não há conexão por venue). Isso permite ao `FinancialMetricsService::forCorporation()` agregar dados de múltiplas venues com uma única query (`whereIn('attendances.venue_id', $venueIds)`), sem precisar resolver conexões diferentes por venue — mesmo padrão já usado por `CorporationDashboardController`.
+
+### Métricas — Dashboard Financeiro
+
+Calculadas a partir de `payments`/`payment_items` (join com `attendances` para escopo por venue):
+
+| Métrica | Origem |
+|---|---|
+| `gross_revenue` | `sum(payments.grand_total)` no período |
+| `average_ticket` | `gross_revenue / attendances_count` |
+| `attendances_count` | `count(payments)` (1 payment por atendimento fechado) |
+| `payment_method_breakdown` | `payment_items.method` agrupado, com `%` sobre o total |
+| `revenue_trend` | `sum(grand_total)` por dia, com dias sem receita preenchidos com zero |
+| `previous_period` | variação percentual de cada KPI vs. período anterior de mesma duração |
+| `venues_breakdown` (só `scope=corporation`) | mesmas métricas quebradas por venue |
+
+### Métricas — Dashboard de Produção
+
+Calculadas a partir de `order_items`/`orders`/`attendances` (sempre escopadas à venue atual):
+
+| Métrica | Origem |
+|---|---|
+| `top_items` | `order_items` agrupado por `product_id`, ordenado por quantidade (top 10), com receita (`quantity * unit_price`) |
+| `peak_hours` / `peak_weekdays` | `count(orders)` agrupado por `extract(hour\|dow from orders.created_at)` (Postgres) — arrays fixos de 24h / 7 dias |
+| `station_speed` | `avg(extract(epoch from (ready_at - order_items.created_at)) / 60)` agrupado por `kitchen_station_id`, só itens com `ready_at` preenchido |
+| `top_attendants` | `attendances` agrupado por `created_by`, com `count` de atendimentos e `sum(payments.grand_total)`; atendimentos com `created_by` nulo (self-order) são excluídos |
+
+Nomes de produto/estação/usuário são resolvidos numa segunda consulta (`whereIn('id', ...)`) porque `users` vive na conexão `saas`, separada da conexão operacional.
+
+### Referência de Arquivos — Dashboards Financeiro e de Produção
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `app/Support/DateRangeResolver.php` | Resolve presets de período (`today`, `7d`, `30d`, `month`, `custom`) em datas atuais + período anterior equivalente |
+| `app/Http/Requests/Dashboard/DashboardPeriodRequest.php` | Validação compartilhada de `period`/`from`/`to`/`scope` |
+| `app/Services/Finance/FinancialMetricsService.php` | `forVenue()` / `forCorporation()` — KPIs, breakdown por forma de pagamento, tendência, comparação com período anterior |
+| `app/Services/Production/ProductionMetricsService.php` | `forVenue()` — itens mais vendidos, picos de venda, velocidade por estação, ranking de atendentes |
+| `app/Http/Controllers/Finance/DashboardController.php` | Resolve escopo (venue/corporation) e período, renderiza `Finance/Index` |
+| `app/Http/Controllers/Production/DashboardController.php` | Resolve período, renderiza `Production/Index` |
+| `resources/js/Components/Charts/{LineChart,BarChart,DoughnutChart}.vue` | Wrappers Chart.js/vue-chartjs reutilizados pelos dois dashboards |
+| `resources/js/Components/PeriodFilter.vue` | Seletor de período (presets + range custom) |
+| `resources/js/Components/StatCard.vue` | Card de KPI com indicador de variação percentual |
+| `resources/js/Pages/Finance/Index.vue` | UI do dashboard financeiro (toggle de escopo, KPIs, gráficos, breakdown por venue) |
+| `resources/js/Pages/Production/Index.vue` | UI do dashboard de produção (KPIs, gráficos de pico, tabelas de estação/atendentes) |
+| `tests/Feature/Finance/FinancialDashboardTest.php` | Cálculo de métricas, gate de módulo/role, escopo consolidado |
+| `tests/Feature/Production/ProductionDashboardTest.php` | Ranking de itens/atendentes, picos por hora/dia, velocidade por estação, gate de módulo/role |
 | `resources/js/Pages/Support/Tickets/Index.vue` | Lista paginada de chamados do cliente |
 | `resources/js/Pages/Support/Tickets/Create.vue` | Formulário de abertura de chamado |
 | `resources/js/Pages/Support/Tickets/Show.vue` | Thread do chamado com resposta e avaliação |

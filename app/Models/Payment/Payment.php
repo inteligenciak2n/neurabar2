@@ -24,6 +24,7 @@ class Payment extends Model
         'items_total',
         'cover_charge_total',
         'service_fee_total',
+        'delivery_fee_total',
         'grand_total',
         'party_size',
         'created_by',
@@ -35,6 +36,7 @@ class Payment extends Model
             'items_total' => 'decimal:2',
             'cover_charge_total' => 'decimal:2',
             'service_fee_total' => 'decimal:2',
+            'delivery_fee_total' => 'decimal:2',
             'grand_total' => 'decimal:2',
             'party_size' => 'integer',
         ];

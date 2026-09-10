@@ -11,7 +11,7 @@ class TrackOrderController extends Controller
 {
     public function show(Order $order): Response
     {
-        $order->load('attendance.attendanceChannel:id,is_trackable');
+        $order->load('attendance.attendanceChannel:id,is_trackable', 'attendance.deliveryOrder');
 
         abort_if(! ($order->attendance?->attendanceChannel?->is_trackable ?? true), 404);
 
@@ -33,12 +33,15 @@ class TrackOrderController extends Controller
                 'ready_at' => $item->ready_at?->toISOString(),
             ]);
 
+        $deliveryOrder = $order->attendance?->deliveryOrder;
+
         return Inertia::render('Guest/TrackOrder', [
             'order' => [
                 'id' => $order->id,
                 'order_number' => $order->order_number,
                 'status' => $order->status,
                 'items' => $items,
+                'fulfillment_type' => $deliveryOrder?->fulfillment_type,
             ],
         ]);
     }

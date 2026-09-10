@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\VenueSelectorController;
 use App\Http\Controllers\Delivery\DashboardController as DeliveryDashboardController;
+use App\Http\Controllers\Delivery\FeeZoneController as DeliveryFeeZoneController;
 use App\Http\Controllers\DirectPrint\DashboardController as DirectPrintDashboardController;
 use App\Http\Controllers\DirectWaiter\DashboardController as DirectWaiterDashboardController;
 use App\Http\Controllers\Finance\DashboardController as FinanceDashboardController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\Menu\ProductVariationController;
 use App\Http\Controllers\NoVenueController;
 use App\Http\Controllers\Orders\AttendanceController;
 use App\Http\Controllers\Orders\OrderController;
+use App\Http\Controllers\Orders\ServiceRequestController;
 use App\Http\Controllers\Payment\PaymentController;
 use App\Http\Controllers\Production\DashboardController as ProductionDashboardController;
 use App\Http\Controllers\Settings\AttendanceChannelController;
@@ -118,18 +120,35 @@ Route::middleware([
     // Order Taker
     Route::get('/orders/take/{attendance}', [OrderController::class, 'create'])->name('orders.take')->middleware('module:taker');
 
+    // Service requests — shared by the Direct Garçom panel and the Attendances panel,
+    // deliberately outside module:direct_waiter/module:taker (ServiceRequest is already
+    // scoped to the current venue via TenantScope).
+    Route::prefix('service-requests')->name('service-requests.')->group(function () {
+        Route::put('/{serviceRequest}/acknowledge', [ServiceRequestController::class, 'acknowledge'])->name('acknowledge');
+        Route::put('/{serviceRequest}/resolve', [ServiceRequestController::class, 'resolve'])->name('resolve');
+        Route::put('/{serviceRequest}/assign', [ServiceRequestController::class, 'assign'])->name('assign');
+        Route::put('/{serviceRequest}/release', [ServiceRequestController::class, 'release'])->name('release');
+    });
+
     // Kitchen KDS
     Route::prefix('kitchen')->name('kitchen.')->middleware('module:kds')->group(function () {
         Route::get('/kds', [KdsController::class, 'index'])->name('kds');
         Route::put('/items/{item}/status', [KdsController::class, 'updateItemStatus'])->name('items.status');
+        Route::put('/orders/{order}/advance-delivery-status', [KdsController::class, 'advanceDeliveryStatus'])->name('orders.advance-delivery-status');
     });
 
     // Module scaffolds
-    Route::get('/delivery', [DeliveryDashboardController::class, 'index'])->name('delivery.index')->middleware('module:delivery');
+    Route::prefix('delivery')->name('delivery.')->middleware('module:delivery')->group(function () {
+        Route::get('/', [DeliveryDashboardController::class, 'index'])->name('index');
+        Route::put('/settings', [DeliveryDashboardController::class, 'updateSettings'])->name('settings.update');
+        Route::post('/fee-zones', [DeliveryFeeZoneController::class, 'store'])->name('fee-zones.store');
+        Route::put('/fee-zones/{feeZone}', [DeliveryFeeZoneController::class, 'update'])->name('fee-zones.update');
+        Route::delete('/fee-zones/{feeZone}', [DeliveryFeeZoneController::class, 'destroy'])->name('fee-zones.destroy');
+    });
     Route::get('/fiscal-note', [FiscalNoteDashboardController::class, 'index'])->name('fiscal-note.index')->middleware('module:fiscal_note');
     Route::get('/voice-command', [VoiceCommandDashboardController::class, 'index'])->name('voice-command.index')->middleware('module:voice_command');
-    Route::get('/production', [ProductionDashboardController::class, 'index'])->name('production.index')->middleware('module:production_dashboard');
-    Route::get('/finance', [FinanceDashboardController::class, 'index'])->name('finance.index')->middleware('module:financial_dashboard');
+    Route::get('/production', [ProductionDashboardController::class, 'index'])->name('production.index')->middleware(['module:production_dashboard', 'role:owner,general_manager,section_manager']);
+    Route::get('/finance', [FinanceDashboardController::class, 'index'])->name('finance.index')->middleware(['module:financial_dashboard', 'role:owner,general_manager']);
     Route::get('/direct-waiter', [DirectWaiterDashboardController::class, 'index'])->name('direct-waiter.index')->middleware('module:direct_waiter');
     Route::get('/direct-print', [DirectPrintDashboardController::class, 'index'])->name('direct-print.index')->middleware('module:direct_print');
 

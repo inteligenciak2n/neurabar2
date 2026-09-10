@@ -2,6 +2,8 @@
 
 namespace App\Models\Concerns;
 
+use App\Support\OperationalConnection;
+
 /**
  * Trait para todos os models do banco operacional.
  *
@@ -13,8 +15,6 @@ trait HasOperationalConnection
 {
     public function getConnectionName(): string
     {
-        return app()->bound('operational_connection')
-            ? app('operational_connection')
-            : 'operation_default_1';
+        return OperationalConnection::current();
     }
 }

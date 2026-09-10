@@ -14,7 +14,27 @@ use Illuminate\Support\Str;
 class GuestTokenService
 {
     /**
+     * Encode a deterministic, venue-only token (no service_location/channel).
+     * Used for fixed public links such as the Delivery/Takeaway ordering page.
+     *
+     * Signed with an HMAC so a leaked/guessed venue id alone can't forge a
+     * valid token; see decode() for the (backward-compatible) verification.
+     */
+    public function encodeVenueOnly(Venue $venue): string
+    {
+        $payload = ['v' => $venue->id];
+        $payload['s'] = $this->sign($payload);
+
+        return rtrim(base64_encode(json_encode($payload)), '=');
+    }
+
+    /**
      * Decode a QR token into its components.
+     *
+     * Tokens carrying a signature ('s') have it verified against the rest of
+     * the payload; unsigned tokens (e.g. service_location QR codes already
+     * printed before this signature was introduced) are still accepted to
+     * avoid invalidating physical QR codes in production.
      *
      * @return array{venue: Venue, serviceLocation: ?ServiceLocation, attendanceChannel: ?AttendanceChannel}
      */
@@ -30,6 +50,13 @@ class GuestTokenService
 
         if (! is_array($payload) || empty($payload['v'])) {
             abort(404);
+        }
+
+        if (isset($payload['s'])) {
+            $signature = $payload['s'];
+            unset($payload['s']);
+
+            abort_unless(hash_equals($this->sign($payload), $signature), 404);
         }
 
         $venue = Venue::withoutGlobalScopes()->find($payload['v'] ?? null);
@@ -67,19 +94,22 @@ class GuestTokenService
 
     /**
      * Create a new GuestSession with a unique token (PIN set separately).
+     *
+     * $pin is null for flows that don't use a PIN (e.g. the Delivery phone
+     * OTP flow, which authenticates via phone verification instead).
      */
     public function createSession(
         Venue $venue,
         ?ServiceLocation $serviceLocation,
         ?AttendanceChannel $attendanceChannel,
-        string $pin
+        ?string $pin = null
     ): GuestSession {
         return GuestSession::withoutGlobalScopes()->create([
             'venue_id' => $venue->id,
             'service_location_id' => $serviceLocation?->id,
             'attendance_channel_id' => $attendanceChannel?->id,
             'guest_token' => (string) Str::uuid(),
-            'pin' => bcrypt($pin),
+            'pin' => $pin !== null ? bcrypt($pin) : null,
             'expires_at' => now()->addHours(24),
         ]);
     }
@@ -103,5 +133,15 @@ class GuestTokenService
         $session->update(['attendance_id' => $attendance->id]);
 
         return $attendance;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function sign(array $payload): string
+    {
+        ksort($payload);
+
+        return hash_hmac('sha256', json_encode($payload), config('app.key'));
     }
 }

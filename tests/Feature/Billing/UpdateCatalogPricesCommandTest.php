@@ -37,10 +37,12 @@ class UpdateCatalogPricesCommandTest extends TestCase
             'base_monthly_price' => 4990,
         ]);
 
+        $effectiveFrom = today()->addMonth()->startOfMonth();
+
         $this->artisan('billing:update-prices', [
             '--plan' => ['basic=149.90'],
             '--module' => ['kds=59.90'],
-            '--effective-from' => '2026-09-01',
+            '--effective-from' => $effectiveFrom->toDateString(),
             '--force' => true,
         ])->assertSuccessful();
 
@@ -53,8 +55,8 @@ class UpdateCatalogPricesCommandTest extends TestCase
         $this->assertSame(5990, $module->fresh()->base_monthly_price);
         $this->assertSame('published', $newVersion->status);
         $this->assertSame(14990, $newVersion->minimum_monthly_price);
-        $this->assertSame('2026-09-01', $newVersion->effective_from->toDateString());
-        $this->assertSame('2026-08-31', $currentVersion->fresh()->effective_until->toDateString());
+        $this->assertSame($effectiveFrom->toDateString(), $newVersion->effective_from->toDateString());
+        $this->assertSame($effectiveFrom->copy()->subDay()->toDateString(), $currentVersion->fresh()->effective_until->toDateString());
         $this->assertDatabaseHas('plan_module_usage_tiers', [
             'plan_catalog_version_id' => $newVersion->id,
             'module_code' => $tier->module_code,
@@ -145,15 +147,18 @@ class UpdateCatalogPricesCommandTest extends TestCase
             ->firstOrFail();
 
         $this->assertSame(14900, $basicVersion->minimum_monthly_price);
-        $this->assertSame(12, $basicVersion->usageTiers()->count());
+        // 6 módulos padrão × 1 faixa cada (App\Console\Commands\UpdateCatalogPrices::$defaults).
+        $this->assertSame(6, $basicVersion->usageTiers()->count());
         $this->assertDatabaseHas('plan_module_usage_tiers', [
             'plan_catalog_version_id' => $basicVersion->id,
             'module_code' => 'kds',
             'min_quantity' => 0,
-            'included_quantity' => 100,
+            'included_quantity' => 1000,
             'overage_price_per_unit' => 500,
         ]);
-        $this->assertDatabaseCount('plan_module_usage_tiers', 39);
+        // 3 faixas pré-existentes (uma por plano, criadas em createPlanWithPublishedTier)
+        // + 3 planos × 6 módulos × 1 faixa nova = 21.
+        $this->assertDatabaseCount('plan_module_usage_tiers', 21);
     }
 
     public function test_it_rolls_back_all_updates_when_a_catalog_code_is_invalid(): void

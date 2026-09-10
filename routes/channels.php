@@ -15,6 +15,10 @@ Broadcast::channel('venue.{id}.kitchen', function (User $user, string $id) {
     return $user->venues()->wherePivot('venue_id', $id)->exists();
 });
 
+Broadcast::channel('venue.{id}.service-requests', function (User $user, string $id) {
+    return $user->venues()->wherePivot('venue_id', $id)->exists();
+});
+
 Broadcast::channel('venue.{venueId}.station.{stationId}', function (User $user, string $venueId) {
     return $user->venues()->wherePivot('venue_id', $venueId)->exists();
 });

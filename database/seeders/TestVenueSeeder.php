@@ -33,7 +33,7 @@ class TestVenueSeeder extends Seeder
         );
 
         $venue = Venue::firstOrCreate(
-            ['call_waiter_slug' => 'test-bar'],
+            ['name' => 'Test Bar'],
             [
                 'corporation_id' => $corporation->id,
                 'name' => 'Test Bar',

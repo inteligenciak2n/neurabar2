@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Events\Orders;
+namespace App\Events\Kitchen;
 
+use App\Models\Orders\Order;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -9,7 +10,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class GuestSignaled implements ShouldBroadcast
+class OrderStatusUpdated implements ShouldBroadcast
 {
     use Dispatchable;
     use InteractsWithSockets;
@@ -17,23 +18,20 @@ class GuestSignaled implements ShouldBroadcast
 
     public string $broadcastQueue = 'broadcasts';
 
-    public function __construct(
-        public readonly string $venueId,
-        public readonly string $locationName,
-        public readonly ?string $message,
-        public readonly bool $signalOnly,
-    ) {}
+    public function __construct(public Order $order) {}
 
     public function broadcastAs(): string
     {
-        return 'GuestSignaled';
+        return 'OrderStatusUpdated';
     }
 
     /** @return array<int, Channel|PrivateChannel> */
     public function broadcastOn(): array
     {
+        $venueId = $this->order->attendance->venue_id;
+
         return [
-            new PrivateChannel("venue.{$this->venueId}.kitchen"),
+            new PrivateChannel("venue.{$venueId}.kitchen"),
         ];
     }
 
@@ -41,10 +39,8 @@ class GuestSignaled implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
-            'location_name' => $this->locationName,
-            'message' => $this->message,
-            'signal_only' => $this->signalOnly,
-            'timestamp' => now()->toISOString(),
+            'order_id' => $this->order->id,
+            'status' => $this->order->status->value,
         ];
     }
 }

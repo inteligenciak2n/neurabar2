@@ -22,6 +22,7 @@ Route::prefix('g/{token}')->name('guest.')->middleware('billing.active')->group(
     Route::get('/orders', [GuestOrderController::class, 'index'])->name('orders.index')->middleware('throttle:30,1');
     Route::post('/orders', [GuestOrderController::class, 'store'])->name('orders.store')->middleware('throttle:30,1');
     Route::post('/signal', [GuestHubController::class, 'signal'])->name('signal')->middleware('throttle:10,1');
+    Route::post('/request-order', [GuestHubController::class, 'requestOrderAssistance'])->name('request-order')->middleware('throttle:10,1');
     Route::post('/checkout', [GuestCheckoutController::class, 'store'])->name('checkout')->middleware('throttle:5,1');
     Route::post('/verify-location', [GuestHubController::class, 'verifyLocation'])->name('verify-location')->middleware('throttle:10,1');
 });
