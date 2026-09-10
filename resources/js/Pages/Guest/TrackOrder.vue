@@ -1,12 +1,26 @@
 <script setup>
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import { usePoll } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { useTranslate } from '@/Composables/useTranslate';
 
 const props = defineProps({
     order: Object,
 });
 
+const __ = useTranslate();
+
 usePoll(15000);
+
+const statusLabels = {
+    open: __('Order received'),
+    in_preparation: __('Preparing'),
+    ready: props.order.fulfillment_type === 'pickup' ? __('Ready for pickup') : __('Ready'),
+    out_for_delivery: __('Out for delivery'),
+    delivered: __('Delivered'),
+};
+
+const statusLabel = computed(() => statusLabels[props.order.status] ?? props.order.status);
 </script>
 
 <template>
@@ -18,7 +32,7 @@ usePoll(15000);
                         {{ __('Order') }} #{{ order.order_number }}
                     </h1>
                     <p class="text-sm text-muted-foreground mb-6">
-                        {{ __('Status') }}: <span class="font-medium capitalize">{{ order.status }}</span>
+                        {{ __('Status') }}: <span class="font-medium">{{ statusLabel }}</span>
                     </p>
 
                     <div v-if="order.items.length === 0" class="text-center py-8 text-muted-foreground">

@@ -45,4 +45,28 @@ class GuestTokenServiceTest extends TestCase
         $this->expectException(NotFoundHttpException::class);
         $this->service->decode($token);
     }
+
+    public function test_encode_venue_only_round_trips_through_decode(): void
+    {
+        $venue = Venue::factory()->create();
+
+        $result = $this->service->decode($this->service->encodeVenueOnly($venue));
+
+        $this->assertEquals($venue->id, $result['venue']->id);
+    }
+
+    public function test_decode_rejects_a_tampered_signed_token(): void
+    {
+        $venueA = Venue::factory()->create();
+        $venueB = Venue::factory()->create();
+
+        $json = base64_decode($this->service->encodeVenueOnly($venueA));
+        $payload = json_decode($json, true);
+        $payload['v'] = $venueB->id; // swap the venue without recomputing the signature
+
+        $tampered = rtrim(base64_encode(json_encode($payload)), '=');
+
+        $this->expectException(NotFoundHttpException::class);
+        $this->service->decode($tampered);
+    }
 }

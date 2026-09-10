@@ -26,6 +26,8 @@ class GuestSession extends Model
         'attendance_id',
         'guest_token',
         'pin',
+        'verified_phone',
+        'phone_verified_at',
         'geolocation_verified',
         'expires_at',
     ];
@@ -38,6 +40,7 @@ class GuestSession extends Model
     {
         return [
             'geolocation_verified' => 'boolean',
+            'phone_verified_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
     }
@@ -75,5 +78,15 @@ class GuestSession extends Model
     public function hasPin(): bool
     {
         return $this->pin !== null;
+    }
+
+    /**
+     * Whether $phone was verified via OTP on this session within the last 30 minutes.
+     */
+    public function isPhoneVerifiedFor(string $phone): bool
+    {
+        return $this->verified_phone === $phone
+            && $this->phone_verified_at !== null
+            && $this->phone_verified_at->gt(now()->subMinutes(30));
     }
 }

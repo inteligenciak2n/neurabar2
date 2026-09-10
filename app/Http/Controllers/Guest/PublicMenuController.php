@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Guest;
 
+use App\Enums\ModuleCode;
 use App\Http\Controllers\Controller;
 use App\Services\GuestTokenService;
 use Inertia\Inertia;
@@ -16,6 +17,7 @@ class PublicMenuController extends Controller
         ['venue' => $venue, 'serviceLocation' => $serviceLocation] = $this->tokenService->decode($token);
 
         abort_unless($venue->active, 404);
+        abort_unless(in_array(ModuleCode::SelfOrder->value, $venue->activeModules(), true), 404);
 
         $menu = $venue->menus()
             ->withoutGlobalScopes()

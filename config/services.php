@@ -60,4 +60,12 @@ return [
         ],
     ],
 
+    'twilio' => [
+        'sid' => env('TWILIO_ACCOUNT_SID'),
+        'token' => env('TWILIO_AUTH_TOKEN'),
+        'from' => env('TWILIO_FROM_NUMBER'),
+        // Twilio Verify service used to generate/validate OTP codes (see SmsProviderContract).
+        'verify_sid' => env('TWILIO_VERIFY_SERVICE_SID'),
+    ],
+
 ];

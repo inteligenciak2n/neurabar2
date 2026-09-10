@@ -33,6 +33,7 @@ class Attendance extends Model
         'party_size',
         'notes',
         'created_by',
+        'claimed_by_user_id',
         'closed_at',
     ];
 
@@ -60,6 +61,11 @@ class Attendance extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function claimedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'claimed_by_user_id');
+    }
+
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
@@ -68,6 +74,11 @@ class Attendance extends Model
     public function payment(): HasOne
     {
         return $this->hasOne(Payment::class);
+    }
+
+    public function deliveryOrder(): HasOne
+    {
+        return $this->hasOne(DeliveryOrder::class);
     }
 
     public function scopeOpen(Builder $query): Builder

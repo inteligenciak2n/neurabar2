@@ -25,6 +25,7 @@
     "Finance": "Financeiro",
     "Fiscal Note": "Nota Fiscal",
     "Voice Command": "Comando de Voz",
-    "Direct Waiter": "Garçom Direto",
-    "Direct Print": "Impressão Direta"
+    "Direct Waiter": "Chama Garçom",
+    "Direct Print": "Impressão Direta",
+    "Direct Waiter messages": "Mensagens diretas do Chama Garçom"
 }

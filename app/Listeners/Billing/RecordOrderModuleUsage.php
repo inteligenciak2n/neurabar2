@@ -17,7 +17,17 @@ class RecordOrderModuleUsage
             return;
         }
 
-        RecordModuleUsageJob::dispatch($venueId, ModuleCode::Taker->value);
+        // created_by é nulo tanto no self-order quanto no delivery/retirada (ambos anônimos);
+        // a existência de um DeliveryOrder na attendance é o que diferencia os dois.
+        $order->loadMissing('attendance.deliveryOrder');
+
+        $moduleCode = match (true) {
+            $order->created_by !== null => ModuleCode::Taker,
+            $order->attendance->deliveryOrder !== null => ModuleCode::Delivery,
+            default => ModuleCode::SelfOrder,
+        };
+
+        RecordModuleUsageJob::dispatch($venueId, $moduleCode->value);
         RecordModuleUsageJob::dispatch($venueId, ModuleCode::DirectPrint->value);
     }
 }

@@ -10,9 +10,9 @@ class PaymentService
     /**
      * Calculate payment totals for an attendance.
      *
-     * @return array{items_total: float, cover_charge_total: float, service_fee_total: float, grand_total: float}
+     * @return array{items_total: float, cover_charge_total: float, service_fee_total: float, delivery_fee_total: float, grand_total: float}
      */
-    public function calculateTotal(Attendance $attendance, ?int $partySize = null): array
+    public function calculateTotal(Attendance $attendance, ?int $partySize = null, float $deliveryFee = 0.0): array
     {
         $attendance->loadMissing('orders.items.modifiers');
 
@@ -35,12 +35,14 @@ class PaymentService
         $subtotal = $itemsTotal + $coverChargeTotal;
         $serviceFeePct = (float) $settings->service_fee_percent;
         $serviceFeeTotal = round($subtotal * ($serviceFeePct / 100), 2);
-        $grandTotal = round($subtotal + $serviceFeeTotal, 2);
+        $deliveryFeeTotal = round($deliveryFee, 2);
+        $grandTotal = round($subtotal + $serviceFeeTotal + $deliveryFeeTotal, 2);
 
         return [
             'items_total' => round($itemsTotal, 2),
             'cover_charge_total' => round($coverChargeTotal, 2),
             'service_fee_total' => $serviceFeeTotal,
+            'delivery_fee_total' => $deliveryFeeTotal,
             'grand_total' => $grandTotal,
         ];
     }

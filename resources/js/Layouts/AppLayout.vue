@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import ApplicationMark from '@/Components/ApplicationMark.vue';
 import Banner from '@/Components/Banner.vue';
@@ -10,12 +10,14 @@ import CustomHead from '@/Components/CustomHead.vue';
 import { useTranslate } from '@/Composables/useTranslate'
 import { useCheckRole } from '@/Composables/useCheckRole';
 import { useModules } from '@/Composables/useModules';
+import { useDirectWaiterNotifications } from '@/Composables/useDirectWaiterNotifications';
 import ToggleDark from '@/Components/ToggleDark.vue';
 
 const __ = useTranslate();
 const page = usePage();
 const { isManager } = useCheckRole();
 const { hasModule } = useModules();
+const { unreadCount: directWaiterUnreadCount, subscribe: subscribeDirectWaiterNotifications } = useDirectWaiterNotifications();
 
 defineProps({
     title: String,
@@ -36,7 +38,7 @@ const switchVenue = (id) => {
 };
 
 const managerRoles = ['owner', 'general_manager'];
-const operationalRoles = ['owner', 'general_manager', 'section_manager'];
+const operationalRoles = ['owner', 'general_manager', 'section_manager', 'attendant'];
 
 const coreNavItems = [
     { label: __('Dashboard'),   routeName: 'dashboard',         activePattern: 'dashboard', module: 'menu', roles: [...operationalRoles, 'attendant'] },
@@ -49,7 +51,7 @@ const coreNavItems = [
 // eram alcançáveis digitando a URL.
 const moduleNavItems = [
     { label: __('Delivery'),      routeName: 'delivery.index',      activePattern: 'delivery.*',      module: 'delivery',             roles: operationalRoles },
-    { label: __('Production'),    routeName: 'production.index',    activePattern: 'production.*',    module: 'production_dashboard', roles: operationalRoles },
+    { label: __('Production'),    routeName: 'production.index',    activePattern: 'production.*',    module: 'production_dashboard', roles: managerRoles },
     { label: __('Finance'),       routeName: 'finance.index',       activePattern: 'finance.*',       module: 'financial_dashboard',  roles: managerRoles },
     { label: __('Fiscal Note'),   routeName: 'fiscal-note.index',   activePattern: 'fiscal-note.*',   module: 'fiscal_note',          roles: managerRoles },
     { label: __('Voice Command'), routeName: 'voice-command.index', activePattern: 'voice-command.*', module: 'voice_command',        roles: operationalRoles },
@@ -63,15 +65,22 @@ const isVisible = (item) => item.roles.includes(page.props.defs.current_venue_ro
 const navItems = computed(() => coreNavItems.filter(isVisible));
 const moduleLinks = computed(() => moduleNavItems.filter(isVisible));
 
+const showDirectWaiterBell = computed(() => isVisible({ module: 'direct_waiter', roles: operationalRoles }));
+
 const logout = () => {
     router.post(route('logout'));
 };
+
+onMounted(() => {
+    subscribeDirectWaiterNotifications();
+});
 
 watch(
     () => page.props.venue_switched,
     (switched) => {
         if (switched && window.Echo) {
             window.Echo.connector.pusher.connection.connect();
+            subscribeDirectWaiterNotifications();
         }
     },
 );
@@ -203,7 +212,7 @@ const roleLabel = (role) => {
                         {{ item.label }}
                     </Link>
 
-                    <Dropdown v-if="moduleLinks.length & false" align="left" width="48">
+                    <Dropdown v-if="moduleLinks.length" align="left" width="48">
                         <!-- menu removido porque a maioria dos modulos ainda não está disponível. Alem disso o acesso a estes recursos será diferente -->
                         <template #trigger>
                             <button class="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-body font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-ocean-deep dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100">
@@ -227,7 +236,25 @@ const roleLabel = (role) => {
 
                 <!-- Right: User dropdown + mobile toggle -->
                 <div class="flex items-center gap-2">
-                    
+
+                    <!-- DirectWaiter notification bell -->
+                    <Link
+                        v-if="showDirectWaiterBell"
+                        :href="route('direct-waiter.index')"
+                        class="relative rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-ocean-deep transition-colors dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+                        v-tippy="__('Direct Waiter messages')"
+                    >
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                        </svg>
+                        <span
+                            v-if="directWaiterUnreadCount > 0"
+                            class="absolute right-0.5 top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-white"
+                        >
+                            {{ directWaiterUnreadCount > 9 ? '9+' : directWaiterUnreadCount }}
+                        </span>
+                    </Link>
+
                 <ToggleDark />
 
                     <!-- User dropdown -->
