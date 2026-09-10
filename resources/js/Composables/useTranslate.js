@@ -1,6 +1,6 @@
 import { usePage } from "@inertiajs/vue3"
 import { getCurrentInstance } from "vue"
-import { setTranslationLocale, translate } from '@/Translations/translationStore'
+import { setTranslationLocale, translate, getTranslationRevision } from '@/Translations/translationStore'
 
 export function useTranslate() {
     const __ = ( stringText = null, bindings = {}, componentName = null ) => {
@@ -11,7 +11,9 @@ export function useTranslate() {
 
         setTranslationLocale(page.props.language?.locale)
 
-        componentName = componentName || instance?.type?.name || 
+        void getTranslationRevision()
+
+        componentName = componentName || instance?.type?.name ||
                               instance?.type?.__name || 
                               instance?.proxy?.$options?.name ||
                               'UnknownComponent'

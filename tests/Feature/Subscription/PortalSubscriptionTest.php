@@ -62,6 +62,39 @@ class PortalSubscriptionTest extends TestCase
             );
     }
 
+    public function test_owner_sees_all_active_catalog_modules_on_the_subscription_page(): void
+    {
+        ModuleCatalog::query()->delete();
+        ModuleCatalog::factory()->create([
+            'code' => ModuleCode::Delivery->value,
+            'name' => 'Delivery',
+            'active' => true,
+            'sort_order' => 1,
+        ]);
+        ModuleCatalog::factory()->create([
+            'code' => ModuleCode::FiscalNote->value,
+            'name' => 'Nota Fiscal',
+            'active' => true,
+            'sort_order' => 2,
+        ]);
+        ModuleCatalog::factory()->create([
+            'code' => ModuleCode::VoiceCommand->value,
+            'name' => 'Comando por Voz',
+            'active' => false,
+            'sort_order' => 3,
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('settings.subscription.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Settings/Subscription/Index')
+                ->has('availableModules', 2)
+                ->where('availableModules.0.code', ModuleCode::Delivery->value)
+                ->where('availableModules.1.code', ModuleCode::FiscalNote->value)
+            );
+    }
+
     public function test_non_manager_cannot_access_subscription_pages(): void
     {
         $attendantVenue = Venue::factory()->create();
@@ -211,6 +244,62 @@ class PortalSubscriptionTest extends TestCase
             'venue_id' => $this->venue->id,
             'module_code' => $catalog->code,
             'status' => ModuleStatus::Active->value,
+        ]);
+    }
+
+    public function test_owner_can_activate_a_catalog_module_without_a_prior_corporation_contract(): void
+    {
+        $catalog = ModuleCatalog::firstWhere('code', ModuleCode::FinancialDashboard->value)
+            ?? ModuleCatalog::factory()->create([
+                'code' => ModuleCode::FinancialDashboard->value,
+                'active' => true,
+                'base_monthly_price' => 4990,
+            ]);
+
+        $catalog->update(['active' => true]);
+
+        $this->actingAs($this->user)
+            ->post(route('settings.subscription.modules.store', $this->venue), [
+                'module_code' => $catalog->code,
+                'quantity' => 1,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('corporation_modules', [
+            'corporation_id' => $this->venue->corporation_id,
+            'module_code' => $catalog->code,
+            'status' => ModuleStatus::Active->value,
+        ]);
+        $this->assertDatabaseHas('venue_modules', [
+            'venue_id' => $this->venue->id,
+            'module_code' => $catalog->code,
+            'status' => ModuleStatus::Active->value,
+        ]);
+    }
+
+    public function test_owner_cannot_activate_an_inactive_catalog_module(): void
+    {
+        $catalog = ModuleCatalog::firstWhere('code', ModuleCode::FinancialDashboard->value)
+            ?? ModuleCatalog::factory()->create([
+                'code' => ModuleCode::FinancialDashboard->value,
+                'active' => false,
+                'base_monthly_price' => 4990,
+            ]);
+
+        $catalog->update(['active' => false]);
+
+        $this->actingAs($this->user)
+            ->from(route('settings.subscription.index'))
+            ->post(route('settings.subscription.modules.store', $this->venue), [
+                'module_code' => $catalog->code,
+                'quantity' => 1,
+            ])
+            ->assertRedirect(route('settings.subscription.index'))
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseMissing('venue_modules', [
+            'venue_id' => $this->venue->id,
+            'module_code' => $catalog->code,
         ]);
     }
 

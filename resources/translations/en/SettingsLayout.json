@@ -1,4 +1,14 @@
 {
-    "Manage modules, invoices and payment methods.": "Manage modules, invoices and payment methods.",
-    "Subscription": "Subscription"
+    "Manage modules, invoices and payment methods.":  "Manage modules, invoices and payment methods.",
+    "Subscription":  "Subscription",
+    "Settings":  "Settings",
+    "Configure the system to best serve your establishment.":  "Configure the system to best serve your establishment.",
+    "Describe whether you serve at the counter, the tables you have, and so on.":  "Describe whether you serve at the counter, the tables you have, and so on.",
+    "Venue Info":  "Venue Info",
+    "General":  "General",
+    "Kitchen Stations":  "Kitchen Stations",
+    "Preparation Statuses":  "Preparation Statuses",
+    "Service Locations":  "Service Locations",
+    "Attendance Channels":  "Attendance Channels",
+    "Users":  "Users"
 }

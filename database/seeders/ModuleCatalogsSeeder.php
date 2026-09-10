@@ -67,7 +67,7 @@ class ModuleCatalogsSeeder extends Seeder
             [
                 'code' => ModuleCode::DirectWaiter->value,
                 'name' => 'Direct Garçom',
-                'description' => 'Chamada de garçom e sinalização por mesa.',
+                'description' => "Direct Garçom — Esse é o nosso queridinho 🤩\n\nVocê coloca a Tag NeuraBar na mesa e pronto: seu cliente já sai pedindo direto pelo sistema, sem precisar chamar ninguém.\n\nSabe quando o cliente quer só mais uma bebida e já sabe o que quer? Com o DIRECT, ele mesmo faz o pedido em segundos — sem esperar, sem enrolar. Você ganha tempo, seu garçom ganha fôlego, e o cliente sai feliz.",
                 'category' => 'premium',
                 'billing_type' => ModuleBillingType::Hybrid,
                 'base_monthly_price' => 2990,
@@ -80,7 +80,7 @@ class ModuleCatalogsSeeder extends Seeder
             [
                 'code' => ModuleCode::Delivery->value,
                 'name' => 'Delivery',
-                'description' => 'Gestão de pedidos para delivery e retirada.',
+                'description' => "Pedidos de Delivery e Retirada — direto pelo celular, sem intermediários\n\nSeus clientes acessam seu cardápio atualizado de qualquer celular, a qualquer hora, e fazem o pedido direto pra você — sem precisar ligar, sem confusão.\n\nE o melhor: você não paga nada por pedido. Diferente do iFood e outros apps, aqui não tem taxa por entrega. Em poucos pedidos, a ativação já se paga sozinha.",
                 'category' => 'premium',
                 'billing_type' => ModuleBillingType::Hybrid,
                 'base_monthly_price' => 5990,
@@ -106,7 +106,7 @@ class ModuleCatalogsSeeder extends Seeder
             [
                 'code' => ModuleCode::FinancialDashboard->value,
                 'name' => 'Dashboard Financeiro',
-                'description' => 'Painel financeiro e relatórios de vendas.',
+                'description' => "Painel Financeiro — tudo que aconteceu no seu estabelecimento, em um só lugar\n\nQuantas mesas foram atendidas, o que mais vendeu, o que os clientes sempre pedem, como foi o mês passado, como foi o ano passado — tudo registrado e fácil de ver.\n\nCom esses dados na mão, você começa a tomar decisões com mais segurança. Por exemplo: se novembro está indo bem, você já consegue comparar com o novembro do ano passado e se preparar para um dezembro ainda melhor.\n\nChega de achar. Aqui você sabe.",
                 'category' => 'premium',
                 'billing_type' => ModuleBillingType::Fixed,
                 'base_monthly_price' => 4990,
@@ -119,7 +119,7 @@ class ModuleCatalogsSeeder extends Seeder
             [
                 'code' => ModuleCode::DirectPrint->value,
                 'name' => 'Impressão Direta',
-                'description' => 'Impressão automática de pedidos em impressoras térmicas.',
+                'description' => "Impressão Direta — o pedido vai pra cozinha sem você precisar gritar\n\nAssim que o pedido é feito, ele já imprime automaticamente na cozinha ou no bar — sem o garçom precisar sair do lugar, sem papel escrito à mão, sem pedido perdido.\n\nMenos erro, menos correria, atendimento mais rápido.",
                 'category' => 'premium',
                 'billing_type' => ModuleBillingType::Hybrid,
                 'base_monthly_price' => 3490,
@@ -132,7 +132,7 @@ class ModuleCatalogsSeeder extends Seeder
             [
                 'code' => ModuleCode::FiscalNote->value,
                 'name' => 'Nota Fiscal',
-                'description' => 'Emissão de notas fiscais e cupons fiscais.',
+                'description' => "Nota Fiscal — emita sem sair do sistema\n\nNa hora de fechar a conta, você emite o cupom fiscal direto pelo NeuraBar — com ou sem CPF/CNPJ do cliente, em segundos.\n\nPrecisa emitir uma nota completa (DANFE) para fornecedor ou outra finalidade? Também tem. Tudo no mesmo lugar, sem abrir outro programa, sem complicação.",
                 'category' => 'premium',
                 'billing_type' => ModuleBillingType::Hybrid,
                 'base_monthly_price' => 6990,
@@ -158,9 +158,13 @@ class ModuleCatalogsSeeder extends Seeder
         ];
 
         foreach ($modules as $module) {
-            ModuleCatalog::firstOrCreate(
+            $catalog = ModuleCatalog::firstOrCreate(
                 ['code' => $module['code']], array_merge($module, ['active' => $module['active'] || config('app.env') === 'local'])
             );
+            $catalog->update([
+                'description' => $module['description'],
+                'active' => $module['active'] || config('app.env') === 'local',
+            ]);
         }
     }
 }

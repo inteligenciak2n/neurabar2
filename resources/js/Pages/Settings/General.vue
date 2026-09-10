@@ -37,19 +37,23 @@ const submit = () => {
                             min="0"
                             class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                         />
+                        <p class="mt-1 text-xs text-muted-foreground dark:text-gray-400">{{ __('Enter the establishment cover charge or entry fee if it applies equally to all customers.') }}</p>
                         <p v-if="form.errors.cover_charge" class="mt-1 text-xs text-destructive">{{ form.errors.cover_charge }}</p>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-ocean-deep dark:text-gray-100 mb-1">{{ __('Service Fee (%)') }}</label>
-                        <input
-                            v-model="form.service_fee_percent"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            max="100"
-                            class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
-                        />
+                        <div class="relative">
+                            <input
+                                v-model="form.service_fee_percent"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="100"
+                                class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
+                            />
+                            <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground dark:text-gray-400">%</span>
+                        </div>
                         <p v-if="form.errors.service_fee_percent" class="mt-1 text-xs text-destructive">{{ form.errors.service_fee_percent }}</p>
                     </div>
 

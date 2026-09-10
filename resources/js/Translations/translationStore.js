@@ -4,6 +4,7 @@ import { reactive } from 'vue';
 const state = reactive({
     locale: null,
     translationsByLocale: {},
+    revision: 0,
 });
 
 const loadedByLocale = new Map();
@@ -21,6 +22,18 @@ export function setTranslationLocale(locale) {
     pendingByComponent.clear();
     missingByComponent.clear();
     queuedOrRegistered.clear();
+}
+
+export function getTranslationRevision() {
+    return state.revision;
+}
+
+export function refreshTranslations(components) {
+    const loaded = loadedComponents();
+
+    components.forEach((component) => loaded.delete(component));
+
+    return ensureTranslations(components);
 }
 
 export async function ensureTranslations(components) {
@@ -48,6 +61,7 @@ export async function ensureTranslations(components) {
 
             setTranslationLocale(data.locale);
             Object.assign(currentTranslations(), data.translations);
+            state.revision += 1;
 
             const localeComponents = loadedComponents();
             missing.forEach((component) => localeComponents.add(component));

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Subscription;
 
+use App\Actions\Platform\EnableCorporateModuleAction;
 use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
 use App\Models\Tenant\Venue;
@@ -14,7 +15,10 @@ use InvalidArgumentException;
 
 class SubscribeModuleAction
 {
-    public function __construct(private readonly SubscriptionCalculator $calculator) {}
+    public function __construct(
+        private readonly SubscriptionCalculator $calculator,
+        private readonly EnableCorporateModuleAction $enableCorporateModule,
+    ) {}
 
     public function execute(Venue $venue, string $moduleCode, int $quantity = 1, bool $enforceBillingStatus = true): VenueModule
     {
@@ -28,11 +32,17 @@ class SubscribeModuleAction
             throw new InvalidArgumentException('Acesso suspenso por questões de faturamento.');
         }
 
-        if (! $venue->corporation?->hasActiveModule($code)) {
-            throw new InvalidArgumentException("Module {$code->label()} is not available in the corporation plan.");
+        $corporation = $venue->corporation;
+
+        if (! $corporation) {
+            throw new InvalidArgumentException('No corporation context found.');
         }
 
-        return DB::transaction(function () use ($venue, $code, $quantity) {
+        return DB::transaction(function () use ($venue, $corporation, $code, $quantity) {
+            if (! $corporation->hasActiveModule($code)) {
+                $this->enableCorporateModule->execute($corporation, $code->value);
+            }
+
             $module = VenueModule::firstOrNew([
                 'venue_id' => $venue->id,
                 'module_code' => $code->value,

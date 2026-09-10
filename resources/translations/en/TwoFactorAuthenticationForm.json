@@ -1,7 +1,14 @@
 {
     "Add additional security to your account using two factor authentication.": "Add additional security to your account using two factor authentication.",
+    "We strongly recommend using two factor authentication to prevent unauthorized access to your system.": "We strongly recommend using two factor authentication to prevent unauthorized access to your system.",
     "You have not enabled two factor authentication.": "You have not enabled two factor authentication.",
     "Enable": "Enable",
     "When two factor authentication is enabled, you will be prompted for a secure, random token during authentication. You may retrieve this token from your phone's Google Authenticator application.": "When two factor authentication is enabled, you will be prompted for a secure, random token during authentication. You may retrieve this token from your phone's Google Authenticator application.",
-    "Two Factor Authentication": "Two Factor Authentication"
+    "Two Factor Authentication": "Two Factor Authentication",
+    "Finish enabling two factor authentication.": "Finish enabling two factor authentication.",
+    "To finish enabling two factor authentication, scan the following QR code using your phone's authenticator application or enter the setup key and provide the generated OTP code.": "To finish enabling two factor authentication, scan the following QR code using your phone's authenticator application or enter the setup key and provide the generated OTP code.",
+    "Setup Key": "Setup Key",
+    "Code": "Code",
+    "Confirm": "Confirm",
+    "Cancel": "Cancel"
 }

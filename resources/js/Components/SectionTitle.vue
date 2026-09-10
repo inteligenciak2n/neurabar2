@@ -5,9 +5,9 @@
                 <slot name="title" />
             </h3>
 
-            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            <div class="mt-1 text-sm text-gray-600 dark:text-gray-400">
                 <slot name="description" />
-            </p>
+            </div>
         </div>
 
         <div class="px-4 sm:px-0">

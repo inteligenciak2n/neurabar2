@@ -1,7 +1,9 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
-import { Link } from '@inertiajs/vue3';
+import SettingsSectionCard from '@/Components/SettingsSectionCard.vue';
 import { useTranslate } from '@/Composables/useTranslate';
+
+defineOptions({ name: 'Index' });
 
 const __ = useTranslate();
 const sections = [
@@ -53,36 +55,31 @@ const sections = [
 <template>
     <SettingsLayout :title="__('Settings')">
         <template #header>
-            <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Settings') }}</h1>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-6">
+                <h1 class="shrink-0 font-heading text-4xl font-bold text-ocean-deep dark:text-gray-100">
+                    {{ __('Settings') }}
+                </h1>
+                <div class="max-w-xl text-xs leading-relaxed text-muted-foreground dark:text-gray-500">
+                    <p>{{ __('Configure the system to best serve your establishment.') }}</p>
+                    <p class="mt-1.5">
+                        {{ __('Describe whether you serve at the counter, the tables you have, and so on.') }}
+                    </p>
+                    <p class="mt-1.5">
+                        {{ __('Choose a section to manage subscription, venue, users, locations and how the operation works.') }}
+                    </p>
+                </div>
+            </div>
         </template>
 
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <Link
+        <div class="flex max-w-5xl flex-col gap-2">
+            <SettingsSectionCard
                 v-for="section in sections"
-                :key="section.label"
-                :href="route(section.routeName)"
-                class="group flex items-start gap-4 rounded-xl border border-border dark:border-gray-700 bg-white dark:bg-gray-800 p-5 shadow-card transition-shadow hover:shadow-ocean"
-            >
-                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-ocean-light text-primary">
-                    <svg
-                        class="h-5 w-5"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        viewBox="0 0 24 24"
-                    >
-                        <path stroke-linecap="round" stroke-linejoin="round" :d="section.icon" />
-                    </svg>
-                </div>
-                <div class="min-w-0">
-                    <p class="font-heading text-sm font-semibold text-ocean-deep dark:text-gray-100 group-hover:text-primary transition-colors">
-                        {{ section.label }}
-                    </p>
-                    <p class="mt-0.5 text-xs text-muted-foreground leading-relaxed">
-                        {{ section.description }}
-                    </p>
-                </div>
-            </Link>
+                :key="section.routeName"
+                :label="section.label"
+                :description="section.description"
+                :route-name="section.routeName"
+                :icon="section.icon"
+            />
         </div>
     </SettingsLayout>
 </template>

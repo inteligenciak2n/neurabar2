@@ -1,10 +1,12 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
-import { Link, router } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { Link, router, usePage } from '@inertiajs/vue3';
+import { computed, onMounted, ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
 import { useCurrency } from '@/Composables/useCurrency';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
+import SubscriptionModuleCard from '@/Components/SubscriptionModuleCard.vue';
+import { refreshTranslations } from '@/Translations/translationStore';
 
 const props = defineProps({
     subscription: Object,
@@ -16,8 +18,43 @@ const props = defineProps({
     hasPaymentMethod: Boolean,
 });
 
-const __ = useTranslate();
+const translate = useTranslate();
+const __ = (text, bindings = {}) => translate(text, bindings, 'Index');
 const { formatMoney } = useCurrency();
+const page = usePage();
+
+const dateLocale = computed(() => {
+    const locale = page.props.language?.locale ?? 'pt';
+
+    return {
+        pt: 'pt-BR',
+        en: 'en-GB',
+        es: 'es',
+    }[locale] ?? 'pt-BR';
+});
+
+const formatDate = (value) => {
+    if (! value) {
+        return '-';
+    }
+
+    const normalized = String(value).split('T')[0];
+    const [year, month, day] = normalized.split('-').map(Number);
+
+    if (! year || ! month || ! day) {
+        return value;
+    }
+
+    return new Intl.DateTimeFormat(dateLocale.value, {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+    }).format(new Date(year, month - 1, day));
+};
+
+onMounted(async () => {
+    await refreshTranslations(['Index']);
+});
 
 const confirmingCancellation = ref(false);
 const canceling = ref(false);
@@ -55,6 +92,210 @@ const activateGateway = (venueId = null) => {
 
 const hasModule = (venue, moduleCode) => venue.modules.some((m) => m.code === moduleCode);
 
+const moduleSalesCopy = {
+    delivery: 'Delivery sales copy',
+    direct_print: 'Direct print sales copy',
+    direct_waiter: 'Direct waiter sales copy',
+    financial_dashboard: 'Financial dashboard sales copy',
+    fiscal_note: 'Fiscal note sales copy',
+};
+
+const moduleDescriptionFallbacks = {
+    delivery: 'Delivery module scaffold.',
+    production_dashboard: 'Production dashboard module scaffold.',
+    financial_dashboard: 'Financial dashboard module scaffold.',
+    voice_command: 'Voice command module scaffold.',
+    direct_waiter: 'Direct waiter module scaffold.',
+    direct_print: 'Direct print module scaffold.',
+};
+
+const moduleDescription = (module) => {
+    const salesKey = moduleSalesCopy[module.code];
+
+    if (salesKey) {
+        return __(salesKey);
+    }
+
+    if (module.description?.trim()) {
+        return module.description;
+    }
+
+    const fallbackKey = moduleDescriptionFallbacks[module.code];
+
+    if (fallbackKey) {
+        return __(fallbackKey);
+    }
+
+    return __('Describe the functionality of this module here.');
+};
+
+const modulePriceLabel = (module) => __(':price / month', { price: formatMoney(module.monthly_price) });
+
+const moduleClickToAddLine1 = () => __('Click here to add line 1');
+
+const moduleClickToAddLine2 = () => __('Click here to add line 2');
+
+const moduleClickToAddPriceLine = (module) => __('Click here to add for price', { price: formatMoney(module.monthly_price) });
+
+const proratedAmountFor = (monthlyPrice) => {
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const remainingDays = daysInMonth - now.getDate() + 1;
+
+    return Math.round((monthlyPrice * remainingDays) / daysInMonth);
+};
+
+const moduleLearnMoreMonthlyValue = (module) => __('Learn more monthly value', {
+    price: formatMoney(module.monthly_price),
+    amount: formatMoney(proratedAmountFor(module.monthly_price)),
+});
+
+const moduleLearnMoreCustomerAccessTitle = (module) => {
+    if (module.code === 'direct_print') {
+        return __('How it works');
+    }
+
+    return __('How the customer accesses');
+};
+
+const moduleLearnMoreCustomerAccess = (module) => {
+    if (module.code === 'delivery') {
+        return __('Learn more delivery customer access');
+    }
+
+    if (module.code === 'direct_print') {
+        return __('Learn more direct print how it works');
+    }
+
+    if (module.code === 'direct_waiter') {
+        return __('Learn more direct waiter customer access');
+    }
+
+    if (module.code === 'financial_dashboard') {
+        return '';
+    }
+
+    return __('Learn more customer access');
+};
+
+const moduleLearnMoreOrderFlowTitle = (module) => {
+    if (module.code === 'direct_print') {
+        return __('Advantage');
+    }
+
+    return __('How the order reaches the restaurant');
+};
+
+const moduleLearnMoreOrderFlow = (module) => {
+    if (module.code === 'delivery') {
+        return __('Learn more delivery order flow');
+    }
+
+    if (module.code === 'direct_print') {
+        return __('Learn more direct print advantage');
+    }
+
+    if (module.code === 'direct_waiter') {
+        return __('Learn more direct waiter order flow');
+    }
+
+    if (module.code === 'financial_dashboard') {
+        return '';
+    }
+
+    return __('Learn more order flow');
+};
+
+const moduleLearnMoreAdvantageTitle = (module) => {
+    if (module.code === 'direct_waiter' || module.code === 'financial_dashboard') {
+        return __('Advantage');
+    }
+
+    return '';
+};
+
+const moduleLearnMoreAdvantage = (module) => {
+    if (module.code === 'direct_waiter') {
+        return __('Learn more direct waiter advantage');
+    }
+
+    if (module.code === 'financial_dashboard') {
+        return __('Learn more financial dashboard advantage');
+    }
+
+    return '';
+};
+
+const moduleLearnMoreSavingsTitle = (module) => {
+    if (module.code === 'delivery' || module.code === 'direct_print' || module.code === 'direct_waiter') {
+        return __('How you save with this module');
+    }
+
+    return '';
+};
+
+const moduleLearnMoreSavingsKind = (module) => {
+    if (module.code === 'direct_print' || module.code === 'direct_waiter') {
+        return 'print';
+    }
+
+    return 'delivery';
+};
+
+const moduleLearnMoreSavingsDescription = (module) => {
+    if (module.code === 'direct_print') {
+        return __('Learn more print savings copy');
+    }
+
+    if (module.code === 'direct_waiter') {
+        return __('Learn more direct waiter savings copy');
+    }
+
+    return __('Learn more savings copy');
+};
+
+const moduleLearnMoreSavingsEstimateLabel = (module) => {
+    if (module.code === 'direct_print' || module.code === 'direct_waiter') {
+        return __('Estimated print monthly savings');
+    }
+
+    return __('Estimated monthly savings');
+};
+
+const moduleLearnMoreSavingsDisclaimer = (module) => {
+    if (module.code === 'direct_print' || module.code === 'direct_waiter') {
+        return __('Estimated savings disclaimer');
+    }
+
+    return '';
+};
+
+const moduleLearnMoreKitchenTripTimeLabel = (module) => {
+    if (module.code === 'direct_waiter') {
+        return __('Simple service time');
+    }
+
+    return __('Kitchen trip time');
+};
+
+const moduleLearnMoreKitchenTripCountLabel = (module) => {
+    if (module.code === 'direct_waiter') {
+        return __('Simple order count');
+    }
+
+    return __('Kitchen trip count');
+};
+
+const moduleLearnMoreInitialWorkDays = (module) => {
+    if (module.code === 'direct_waiter') {
+        return 20;
+    }
+
+    return 30;
+};
+
+const isModuleLoading = (venue, moduleCode) => pendingModuleKey.value === `${venue.id}:${moduleCode}`;
+
 // Contratar um módulo pago custa dinheiro: a troca acontecia em um clique,
 // sem confirmação e sem mostrar quanto seria cobrado.
 const pendingModule = ref(null);
@@ -77,11 +318,28 @@ const proratedAmount = computed(() => {
         return 0;
     }
 
+    return proratedAmountFor(pendingModule.value.module.monthly_price);
+});
+
+const remainingBillingDays = computed(() => {
     const now = new Date();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const remainingDays = daysInMonth - now.getDate() + 1;
 
-    return Math.round((pendingModule.value.module.monthly_price * remainingDays) / daysInMonth);
+    return daysInMonth - now.getDate() + 1;
+});
+
+const confirmTitle = computed(() => {
+    if (! pendingModule.value) {
+        return '';
+    }
+
+    const { module, action } = pendingModule.value;
+
+    if (action === 'remove') {
+        return __('Do you want to remove the module :module?', { module: module.name });
+    }
+
+    return __('Do you want to enable the module :module?', { module: module.name });
 });
 
 const confirmMessage = computed(() => {
@@ -89,16 +347,37 @@ const confirmMessage = computed(() => {
         return '';
     }
 
-    const { module, venue, action } = pendingModule.value;
+    const { action } = pendingModule.value;
 
     if (action === 'remove') {
-        return `${__('Remove :module from :venue?').replace(':module', module.name).replace(':venue', venue.name)} `
-            + `${__('You will still be charged for the days already used in the current period.')}`;
+        return [
+            __('When removing this module it will be deactivated on the next billing cycle.'),
+            __('You still have :days days to use it', { days: remainingBillingDays.value }),
+        ].join('\n\n');
     }
 
-    return `${__('Enable :module for :venue?').replace(':module', module.name).replace(':venue', venue.name)} `
-        + `${__('Monthly price: :price.').replace(':price', formatMoney(module.monthly_price))} `
-        + `${__('Charged now (pro rata): :amount.').replace(':amount', formatMoney(proratedAmount.value))}`;
+    return [
+        __('When enabling this module it will work immediately.'),
+        __('A partial charge of :amount will be billed on the next invoice.', {
+            amount: formatMoney(proratedAmount.value),
+        }),
+    ].join('\n\n');
+});
+
+const confirmButtonLabel = computed(() => {
+    if (pendingModule.value?.action === 'remove') {
+        return __('Yes, I want to remove');
+    }
+
+    return __('Yes, I want to enable');
+});
+
+const cancelButtonLabel = computed(() => {
+    if (pendingModule.value?.action === 'remove' || pendingModule.value?.action === 'add') {
+        return __('Cancel, do not change anything');
+    }
+
+    return __('Cancel');
 });
 
 const requestToggle = (venue, module) => {
@@ -180,13 +459,15 @@ const statusLabel = (status) => ({
             </div>
 
             <div v-if="trialDaysLeft !== null" class="rounded-xl border border-ocean-light bg-ocean-light/30 p-4 text-sm text-ocean-deep">
-                <span v-if="trialDaysLeft > 0">
-                    {{ __('Your trial ends in :days day(s).').replace(':days', trialDaysLeft) }}
-                </span>
-                <span v-else>{{ __('Your trial ends today.') }}</span>
-                <span v-if="!hasPaymentMethod">
-                    {{ __('Add a credit card to keep your access after the trial.') }}
-                </span>
+                <template v-if="trialDaysLeft > 0">
+                    {{ __('Your trial ends in:') }}
+                    <strong>{{ trialDaysLeft }} {{ __('Day(s)') }}</strong>.
+                    <span v-if="!hasPaymentMethod">{{ ' ' }}{{ __('Add a credit card to keep your access after the trial period.') }}</span>
+                </template>
+                <template v-else>
+                    {{ __('Your trial ends today.') }}
+                    <span v-if="!hasPaymentMethod">{{ ' ' }}{{ __('Add a credit card to keep your access after the trial period.') }}</span>
+                </template>
             </div>
 
             <div class="rounded-xl border border-border bg-white p-6 shadow-card">
@@ -203,7 +484,7 @@ const statusLabel = (status) => ({
                 </div>
                 <dl class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <div>
-                        <dt class="text-xs text-muted-foreground">{{ __('Status') }}</dt>
+                        <dt class="text-xs text-muted-foreground">{{ __('System Status') }}</dt>
                         <dd class="mt-1 font-medium capitalize">{{ statusLabel(subscription.status) }}</dd>
                     </div>
                     <div>
@@ -217,7 +498,7 @@ const statusLabel = (status) => ({
                     </div>
                     <div>
                         <dt class="text-xs text-muted-foreground">{{ __('Next Due Date') }}</dt>
-                        <dd class="mt-1 font-medium">{{ subscription.next_due_date ?? '-' }}</dd>
+                        <dd class="mt-1 font-medium">{{ formatDate(subscription.next_due_date) }}</dd>
                     </div>
                 </dl>
             </div>
@@ -285,12 +566,12 @@ const statusLabel = (status) => ({
                 </Link>
             </div>
 
-            <div class="rounded-xl border border-border bg-white p-6 shadow-card">
+            <div class="rounded-xl border border-border bg-white p-6 shadow-card dark:border-gray-700 dark:bg-gray-800">
                 <h2 class="font-heading text-lg font-semibold">{{ __('Modules by Venue') }}</h2>
-                <div class="mt-4 space-y-6">
+                <div class="mt-4 space-y-8">
                     <div v-for="venue in venues" :key="venue.id">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <h3 class="font-medium text-ocean-deep">{{ venue.name }}</h3>
+                        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                            <h3 class="font-medium text-ocean-deep dark:text-gray-100">{{ venue.name }}</h3>
                             <template v-if="subscription.billing_mode === 'per_venue'">
                                 <span v-if="venue.is_billed_by_gateway" class="text-xs font-medium text-emerald-600">
                                     {{ __('Automatic billing is active.') }}
@@ -306,35 +587,52 @@ const statusLabel = (status) => ({
                                 </button>
                             </template>
                         </div>
-                        <div class="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                            <div
-                                v-for="module in availableModules"
-                                :key="module.code"
-                                class="rounded-lg border p-4"
-                                :class="hasModule(venue, module.code) ? 'border-primary bg-ocean-light/30' : 'border-border'"
-                            >
-                                <div class="flex items-start justify-between">
-                                    <div>
-                                        <p class="font-medium">{{ module.name }}</p>
-                                        <p class="text-xs text-muted-foreground">{{ formatMoney(module.monthly_price) }}/mês</p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        role="switch"
-                                        :aria-checked="hasModule(venue, module.code)"
-                                        :aria-label="`${module.name} — ${venue.name}`"
-                                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                        :class="hasModule(venue, module.code) ? 'bg-primary' : 'bg-gray-200'"
-                                        :disabled="blocked || pendingModuleKey !== null"
-                                        @click="requestToggle(venue, module)"
-                                    >
-                                        <span
-                                            class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-                                            :class="hasModule(venue, module.code) ? 'translate-x-6' : 'translate-x-1'"
-                                        />
-                                    </button>
-                                </div>
-                            </div>
+                        <div class="flex max-w-5xl flex-col gap-2">
+                            <SubscriptionModuleCard
+                                v-for="(module, moduleIndex) in availableModules"
+                                :key="`${venue.id}-${module.code}`"
+                                :module="module"
+                                :venue-name="venue.name"
+                                :enabled="hasModule(venue, module.code)"
+                                :disabled="blocked || pendingModuleKey !== null"
+                                :loading="isModuleLoading(venue, module.code)"
+                                :description="moduleDescription(module)"
+                                :price-label="modulePriceLabel(module)"
+                                :status-title="__('Current status label')"
+                                :status-value="hasModule(venue, module.code) ? __('Status on') : __('Status off')"
+                                :click-to-add-line1="moduleClickToAddLine1()"
+                                :click-to-add-line2="moduleClickToAddLine2()"
+                                :click-to-add-price-line="moduleClickToAddPriceLine(module)"
+                                :sequence="moduleIndex + 1"
+                                :learn-more-label="__('Click here and learn more')"
+                                :learn-more-title="__('Learn more about this module')"
+                                :monthly-value-title="__('Monthly value')"
+                                :customer-access-title="moduleLearnMoreCustomerAccessTitle(module)"
+                                :order-flow-title="moduleLearnMoreOrderFlowTitle(module)"
+                                :advantage-title="moduleLearnMoreAdvantageTitle(module)"
+                                :monthly-value="moduleLearnMoreMonthlyValue(module)"
+                                :customer-access="moduleLearnMoreCustomerAccess(module)"
+                                :order-flow="moduleLearnMoreOrderFlow(module)"
+                                :advantage="moduleLearnMoreAdvantage(module)"
+                                :close-label="__('Close')"
+                                :activate-label="__('Click here to activate this module')"
+                                :savings-title="moduleLearnMoreSavingsTitle(module)"
+                                :savings-kind="moduleLearnMoreSavingsKind(module)"
+                                :savings-description="moduleLearnMoreSavingsDescription(module)"
+                                :average-order-label="__('Average order value')"
+                                :monthly-orders-label="__('Orders per month')"
+                                :marketplace-fee-label="__('Marketplace fee percent')"
+                                :savings-estimate-label="moduleLearnMoreSavingsEstimateLabel(module)"
+                                :savings-disclaimer="moduleLearnMoreSavingsDisclaimer(module)"
+                                :kitchen-trip-time-label="moduleLearnMoreKitchenTripTimeLabel(module)"
+                                :kitchen-trip-count-label="moduleLearnMoreKitchenTripCountLabel(module)"
+                                :initial-work-days="moduleLearnMoreInitialWorkDays(module)"
+                                :freelancer-value-label="__('Freelancer daily rate')"
+                                :waiter-count-label="__('Waiter count')"
+                                :work-days-label="__('Work days')"
+                                :seconds-label="__('Seconds')"
+                                @toggle="requestToggle(venue, module)"
+                            />
                         </div>
                     </div>
                 </div>
@@ -354,9 +652,10 @@ const statusLabel = (status) => ({
 
         <AppConfirmModal
             :show="pendingModule !== null"
-            :title="pendingModule?.action === 'remove' ? __('Remove Module') : __('Enable Module')"
+            :title="confirmTitle"
             :message="confirmMessage"
-            :confirm-label="pendingModule?.action === 'remove' ? __('Remove Module') : __('Enable Module')"
+            :confirm-label="confirmButtonLabel"
+            :cancel-label="cancelButtonLabel"
             :variant="pendingModule?.action === 'remove' ? 'destructive' : 'primary'"
             @confirm="confirmToggle"
             @cancel="pendingModule = null"

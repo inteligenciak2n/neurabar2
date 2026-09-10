@@ -36,6 +36,8 @@ services:
         environment:
             WWWUSER: '${WWWUSER}'
             LARAVEL_SAIL: 1
+            VITE_PORT: '${VITE_PORT:-5173}'
+            VITE_USE_POLLING: 'false'
         volumes:
             - '.:/var/www/html'
         networks:
@@ -43,6 +45,8 @@ services:
         depends_on:
             - laravel.test
         command: ['npm', 'run', 'dev']
+        profiles:
+            - vite-docker
         restart: unless-stopped
     pgsql:
         image: 'postgres:18-alpine'
@@ -55,7 +59,7 @@ services:
             POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
         volumes:
             - 'sail-pgsql:/var/lib/postgresql'
-            - './vendor/laravel/sail/database/pgsql/create-testing-database.sql:/docker-entrypoint-initdb.d/10-create-testing-database.sql'
+            - './sail/postgresql/create-testing-database.sql:/docker-entrypoint-initdb.d/10-create-testing-database.sql'
             - './sail/postgresql/create-support-database.sh:/docker-entrypoint-initdb.d/20-create-support-database.sh'
         networks:
             - sail

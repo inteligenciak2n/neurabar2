@@ -20,6 +20,10 @@ const props = defineProps({
         type: String,
         default: 'Confirm',
     },
+    cancelLabel: {
+        type: String,
+        default: '',
+    },
     variant: {
         type: String,
         default: 'primary',
@@ -40,11 +44,11 @@ const __ = useTranslate();
     <Modal :show="show" max-width="md" @close="emit('cancel')">
         <div class="p-6">
             <h2 class="font-heading text-lg font-semibold text-ocean-deep dark:text-gray-100">{{ title }}</h2>
-            <p class="mt-2 text-sm text-muted-foreground font-body dark:text-gray-400">{{ message }}</p>
+            <p class="mt-2 whitespace-pre-line text-sm text-muted-foreground font-body dark:text-gray-400">{{ message }}</p>
 
             <div class="mt-6 flex items-center justify-end gap-3">
                 <AppButton variant="ghost" :disabled="loading" @click="emit('cancel')">
-                    {{ __('Cancel') }}
+                    {{ cancelLabel || __('Cancel') }}
                 </AppButton>
                 <AppButton :variant="variant" :loading="loading" @click="emit('confirm')">
                     {{ confirmLabel }}

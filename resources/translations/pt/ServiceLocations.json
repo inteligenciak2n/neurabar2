@@ -24,5 +24,8 @@
     "— None —": "— Nenhum —",
     "PDF QR": "PDF QR",
     "Regenerate QR": "Regenere o QR",
-    "View Hub": "Exibir hub"
+    "View Hub": "Exibir hub",
+    "Inactive": "Inativo",
+    "QR code generated.": "QR Code gerado.",
+    "Could not generate QR code.": "Não foi possível gerar o QR Code."
 }

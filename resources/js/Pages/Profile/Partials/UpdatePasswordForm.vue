@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
 import ActionMessage from '@/Components/ActionMessage.vue';
 import FormSection from '@/Components/FormSection.vue';
 import InputError from '@/Components/InputError.vue';
@@ -44,7 +44,18 @@ const updatePassword = () => {
         </template>
 
         <template #description>
-            {{ __('Ensure your account is using a long, random password to stay secure.') }}
+            <p>{{ __('Ensure your account is using a long, random password to stay secure.') }}</p>
+            <p class="mt-2">{{ __('Do not share your password.') }}</p>
+            <p class="mt-2">{{ __('You can create new users for your employees or partners.') }}</p>
+            <p class="mt-2">
+                {{ __('For employee registration, use this link:') }}
+                <Link
+                    :href="route('settings.users.index')"
+                    class="font-medium text-primary underline hover:text-primary/80 dark:text-primary-foreground"
+                >
+                    {{ __('Users') }}
+                </Link>
+            </p>
         </template>
 
         <template #form>

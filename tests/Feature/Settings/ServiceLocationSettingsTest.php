@@ -148,4 +148,22 @@ class ServiceLocationSettingsTest extends TestCase
             'type' => 'counter',
         ])->assertSessionHasErrors('type');
     }
+
+    public function test_owner_can_generate_qr_token_for_service_location(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+        $location = ServiceLocation::factory()->create([
+            'venue_id' => $venue->id,
+            'qr_token' => null,
+        ]);
+
+        $this->post(route('settings.service-locations.qr', $location->id))
+            ->assertRedirect(route('settings.service-locations.index'))
+            ->assertSessionHas('success');
+
+        $location->refresh();
+
+        $this->assertNotNull($location->qr_token);
+    }
 }
