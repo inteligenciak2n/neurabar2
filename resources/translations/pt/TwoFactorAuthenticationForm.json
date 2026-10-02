@@ -4,5 +4,11 @@
     "You have not enabled two factor authentication.": "Você não habilitou a autenticação de dois fatores.",
     "Enable": "Habilitar",
     "When two factor authentication is enabled, you will be prompted for a secure, random token during authentication. You may retrieve this token from your phone's Google Authenticator application.": "Quando a autenticação de dois fatores estiver ativada, você será solicitado a fornecer um token seguro e aleatório durante a autenticação. Você pode recuperar esse token do aplicativo Google Authenticator do seu telefone.",
-    "Two Factor Authentication": "Autenticação de dois fatores"
+    "Two Factor Authentication": "Autenticação de dois fatores",
+    "Finish enabling two factor authentication.": "Conclua a ativação da autenticação de dois fatores.",
+    "To finish enabling two factor authentication, scan the following QR code using your phone's authenticator application or enter the setup key and provide the generated OTP code.": "Para concluir a ativação da autenticação de dois fatores, leia o QR code com o aplicativo autenticador do celular ou informe a chave de configuração e o código gerado.",
+    "Setup Key": "Chave de configuração",
+    "Code": "Código",
+    "Confirm": "Confirmar",
+    "Cancel": "Cancelar"
 }

@@ -3,42 +3,19 @@
 namespace App\Http\Controllers\Menu;
 
 use App\Actions\Menu\CreateComboAction;
+use App\Actions\Menu\ToggleComboActiveAction;
 use App\Actions\Menu\UpdateComboAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Menu\StoreComboRequest;
 use App\Http\Requests\Menu\UpdateComboRequest;
 use App\Models\Menu\Combo;
-use App\Models\Menu\Menu;
-use App\Models\Menu\Product;
 use Illuminate\Http\RedirectResponse;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class ComboController extends Controller
 {
-    public function index(): Response
+    public function index(): RedirectResponse
     {
-        $venue = app('tenant');
-
-        $combos = Combo::with(['items.product:id,name,price', 'items.variation:id,product_id,name,price'])
-            ->orderBy('name')
-            ->get();
-
-        $menuIds = Menu::withoutGlobalScopes()
-            ->where('venue_id', $venue->id)
-            ->pluck('id');
-
-        $products = Product::withoutGlobalScopes()
-            ->whereHas('category', fn ($q) => $q->whereIn('menu_id', $menuIds))
-            ->where('active', true)
-            ->with('variations:id,product_id,name,price')
-            ->orderBy('name')
-            ->get(['id', 'name', 'price']);
-
-        return Inertia::render('Menu/Combos', [
-            'combos' => $combos,
-            'products' => $products,
-        ]);
+        return redirect()->to(route('menu.index').'#menu-combos');
     }
 
     public function store(StoreComboRequest $request, CreateComboAction $action): RedirectResponse
@@ -53,6 +30,15 @@ class ComboController extends Controller
         $action->execute($combo, $request);
 
         return back()->with('success', 'Combo updated.');
+    }
+
+    public function toggleActive(Combo $combo, ToggleComboActiveAction $action): RedirectResponse
+    {
+        abort_if($combo->venue_id !== app('tenant')->id, 404);
+
+        $action->execute($combo);
+
+        return back()->with('success', 'Combo status updated.');
     }
 
     public function destroy(Combo $combo): RedirectResponse

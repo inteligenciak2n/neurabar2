@@ -1,13 +1,21 @@
 <script setup>
 import GuestLayout from '@/Layouts/GuestLayout.vue';
-import AppEmptyState from '@/Components/AppEmptyState.vue';
+import AppButton from '@/Components/AppButton.vue';
 import ProductDetailDrawer from '@/Components/Guest/ProductDetailDrawer.vue';
 import DeliveryCheckoutPanel from '@/Components/Guest/Delivery/DeliveryCheckoutPanel.vue';
+import GuestMenuCatalog from '@/Components/Guest/GuestMenuCatalog.vue';
 import { ref, computed } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
 
 const props = defineProps({
-    token: String,
+    token: {
+        type: String,
+        default: null,
+    },
+    preview: {
+        type: Boolean,
+        default: false,
+    },
     venue: Object,
     categories: Array,
     deliveryEnabled: Boolean,
@@ -18,18 +26,12 @@ const props = defineProps({
 
 const __ = useTranslate();
 
-const selectedCategoryId = ref(props.categories?.[0]?.id ?? null);
 const selectedProduct = ref(null);
 const showProductDrawer = ref(false);
 const checkoutOpen = ref(false);
 const cartItems = ref([]);
 
-const selectedCategory = computed(() =>
-    props.categories.find((c) => c.id === selectedCategoryId.value),
-);
-
 const cartCount = computed(() => cartItems.value.reduce((s, i) => s + i.quantity, 0));
-const cartSubtotal = computed(() => cartItems.value.reduce((s, i) => s + i.unit_price * i.quantity, 0));
 
 function openProduct(product) {
     selectedProduct.value = product;
@@ -54,73 +56,55 @@ function removeFromCart(index) {
 function handleOrderPlaced(orderId) {
     cartItems.value = [];
     checkoutOpen.value = false;
+
+    if (props.preview) {
+        return;
+    }
+
     window.location.href = route('orders.track', orderId);
 }
 </script>
 
 <template>
-    <GuestLayout :title="venue.name + ' — Delivery'" :venue="venue">
-        <AppEmptyState
-            v-if="!categories.length"
-            :title="__('Menu not available')"
-            :description="__('This venue has no items available for delivery yet.')"
-        />
-
-        <template v-else>
-            <!-- Category tabs -->
-            <div class="mb-4 flex gap-2 overflow-x-auto pb-1 border-b border-muted">
-                <button
-                    v-for="category in categories"
-                    :key="category.id"
-                    class="whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors"
-                    :class="selectedCategoryId === category.id ? 'bg-primary text-white' : 'bg-white text-ocean-deep shadow-card hover:bg-ocean-light'"
-                    @click="selectedCategoryId = category.id"
-                >
-                    {{ category.name }}
-                </button>
+    <GuestLayout
+        :title="venue.name + ' — Delivery'"
+        :venue="venue"
+        :preview-watermark="preview ? __('Delivery version') : null"
+    >
+        <template v-if="preview" #headerTitle>{{ __('Customer version - Delivery') }}</template>
+        <template v-if="preview" #headerSubtitle>{{ __('Adaptive screen for phone, tablet or computer') }}</template>
+        <template v-if="preview" #header>
+            <div class="flex flex-wrap items-center justify-end gap-2">
+                <AppButton size="sm" variant="accent" :href="route('menu.preview.customer')">{{ __('Customer version - Table') }}</AppButton>
+                <AppButton size="sm" :href="route('menu.index')">{{ __('Back') }}</AppButton>
             </div>
-
-            <template v-if="selectedCategory">
-                <AppEmptyState
-                    v-if="!selectedCategory.products?.length"
-                    :title="__('No items in this category')"
-                    :description="__('Check back later.')"
-                />
-                <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2 pb-24">
-                    <button
-                        v-for="product in selectedCategory.products"
-                        :key="product.id"
-                        class="rounded-xl bg-white p-4 shadow-card text-left active:scale-95 transition-transform"
-                        @click="openProduct(product)"
-                    >
-                        <div class="flex items-start justify-between gap-2">
-                            <div class="flex-1">
-                                <p class="font-body text-sm font-semibold text-ocean-deep">{{ product.name }}</p>
-                                <p v-if="product.description" class="mt-1 text-xs text-muted-foreground line-clamp-2">{{ product.description }}</p>
-                            </div>
-                            <span class="whitespace-nowrap font-heading text-sm font-bold text-primary">
-                                R$ {{ Number(product.price).toFixed(2) }}
-                            </span>
-                        </div>
-                    </button>
-                </div>
-            </template>
         </template>
 
+        <GuestMenuCatalog
+            :venue="venue"
+            :categories="categories"
+            :preview="preview"
+            :empty-description="__('This venue has no items available for delivery yet.')"
+            @open-product="openProduct"
+        />
+
         <!-- Cart FAB -->
-        <button
-            v-if="cartCount > 0"
-            class="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg active:opacity-80 z-40"
-            @click="checkoutOpen = true"
-        >
-            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-primary text-xs font-bold">{{ cartCount }}</span>
-            {{ __('Checkout') }} · R$ {{ cartSubtotal.toFixed(2) }}
-        </button>
+        <Teleport to="body">
+            <button
+                v-if="cartCount > 0"
+                class="fixed bottom-24 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg active:opacity-80"
+                @click="checkoutOpen = true"
+            >
+                <span class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-bold text-primary">{{ cartCount }}</span>
+                {{ __('View Cart') }}
+            </button>
+        </Teleport>
 
         <ProductDetailDrawer
             v-if="selectedProduct"
             v-model="showProductDrawer"
             :product="selectedProduct"
+            :preview="preview"
             @add-to-cart="addToCart"
         />
 
@@ -128,6 +112,7 @@ function handleOrderPlaced(orderId) {
             v-model="checkoutOpen"
             :token="token"
             :items="cartItems"
+            :preview="preview"
             :delivery-enabled="deliveryEnabled"
             :pickup-enabled="pickupEnabled"
             :accepted-payment-methods="acceptedPaymentMethods"

@@ -1,5 +1,7 @@
 {
     "Combos": "Combos",
+    "Bundle products into a special-price offer.": "Bundle products into a special-price offer.",
+    "The customer orders the combo as one item.": "The customer orders the combo as one item.",
     "Delete": "Delete",
     "Delete Combo": "Delete Combo",
     "Menu": "Menu",
@@ -9,6 +11,13 @@
     "Are you sure you want to delete this combo?": "Are you sure you want to delete this combo?",
     "Active": "Active",
     "New Combo": "New Combo",
+    "Edit Combo": "Edit Combo",
+    "Combo Name": "Combo Name",
+    "Combo Price": "Combo Price",
+    "Combo Description": "Combo Description",
+    "Current status: :status": "Current status: :status",
+    "on": "on",
+    "off": "off",
     "Price": "Price",
     "Name": "Name",
     "Product": "Product",
@@ -23,5 +32,7 @@
     "Cancel": "Cancel",
     "Add Item": "Add Item",
     "items": "items",
-    "Edit": "Edit"
+    "Edit": "Edit",
+    "Combo": "Combo",
+    "item": "item"
 }

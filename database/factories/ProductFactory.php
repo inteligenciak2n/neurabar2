@@ -22,8 +22,10 @@ class ProductFactory extends Factory
             'category_id' => Category::factory(),
             'name' => fake()->words(3, true),
             'description' => fake()->sentence(),
+            'servings' => 1,
             'price' => fake()->randomFloat(2, 5, 150),
             'active' => true,
+            'sort_order' => 0,
         ];
     }
 

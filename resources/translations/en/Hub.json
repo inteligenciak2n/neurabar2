@@ -31,5 +31,19 @@
     "Type your message to the waiter...": "Type your message to the waiter...",
     "Send": "Send",
     "Waiter notified!": "Waiter notified!",
-    "A waiter is on their way to take your order!": "A waiter is on their way to take your order!"
+    "A waiter is on their way to take your order!": "A waiter is on their way to take your order!",
+    "PIN must be 4 digits.": "PIN must be 4 digits.",
+    "PINs do not match.": "PINs do not match.",
+    "Error creating session.": "Error creating session.",
+    "Enter your 4-digit PIN.": "Enter your 4-digit PIN.",
+    "Invalid PIN.": "Invalid PIN.",
+    "Error loading orders.": "Error loading orders.",
+    "Delivery or Takeaway?": "Delivery or Takeaway?",
+    "This link is not associated with a specific table or location. Your order will be treated as delivery or takeaway.": "This link is not associated with a specific table or location. Your order will be treated as delivery or takeaway.",
+    "Continue": "Continue",
+    "Location required": "Location required",
+    "This venue requires your location to place orders. Allow location access to continue.": "This venue requires your location to place orders. Allow location access to continue.",
+    "Try again": "Try again",
+    "Checking your location...": "Checking your location...",
+    "(location required)": "(location required)"
 }

@@ -28,7 +28,7 @@ class SchemaIntegrityTest extends TestCase
             'service_locations' => ['service_locations', ['id', 'venue_id', 'name', 'type', 'active']],
             'menus' => ['menus', ['id', 'venue_id', 'name', 'active']],
             'menu_categories' => ['menu_categories', ['id', 'menu_id', 'name', 'sort_order']],
-            'products' => ['products', ['id', 'category_id', 'name', 'price', 'active']],
+            'products' => ['products', ['id', 'category_id', 'name', 'price', 'active', 'sort_order', 'servings']],
             'modifier_groups' => ['modifier_groups', ['id', 'venue_id', 'name', 'required']],
             'modifier_options' => ['modifier_options', ['id', 'modifier_group_id', 'name', 'extra_price']],
             'combos' => ['combos', ['id', 'venue_id', 'name', 'price', 'active']],

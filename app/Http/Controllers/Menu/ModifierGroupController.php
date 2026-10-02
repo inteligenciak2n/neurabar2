@@ -9,20 +9,12 @@ use App\Http\Requests\Menu\StoreModifierGroupRequest;
 use App\Http\Requests\Menu\UpdateModifierGroupRequest;
 use App\Models\Menu\ModifierGroup;
 use Illuminate\Http\RedirectResponse;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class ModifierGroupController extends Controller
 {
-    public function index(): Response
+    public function index(): RedirectResponse
     {
-        $groups = ModifierGroup::with(['options', 'products:id,name'])
-            ->orderBy('name')
-            ->get();
-
-        return Inertia::render('Menu/Modifiers', [
-            'modifierGroups' => $groups,
-        ]);
+        return redirect()->to(route('menu.index').'#menu-modifiers');
     }
 
     public function store(StoreModifierGroupRequest $request, CreateModifierGroupAction $action): RedirectResponse

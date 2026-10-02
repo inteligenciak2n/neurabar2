@@ -381,7 +381,10 @@ const roleLabel = (role) => {
 
             <!-- Page content -->
             <main class="flex-1 p-4 sm:p-6">
-                <div v-if="$slots.header" class="mb-6">
+                <div
+                    v-if="$slots.header"
+                    class="sticky top-16 z-10 -mx-4 -mt-4 mb-6 border-b border-border bg-muted px-4 py-4 sm:-mx-6 sm:-mt-6 sm:px-6 sm:py-6 dark:border-gray-700 dark:bg-gray-950"
+                >
                     <slot name="header" />
                 </div>
                 <slot />

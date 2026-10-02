@@ -1,5 +1,22 @@
 {
     "Back": "Atrás",
+    "Customer version": "Versión cliente",
+    "Customer version - Table": "Versión cliente - Mesa",
+    "Customer version - Delivery": "Versión cliente - Delivery",
+    "Adaptive screen for phone, tablet or computer": "Pantalla adaptable a móvil, tablet u ordenador",
     "View Cart": "Ver carrito",
-    "Order placed! We are preparing it for you.": "¡Pedido realizado! Lo estamos preparando para ti."
+    "Order placed! We are preparing it for you.": "¡Pedido realizado! Lo estamos preparando para ti.",
+    "Preview — customer view": "Vista previa — versión del cliente",
+    "This is a preview. Orders cannot be placed from here.": "Esta es una vista previa. No se pueden hacer pedidos desde aquí.",
+    "Back to menu": "Volver al menú",
+    "Price:": "Precio:",
+    "Menu not available": "Menú no disponible",
+    "This venue has no menu items yet.": "Este establecimiento aún no tiene ítems en el menú.",
+    "This venue has no items available for delivery yet.": "Este establecimiento aún no tiene ítems para entrega.",
+    "No items in this category": "No hay ítems en esta categoría",
+    "Check back later.": "Vuelve más tarde.",
+    "Checkout": "Finalizar pedido",
+    "Table version": "Versión Mesa",
+    "Table no. :number": "Mesa n.º :number",
+    "Delivery version": "Versión Delivery"
 }

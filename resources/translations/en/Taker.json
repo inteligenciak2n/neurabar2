@@ -22,5 +22,9 @@
     "Cancel": "Cancel",
     "Variations": "Variations",
     "Choose variation": "Choose variation",
-    "optional": "optional"
+    "optional": "optional",
+    "No products in this category": "No products in this category",
+    "Select another category.": "Select another category.",
+    "No combos available": "No combos available",
+    "No active combos configured.": "No active combos configured."
 }

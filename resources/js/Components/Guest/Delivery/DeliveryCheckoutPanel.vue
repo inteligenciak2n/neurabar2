@@ -4,9 +4,16 @@ import { useTranslate } from '@/Composables/useTranslate';
 import axios from 'axios';
 
 const props = defineProps({
-    token: String,
+    token: {
+        type: String,
+        default: null,
+    },
     items: Array,
     modelValue: Boolean,
+    preview: {
+        type: Boolean,
+        default: false,
+    },
     deliveryEnabled: Boolean,
     pickupEnabled: Boolean,
     acceptedPaymentMethods: Array,
@@ -72,7 +79,7 @@ watch(() => address.value.zip_code, (zip) => {
     clearTimeout(feeLookupTimeout);
     feeZone.value.error = null;
 
-    if (fulfillmentType.value !== 'delivery' || !zip || zip.replace(/\D/g, '').length < 8) {
+    if (props.preview || fulfillmentType.value !== 'delivery' || !zip || zip.replace(/\D/g, '').length < 8) {
         return;
     }
 
@@ -88,7 +95,7 @@ watch(() => address.value.zip_code, (zip) => {
 });
 
 async function lookupCustomer() {
-    if (!customerPhone.value) return;
+    if (props.preview || !customerPhone.value) return;
 
     lookingUpCustomer.value = true;
     try {
@@ -111,6 +118,8 @@ watch(customerPhone, () => {
 });
 
 async function requestOtp() {
+    if (props.preview) return;
+
     otpError.value = null;
     sendingOtp.value = true;
     try {
@@ -176,8 +185,14 @@ function removeMethod(index) {
 const canGoToPayment = computed(() => {
     if (!customerName.value || !customerPhone.value) return false;
     if (fulfillmentType.value === 'delivery') {
-        return address.value.street && address.value.number && address.value.neighborhood
-            && address.value.city && address.value.state && address.value.zip_code
+        const addressOk = address.value.street && address.value.number && address.value.neighborhood
+            && address.value.city && address.value.state && address.value.zip_code;
+
+        if (props.preview) {
+            return addressOk;
+        }
+
+        return addressOk
             && !feeZone.value.loading && feeZone.value.fee !== null && !feeZone.value.error;
     }
     return true;
@@ -187,6 +202,12 @@ const canSubmit = computed(() => methods.value.length > 0 && Math.abs(remaining.
 
 async function submitOrder() {
     submitError.value = null;
+
+    if (props.preview) {
+        submitError.value = __('This is a preview. Orders cannot be placed from here.');
+        return;
+    }
+
     submitting.value = true;
 
     try {
@@ -383,7 +404,7 @@ function close() {
                     <div v-else class="flex gap-2">
                         <button class="rounded-xl border border-border px-4 py-3 text-sm font-semibold text-ocean-deep" @click="step = 1">{{ __('Back') }}</button>
                         <button
-                            :disabled="!canSubmit || submitting"
+                            :disabled="preview || !canSubmit || submitting"
                             class="flex-1 rounded-xl bg-primary py-3 text-sm font-semibold text-white disabled:opacity-50"
                             @click="submitOrder"
                         >{{ submitting ? __('Placing order...') : __('Place Order') }}</button>

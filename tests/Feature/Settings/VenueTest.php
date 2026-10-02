@@ -47,6 +47,39 @@ class VenueTest extends TestCase
         $this->assertDatabaseHas('venues', ['id' => $venue->id, 'name' => 'New Name']);
     }
 
+    public function test_owner_can_update_the_venue_description(): void
+    {
+        $venue = Venue::factory()->create(['name' => 'Bar do Zé', 'active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+
+        $this->put(route('settings.venue.update'), [
+            'name' => 'Bar do Zé',
+            'description' => 'Petiscos, chopp e música ao vivo no centro da cidade.',
+            'require_table' => false,
+            'require_tab' => false,
+            'require_location' => false,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('venues', [
+            'id' => $venue->id,
+            'description' => 'Petiscos, chopp e música ao vivo no centro da cidade.',
+        ]);
+    }
+
+    public function test_venue_description_cannot_exceed_one_thousand_characters(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+
+        $this->put(route('settings.venue.update'), [
+            'name' => $venue->name,
+            'description' => str_repeat('a', 1001),
+            'require_table' => false,
+            'require_tab' => false,
+            'require_location' => false,
+        ])->assertSessionHasErrors('description');
+    }
+
     public function test_venue_name_is_required(): void
     {
         $venue = Venue::factory()->create(['active' => true]);

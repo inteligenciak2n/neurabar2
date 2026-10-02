@@ -102,15 +102,16 @@ class ServiceLocationController extends Controller
         $qrBase64 = 'data:image/png;base64,'.base64_encode($qrResult->getString());
 
         $logoBase64 = null;
-        if ($venue->logo_url) {
-            $logoContents = @file_get_contents($venue->logo_url);
-            if ($logoContents !== false) {
-                $mime = 'image/png';
-                if (str_ends_with($venue->logo_url, '.jpg') || str_ends_with($venue->logo_url, '.jpeg')) {
-                    $mime = 'image/jpeg';
-                }
-                $logoBase64 = 'data:'.$mime.';base64,'.base64_encode($logoContents);
+        $logoContents = $venue->logoFileContents();
+        if ($logoContents !== null) {
+            $rawLogo = (string) $venue->getRawOriginal('logo_url');
+            $mime = 'image/png';
+            if (str_ends_with(strtolower($rawLogo), '.jpg') || str_ends_with(strtolower($rawLogo), '.jpeg')) {
+                $mime = 'image/jpeg';
+            } elseif (str_ends_with(strtolower($rawLogo), '.webp')) {
+                $mime = 'image/webp';
             }
+            $logoBase64 = 'data:'.$mime.';base64,'.base64_encode($logoContents);
         }
 
         $pdf = Pdf::loadView('pdf.service-location-qr', [

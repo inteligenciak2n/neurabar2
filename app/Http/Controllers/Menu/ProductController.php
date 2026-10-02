@@ -3,55 +3,23 @@
 namespace App\Http\Controllers\Menu;
 
 use App\Actions\Menu\CreateProductAction;
+use App\Actions\Menu\ReorderProductsAction;
+use App\Actions\Menu\StoreProductImageAction;
 use App\Actions\Menu\ToggleProductActiveAction;
 use App\Actions\Menu\UpdateProductAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Menu\ReorderProductsRequest;
 use App\Http\Requests\Menu\StoreProductRequest;
 use App\Http\Requests\Menu\SyncProductModifierGroupsRequest;
 use App\Http\Requests\Menu\UpdateProductRequest;
-use App\Models\Menu\Category;
-use App\Models\Menu\Menu;
-use App\Models\Menu\ModifierGroup;
 use App\Models\Menu\Product;
-use App\Models\Settings\KitchenStation;
 use Illuminate\Http\RedirectResponse;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class ProductController extends Controller
 {
-    public function index(): Response
+    public function index(): RedirectResponse
     {
-        $venue = app('tenant');
-
-        $menu = Menu::withoutGlobalScopes()->firstOrCreate(
-            ['venue_id' => $venue->id],
-            ['name' => 'Menu', 'active' => true]
-        );
-
-        $categories = Category::where('menu_id', $menu->id)
-            ->orderBy('sort_order')
-            ->get(['id', 'name']);
-
-        $products = Product::whereHas('category', fn ($q) => $q->where('menu_id', $menu->id))
-            ->with('category:id,name', 'kitchenStation:id,name', 'variations', 'modifierGroups:id,name,required,multiple_selection')
-            ->when(request('category_id'), fn ($q, $v) => $q->where('category_id', $v))
-            ->orderBy('name')
-            ->get();
-
-        $stations = KitchenStation::withoutGlobalScopes()
-            ->where('venue_id', $venue->id)
-            ->where('active', true)
-            ->orderBy('name')
-            ->get(['id', 'name']);
-
-        return Inertia::render('Menu/Products', [
-            'products' => $products,
-            'categories' => $categories,
-            'stations' => $stations,
-            'modifierGroups' => ModifierGroup::orderBy('name')->get(['id', 'name', 'required', 'multiple_selection']),
-            'filters' => request()->only('category_id'),
-        ]);
+        return redirect()->to(route('menu.index').'#menu-products');
     }
 
     public function store(StoreProductRequest $request, CreateProductAction $action): RedirectResponse
@@ -68,10 +36,11 @@ class ProductController extends Controller
         return back()->with('success', 'Product updated.');
     }
 
-    public function destroy(Product $product): RedirectResponse
+    public function destroy(Product $product, StoreProductImageAction $storeImage): RedirectResponse
     {
         abort_if($product->category->menu->venue_id !== app('tenant')->id, 403);
 
+        $storeImage->deleteStored($product);
         $product->delete();
 
         return back()->with('success', 'Product deleted.');
@@ -94,5 +63,12 @@ class ProductController extends Controller
         $product->modifierGroups()->sync($request->validated('modifier_group_ids'));
 
         return back()->with('success', 'Modifier groups updated.');
+    }
+
+    public function reorder(ReorderProductsRequest $request, ReorderProductsAction $action): RedirectResponse
+    {
+        $action->execute(app('tenant'), $request->validated('ids'));
+
+        return back()->with('success', 'Order saved.');
     }
 }

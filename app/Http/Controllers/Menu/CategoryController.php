@@ -10,7 +10,11 @@ use App\Http\Requests\Menu\ReorderCategoriesRequest;
 use App\Http\Requests\Menu\StoreCategoryRequest;
 use App\Http\Requests\Menu\UpdateCategoryRequest;
 use App\Models\Menu\Category;
+use App\Models\Menu\Combo;
 use App\Models\Menu\Menu;
+use App\Models\Menu\ModifierGroup;
+use App\Models\Menu\Product;
+use App\Models\Settings\KitchenStation;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,12 +32,31 @@ class CategoryController extends Controller
 
         $categories = Category::where('menu_id', $menu->id)
             ->orderBy('sort_order')
-            ->with(['products' => fn ($q) => $q->orderBy('name')])
+            ->with(['products' => fn ($q) => $q->orderBy('sort_order')->orderBy('name')->select('id', 'category_id', 'name')])
             ->get();
 
         return Inertia::render('Menu/Index', [
             'categories' => $categories,
             'menuId' => $menu->id,
+            'products' => Inertia::defer(fn () => Product::query()
+                ->whereHas('category', fn ($q) => $q->where('menu_id', $menu->id))
+                ->with('category:id,name', 'kitchenStation:id,name', 'variations', 'modifierGroups:id,name,required,multiple_selection')
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(), 'catalog'),
+            'stations' => Inertia::defer(fn () => KitchenStation::withoutGlobalScopes()
+                ->where('venue_id', $venue->id)
+                ->where('active', true)
+                ->orderBy('name')
+                ->get(['id', 'name']), 'catalog'),
+            'modifierGroups' => Inertia::defer(fn () => ModifierGroup::query()
+                ->with(['options', 'products:id,name'])
+                ->orderBy('name')
+                ->get(), 'catalog'),
+            'combos' => Inertia::defer(fn () => Combo::query()
+                ->with(['items.product:id,name,price', 'items.variation:id,product_id,name,price'])
+                ->orderBy('name')
+                ->get(), 'catalog'),
         ]);
     }
 

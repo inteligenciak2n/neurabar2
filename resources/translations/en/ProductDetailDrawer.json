@@ -2,5 +2,14 @@
     "optional": "optional",
     "Notes": "Notes",
     "e.g. No onions": "e.g. No onions",
-    "Add": "Add"
+    "Add": "Add",
+    "Choose an option": "Choose an option",
+    "Choose": "Choose",
+    "Choose up to": "Choose up to",
+    "Default": "Default",
+    "Variations": "Variations",
+    "Quantity:": "Quantity:",
+    "Serves 1 person": "Serves 1 person",
+    "Serves :count people": "Serves :count people",
+    "Send order": "Send order"
 }

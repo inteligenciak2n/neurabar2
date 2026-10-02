@@ -1,13 +1,21 @@
 <script setup>
 import GuestLayout from '@/Layouts/GuestLayout.vue';
-import AppEmptyState from '@/Components/AppEmptyState.vue';
+import AppButton from '@/Components/AppButton.vue';
 import ProductDetailDrawer from '@/Components/Guest/ProductDetailDrawer.vue';
 import CartPanel from '@/Components/Guest/CartPanel.vue';
+import GuestMenuCatalog from '@/Components/Guest/GuestMenuCatalog.vue';
 import { ref, computed } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
 
 const props = defineProps({
-    token: String,
+    token: {
+        type: String,
+        default: null,
+    },
+    preview: {
+        type: Boolean,
+        default: false,
+    },
     venue: Object,
     serviceLocation: Object,
     categories: Array,
@@ -15,7 +23,6 @@ const props = defineProps({
 
 const __ = useTranslate();
 
-const selectedCategoryId = ref(props.categories?.[0]?.id ?? null);
 const selectedProduct = ref(null);
 const showProductDrawer = ref(false);
 const cartOpen = ref(false);
@@ -23,11 +30,18 @@ const cartItems = ref([]);
 const orderPlaced = ref(false);
 const orderError = ref(null);
 
-const selectedCategory = computed(() =>
-    props.categories.find((c) => c.id === selectedCategoryId.value),
-);
-
 const cartCount = computed(() => cartItems.value.reduce((s, i) => s + i.quantity, 0));
+
+const tableLabel = computed(() => {
+    const name = props.serviceLocation?.name ?? '';
+    const match = String(name).match(/(\d+)\s*$/);
+
+    if (match) {
+        return __('Table no. :number', { number: match[1] });
+    }
+
+    return name;
+});
 
 function openProduct(product) {
     selectedProduct.value = product;
@@ -58,10 +72,27 @@ function handleOrderPlaced() {
 </script>
 
 <template>
-    <GuestLayout :title="venue.name + ' — Cardápio'" :venue="venue">
+    <GuestLayout
+        :title="venue.name + ' — Cardápio'"
+        :venue="venue"
+        :preview-watermark="preview ? __('Table version') : null"
+    >
+        <template v-if="preview" #headerTitle>{{ __('Customer version - Table') }}</template>
+        <template v-if="preview" #headerSubtitle>{{ __('Adaptive screen for phone, tablet or computer') }}</template>
+        <template v-if="preview" #header>
+            <div class="flex flex-wrap items-center justify-end gap-2">
+                <AppButton size="sm" variant="accent" :href="route('menu.preview.customer.delivery')">{{ __('Customer version - Delivery') }}</AppButton>
+                <AppButton size="sm" :href="route('menu.index')">{{ __('Back') }}</AppButton>
+            </div>
+        </template>
+        <template v-if="tableLabel" #frameLabel>
+            <span class="whitespace-nowrap rounded-full border-2 border-ocean-deep bg-primary px-4 py-1 text-center font-heading text-sm font-bold text-white">
+                {{ tableLabel }}
+            </span>
+        </template>
 
         <!-- Back link -->
-        <a :href="`/g/${token}`" class="mb-4 flex items-center gap-1 text-sm text-primary hover:underline">
+        <a v-if="!preview" :href="`/g/${token}`" class="mb-4 flex items-center gap-1 text-sm text-primary hover:underline">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
@@ -76,69 +107,32 @@ function handleOrderPlaced() {
             {{ orderError }}
         </div>
 
-        <AppEmptyState
-            v-if="!categories.length"
-            :title="__('Menu not available')"
-            :description="__('This venue has no menu items yet.')"
+        <GuestMenuCatalog
+            :venue="venue"
+            :categories="categories"
+            :preview="preview"
+            :empty-description="__('This venue has no menu items yet.')"
+            @open-product="openProduct"
         />
 
-        <template v-else>
-            <!-- Category tabs -->
-            <div class="mb-4 flex gap-2 overflow-x-auto pb-1 border-b border-muted">
-                <button
-                    v-for="category in categories"
-                    :key="category.id"
-                    class="whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors"
-                    :class="selectedCategoryId === category.id ? 'bg-primary text-white' : 'bg-white text-ocean-deep shadow-card hover:bg-ocean-light'"
-                    @click="selectedCategoryId = category.id"
-                >
-                    {{ category.name }}
-                </button>
-            </div>
-
-            <!-- Products grid -->
-            <template v-if="selectedCategory">
-                <AppEmptyState
-                    v-if="!selectedCategory.products?.length"
-                    :title="__('No items in this category')"
-                    :description="__('Check back later.')"
-                />
-                <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2 pb-24">
-                    <button
-                        v-for="product in selectedCategory.products"
-                        :key="product.id"
-                        class="rounded-xl bg-white p-4 shadow-card text-left active:scale-95 transition-transform"
-                        @click="openProduct(product)"
-                    >
-                        <div class="flex items-start justify-between gap-2">
-                            <div class="flex-1">
-                                <p class="font-body text-sm font-semibold text-ocean-deep">{{ product.name }}</p>
-                                <p v-if="product.description" class="mt-1 text-xs text-muted-foreground line-clamp-2">{{ product.description }}</p>
-                            </div>
-                            <span class="whitespace-nowrap font-heading text-sm font-bold text-primary">
-                                R$ {{ Number(product.price).toFixed(2) }}
-                            </span>
-                        </div>
-                    </button>
-                </div>
-            </template>
-        </template>
-
         <!-- Cart FAB -->
-        <button
-            v-if="cartCount > 0"
-            class="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg active:opacity-80 z-40"
-            @click="cartOpen = true"
-        >
-            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-primary text-xs font-bold">{{ cartCount }}</span>
-            {{ __('View Cart') }}
-        </button>
+        <Teleport to="body">
+            <button
+                v-if="cartCount > 0"
+                class="fixed bottom-24 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg active:opacity-80"
+                @click="cartOpen = true"
+            >
+                <span class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-bold text-primary">{{ cartCount }}</span>
+                {{ __('View Cart') }}
+            </button>
+        </Teleport>
 
         <!-- Product drawer -->
         <ProductDetailDrawer
             v-if="selectedProduct"
             v-model="showProductDrawer"
             :product="selectedProduct"
+            :preview="preview"
             @add-to-cart="addToCart"
         />
 
@@ -147,6 +141,7 @@ function handleOrderPlaced() {
             v-model="cartOpen"
             :token="token"
             :items="cartItems"
+            :preview="preview"
             @remove="removeFromCart"
             @order-placed="handleOrderPlaced"
             @error="orderError = $event"

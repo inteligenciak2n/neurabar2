@@ -1,8 +1,12 @@
 <script setup>
 import { ref } from 'vue';
 import SubscriptionModuleLearnMore from '@/Components/SubscriptionModuleLearnMore.vue';
+import { useTranslate } from '@/Composables/useTranslate';
 
-defineProps({
+const translate = useTranslate();
+const __ = (text, bindings = {}) => translate(text, bindings, 'Index');
+
+const props = defineProps({
     module: {
         type: Object,
         required: true,
@@ -171,7 +175,10 @@ const showLearnMore = ref(false);
 
 const activateFromLearnMore = () => {
     showLearnMore.value = false;
-    emit('toggle');
+
+    if (! props.enabled) {
+        emit('toggle');
+    }
 };
 </script>
 
@@ -194,14 +201,24 @@ const activateFromLearnMore = () => {
             >
                 {{ sequence }}
             </span>
-            <div class="relative z-10 flex items-start justify-between gap-3">
-                <p
-                    class="line-clamp-2 min-h-[2.5rem] min-w-0 flex-1 font-heading text-lg font-bold leading-tight sm:min-h-[2.75rem] sm:text-xl"
-                    :class="enabled ? 'text-ocean-deep' : 'text-gray-500 dark:text-gray-400'"
-                >
-                    {{ module.name }}
-                </p>
-                <div class="flex shrink-0 flex-col items-end gap-1.5">
+            <div class="relative z-10 flex min-w-0 flex-col gap-2">
+                <div class="flex min-w-0 items-start gap-2">
+                    <p
+                        class="min-w-0 font-heading text-lg font-bold leading-tight break-words sm:text-xl"
+                        :class="enabled ? 'text-ocean-deep' : 'text-gray-500 dark:text-gray-400'"
+                    >
+                        {{ __(module.name) }}
+                    </p>
+                    <p
+                        v-if="module.code === 'menu'"
+                        class="shrink-0 text-[10px] leading-tight"
+                        :class="enabled ? 'text-ocean-deep/70' : 'text-gray-400 dark:text-gray-500'"
+                    >
+                        <span class="block">{{ __('Update and manage') }}</span>
+                        <span class="block">{{ __('your menu here') }}</span>
+                    </p>
+                </div>
+                <div class="flex flex-col items-end gap-1.5">
                     <div
                         class="text-right text-[10px] leading-tight"
                         :class="enabled ? 'text-ocean-deep/70' : 'text-gray-400 dark:text-gray-500'"
@@ -213,7 +230,7 @@ const activateFromLearnMore = () => {
                         type="button"
                         role="switch"
                         :aria-checked="enabled"
-                        :aria-label="`${module.name} — ${venueName}`"
+                        :aria-label="`${__(module.name)} — ${venueName}`"
                         class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         :class="enabled
                             ? 'bg-ocean-deep focus:ring-ocean-deep'
@@ -287,7 +304,7 @@ const activateFromLearnMore = () => {
 
         <SubscriptionModuleLearnMore
             :show="showLearnMore"
-            :module-name="module.name"
+            :module-name="__(module.name)"
             :title="learnMoreTitle"
             :monthly-value-title="monthlyValueTitle"
             :customer-access-title="customerAccessTitle"
