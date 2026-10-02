@@ -27,6 +27,8 @@ class OrderController extends Controller
             ? Category::withoutGlobalScopes()
                 ->where('menu_id', $menu->id)
                 ->with(['products' => fn ($q) => $q->where('active', true)
+                    ->orderBy('sort_order')
+                    ->orderBy('name')
                     ->with(['variations' => fn ($q) => $q->where('active', true), 'modifierGroups.options' => fn ($q) => $q->where('active', true)])])
                 ->orderBy('sort_order')
                 ->get()

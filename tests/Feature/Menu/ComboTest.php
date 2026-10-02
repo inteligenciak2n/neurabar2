@@ -76,6 +76,20 @@ class ComboTest extends TestCase
         $this->assertDatabaseMissing('combos', ['id' => $combo->id]);
     }
 
+    public function test_toggle_active_alternates_correctly(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Owner, $venue);
+
+        $combo = Combo::factory()->create(['venue_id' => $venue->id, 'active' => true]);
+
+        $this->post(route('menu.combos.toggle', $combo->id))->assertRedirect();
+        $this->assertDatabaseHas('combos', ['id' => $combo->id, 'active' => false]);
+
+        $this->post(route('menu.combos.toggle', $combo->id))->assertRedirect();
+        $this->assertDatabaseHas('combos', ['id' => $combo->id, 'active' => true]);
+    }
+
     public function test_combo_from_other_venue_cannot_be_deleted(): void
     {
         $venue = Venue::factory()->create();
@@ -118,5 +132,13 @@ class ComboTest extends TestCase
 
         $this->assertDatabaseHas('order_items', ['order_id' => $order->id, 'product_id' => $productA->id, 'combo_id' => $combo->id]);
         $this->assertDatabaseHas('order_items', ['order_id' => $order->id, 'product_id' => $productB->id, 'combo_id' => $combo->id]);
+    }
+
+    public function test_combos_index_redirects_to_the_menu_combos_section(): void
+    {
+        $this->loginAs(UserRole::Owner);
+
+        $this->get(route('menu.combos.index'))
+            ->assertRedirect(route('menu.index').'#menu-combos');
     }
 }

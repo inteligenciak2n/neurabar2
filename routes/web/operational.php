@@ -11,6 +11,7 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Kitchen\KdsController;
 use App\Http\Controllers\Menu\CategoryController;
 use App\Http\Controllers\Menu\ComboController;
+use App\Http\Controllers\Menu\MenuPreviewController;
 use App\Http\Controllers\Menu\ModifierGroupController;
 use App\Http\Controllers\Menu\ModifierOptionController;
 use App\Http\Controllers\Menu\ProductController;
@@ -74,6 +75,9 @@ Route::middleware([
     // Menu — edit routes restricted to managers; products page accessible by all
     Route::prefix('menu')->name('menu.')->middleware(['module:menu', 'role:owner,general_manager'])->group(function () {
         Route::get('/', [CategoryController::class, 'index'])->name('index');
+        Route::get('/preview/customer', [MenuPreviewController::class, 'customer'])->name('preview.customer');
+        Route::get('/preview/customer/delivery', [MenuPreviewController::class, 'customerDelivery'])->name('preview.customer.delivery');
+        Route::get('/preview/attendant', [MenuPreviewController::class, 'attendant'])->name('preview.attendant');
         Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
         Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
@@ -81,6 +85,7 @@ Route::middleware([
 
         Route::get('/products', [ProductController::class, 'index'])->name('products.index');
         Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+        Route::post('/products/reorder', [ProductController::class, 'reorder'])->name('products.reorder');
         Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
         Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
         Route::post('/products/{product}/toggle', [ProductController::class, 'toggleActive'])->name('products.toggle');
@@ -104,6 +109,7 @@ Route::middleware([
         Route::get('/combos', [ComboController::class, 'index'])->name('combos.index');
         Route::post('/combos', [ComboController::class, 'store'])->name('combos.store');
         Route::put('/combos/{combo}', [ComboController::class, 'update'])->name('combos.update');
+        Route::post('/combos/{combo}/toggle', [ComboController::class, 'toggleActive'])->name('combos.toggle');
         Route::delete('/combos/{combo}', [ComboController::class, 'destroy'])->name('combos.destroy');
     });
 

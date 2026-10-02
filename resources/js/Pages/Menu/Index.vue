@@ -4,12 +4,53 @@ import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import AppEmptyState from '@/Components/AppEmptyState.vue';
-import { useForm, router, Link } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import AppSkeleton from '@/Components/AppSkeleton.vue';
+import Products from '@/Pages/Menu/Products.vue';
+import Modifiers from '@/Pages/Menu/Modifiers.vue';
+import Combos from '@/Pages/Menu/Combos.vue';
+import { useForm, router, Deferred } from '@inertiajs/vue3';
+import { ref, onMounted } from 'vue';
 
 defineProps({
     categories: Array,
     menuId: String,
+    products: {
+        type: Array,
+        default: () => [],
+    },
+    stations: {
+        type: Array,
+        default: () => [],
+    },
+    modifierGroups: {
+        type: Array,
+        default: () => [],
+    },
+    combos: {
+        type: Array,
+        default: () => [],
+    },
+});
+
+const CATEGORIES_SECTION_ID = 'menu-categories';
+const PRODUCTS_SECTION_ID = 'menu-products';
+const MODIFIERS_SECTION_ID = 'menu-modifiers';
+const COMBOS_SECTION_ID = 'menu-combos';
+
+const scrollToSection = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+const scrollToCategories = () => scrollToSection(CATEGORIES_SECTION_ID);
+const scrollToProducts = () => scrollToSection(PRODUCTS_SECTION_ID);
+const scrollToModifiers = () => scrollToSection(MODIFIERS_SECTION_ID);
+const scrollToCombos = () => scrollToSection(COMBOS_SECTION_ID);
+
+onMounted(() => {
+    const hash = window.location.hash.replace('#', '');
+    if ([CATEGORIES_SECTION_ID, PRODUCTS_SECTION_ID, MODIFIERS_SECTION_ID, COMBOS_SECTION_ID].includes(hash)) {
+        scrollToSection(hash);
+    }
 });
 
 const showForm = ref(false);
@@ -73,29 +114,69 @@ const moveDown = (categories, index) => {
     [ids[index], ids[index + 1]] = [ids[index + 1], ids[index]];
     router.post(route('menu.categories.reorder'), { ids });
 };
+
+const PRODUCTS_PER_COLUMN = 3;
+
+const productsInColumns = (products, size = PRODUCTS_PER_COLUMN) => {
+    const list = products ?? [];
+    const columns = [];
+
+    for (let i = 0; i < list.length; i += size) {
+        columns.push(list.slice(i, i + size));
+    }
+
+    return columns;
+};
 </script>
 
 <template>
     <AppLayout :title="__('Menu')">
         <template #header>
-            <div class="flex items-center justify-between">
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Menu') }}</h1>
-                <div class="flex items-center gap-3">
-                    <Link :href="route('menu.products.index')" class="text-sm font-medium text-primary dark:text-gray-100 hover:underline">
-                        {{ __('Products') }}
-                    </Link>
-                    <Link :href="route('menu.modifier-groups.index')" class="text-sm font-medium text-primary dark:text-gray-100 hover:underline">
-                        {{ __('Modifiers') }}
-                    </Link>
-                    <Link :href="route('menu.combos.index')" class="text-sm font-medium text-primary dark:text-gray-100 hover:underline">
-                        {{ __('Combos') }}
-                    </Link>
-                    <AppButton @click="openCreate">{{ __('Add Category') }}</AppButton>
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex min-w-0 items-center gap-3">
+                    <h1 class="shrink-0 font-heading text-4xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Menu') }}</h1>
+                    <p class="text-sm leading-snug text-muted-foreground dark:text-gray-400">
+                        <span class="block">{{ __('Add, edit and include photos of your products.') }}</span>
+                        <span class="block">{{ __('See the menu as the customer sees it and as the attendant sees it.') }}</span>
+                    </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <AppButton size="sm" @click="scrollToCategories">{{ __('Categories') }}</AppButton>
+                    <AppButton size="sm" @click="scrollToProducts">{{ __('Products') }}</AppButton>
+                    <AppButton size="sm" @click="scrollToModifiers">{{ __('Modifiers') }}</AppButton>
+                    <AppButton size="sm" @click="scrollToCombos">{{ __('Combos') }}</AppButton>
+                    <span class="mx-0.5 hidden h-5 w-px bg-ocean-deep/20 dark:bg-white/30 sm:inline-block" aria-hidden="true" />
+                    <AppButton size="sm" variant="accent" :href="route('menu.preview.customer')">{{ __('Customer version') }}</AppButton>
+                    <AppButton size="sm" variant="accent" :href="route('menu.preview.attendant')">{{ __('Attendant version') }}</AppButton>
                 </div>
             </div>
         </template>
 
+        <div id="menu-categories" class="scroll-mt-48">
         <AppCard>
+            <div class="mb-1 flex items-end justify-between gap-2">
+                <div class="flex min-w-0 items-center gap-3">
+                <h2 class="shrink-0 font-heading text-3xl font-bold tracking-tight text-ocean-deep dark:text-gray-100">
+                    {{ __('Categories') }}
+                    <span class="mt-2 block h-1 w-16 rounded-full bg-warm-gold" aria-hidden="true" />
+                </h2>
+                <p class="text-sm leading-snug text-muted-foreground dark:text-gray-400">
+                    <span class="block">{{ __('View and organize') }}</span>
+                    <span class="block">{{ __('the categories on your menu') }}</span>
+                </p>
+                </div>
+                <div class="flex items-end gap-6">
+                <p
+                    v-if="categories.length && !showForm"
+                    class="text-center text-xs leading-tight text-muted-foreground dark:text-gray-400"
+                >
+                    <span class="block whitespace-nowrap">{{ __('Use the arrows (↑ ↓) to change') }}</span>
+                    <span class="block whitespace-nowrap">{{ __('the category order on the menu') }}</span>
+                </p>
+                <AppButton variant="success" @click="openCreate">{{ __('Add Category') }}</AppButton>
+                </div>
+            </div>
+
             <AppEmptyState
                 v-if="!categories.length && !showForm"
                 :title="__('No categories yet')"
@@ -110,39 +191,54 @@ const moveDown = (categories, index) => {
                     :key="category.id"
                     class="py-4"
                 >
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <span class="font-body text-sm font-semibold text-ocean-deep dark:text-gray-100">{{ category.name }}</span>
-                            <span class="ml-2 text-xs text-muted-foreground">{{ category.products?.length ?? 0 }} {{ __('products') }}</span>
+                    <div class="flex flex-col gap-3 md:flex-row md:items-stretch">
+                        <div class="flex w-full shrink-0 flex-col justify-center rounded-lg bg-warm-gold/20 px-4 py-3 dark:bg-warm-gold/10 md:w-52">
+                            <h3 class="font-heading text-sm font-semibold leading-tight text-ocean-deep dark:text-gray-100">{{ category.name }}</h3>
+                            <p class="mt-1 text-xs text-muted-foreground">{{ category.products?.length ?? 0 }} {{ __('products') }}</p>
                         </div>
-                        <div class="flex gap-2">
-                            <AppButton size="sm" variant="ghost" :disabled="index === 0" @click="moveUp(categories, index)">↑</AppButton>
-                            <AppButton size="sm" variant="ghost" :disabled="index === categories.length - 1" @click="moveDown(categories, index)">↓</AppButton>
-                            <AppButton size="sm" variant="secondary" @click="openEdit(category)">{{ __('Edit') }}</AppButton>
-                            <AppButton size="sm" variant="destructive" @click="confirmDelete(category)">{{ __('Delete') }}</AppButton>
+                        <div class="flex min-w-0 flex-1 items-start gap-3">
+                            <div class="min-w-0 flex-1">
+                                <div v-if="category.products?.length" class="flex flex-wrap gap-x-6 gap-y-2">
+                                    <div
+                                        v-for="(column, columnIndex) in productsInColumns(category.products)"
+                                        :key="columnIndex"
+                                        class="flex flex-col gap-1.5"
+                                    >
+                                        <span
+                                            v-for="product in column"
+                                            :key="product.id"
+                                            class="rounded-full bg-ocean-light dark:bg-gray-500 px-2 py-0.5 text-xs text-ocean-deep dark:text-gray-100"
+                                        >
+                                            {{ product.name }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ml-auto flex shrink-0 gap-2">
+                                <div class="flex w-[11rem] justify-center gap-2">
+                                    <AppButton size="sm" variant="ghost" :disabled="index === 0" @click="moveUp(categories, index)">↑</AppButton>
+                                    <AppButton size="sm" variant="ghost" :disabled="index === categories.length - 1" @click="moveDown(categories, index)">↓</AppButton>
+                                </div>
+                                <AppButton size="sm" variant="secondary" @click="openEdit(category)">
+                                    <span class="flex flex-col leading-tight">
+                                        <span>{{ __('Edit') }}</span>
+                                        <span>{{ __('Category') }}</span>
+                                    </span>
+                                </AppButton>
+                                <AppButton size="sm" variant="destructive" @click="confirmDelete(category)">
+                                    <span class="flex flex-col leading-tight">
+                                        <span>{{ __('Delete') }}</span>
+                                        <span>{{ __('Category') }}</span>
+                                    </span>
+                                </AppButton>
+                            </div>
                         </div>
-                    </div>
-
-                    <div v-if="category.products?.length" class="mt-2 flex flex-wrap gap-2 pl-2">
-                        <span
-                            v-for="product in category.products.slice(0, 5)"
-                            :key="product.id"
-                            class="rounded-full bg-ocean-light dark:bg-gray-500 px-2 py-0.5 text-xs text-ocean-deep dark:text-gray-100"
-                        >
-                            {{ product.name }}
-                        </span>
-                        <span
-                            v-if="category.products.length > 5"
-                            class="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
-                        >
-                            +{{ category.products.length - 5 }} {{ __('more') }}
-                        </span>
                     </div>
                 </div>
             </div>
 
-            <div v-if="showForm" class="mt-4 rounded-lg border border-border dark:border-gray-700 p-4">
-                <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep dark:text-gray-100">
+            <div v-if="showForm" class="mt-4 rounded-lg border-4 border-[#5c9a6c] p-4">
+                <h3 class="mb-3 font-heading text-lg font-bold tracking-tight text-ocean-deep dark:text-gray-100">
                     {{ editingCategory ? __('Edit Category') : __('New Category') }}
                 </h3>
                 <form class="space-y-3" @submit.prevent="submit">
@@ -164,6 +260,51 @@ const moveDown = (categories, index) => {
                 </form>
             </div>
         </AppCard>
+        </div>
+
+        <div id="menu-products" class="mt-6 scroll-mt-48">
+        <Deferred :data="['products', 'stations', 'modifierGroups']">
+            <template #fallback>
+                <AppCard>
+                    <div class="py-10">
+                        <AppSkeleton :lines="6" />
+                    </div>
+                </AppCard>
+            </template>
+            <Products
+                :products="products"
+                :categories="categories"
+                :stations="stations"
+                :modifier-groups="modifierGroups"
+            />
+        </Deferred>
+        </div>
+
+        <div id="menu-modifiers" class="mt-6 scroll-mt-48">
+        <Deferred :data="['modifierGroups']">
+            <template #fallback>
+                <AppCard>
+                    <div class="py-10">
+                        <AppSkeleton :lines="6" />
+                    </div>
+                </AppCard>
+            </template>
+            <Modifiers :modifier-groups="modifierGroups" />
+        </Deferred>
+        </div>
+
+        <div id="menu-combos" class="mt-6 scroll-mt-48">
+        <Deferred :data="['combos', 'products']">
+            <template #fallback>
+                <AppCard>
+                    <div class="py-10">
+                        <AppSkeleton :lines="6" />
+                    </div>
+                </AppCard>
+            </template>
+            <Combos :combos="combos" :products="products" />
+        </Deferred>
+        </div>
 
         <AppConfirmModal
             :show="!!categoryToDelete"

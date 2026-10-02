@@ -16,6 +16,7 @@ class UpdateVenueRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:1000'],
             'tax_id' => ['nullable', 'string', 'max:50'],
             'phone' => ['nullable', 'string', 'max:30'],
             'whatsapp_agent' => ['nullable', 'string', 'max:30'],
@@ -30,7 +31,8 @@ class UpdateVenueRequest extends FormRequest
             'require_table' => ['boolean'],
             'require_tab' => ['boolean'],
             'require_location' => ['boolean'],
-            'logo_url' => ['nullable', 'url', 'max:1000'],
+            'logo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'remove_logo' => ['sometimes', 'boolean'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'require_geolocation' => ['boolean'],

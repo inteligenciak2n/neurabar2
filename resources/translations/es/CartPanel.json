@@ -1,5 +1,7 @@
 {
     "Place Order": "Realizar pedido",
     "Cart": "Carrito",
-    "Subtotal": "Subtotal"
+    "Subtotal": "Subtotal",
+    "Error placing order.": "Error al enviar el pedido.",
+    "This is a preview. Orders cannot be placed from here.": "Esta es una vista previa. No se pueden hacer pedidos desde aquí."
 }

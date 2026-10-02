@@ -2,5 +2,14 @@
     "optional": "opcional",
     "Notes": "Notas",
     "e.g. No onions": "p. ej., sin cebolla",
-    "Add": "Añadir"
+    "Add": "Añadir",
+    "Choose an option": "Elige una opción",
+    "Choose": "Elige",
+    "Choose up to": "Elige hasta",
+    "Default": "Estándar",
+    "Variations": "Variaciones",
+    "Quantity:": "Cantidad:",
+    "Serves 1 person": "Sirve a 1 persona",
+    "Serves :count people": "Sirve a :count personas",
+    "Send order": "Enviar pedido"
 }

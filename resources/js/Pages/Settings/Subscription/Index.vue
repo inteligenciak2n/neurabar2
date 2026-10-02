@@ -94,10 +94,16 @@ const hasModule = (venue, moduleCode) => venue.modules.some((m) => m.code === mo
 
 const moduleSalesCopy = {
     delivery: 'Delivery sales copy',
+    menu: 'Menu sales copy',
+    self_order: 'Self order sales copy',
+    taker: 'Taker sales copy',
+    kds: 'Kds sales copy',
     direct_print: 'Direct print sales copy',
     direct_waiter: 'Direct waiter sales copy',
     financial_dashboard: 'Financial dashboard sales copy',
+    production_dashboard: 'Production dashboard sales copy',
     fiscal_note: 'Fiscal note sales copy',
+    voice_command: 'Voice command sales copy',
 };
 
 const moduleDescriptionFallbacks = {
@@ -151,7 +157,7 @@ const moduleLearnMoreMonthlyValue = (module) => __('Learn more monthly value', {
 });
 
 const moduleLearnMoreCustomerAccessTitle = (module) => {
-    if (module.code === 'direct_print') {
+    if (module.code === 'direct_print' || module.code === 'voice_command' || module.code === 'production_dashboard' || module.code === 'taker' || module.code === 'kds' || module.code === 'menu' || module.code === 'self_order') {
         return __('How it works');
     }
 
@@ -169,6 +175,30 @@ const moduleLearnMoreCustomerAccess = (module) => {
 
     if (module.code === 'direct_waiter') {
         return __('Learn more direct waiter customer access');
+    }
+
+    if (module.code === 'voice_command') {
+        return __('Learn more voice command how it works');
+    }
+
+    if (module.code === 'production_dashboard') {
+        return __('Learn more production dashboard how it works');
+    }
+
+    if (module.code === 'taker') {
+        return __('Learn more taker how it works');
+    }
+
+    if (module.code === 'kds') {
+        return __('Learn more kds how it works');
+    }
+
+    if (module.code === 'menu') {
+        return __('Learn more menu how it works');
+    }
+
+    if (module.code === 'self_order') {
+        return __('Learn more self order how it works');
     }
 
     if (module.code === 'financial_dashboard') {
@@ -199,7 +229,7 @@ const moduleLearnMoreOrderFlow = (module) => {
         return __('Learn more direct waiter order flow');
     }
 
-    if (module.code === 'financial_dashboard') {
+    if (module.code === 'financial_dashboard' || module.code === 'voice_command' || module.code === 'production_dashboard' || module.code === 'taker' || module.code === 'kds' || module.code === 'menu' || module.code === 'self_order') {
         return '';
     }
 
@@ -207,7 +237,7 @@ const moduleLearnMoreOrderFlow = (module) => {
 };
 
 const moduleLearnMoreAdvantageTitle = (module) => {
-    if (module.code === 'direct_waiter' || module.code === 'financial_dashboard') {
+    if (module.code === 'direct_waiter' || module.code === 'financial_dashboard' || module.code === 'voice_command' || module.code === 'production_dashboard' || module.code === 'taker' || module.code === 'kds' || module.code === 'menu' || module.code === 'self_order') {
         return __('Advantage');
     }
 
@@ -221,6 +251,30 @@ const moduleLearnMoreAdvantage = (module) => {
 
     if (module.code === 'financial_dashboard') {
         return __('Learn more financial dashboard advantage');
+    }
+
+    if (module.code === 'voice_command') {
+        return __('Learn more voice command advantage');
+    }
+
+    if (module.code === 'production_dashboard') {
+        return __('Learn more production dashboard advantage');
+    }
+
+    if (module.code === 'taker') {
+        return __('Learn more taker advantage');
+    }
+
+    if (module.code === 'kds') {
+        return __('Learn more kds advantage');
+    }
+
+    if (module.code === 'menu') {
+        return __('Learn more menu advantage');
+    }
+
+    if (module.code === 'self_order') {
+        return __('Learn more self order advantage');
     }
 
     return '';
@@ -336,10 +390,10 @@ const confirmTitle = computed(() => {
     const { module, action } = pendingModule.value;
 
     if (action === 'remove') {
-        return __('Do you want to remove the module :module?', { module: module.name });
+        return __('Do you want to remove the module :module?', { module: __(module.name) });
     }
 
-    return __('Do you want to enable the module :module?', { module: module.name });
+    return __('Do you want to enable the module :module?', { module: __(module.name) });
 });
 
 const confirmMessage = computed(() => {

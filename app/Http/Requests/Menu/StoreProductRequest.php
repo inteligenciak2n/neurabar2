@@ -37,7 +37,8 @@ class StoreProductRequest extends FormRequest
             'category_id' => ['required', 'uuid', Rule::exists("{$operationalConnection}.menu_categories", 'id')->whereIn('menu_id', $menuIds)],
             'kitchen_station_id' => ['nullable', 'uuid', Rule::in($stationIds)],
             'description' => ['nullable', 'string', 'max:1000'],
-            'image_url' => ['nullable', 'string', 'max:2048'],
+            'servings' => ['sometimes', 'integer', 'min:1', 'max:20'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
             'active' => ['boolean'],
         ];
     }

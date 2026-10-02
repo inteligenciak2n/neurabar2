@@ -15,7 +15,7 @@ class ModuleCatalogsSeeder extends Seeder
             [
                 'code' => ModuleCode::Menu->value,
                 'name' => 'Cardápio',
-                'description' => 'Gestão de cardápio, produtos, categorias e combos.',
+                'description' => "Cardápio Digital — sua vitrine aberta 24 horas\n\nMonte seu cardápio com foto, descrição e preço. Defina tamanhos, permita troca de ingredientes, crie combos — tudo do jeito que o seu negócio funciona.\n\n- O Cardápio Digital é cortesia para quem assina o módulo KDS, ou Anotar Pedido ou o Delivery",
                 'category' => 'basic',
                 'billing_type' => ModuleBillingType::Fixed,
                 'base_monthly_price' => 0,
@@ -28,7 +28,7 @@ class ModuleCatalogsSeeder extends Seeder
             [
                 'code' => ModuleCode::Kds->value,
                 'name' => 'KDS',
-                'description' => 'Kitchen Display System para acompanhamento de pedidos.',
+                'description' => "KDS — Cada pedido no monitor certo, no local certo\n\nAssim que um pedido entra, ele já aparece direto no monitor do setor responsável — cozinha, bar, churrasqueira, onde for. Cada equipe vê só o que é dela, sem confusão.\n\nNa tela: o pedido, a mesa e há quanto tempo está esperando. Ninguém precisa perguntar nada — é só olhar e fazer.",
                 'category' => 'premium',
                 'billing_type' => ModuleBillingType::Hybrid,
                 'base_monthly_price' => 4990,
@@ -41,7 +41,7 @@ class ModuleCatalogsSeeder extends Seeder
             [
                 'code' => ModuleCode::Taker->value,
                 'name' => 'Anotar Pedido',
-                'description' => 'Interface de anotação de pedidos para atendentes.',
+                'description' => "Pedidos no Celular — seu garçom anota na mesa e o pedido já vai pra cozinha\n\nChega de ir e vir. Com o celular na mão, seu garçom abre o cardápio, anota o pedido na hora e pronto — já chegou na cozinha.\n\nRápido, simples, sem erro.",
                 'category' => 'premium',
                 'billing_type' => ModuleBillingType::Hybrid,
                 'base_monthly_price' => 3990,
@@ -54,7 +54,7 @@ class ModuleCatalogsSeeder extends Seeder
             [
                 'code' => ModuleCode::SelfOrder->value,
                 'name' => 'Auto Serviço de Pedido',
-                'description' => 'Interface de anotação de pedidos para visitantes realizarem o auto atendimento.',
+                'description' => "Pagamento pelo Celular — cliente paga na hora, sem esperar\n\nAcabou a conta, o cliente paga direto pelo celular — sem precisar chamar o garçom, sem esperar a maquininha, sem fila.\n\nMenos gargalo no fechamento, mais giro de mesa pra você. E o controle de quem pagou, quanto e quando fica tudo registrado — nada escapa, nada some.",
                 'category' => 'premium',
                 'billing_type' => ModuleBillingType::Hybrid,
                 'base_monthly_price' => 2990,
@@ -93,7 +93,7 @@ class ModuleCatalogsSeeder extends Seeder
             [
                 'code' => ModuleCode::ProductionDashboard->value,
                 'name' => 'Dashboard de Produção',
-                'description' => 'Painel de acompanhamento da produção da cozinha.',
+                'description' => "Painel da Cozinha — seus clientes vão querer ficar olhando\n\nSabe aqueles painéis que você vê nas redes de fast food, onde cada pedido entra e sai em tempo real? Agora você tem o mesmo no seu bar.\n\nColoca à vista e deixa rolar — seus clientes ficam vidrados de tanto pedido entrando e saindo. Cria aquela sensação de movimento, de casa cheia, de negócio que funciona de verdade.",
                 'category' => 'premium',
                 'billing_type' => ModuleBillingType::Fixed,
                 'base_monthly_price' => 3990,
@@ -145,7 +145,7 @@ class ModuleCatalogsSeeder extends Seeder
             [
                 'code' => ModuleCode::VoiceCommand->value,
                 'name' => 'Comando por Voz',
-                'description' => 'Transcrição de comandos de voz para anotação de pedidos.',
+                'description' => "Comandos de Voz — seu garçom só precisa da boca e do celular\n\nSem digitar, sem papel, sem espera. Ele fala, o pedido já vai pra cozinha.\n\n\"Suco de laranja, mesa 4, copo com gelo.\"\n\"Mesa 5, mais uma Brahma.\"\n\"Copo na mesa 3.\"\n\"Batata frita pra mesa 7.\"\n\nPronto. Chegou lá. Direitinho.\n\nSeu garçom vira um técnico de seleção — vai soltando os comandos pelo celular enquanto ainda está no salão, sem parar o atendimento nem um segundo.",
                 'category' => 'premium',
                 'billing_type' => ModuleBillingType::Hybrid,
                 'base_monthly_price' => 4490,
@@ -162,6 +162,7 @@ class ModuleCatalogsSeeder extends Seeder
                 ['code' => $module['code']], array_merge($module, ['active' => $module['active'] || config('app.env') === 'local'])
             );
             $catalog->update([
+                'name' => $module['name'],
                 'description' => $module['description'],
                 'active' => $module['active'] || config('app.env') === 'local',
             ]);

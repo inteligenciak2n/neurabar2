@@ -1,17 +1,21 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
 
 const props = defineProps({
     product: Object,
     modelValue: Boolean,
+    preview: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(['update:modelValue', 'add-to-cart']);
 
 const __ = useTranslate();
 
-const selectedVariationId = ref(props.product.variations?.[0]?.id ?? null);
+const selectedVariationId = ref('');
 const quantity = ref(1);
 const notes = ref('');
 const selectedModifiers = ref({});
@@ -23,9 +27,13 @@ props.product.modifier_groups?.forEach((group) => {
         : [];
 });
 
-const selectedVariation = computed(() =>
-    props.product.variations?.find((v) => v.id === selectedVariationId.value),
-);
+const selectedVariation = computed(() => {
+    if (!selectedVariationId.value) {
+        return null;
+    }
+
+    return props.product.variations?.find((v) => v.id === selectedVariationId.value) ?? null;
+});
 
 const basePrice = computed(() =>
     selectedVariation.value ? Number(selectedVariation.value.price) : Number(props.product.price),
@@ -49,6 +57,20 @@ const modifiersTotal = computed(() => {
 
 const totalPrice = computed(() => (basePrice.value + modifiersTotal.value) * quantity.value);
 
+const servingsText = computed(() => {
+    const count = Number(props.product?.servings) || 0;
+
+    if (count < 1) {
+        return '';
+    }
+
+    if (count === 1) {
+        return __('Serves 1 person');
+    }
+
+    return __('Serves :count people', { count });
+});
+
 function findOption(optId) {
     for (const group of props.product.modifier_groups ?? []) {
         const opt = group.options.find((o) => o.id === optId);
@@ -56,6 +78,16 @@ function findOption(optId) {
     }
     return null;
 }
+
+watch(
+    () => `${props.product?.id}:${props.modelValue}`,
+    () => {
+        if (props.modelValue) {
+            selectedVariationId.value = '';
+            quantity.value = 1;
+        }
+    },
+);
 
 function addToCart() {
     const modifiers = [];
@@ -70,7 +102,7 @@ function addToCart() {
     emit('add-to-cart', {
         product_id: props.product.id,
         product_name: props.product.name,
-        variation_id: selectedVariationId.value,
+        variation_id: selectedVariation.value?.id ?? null,
         variation_name: selectedVariation.value?.name ?? null,
         quantity: quantity.value,
         notes: notes.value || null,
@@ -93,27 +125,58 @@ function addToCart() {
         >
             <div class="absolute inset-0 bg-black/50" @click="emit('update:modelValue', false)" />
 
-            <div class="relative w-full max-w-sm bg-white rounded-t-2xl sm:rounded-2xl p-5 shadow-xl max-h-[90vh] overflow-y-auto">
-                <!-- Header -->
-                <div class="mb-4 flex items-start justify-between gap-2">
-                    <div>
-                        <h3 class="font-heading text-lg font-bold text-ocean-deep">{{ product.name }}</h3>
-                        <p v-if="product.description" class="mt-1 text-xs text-muted-foreground">{{ product.description }}</p>
+            <div class="relative w-full max-w-sm max-h-[90vh] overflow-y-auto overflow-x-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-2xl">
+                <div class="sticky top-0 z-20 h-0 overflow-visible">
+                    <div class="flex justify-end p-3">
+                        <button
+                            class="rounded-full bg-white/90 p-1.5 text-muted-foreground shadow-sm hover:bg-white"
+                            @click="emit('update:modelValue', false)"
+                        >
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     </div>
-                    <button
-                        class="shrink-0 rounded-full p-1 text-muted-foreground hover:bg-muted"
-                        @click="emit('update:modelValue', false)"
-                    >
-                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
                 </div>
+
+                <div v-if="product.image_url" class="bg-muted">
+                    <img
+                        :src="product.image_url"
+                        :alt="product.name"
+                        class="mx-auto h-64 w-full object-cover"
+                    />
+                </div>
+
+                <div
+                    class="relative bg-white px-5 pb-5"
+                    :class="product.image_url ? '-mt-8 rounded-t-3xl pt-6 shadow-[0_-12px_24px_rgba(0,0,0,0.08)]' : 'pt-12'"
+                >
+                    <div class="mb-5 text-center">
+                        <h3 class="font-heading text-xl font-bold text-ocean-deep">{{ product.name }}</h3>
+                        <p v-if="product.description" class="mt-1 text-sm text-muted-foreground">{{ product.description }}</p>
+                        <p v-if="servingsText" class="mt-1 text-xs text-muted-foreground">{{ servingsText }}</p>
+                    </div>
 
                 <!-- Variations -->
                 <div v-if="product.variations?.length" class="mb-4">
                     <p class="mb-2 text-sm font-semibold text-ocean-deep">{{ __('Choose an option') }}</p>
                     <div class="space-y-2">
+                        <label
+                            class="flex cursor-pointer items-center justify-between rounded-xl border px-3 py-2.5 transition-colors"
+                            :class="!selectedVariationId ? 'border-primary bg-primary/5' : 'border-border'"
+                        >
+                            <div class="flex items-center gap-2">
+                                <input
+                                    v-model="selectedVariationId"
+                                    type="radio"
+                                    :value="''"
+                                    class="text-primary focus:ring-primary"
+                                />
+                                <span class="text-sm text-ocean-deep">{{ __('Default') }}</span>
+                            </div>
+                            <span class="text-sm font-semibold text-primary">R$ {{ Number(product.price).toFixed(2) }}</span>
+                        </label>
+                        <p v-if="product.variations?.length" class="pt-1 text-sm font-semibold text-ocean-deep">{{ __('Variations') }}</p>
                         <label
                             v-for="variation in product.variations"
                             :key="variation.id"
@@ -194,7 +257,7 @@ function addToCart() {
                 </div>
 
                 <!-- Notes -->
-                <div class="mb-4">
+                <div v-if="!preview" class="mb-4">
                     <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Notes') }} <span class="text-xs text-muted-foreground">({{ __('optional') }})</span></label>
                     <textarea
                         v-model="notes"
@@ -205,23 +268,31 @@ function addToCart() {
                     />
                 </div>
 
-                <!-- Quantity + Add button -->
-                <div class="flex items-center gap-3">
+                <div class="mb-4 flex items-center justify-center gap-3">
+                    <span class="text-sm font-semibold text-ocean-deep">{{ __('Quantity:') }}</span>
                     <div class="flex items-center rounded-xl border border-border">
                         <button
+                            type="button"
                             class="px-3 py-2 text-lg font-bold text-ocean-deep disabled:opacity-30"
                             :disabled="quantity <= 1"
                             @click="quantity--"
                         >−</button>
                         <span class="min-w-[32px] text-center text-sm font-semibold text-ocean-deep">{{ quantity }}</span>
-                        <button class="px-3 py-2 text-lg font-bold text-ocean-deep" @click="quantity++">+</button>
+                        <button
+                            type="button"
+                            class="px-3 py-2 text-lg font-bold text-ocean-deep"
+                            @click="quantity++"
+                        >+</button>
                     </div>
-                    <button
-                        class="flex-1 rounded-xl bg-primary py-3 text-sm font-semibold text-white active:opacity-80"
-                        @click="addToCart"
-                    >
-                        {{ __('Add') }} · R$ {{ totalPrice.toFixed(2) }}
-                    </button>
+                </div>
+
+                <button
+                    type="button"
+                    class="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white active:opacity-80"
+                    @click="addToCart"
+                >
+                    {{ __('Send order') }} · R$ {{ totalPrice.toFixed(2) }}
+                </button>
                 </div>
             </div>
         </div>

@@ -15,6 +15,7 @@ use App\Models\Settings\VenueSettings;
 use App\Models\User;
 use App\Models\UserVenue;
 use App\Services\VenueModuleCache;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 
 class Venue extends Model
 {
@@ -35,6 +37,7 @@ class Venue extends Model
         'corporation_id',
         'affiliate_code_id',
         'name',
+        'description',
         'tax_id',
         'phone',
         'whatsapp_agent',
@@ -189,5 +192,58 @@ class Venue extends Model
     public function deliveryFeeZones(): HasMany
     {
         return $this->hasMany(DeliveryFeeZone::class);
+    }
+
+    public function storedLogoPath(): ?string
+    {
+        $value = $this->getRawOriginal('logo_url');
+
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, '/')) {
+            return null;
+        }
+
+        return $value;
+    }
+
+    public function logoFileContents(): ?string
+    {
+        $path = $this->storedLogoPath();
+
+        if ($path !== null) {
+            if (! Storage::disk('public')->exists($path)) {
+                return null;
+            }
+
+            return Storage::disk('public')->get($path);
+        }
+
+        $url = $this->getRawOriginal('logo_url');
+
+        if (! is_string($url) || $url === '') {
+            return null;
+        }
+
+        $contents = @file_get_contents($url);
+
+        return $contents === false ? null : $contents;
+    }
+
+    protected function logoUrl(): Attribute
+    {
+        return Attribute::get(function (?string $value): ?string {
+            if ($value === null || $value === '') {
+                return null;
+            }
+
+            if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, '/')) {
+                return $value;
+            }
+
+            return Storage::disk('public')->url($value);
+        });
     }
 }

@@ -10,5 +10,6 @@
     "Invoice created successfully": "La factura se creó correctamente",
     "Invoice status updated successfully": "El estado de la factura se actualizó correctamente",
     "Are you sure you want to cancel your subscription? You will keep access until the end of the current billing period.": "¿Estás seguro de que quieres cancelar tu suscripción? Mantendrás el acceso hasta el final del período de facturación actual.",
-    "Error loading orders.": "Error al cargar los pedidos."
+    "Error loading orders.": "Error al cargar los pedidos.",
+    "QR code generated.": "Código QR generado."
 }

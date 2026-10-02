@@ -15,7 +15,12 @@ class SubscriptionModuleCardTest extends TestCase
         $this->assertStringContainsString('items-stretch', $component);
         $this->assertStringContainsString('self-stretch', $component);
         $this->assertStringContainsString('description.split(/\\n\\n+/)', $component);
-        $this->assertStringContainsString('line-clamp-2 min-h-[2.5rem]', $component);
+        $this->assertStringContainsString('{{ __(module.name) }}', $component);
+        $this->assertStringContainsString('min-w-0 font-heading text-lg font-bold leading-tight break-words sm:text-xl', $component);
+        $this->assertStringContainsString("v-if=\"module.code === 'menu'\"", $component);
+        $this->assertStringContainsString("__('Update and manage')", $component);
+        $this->assertStringContainsString("__('your menu here')", $component);
+        $this->assertStringNotContainsString('line-clamp-2', $component);
         $this->assertStringContainsString('w-full text-right font-semibold', $component);
         $this->assertStringContainsString('{{ clickToAddLine1 }}', $component);
         $this->assertStringContainsString('{{ clickToAddPriceLine }}', $component);
@@ -32,10 +37,16 @@ class SubscriptionModuleCardTest extends TestCase
         $this->assertStringContainsString('v-for="(module, moduleIndex) in availableModules"', $page);
         $this->assertStringContainsString(':sequence="moduleIndex + 1"', $page);
         $this->assertStringContainsString("delivery: 'Delivery sales copy'", $page);
+        $this->assertStringContainsString("menu: 'Menu sales copy'", $page);
+        $this->assertStringContainsString("self_order: 'Self order sales copy'", $page);
+        $this->assertStringContainsString("taker: 'Taker sales copy'", $page);
+        $this->assertStringContainsString("kds: 'Kds sales copy'", $page);
         $this->assertStringContainsString("direct_print: 'Direct print sales copy'", $page);
         $this->assertStringContainsString("direct_waiter: 'Direct waiter sales copy'", $page);
         $this->assertStringContainsString("financial_dashboard: 'Financial dashboard sales copy'", $page);
+        $this->assertStringContainsString("production_dashboard: 'Production dashboard sales copy'", $page);
         $this->assertStringContainsString("fiscal_note: 'Fiscal note sales copy'", $page);
+        $this->assertStringContainsString("voice_command: 'Voice command sales copy'", $page);
         $this->assertStringContainsString(':learn-more-label="__(\'Click here and learn more\')"', $page);
         $this->assertStringContainsString(':activate-label="__(\'Click here to activate this module\')"', $page);
         $this->assertStringContainsString(':monthly-value="moduleLearnMoreMonthlyValue(module)"', $page);
@@ -121,10 +132,11 @@ class SubscriptionModuleCardTest extends TestCase
         $this->assertSame(2, substr_count($learnMore, 'activate-module-from-learn-more'));
         $this->assertStringContainsString('px-4 py-1.5 text-xs', $learnMore);
         $this->assertStringNotContainsString('w-full rounded-full bg-warm-gold', $learnMore);
-        $this->assertStringContainsString('v-if="!enabled"', $learnMore);
+        $this->assertStringNotContainsString('v-if="!enabled"', $learnMore);
         $this->assertStringContainsString("@click=\"\$emit('activate')\"", $learnMore);
         $this->assertStringContainsString('@activate="activateFromLearnMore"', $component);
         $this->assertStringContainsString('showLearnMore.value = false', $component);
+        $this->assertStringContainsString('if (! props.enabled)', $component);
     }
 
     public function test_portuguese_click_to_add_copy_is_split_into_click_here_and_price(): void
@@ -142,6 +154,9 @@ class SubscriptionModuleCardTest extends TestCase
         $this->assertStringContainsString('iFood', $translations['Delivery sales copy']);
         $this->assertSame('Clique aqui e saiba mais', $translations['Click here and learn more']);
         $this->assertSame('Clique aqui para ativar esse módulo', $translations['Click here to activate this module']);
+        $this->assertSame('Cardápio', $translations['Menu']);
+        $this->assertSame('Atualize e gerencie', $translations['Update and manage']);
+        $this->assertSame('seu cardápio aqui', $translations['your menu here']);
         $this->assertSame('O valor mensal', $translations['Monthly value']);
         $this->assertSame('Como o cliente acessa', $translations['How the customer accesses']);
         $this->assertSame('Como funciona', $translations['How it works']);
@@ -186,7 +201,7 @@ class SubscriptionModuleCardTest extends TestCase
         $this->assertStringContainsString('Valor economizado:', $translations['Estimated print monthly savings']);
         $this->assertStringContainsString('valores aproximados', $translations['Estimated savings disclaimer']);
         $this->assertStringContainsString('Beleza? sem Neura nesses cálculos', $translations['Estimated savings disclaimer']);
-        $this->assertSame('Impressão Direta', $translations['Direct Print']);
+        $this->assertSame('Impressão direta', $translations['Direct Print']);
         $this->assertStringContainsString('o pedido vai pra cozinha sem você precisar gritar', $translations['Direct print sales copy']);
         $this->assertStringContainsString('imprime automaticamente na cozinha ou no bar', $translations['Direct print sales copy']);
         $this->assertStringContainsString('Menos erro, menos correria, atendimento mais rápido.', $translations['Direct print sales copy']);
@@ -202,6 +217,53 @@ class SubscriptionModuleCardTest extends TestCase
         $this->assertStringContainsString('emita sem sair do sistema', $translations['Fiscal note sales copy']);
         $this->assertStringContainsString('cupom fiscal direto pelo NeuraBar', $translations['Fiscal note sales copy']);
         $this->assertStringContainsString('nota completa (DANFE)', $translations['Fiscal note sales copy']);
+        $this->assertStringContainsString('seu garçom só precisa da boca e do celular', $translations['Voice command sales copy']);
+        $this->assertStringContainsString('Suco de laranja, mesa 4', $translations['Voice command sales copy']);
+        $this->assertStringContainsString('técnico de seleção', $translations['Voice command sales copy']);
+        $this->assertStringContainsString('fazer um pedido por voz', $translations['Learn more voice command how it works']);
+        $this->assertStringContainsString('Mesa 5, copo com limão e gelo', $translations['Learn more voice command how it works']);
+        $this->assertStringContainsString('Batata frita grande com queijo', $translations['Learn more voice command how it works']);
+        $this->assertStringContainsString('pode corrigir quando quiser', $translations['Learn more voice command how it works']);
+        $this->assertStringContainsString('agilidade ganhada nesse modo', $translations['Learn more voice command advantage']);
+        $this->assertStringContainsString('não tem familiaridade com sistemas', $translations['Learn more voice command advantage']);
+        $this->assertStringContainsString('Seu tio pode vir e ajudar na correria', $translations['Learn more voice command advantage']);
+        $this->assertStringContainsString('seus clientes vão querer ficar olhando', $translations['Production dashboard sales copy']);
+        $this->assertStringContainsString('redes de fast food', $translations['Production dashboard sales copy']);
+        $this->assertStringContainsString('negócio que funciona de verdade', $translations['Production dashboard sales copy']);
+        $this->assertStringContainsString('aparece automaticamente no monitor do restaurante', $translations['Learn more production dashboard how it works']);
+        $this->assertStringContainsString('número da mesa e o número do pedido', $translations['Learn more production dashboard how it works']);
+        $this->assertStringContainsString('sem precisar perguntar nada pra ninguém', $translations['Learn more production dashboard how it works']);
+        $this->assertStringContainsString('não fica chamando garçom a cada cinco minutos', $translations['Learn more production dashboard advantage']);
+        $this->assertStringContainsString('sabe que está sendo preparado', $translations['Learn more production dashboard advantage']);
+        $this->assertStringContainsString('mais confiança na sua casa', $translations['Learn more production dashboard advantage']);
+        $this->assertStringContainsString('seu garçom anota na mesa', $translations['Taker sales copy']);
+        $this->assertStringContainsString('já chegou na cozinha', $translations['Taker sales copy']);
+        $this->assertStringContainsString('Rápido, simples, sem erro.', $translations['Taker sales copy']);
+        $this->assertStringContainsString('abre o NeuraBar no celular', $translations['Learn more taker how it works']);
+        $this->assertStringContainsString('sem ele sair do lugar', $translations['Learn more taker how it works']);
+        $this->assertStringContainsString('Mais tempo no salão, menos volta desnecessária', $translations['Learn more taker advantage']);
+        $this->assertStringContainsString('sem ruído, sem retrabalho', $translations['Learn more taker advantage']);
+        $this->assertStringContainsString('Cada pedido no monitor certo, no local certo', $translations['Kds sales copy']);
+        $this->assertStringContainsString('monitor do setor responsável', $translations['Kds sales copy']);
+        $this->assertStringContainsString('é só olhar e fazer', $translations['Kds sales copy']);
+        $this->assertStringContainsString('manda automaticamente pro monitor certo', $translations['Learn more kds how it works']);
+        $this->assertStringContainsString('tudo separado, tudo no lugar', $translations['Learn more kds how it works']);
+        $this->assertStringContainsString('Menos grito, menos bilhetinho, menos erro', $translations['Learn more kds advantage']);
+        $this->assertStringContainsString('tudo certinho, no tempo certo', $translations['Learn more kds advantage']);
+        $this->assertStringContainsString('sua vitrine aberta 24 horas', $translations['Menu sales copy']);
+        $this->assertStringContainsString('crie combos', $translations['Menu sales copy']);
+        $this->assertStringContainsString('cortesia para quem assina o módulo KDS', $translations['Menu sales copy']);
+        $this->assertStringContainsString('organiza por categoria e publica', $translations['Learn more menu how it works']);
+        $this->assertStringContainsString('sem risco de cardápio desatualizado', $translations['Learn more menu how it works']);
+        $this->assertStringContainsString('vitrine profissional acessível de qualquer celular', $translations['Learn more menu advantage']);
+        $this->assertStringContainsString('aumenta o ticket', $translations['Learn more menu advantage']);
+        $this->assertStringContainsString('cliente paga na hora, sem esperar', $translations['Self order sales copy']);
+        $this->assertStringContainsString('sem esperar a maquininha', $translations['Self order sales copy']);
+        $this->assertStringContainsString('nada escapa, nada some', $translations['Self order sales copy']);
+        $this->assertStringContainsString('visualiza o resumo do consumo da mesa', $translations['Learn more self order how it works']);
+        $this->assertStringContainsString('a mesa já fica disponível', $translations['Learn more self order how it works']);
+        $this->assertStringContainsString('não depende do garçom pra fechar cada mesa', $translations['Learn more self order advantage']);
+        $this->assertStringContainsString('sem surpresa no caixa', $translations['Learn more self order advantage']);
         $this->assertStringContainsString('Tag NeuraBar que está em todas as mesas', $translations['Learn more direct waiter customer access']);
         $this->assertStringContainsString('Quero uma coca, limão e gelo', $translations['Learn more direct waiter customer access']);
         $this->assertStringContainsString('Pode trazer um copo com gelo', $translations['Learn more direct waiter customer access']);
@@ -219,10 +281,18 @@ class SubscriptionModuleCardTest extends TestCase
 
         $this->assertNotFalse($seeder);
         $this->assertStringContainsString('Pedidos de Delivery e Retirada', $seeder);
+        $this->assertStringContainsString('Cardápio Digital — sua vitrine aberta 24 horas', $seeder);
+        $this->assertStringContainsString('O Cardápio Digital é cortesia para quem assina o módulo KDS', $seeder);
+        $this->assertStringContainsString('Pagamento pelo Celular — cliente paga na hora, sem esperar', $seeder);
+        $this->assertStringContainsString('Pedidos no Celular — seu garçom anota na mesa e o pedido já vai pra cozinha', $seeder);
+        $this->assertStringContainsString('KDS — Cada pedido no monitor certo, no local certo', $seeder);
         $this->assertStringContainsString('Impressão Direta — o pedido vai pra cozinha sem você precisar gritar', $seeder);
         $this->assertStringContainsString('Direct Garçom — Esse é o nosso queridinho', $seeder);
         $this->assertStringContainsString('Painel Financeiro — tudo que aconteceu no seu estabelecimento', $seeder);
+        $this->assertStringContainsString('Painel da Cozinha — seus clientes vão querer ficar olhando', $seeder);
         $this->assertStringContainsString('Nota Fiscal — emita sem sair do sistema', $seeder);
+        $this->assertStringContainsString('Comandos de Voz — seu garçom só precisa da boca e do celular', $seeder);
+        $this->assertStringContainsString("'name' => \$module['name']", $seeder);
         $this->assertStringContainsString("'active' => \$module['active'] || config('app.env') === 'local'", $seeder);
     }
 }

@@ -20,6 +20,22 @@ class CategoryTest extends TestCase
         $this->get(route('menu.index'))->assertOk();
     }
 
+    public function test_menu_index_defers_the_product_catalog(): void
+    {
+        $this->loginAs(UserRole::Owner);
+
+        $this->get(route('menu.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Menu/Index')
+                ->has('categories')
+                ->missing('products')
+                ->missing('stations')
+                ->missing('modifierGroups')
+                ->missing('combos')
+            );
+    }
+
     public function test_owner_can_create_category(): void
     {
         $venue = Venue::factory()->create();
@@ -97,5 +113,15 @@ class CategoryTest extends TestCase
         // TenantScope prevents loading this category, causing model not found
         $this->put(route('menu.categories.update', $otherCategory->id), ['name' => 'Hack'])
             ->assertStatus(404);
+    }
+
+    public function test_validation_errors_are_in_portuguese_when_locale_is_pt(): void
+    {
+        $this->loginAs(UserRole::Owner);
+
+        $this->withSession(['locale' => 'pt'])
+            ->from(route('menu.index'))
+            ->post(route('menu.categories.store'), ['name' => ''])
+            ->assertSessionHasErrors(['name' => 'O campo nome é obrigatório.']);
     }
 }

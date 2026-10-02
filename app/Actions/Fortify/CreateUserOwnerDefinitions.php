@@ -212,7 +212,7 @@ class CreateUserOwnerDefinitions
                 'sort_order' => $categoryData['sort_order'],
             ]);
 
-            foreach ($products as $productData) {
+            foreach ($products as $index => $productData) {
                 $product = Product::create([
                     'category_id' => $category->id,
                     'name' => $productData['name'],
@@ -221,6 +221,7 @@ class CreateUserOwnerDefinitions
                     'active' => true,
                     'available_for_delivery' => true,
                     'kitchen_station_id' => $productData['station_id'],
+                    'sort_order' => $index + 1,
                 ]);
                 if (in_array($productData['name'], $combo)) {
                     $productsCombo[$productData['name']] = $product;

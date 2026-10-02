@@ -33,6 +33,7 @@ class DeliveryMenuController extends Controller
                             'products' => fn ($q) => $q
                                 ->where('active', true)
                                 ->where('available_for_delivery', true)
+                                ->orderBy('sort_order')
                                 ->orderBy('name')
                                 ->with([
                                     'variations' => fn ($q) => $q->where('active', true),

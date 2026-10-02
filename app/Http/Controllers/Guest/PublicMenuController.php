@@ -28,6 +28,7 @@ class PublicMenuController extends Controller
                         ->with([
                             'products' => fn ($q) => $q
                                 ->where('active', true)
+                                ->orderBy('sort_order')
                                 ->orderBy('name')
                                 ->with([
                                     'variations' => fn ($q) => $q->where('active', true),
@@ -44,7 +45,7 @@ class PublicMenuController extends Controller
 
         return Inertia::render('Guest/Menu', [
             'token' => $token,
-            'venue' => $venue->only('id', 'name', 'logo_url', 'require_geolocation'),
+            'venue' => $venue->only('id', 'name', 'description', 'logo_url', 'require_geolocation'),
             'serviceLocation' => $serviceLocation?->only('id', 'name', 'type'),
             'categories' => $categories,
         ]);

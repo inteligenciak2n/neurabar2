@@ -4,9 +4,16 @@ import { useTranslate } from '@/Composables/useTranslate';
 import axios from 'axios';
 
 const props = defineProps({
-    token: String,
+    token: {
+        type: String,
+        default: null,
+    },
     items: Array,
     modelValue: Boolean,
+    preview: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(['update:modelValue', 'remove', 'order-placed', 'error']);
@@ -18,6 +25,11 @@ const subtotal = computed(() =>
 );
 
 async function placeOrder() {
+    if (props.preview) {
+        emit('error', __('This is a preview. Orders cannot be placed from here.'));
+        return;
+    }
+
     try {
         const payload = props.items.map((item) => ({
             product_id: item.product_id,
@@ -30,7 +42,7 @@ async function placeOrder() {
         emit('order-placed');
         emit('update:modelValue', false);
     } catch (e) {
-        emit('error', e.response?.data?.message ?? 'Error placing order.');
+        emit('error', e.response?.data?.message ?? __('Error placing order.'));
     }
 }
 </script>
@@ -87,12 +99,13 @@ async function placeOrder() {
                         <span class="font-bold text-ocean-deep">R$ {{ subtotal.toFixed(2) }}</span>
                     </div>
                     <button
-                        :disabled="!items.length"
+                        :disabled="preview || !items.length"
                         class="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white disabled:opacity-50 active:opacity-80"
                         @click="placeOrder"
                     >
                         {{ __('Place Order') }}
                     </button>
+                    <p v-if="preview" class="mt-2 text-center text-xs text-muted-foreground">{{ __('This is a preview. Orders cannot be placed from here.') }}</p>
                 </div>
             </div>
         </div>

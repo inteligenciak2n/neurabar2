@@ -31,5 +31,19 @@
     "Type your message to the waiter...": "Digite sua mensagem para o garçom...",
     "Send": "Enviar",
     "Waiter notified!": "Garçom notificado!",
-    "A waiter is on their way to take your order!": "Um garçom está a caminho para receber seu pedido!"
+    "A waiter is on their way to take your order!": "Um garçom está a caminho para receber seu pedido!",
+    "PIN must be 4 digits.": "O PIN deve ter 4 dígitos.",
+    "PINs do not match.": "Os PINs não coincidem.",
+    "Error creating session.": "Erro ao criar a sessão.",
+    "Enter your 4-digit PIN.": "Digite seu PIN de 4 dígitos.",
+    "Invalid PIN.": "PIN inválido.",
+    "Error loading orders.": "Erro ao carregar os pedidos.",
+    "Delivery or Takeaway?": "Entrega ou retirada?",
+    "This link is not associated with a specific table or location. Your order will be treated as delivery or takeaway.": "Este link não está associado a uma mesa ou local. Seu pedido será tratado como entrega ou retirada.",
+    "Continue": "Continuar",
+    "Location required": "Localização obrigatória",
+    "This venue requires your location to place orders. Allow location access to continue.": "Este estabelecimento exige sua localização para fazer pedidos. Permita o acesso à localização para continuar.",
+    "Try again": "Tentar novamente",
+    "Checking your location...": "Verificando sua localização...",
+    "(location required)": "(localização obrigatória)"
 }

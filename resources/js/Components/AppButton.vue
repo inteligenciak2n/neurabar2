@@ -5,7 +5,7 @@ defineProps({
     variant: {
         type: String,
         default: 'primary',
-        validator: (v) => ['primary', 'secondary', 'destructive', 'ghost'].includes(v),
+        validator: (v) => ['primary', 'secondary', 'accent', 'success', 'destructive', 'ghost'].includes(v),
     },
     size: {
         type: String,
@@ -33,7 +33,9 @@ defineProps({
 const variantClasses = {
     primary:     'bg-primary text-primary-foreground hover:bg-primary-hover focus-visible:ring-primary',
     secondary:   'bg-muted text-ocean-deep hover:bg-sand focus-visible:ring-primary dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600',
-    destructive: 'bg-destructive text-destructive-foreground hover:bg-red-600 focus-visible:ring-destructive',
+    accent:      'bg-warm-gold text-white hover:bg-[#8c7354] focus-visible:ring-warm-gold',
+    success:     'bg-[#5c9a6c] text-white hover:bg-[#4e7d5a] focus-visible:ring-[#5c9a6c]',
+    destructive: 'bg-[#c45c5c] text-white hover:bg-[#ad4f4f] focus-visible:ring-[#c45c5c]',
     ghost:       'bg-transparent text-ocean-deep hover:bg-muted focus-visible:ring-primary dark:text-gray-100 dark:hover:bg-gray-800',
 };
 

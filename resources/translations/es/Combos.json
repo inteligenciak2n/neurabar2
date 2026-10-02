@@ -1,5 +1,7 @@
 {
     "Combos": "Combos",
+    "Bundle products into a special-price offer.": "Arma combos con productos y un precio especial.",
+    "The customer orders the combo as one item.": "El cliente pide el paquete listo de una vez.",
     "Delete": "Borrar",
     "Delete Combo": "Eliminar combinación",
     "Menu": "Menú",
@@ -8,7 +10,14 @@
     "Create a combo to bundle products at a special price.": "Crea un combo para agrupar productos a un precio especial.",
     "Are you sure you want to delete this combo?": "¿Estás seguro de que deseas eliminar este combo?",
     "Active": "Activo",
-    "New Combo": "Nuevo combo",
+    "New Combo": "Nuevo Combo",
+    "Edit Combo": "Editar combo",
+    "Combo Name": "Nombre del combo",
+    "Combo Price": "Precio del combo",
+    "Combo Description": "Descripción del combo",
+    "Current status: :status": "Estado actual: :status",
+    "on": "activado",
+    "off": "desactivado",
     "Price": "Precio",
     "Name": "Nombre",
     "Product": "Producto",
@@ -22,6 +31,8 @@
     "Remove": "Eliminar",
     "Cancel": "Cancelar",
     "Add Item": "Agregar artículo",
+    "item": "artículo",
     "items": "artículos",
-    "Edit": "Editar"
+    "Edit": "Editar",
+    "Combo": "Combo"
 }

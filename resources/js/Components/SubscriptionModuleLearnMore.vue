@@ -193,7 +193,6 @@ const estimatedSavingsAfter = computed(() => props.savingsEstimateLabel.split(':
             </div>
 
             <button
-                v-if="!enabled"
                 type="button"
                 class="activate-module-from-learn-more mt-4"
                 :class="activateButtonClass"
@@ -361,7 +360,6 @@ const estimatedSavingsAfter = computed(() => props.savingsEstimateLabel.split(':
             </div>
 
             <button
-                v-if="!enabled"
                 type="button"
                 class="activate-module-from-learn-more mt-4"
                 :class="activateButtonClass"

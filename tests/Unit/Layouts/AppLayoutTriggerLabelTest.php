@@ -33,6 +33,16 @@ class AppLayoutTriggerLabelTest extends TestCase
         $this->assertStringNotContainsString("{{ __('Venue:') }}", $layout);
     }
 
+    public function test_page_header_slot_stays_fixed_below_the_top_nav(): void
+    {
+        $layout = file_get_contents(dirname(__DIR__, 3).'/resources/js/Layouts/AppLayout.vue');
+
+        $this->assertNotFalse($layout);
+        $this->assertStringContainsString('sticky top-16 z-10', $layout);
+        $this->assertStringContainsString('v-if="$slots.header"', $layout);
+        $this->assertStringContainsString('-mx-4 -mt-4 mb-6 border-b border-border bg-muted px-4 py-4', $layout);
+    }
+
     public function test_user_dropdown_items_include_muted_descriptions(): void
     {
         $layout = file_get_contents(dirname(__DIR__, 3).'/resources/js/Layouts/AppLayout.vue');

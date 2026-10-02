@@ -1,5 +1,7 @@
 {
     "Place Order": "Place Order",
     "Cart": "Cart",
-    "Subtotal": "Subtotal"
+    "Subtotal": "Subtotal",
+    "Error placing order.": "Error placing order.",
+    "This is a preview. Orders cannot be placed from here.": "This is a preview. Orders cannot be placed from here."
 }
