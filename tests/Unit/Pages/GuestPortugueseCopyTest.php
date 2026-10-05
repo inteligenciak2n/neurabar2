@@ -36,13 +36,29 @@ class GuestPortugueseCopyTest extends TestCase
         $this->assertStringContainsString('Number(product.price).toFixed(2)', $component);
         $this->assertStringContainsString('v-if="product.variations?.length"', $component);
         $this->assertStringContainsString("__('Choose')", $component);
-        $this->assertStringContainsString("__('Choose up to')", $component);
+        $this->assertStringContainsString('group.multiple_selection', $component);
+        $this->assertStringContainsString('toggleOption(group, option.id)', $component);
+        $this->assertStringContainsString('{ immediate: true }', $component);
+        $this->assertStringNotContainsString('min_selections', $component);
+        $this->assertStringNotContainsString('max_selections', $component);
+        $this->assertStringContainsString("__('optional')", $component);
         $this->assertSame('Escolha uma opção', $translations['Choose an option']);
         $this->assertSame('Padrão', $translations['Default']);
         $this->assertSame('Variações', $translations['Variations']);
         $this->assertSame('Escolha', $translations['Choose']);
         $this->assertSame('Escolha até', $translations['Choose up to']);
         $this->assertSame('Adicionar', $translations['Add']);
+        $this->assertStringContainsString("__('Observations')", $component);
+        $this->assertStringContainsString("__('Comments about the dish or the order.')", $component);
+        $this->assertStringContainsString('editingItem', $component);
+        $this->assertStringContainsString('z-[60]', $component);
+        $this->assertStringNotContainsString('v-if="!preview"', $component);
+        $this->assertSame('Observações', $translations['Observations']);
+        $this->assertSame('Comentários sobre o prato ou o pedido.', $translations['Comments about the dish or the order.']);
+        $this->assertSame('Atualizar item', $translations['Update item']);
+        $this->assertStringContainsString("__('Reviewing order')", $component);
+        $this->assertSame('Conferindo pedido', $translations['Reviewing order']);
+        $this->assertStringContainsString("__('Update item')", $component);
         $this->assertStringContainsString("__('Send order')", $component);
         $this->assertSame('Enviar pedido', $translations['Send order']);
         $this->assertStringContainsString("__('Quantity:')", $component);
@@ -76,17 +92,49 @@ class GuestPortugueseCopyTest extends TestCase
         $track = $this->portuguese('TrackOrder.json');
 
         $this->assertSame('Seu pedido', $checkout['Your order']);
+        $this->assertSame('O pedido', $checkout['The order']);
+        $this->assertSame(':count item', $checkout[':count item']);
+        $this->assertSame(':count itens', $checkout[':count items']);
+        $this->assertSame('Total', $checkout['Total']);
+        $this->assertSame('Local entrega', $checkout['Delivery location']);
         $this->assertSame('Pagamento', $checkout['Payment']);
+        $this->assertSame('Avançar', $checkout['Advance']);
+        $this->assertSame('Pedido correto, avançar', $checkout['Order correct, advance']);
+        $this->assertSame('Confirme o pedido para avançar', $checkout['Confirm the order to continue']);
         $this->assertSame('Entrega', $checkout['Delivery']);
         $this->assertSame('Retirada', $checkout['Pickup']);
         $this->assertSame('Nome completo', $checkout['Full name']);
+        $this->assertSame('Ponto de referência', $checkout['Reference point']);
+        $this->assertSame('Comentário na hora da entrega', $checkout['Comment at delivery']);
+        $this->assertSame('Deixar na recepção', $checkout['Leave at the reception']);
+        $this->assertSame('Comentário na retirada', $checkout['Comment at pickup']);
+        $this->assertSame('Retirar no balcão', $checkout['Pick up at the counter']);
         $this->assertSame('Fazer pedido', $checkout['Place Order']);
+        $this->assertSame('Enviar pedido', $checkout['Send order']);
+        $this->assertSame(
+            'Esta é uma prévia. Pedidos não podem ser feitos daqui.',
+            $checkout['This is a preview. Orders cannot be placed from here.'],
+        );
+        $this->assertSame('Dinheiro', $checkout['Cash']);
+        $this->assertSame('Cartão', $checkout['Card']);
+        $this->assertSame('Pix antecipado', $checkout['Advance PIX']);
+        $this->assertSame('Código do pedido', $checkout['Order code']);
+        $this->assertSame('Modo de pagamento: No momento da entrega', $checkout['Payment method: At delivery time']);
+        $this->assertSame('Cartão de crédito', $checkout['Credit Card']);
+        $this->assertSame('Cartão de débito', $checkout['Debit Card']);
+        $this->assertSame('Pix', $checkout['Pix']);
+        $this->assertSame('Outros', $checkout['Other']);
         $this->assertSame('Entrega ou retirada?', $hub['Delivery or Takeaway?']);
         $this->assertSame('O PIN deve ter 4 dígitos.', $hub['PIN must be 4 digits.']);
         $this->assertSame('Localização obrigatória', $hub['Location required']);
+        $this->assertSame('Código do pedido', $track['Order code']);
         $this->assertSame('Acompanhar pedido', $track['Track Order']);
         $this->assertSame('Pedido recebido', $track['Order received']);
         $this->assertSame('Saiu para entrega', $track['Out for delivery']);
+
+        $trackPage = file_get_contents(dirname(__DIR__, 3).'/resources/js/Pages/Guest/TrackOrder.vue');
+        $this->assertStringContainsString("__('Order code')", $trackPage);
+        $this->assertStringContainsString('order.code ?? order.order_number', $trackPage);
     }
 
     public function test_finance_and_period_filter_copy_are_portuguese(): void

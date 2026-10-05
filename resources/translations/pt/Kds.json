@@ -1,6 +1,12 @@
 {
     "Refresh": "Atualizar",
-    "Kitchen KDS": "Cozinha KDS",
+    "Kitchen KDS": "Setor de preparo",
+    "kitchen display system": "kitchen display system",
+    "Real-time order viewer": "Visualizador de pedidos em tempo real",
+    "Select which monitors you want to view in each monitor environment": "Selecione quais monitores deseja visualizar no ambiente de cada monitor",
+    "* add, change Prep Stations in Configure the System": "* adicione, altere Setores de Preparo em Configurar o Sistema",
+    "No kitchen stations": "Nenhum setor de preparo",
+    "Configure kitchen stations in Settings to start using the KDS.": "Configure os setores de preparo em Configurações para começar a usar o KDS.",
     "No pending items": "Sem itens pendentes",
     "Order": "Pedido",
     "Guest": "Convidado"

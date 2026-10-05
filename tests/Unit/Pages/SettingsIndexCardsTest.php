@@ -13,6 +13,7 @@ class SettingsIndexCardsTest extends TestCase
 
         $this->assertNotFalse($page);
         $this->assertNotFalse($card);
+        $this->assertStringContainsString(':lockable="false"', $page);
         $this->assertStringContainsString('flex max-w-5xl flex-col gap-2', $page);
         $this->assertStringContainsString('SettingsSectionCard', $page);
         $this->assertStringContainsString('min-h-[7.5rem]', $card);

@@ -31,6 +31,7 @@ const catalogRoot = ref(null);
 const stickyHeight = ref(180);
 let resizeObserver = null;
 let sectionObserver = null;
+let programmaticScrollUntil = 0;
 
 function categoryAnchorId(categoryId) {
     return `menu-category-${categoryId}`;
@@ -52,8 +53,15 @@ function servingsText(product) {
 
 function scrollToCategory(categoryId) {
     selectedCategoryId.value = categoryId;
+    programmaticScrollUntil = Date.now() + 900;
+
     const target = document.getElementById(categoryAnchorId(categoryId));
-    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!target) {
+        return;
+    }
+
+    const top = window.scrollY + target.getBoundingClientRect().top - stickyHeight.value - 8;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
 }
 
 onMounted(() => {
@@ -81,7 +89,7 @@ onMounted(() => {
                 .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
 
             const topmost = visible[0]?.target?.dataset?.categoryId;
-            if (topmost) {
+            if (topmost && Date.now() >= programmaticScrollUntil) {
                 selectedCategoryId.value = topmost;
             }
         },
@@ -144,7 +152,7 @@ onUnmounted(() => {
                     data-category-chip
                     :data-category-id="category.id"
                     class="whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors"
-                    :class="selectedCategoryId === category.id ? 'bg-primary text-white' : 'bg-white text-ocean-deep shadow-card hover:bg-ocean-light'"
+                    :class="String(selectedCategoryId) === String(category.id) ? 'bg-primary text-white' : 'bg-white text-ocean-deep shadow-card hover:bg-ocean-light'"
                     @click="scrollToCategory(category.id)"
                 >
                     {{ category.name }}

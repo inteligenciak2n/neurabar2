@@ -1,6 +1,12 @@
 {
     "Refresh": "Refresh",
-    "Kitchen KDS": "Kitchen KDS",
+    "Kitchen KDS": "Prep station",
+    "kitchen display system": "kitchen display system",
+    "Real-time order viewer": "Real-time order viewer",
+    "Select which monitors you want to view in each monitor environment": "Select which monitors you want to view in each monitor environment",
+    "* add, change Prep Stations in Configure the System": "* add, change Prep Stations in Configure the System",
+    "No kitchen stations": "No prep stations",
+    "Configure kitchen stations in Settings to start using the KDS.": "Configure prep stations in Settings to start using the KDS.",
     "No pending items": "No pending items",
     "Order": "Order",
     "Guest": "Guest"

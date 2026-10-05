@@ -11,5 +11,6 @@
     "Invoice status updated successfully": "Status da fatura atualizado com sucesso",
     "Are you sure you want to cancel your subscription? You will keep access until the end of the current billing period.": "Tem certeza de que deseja cancelar sua assinatura? Você manterá o acesso até o final do período de cobrança atual.",
     "Error loading orders.": "Erro ao carregar pedidos.",
-    "QR code generated.": "QR Code gerado."
+    "QR code generated.": "QR Code gerado.",
+    "This is a preview. Orders cannot be placed from here.": "Esta é uma prévia. Pedidos não podem ser feitos daqui."
 }

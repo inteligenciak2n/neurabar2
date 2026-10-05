@@ -99,13 +99,23 @@ const allStations = computed(() => {
 <template>
     <AppLayout :title="__('Kitchen KDS')">
         <template #header>
-            <div class="flex items-center justify-between">
-                <h2 class="font-heading text-xl font-semibold text-ocean-deep dark:text-gray-100">{{ __('Kitchen KDS') }}</h2>
-                <AppButton variant="ghost" size="sm" @click="reload">{{ __('Refresh') }}</AppButton>
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex min-w-0 items-center gap-3">
+                    <div class="shrink-0">
+                        <h1 class="shrink-0 font-heading text-4xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Kitchen KDS') }}</h1>
+                        <p class="text-sm italic leading-tight text-muted-foreground dark:text-gray-400">{{ __('kitchen display system') }}</p>
+                    </div>
+                    <p class="text-sm leading-snug text-muted-foreground dark:text-gray-400">
+                        <span class="block">{{ __('Real-time order viewer') }}</span>
+                        <span class="block">{{ __('Select which monitors you want to view in each monitor environment') }}</span>
+                        <span class="mt-3 block italic">{{ __('* add, change Prep Stations in Configure the System') }}</span>
+                    </p>
+                </div>
+                <AppButton size="sm" @click="reload">{{ __('Refresh') }}</AppButton>
             </div>
         </template>
 
-        <div class="py-6 px-4 sm:px-6">
+        <div>
             <!-- Ready for delivery/pickup lane -->
             <div v-if="readyDeliveryOrders?.length" class="mb-6">
                 <h3 class="font-heading font-semibold text-sm text-ocean-deep dark:text-gray-100 mb-2">
@@ -120,7 +130,7 @@ const allStations = computed(() => {
                         <p class="font-heading font-semibold text-sm text-ocean-deep dark:text-gray-100">
                             {{ order.attendance?.customer_identifier ?? __('Guest') }}
                         </p>
-                        <p class="text-xs text-muted-foreground">{{ __('Order') }} #{{ order.order_number }}</p>
+                        <p class="text-xs text-muted-foreground">{{ __('Order') }} #{{ order.attendance?.delivery_order?.code ?? order.order_number }}</p>
                         <AppBadge :label="order.status" variant="primary" />
                         <AppButton size="sm" @click="advanceDeliveryStatus(order)">
                             {{ deliveryActionLabel(order) }}
@@ -140,7 +150,7 @@ const allStations = computed(() => {
             <div v-else class="grid gap-4" :style="`grid-template-columns: repeat(${allStations.length}, minmax(260px, 1fr))`">
                 <div v-for="station in allStations" :key="station.id" class="flex flex-col gap-3">
                     <!-- Station header -->
-                    <div class="sticky top-20 z-10 rounded-lg bg-white shadow-card px-4 py-2 flex items-center justify-between dark:bg-gray-800">
+                    <div class="sticky top-44 z-10 rounded-lg bg-white shadow-card px-4 py-2 flex items-center justify-between dark:bg-gray-800">
                         <span class="font-heading font-semibold text-sm text-ocean-deep dark:text-gray-100">{{ station.name }}</span>
                         <AppBadge
                             :label="`${getItemsForStation(station.id).length}`"

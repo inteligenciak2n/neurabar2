@@ -17,6 +17,8 @@ class VenueSettingsLayoutTest extends TestCase
         $this->assertStringContainsString('relative aspect-square cursor-pointer overflow-hidden rounded-md border-2 border-dashed', $page);
         $this->assertStringContainsString('@drop.prevent="onLogoDrop"', $page);
         $this->assertStringContainsString('forceFormData: true', $page);
+        $this->assertStringContainsString('useAutosaveForm(form, submit)', $page);
+        $this->assertStringNotContainsString("__('Save Changes')", $page);
         $this->assertStringNotContainsString(":title=\"__('Logo URL')\"", $page);
         $this->assertStringNotContainsString('v-model="form.logo_url"', $page);
         $this->assertDoesNotMatchRegularExpression(
@@ -36,6 +38,9 @@ class VenueSettingsLayoutTest extends TestCase
 
         $this->assertNotFalse($page);
         $this->assertStringContainsString(":title=\"__('Basic Information')\"", $page);
+        $this->assertStringContainsString('useAutosaveForm(form, submit)', $page);
+        $this->assertStringContainsString('preserveScroll: true', $page);
+        $this->assertStringNotContainsString("__('Save Changes')", $page);
         $this->assertStringContainsString('v-model="form.description"', $page);
         $this->assertStringContainsString("__('Establishment description')", $page);
         $this->assertStringContainsString("__('Shown on the customer menu. Write a short, inviting description of your venue.')", $page);

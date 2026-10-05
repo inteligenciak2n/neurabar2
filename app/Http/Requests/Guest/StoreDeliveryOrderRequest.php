@@ -37,6 +37,8 @@ class StoreDeliveryOrderRequest extends FormRequest
             'address.zip_code' => ['required_if:fulfillment_type,'.FulfillmentType::Delivery->value, 'nullable', 'string', 'max:9'],
             'address.reference_point' => ['nullable', 'string', 'max:255'],
             'address.save_address' => ['nullable', 'boolean'],
+            'delivery_comment' => ['nullable', 'string', 'max:500'],
+            'code' => ['nullable', 'integer', 'min:1', 'max:99999'],
 
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'uuid', Rule::exists(Product::class, 'id')->where('available_for_delivery', true)],

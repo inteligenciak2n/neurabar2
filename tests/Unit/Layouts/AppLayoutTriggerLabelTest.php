@@ -38,7 +38,9 @@ class AppLayoutTriggerLabelTest extends TestCase
         $layout = file_get_contents(dirname(__DIR__, 3).'/resources/js/Layouts/AppLayout.vue');
 
         $this->assertNotFalse($layout);
+        $this->assertStringContainsString('sticky top-0 z-30', $layout);
         $this->assertStringContainsString('sticky top-16 z-10', $layout);
+        $this->assertStringContainsString('whitespace-pre-line', $layout);
         $this->assertStringContainsString('v-if="$slots.header"', $layout);
         $this->assertStringContainsString('-mx-4 -mt-4 mb-6 border-b border-border bg-muted px-4 py-4', $layout);
     }
@@ -63,6 +65,7 @@ class AppLayoutTriggerLabelTest extends TestCase
         );
 
         $this->assertSame('Configurações', $translations['Settings']);
+        $this->assertSame("Setor de\npreparo", $translations['Kitchen']);
         $this->assertSame(
             'Edite as informações do perfil de acesso',
             $translations['Edit your access profile information'],

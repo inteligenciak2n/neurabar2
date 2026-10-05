@@ -38,6 +38,7 @@ class SchemaIntegrityTest extends TestCase
             'order_items' => ['order_items', ['id', 'order_id', 'product_id', 'quantity', 'unit_price']],
             'order_item_modifiers' => ['order_item_modifiers', ['id', 'order_item_id', 'modifier_option_id']],
             'payments' => ['payments', ['id', 'attendance_id', 'grand_total']],
+            'delivery_orders' => ['delivery_orders', ['id', 'venue_id', 'attendance_id', 'code', 'fulfillment_type']],
             'payment_items' => ['payment_items', ['id', 'payment_id', 'method', 'amount']],
         ];
     }

@@ -2,6 +2,7 @@
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
+import { useAutosaveForm } from '@/Composables/useAutosaveForm';
 import { useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
@@ -100,11 +101,19 @@ const submit = () => {
     }));
     form.post(route('settings.venue.update'), {
         forceFormData: true,
+        preserveScroll: true,
+        onSuccess: () => {
+            form.logo = null;
+            form.remove_logo = false;
+            form.defaults();
+        },
         onFinish: () => {
             form.transform((data) => data);
         },
     });
 };
+
+useAutosaveForm(form, submit);
 </script>
 
 <template>
@@ -349,10 +358,6 @@ const submit = () => {
                         <p class="text-xs text-muted-foreground">{{ __('Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m.') }}</p>
                     </div>
                 </AppCard>
-
-                <div class="flex justify-end">
-                    <AppButton type="submit" :loading="form.processing">{{ __('Save Changes') }}</AppButton>
-                </div>
             </div>
         </form>
     </SettingsLayout>

@@ -29,7 +29,7 @@ const statusLabel = computed(() => statusLabels[props.order.status] ?? props.ord
             <div class="w-full max-w-md">
                 <div class="bg-white rounded-xl shadow-card p-6">
                     <h1 class="font-heading text-xl font-bold text-ocean-deep mb-1">
-                        {{ __('Order') }} #{{ order.order_number }}
+                        {{ __('Order code') }} #{{ order.code ?? order.order_number }}
                     </h1>
                     <p class="text-sm text-muted-foreground mb-6">
                         {{ __('Status') }}: <span class="font-medium">{{ statusLabel }}</span>

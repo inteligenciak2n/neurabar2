@@ -38,8 +38,8 @@ class MenuPreviewController extends Controller
         return Inertia::render('Guest/Delivery/Menu', [
             'token' => null,
             'preview' => true,
-            'venue' => $venue->only('id', 'name', 'description', 'logo_url', 'require_geolocation'),
-            'categories' => $this->catalogCategories($venue, customerFacing: true, deliveryOnly: true),
+            'venue' => $venue->only('id', 'name', 'description', 'logo_url', 'street', 'number', 'complement', 'neighborhood', 'city', 'state', 'zip_code', 'require_geolocation'),
+            'categories' => $this->catalogCategories($venue, customerFacing: true),
             'deliveryEnabled' => $settings?->delivery_enabled ?? true,
             'pickupEnabled' => $settings?->pickup_enabled ?? true,
             'acceptedPaymentMethods' => $settings?->acceptedDeliveryPaymentMethods() ?? PaymentMethod::values(),
@@ -95,7 +95,7 @@ class MenuPreviewController extends Controller
     /**
      * @return Collection<int, Category>
      */
-    private function catalogCategories(Venue $venue, bool $customerFacing, bool $deliveryOnly = false): Collection
+    private function catalogCategories(Venue $venue, bool $customerFacing): Collection
     {
         $menuQuery = Menu::withoutGlobalScopes()->where('venue_id', $venue->id);
 
@@ -109,13 +109,12 @@ class MenuPreviewController extends Controller
             return collect();
         }
 
-        $categories = Category::withoutGlobalScopes()
+        return Category::withoutGlobalScopes()
             ->where('menu_id', $menu->id)
             ->orderBy('sort_order')
             ->with([
                 'products' => fn ($q) => $q
                     ->where('active', true)
-                    ->when($deliveryOnly, fn ($q) => $q->where('available_for_delivery', true))
                     ->orderBy('sort_order')
                     ->orderBy('name')
                     ->with([
@@ -126,11 +125,5 @@ class MenuPreviewController extends Controller
                     ]),
             ])
             ->get();
-
-        if ($deliveryOnly) {
-            return $categories->filter(fn (Category $category) => $category->products->isNotEmpty())->values();
-        }
-
-        return $categories;
     }
 }

@@ -92,9 +92,15 @@ class PlaceDeliveryOrderTest extends TestCase
         $product = $this->makeDeliverableProduct($venue);
         $token = $this->makeToken($venue);
 
-        $response = $this->postJson("/delivery/{$token}/orders", $this->basePayload($product));
+        $payload = $this->basePayload($product);
+        $payload['delivery_comment'] = 'Retirar no balcão';
+        $payload['code'] = 4321;
+
+        $response = $this->postJson("/delivery/{$token}/orders", $payload);
 
         $response->assertCreated();
+        $this->assertSame(4321, $response->json('code'));
+        $this->assertSame(4321, $response->json('order_number'));
         $this->assertDatabaseHas('customers', [
             'corporation_id' => $venue->corporation_id,
             'phone' => '11999998888',
@@ -112,6 +118,71 @@ class PlaceDeliveryOrderTest extends TestCase
         $this->assertDatabaseHas('delivery_order_payment_methods', [
             'method' => 'cash',
             'amount' => 40,
+        ]);
+        $this->assertDatabaseHas('delivery_orders', [
+            'venue_id' => $venue->id,
+            'fulfillment_type' => 'pickup',
+            'delivery_comment' => 'Retirar no balcão',
+            'code' => 4321,
+        ]);
+    }
+
+    public function test_guest_can_split_payment_across_accepted_methods(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->activateDelivery($venue);
+        VenueSettings::factory()->create([
+            'venue_id' => $venue->id,
+            'service_fee_percent' => 0,
+            'accepted_delivery_payment_methods' => ['cash', 'pix', 'credit_card'],
+        ]);
+        $product = $this->makeDeliverableProduct($venue);
+        $token = $this->makeToken($venue);
+
+        $payload = $this->basePayload($product);
+        $payload['methods'] = [
+            ['type' => 'cash', 'amount' => 25],
+            ['type' => 'pix', 'amount' => 15],
+        ];
+
+        $response = $this->postJson("/delivery/{$token}/orders", $payload);
+
+        $response->assertCreated();
+        $this->assertDatabaseHas('delivery_order_payment_methods', [
+            'method' => 'cash',
+            'amount' => 25,
+        ]);
+        $this->assertDatabaseHas('delivery_order_payment_methods', [
+            'method' => 'pix',
+            'amount' => 15,
+        ]);
+    }
+
+    public function test_duplicate_delivery_order_code_falls_back_to_the_next_available(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->activateDelivery($venue);
+        VenueSettings::factory()->create([
+            'venue_id' => $venue->id,
+            'service_fee_percent' => 0,
+            'accepted_delivery_payment_methods' => ['cash'],
+        ]);
+        $product = $this->makeDeliverableProduct($venue);
+        $token = $this->makeToken($venue);
+
+        $first = $this->basePayload($product);
+        $first['code'] = 4321;
+        $this->postJson("/delivery/{$token}/orders", $first)->assertCreated();
+
+        $second = $this->basePayload($product);
+        $second['code'] = 4321;
+        $response = $this->postJson("/delivery/{$token}/orders", $second);
+
+        $response->assertCreated();
+        $this->assertSame(4322, $response->json('code'));
+        $this->assertDatabaseHas('delivery_orders', [
+            'venue_id' => $venue->id,
+            'code' => 4322,
         ]);
     }
 
@@ -139,6 +210,7 @@ class PlaceDeliveryOrderTest extends TestCase
             'street' => 'Rua A', 'number' => '100', 'neighborhood' => 'Centro',
             'city' => 'São Paulo', 'state' => 'SP', 'zip_code' => '01310100',
         ];
+        $payload['delivery_comment'] = 'Deixar na recepção';
         $payload['methods'] = [['type' => 'cash', 'amount' => 50]];
 
         $response = $this->postJson("/delivery/{$token}/orders", $payload);
@@ -148,6 +220,7 @@ class PlaceDeliveryOrderTest extends TestCase
             'venue_id' => $venue->id,
             'fulfillment_type' => 'delivery',
             'delivery_fee' => 10,
+            'delivery_comment' => 'Deixar na recepção',
         ]);
     }
 

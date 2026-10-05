@@ -63,11 +63,12 @@ class PlaceDeliveryOrderAction
 
             $attendanceChannel = $this->createOrRetrieveAttendanceChannel($venue, $fulfillmentType);
             $attendance = $this->createAttendance($venue, $attendanceChannel, $validated['customer']['name']);
-            $order = $this->createOrderWithItems($venue, $attendance, $resolvedItems);
+            $code = $this->nextDeliveryOrderCode($venue, $validated['code'] ?? null);
+            $order = $this->createOrderWithItems($venue, $attendance, $resolvedItems, $code);
 
             $this->createDeliveryOrderWithPaymentMethods(
                 $venue, $attendance, $fulfillmentType, $customer, $customerAddress,
-                $deliveryFeeZone, $deliveryFee, $validated
+                $deliveryFeeZone, $deliveryFee, $validated, $code
             );
 
             return $order;
@@ -112,13 +113,11 @@ class PlaceDeliveryOrderAction
     /**
      * @param  array<int, array{product_id: ?string, variation_id: ?string, quantity: int, unit_price: float, notes: ?string, modifiers: array<int, array<string, mixed>>}>  $resolvedItems
      */
-    private function createOrderWithItems(Venue $venue, Attendance $attendance, array $resolvedItems): Order
+    private function createOrderWithItems(Venue $venue, Attendance $attendance, array $resolvedItems, int $code): Order
     {
-        $orderNumber = Order::where('attendance_id', $attendance->id)->max('order_number') + 1;
-
         $order = Order::create([
             'attendance_id' => $attendance->id,
-            'order_number' => $orderNumber,
+            'order_number' => $code,
             'status' => OrderStatus::Open,
             'created_by' => null,
         ]);
@@ -142,6 +141,32 @@ class PlaceDeliveryOrderAction
         return $order;
     }
 
+    private function nextDeliveryOrderCode(Venue $venue, mixed $requested = null): int
+    {
+        $requestedCode = is_numeric($requested) ? (int) $requested : 0;
+
+        if ($requestedCode >= 1) {
+            $taken = DeliveryOrder::withoutGlobalScopes()
+                ->where('venue_id', $venue->id)
+                ->where('code', $requestedCode)
+                ->lockForUpdate()
+                ->first();
+
+            if ($taken === null) {
+                return $requestedCode;
+            }
+        }
+
+        $max = DeliveryOrder::withoutGlobalScopes()
+            ->where('venue_id', $venue->id)
+            ->whereNotNull('code')
+            ->orderByDesc('code')
+            ->lockForUpdate()
+            ->value('code');
+
+        return max((int) $max + 1, 1);
+    }
+
     /**
      * @param  array<string, mixed>  $validated
      */
@@ -153,11 +178,13 @@ class PlaceDeliveryOrderAction
         ?CustomerAddress $customerAddress,
         ?DeliveryFeeZone $deliveryFeeZone,
         float $deliveryFee,
-        array $validated
+        array $validated,
+        int $code,
     ): DeliveryOrder {
         $deliveryOrder = DeliveryOrder::withoutGlobalScopes()->create([
             'venue_id' => $venue->id,
             'attendance_id' => $attendance->id,
+            'code' => $code,
             'fulfillment_type' => $fulfillmentType,
             'customer_id' => $customer->id,
             'customer_address_id' => $customerAddress?->id,
@@ -173,6 +200,7 @@ class PlaceDeliveryOrderAction
             'address_state' => $validated['address']['state'] ?? null,
             'address_zip_code' => $validated['address']['zip_code'] ?? null,
             'address_reference_point' => $validated['address']['reference_point'] ?? null,
+            'delivery_comment' => $validated['delivery_comment'] ?? null,
         ]);
 
         // The charge itself is only recognized once the order is Delivered

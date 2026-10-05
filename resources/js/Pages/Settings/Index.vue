@@ -53,7 +53,7 @@ const sections = [
 </script>
 
 <template>
-    <SettingsLayout :title="__('Settings')">
+    <SettingsLayout :title="__('Settings')" :lockable="false">
         <template #header>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-6">
                 <h1 class="shrink-0 font-heading text-4xl font-bold text-ocean-deep dark:text-gray-100">

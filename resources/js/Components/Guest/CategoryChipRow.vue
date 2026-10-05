@@ -14,7 +14,7 @@ const canScrollLeft = ref(false);
 const canScrollRight = ref(false);
 const dragging = ref(false);
 let resizeObserver = null;
-let dragStartX = 0;
+let dragStartX = null;
 let dragStartScroll = 0;
 let dragMoved = false;
 let scrollChipTimer = null;
@@ -78,33 +78,40 @@ const onPointerDown = (event) => {
         return;
     }
 
-    dragging.value = true;
+    dragging.value = false;
     dragMoved = false;
     dragStartX = event.clientX;
     dragStartScroll = el.scrollLeft;
-    el.setPointerCapture?.(event.pointerId);
 };
 
 const onPointerMove = (event) => {
-    if (!dragging.value || !scroller.value) {
+    const el = scroller.value;
+    if (!el || dragStartX === null) {
         return;
     }
 
     const delta = event.clientX - dragStartX;
-    if (Math.abs(delta) > 4) {
-        dragMoved = true;
-    }
-
-    scroller.value.scrollLeft = dragStartScroll - delta;
-};
-
-const onPointerUp = (event) => {
-    if (!dragging.value) {
+    if (!dragging.value && Math.abs(delta) <= 8) {
         return;
     }
 
+    if (!dragging.value) {
+        dragging.value = true;
+        dragMoved = true;
+        el.setPointerCapture?.(event.pointerId);
+    }
+
+    el.scrollLeft = dragStartScroll - delta;
+};
+
+const onPointerUp = (event) => {
+    const el = scroller.value;
+    if (dragging.value) {
+        el?.releasePointerCapture?.(event.pointerId);
+    }
+
     dragging.value = false;
-    scroller.value?.releasePointerCapture?.(event.pointerId);
+    dragStartX = null;
 };
 
 const onChipClickCapture = (event) => {

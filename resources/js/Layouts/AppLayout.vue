@@ -113,7 +113,7 @@ const roleLabel = (role) => {
 
         <div class="flex min-h-screen flex-col bg-muted dark:bg-gray-950">
             <!-- Top Header -->
-            <header class="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border bg-white px-4 shadow-card sm:px-6 dark:border-gray-700 dark:bg-gray-900">
+            <header class="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border bg-white px-4 shadow-card sm:px-6 dark:border-gray-700 dark:bg-gray-900">
                 <!-- Left: Logo + Venue badge -->
                 <div class="flex items-center gap-4">
                     <Link :href="route('dashboard')" class="flex items-center gap-1">
@@ -213,7 +213,7 @@ const roleLabel = (role) => {
                         :key="item.routeName"
                         :href="route(item.routeName)"
                         :class="[
-                            'rounded-md px-3 py-2 text-sm font-body font-medium transition-colors',
+                            'whitespace-pre-line rounded-md px-3 py-1.5 text-center text-sm font-body font-medium leading-tight transition-colors',
                             route().current(item.activePattern)
                                 ? 'bg-primary-light text-primary dark:bg-primary/20'
                                 : 'text-muted-foreground hover:bg-muted hover:text-ocean-deep dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100',
@@ -347,7 +347,7 @@ const roleLabel = (role) => {
                         :key="item.routeName"
                         :href="route(item.routeName)"
                         :class="[
-                            'rounded-md px-3 py-2.5 text-sm font-body font-medium transition-colors',
+                            'whitespace-pre-line rounded-md px-3 py-2.5 text-sm font-body font-medium leading-tight transition-colors',
                             route().current(item.activePattern)
                                 ? 'bg-primary-light text-primary dark:bg-primary/20'
                                 : 'text-muted-foreground hover:bg-muted hover:text-ocean-deep dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100',

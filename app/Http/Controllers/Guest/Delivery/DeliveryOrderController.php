@@ -20,10 +20,12 @@ class DeliveryOrderController extends Controller
         abort_unless(in_array(ModuleCode::Delivery->value, $venue->activeModules(), true), 404);
 
         $order = $action->execute($venue, $request->validated());
+        $order->loadMissing('attendance.deliveryOrder');
 
         return response()->json([
             'order_id' => $order->id,
             'order_number' => $order->order_number,
+            'code' => $order->attendance?->deliveryOrder?->code ?? $order->order_number,
         ], 201);
     }
 }

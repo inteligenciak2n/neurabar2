@@ -39,6 +39,7 @@ class TrackOrderController extends Controller
             'order' => [
                 'id' => $order->id,
                 'order_number' => $order->order_number,
+                'code' => $deliveryOrder?->code ?? $order->order_number,
                 'status' => $order->status,
                 'items' => $items,
                 'fulfillment_type' => $deliveryOrder?->fulfillment_type,

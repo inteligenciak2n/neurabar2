@@ -495,7 +495,14 @@ const statusLabel = (status) => ({
 <template>
     <SettingsLayout :title="__('Subscription')">
         <template #header>
-            <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Subscription') }}</h1>
+            <div class="flex min-w-0 items-center gap-3">
+                <h1 class="shrink-0 font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Subscription') }}</h1>
+                <p class="text-sm leading-snug text-muted-foreground dark:text-gray-400">
+                    <span class="block">{{ __('Save more time by subscribing to more modules') }}</span>
+                    <span class="block">{{ __('See each new feature and subscribe whenever you want') }}</span>
+                    <span class="block">{{ __('View your current subscription') }}</span>
+                </p>
+            </div>
         </template>
 
         <div class="space-y-6">

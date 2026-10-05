@@ -6,9 +6,12 @@
     "Describe whether you serve at the counter, the tables you have, and so on.":  "Escreva se tem atendimento de \"Balcão\" às \"Mesas\" que você possui etc..",
     "Venue Info":  "Informações do estabelecimento",
     "General":  "Geral",
-    "Kitchen Stations":  "Estações de cozinha",
+    "Kitchen Stations":  "Setor de preparo",
     "Preparation Statuses":  "Status de preparação",
     "Service Locations":  "Locais de serviço",
     "Attendance Channels":  "Canais de atendimento",
-    "Users":  "Usuários"
+    "Users":  "Usuários",
+    "Enable editing":  "Habilitar edição",
+    "Automatic saving":  "salvamento automático",
+    "Enable editing to change this information":  "Habilite a edição para alterar as informações"
 }

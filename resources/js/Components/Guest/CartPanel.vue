@@ -16,7 +16,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(['update:modelValue', 'remove', 'order-placed', 'error']);
+const emit = defineEmits(['update:modelValue', 'remove', 'order-placed', 'error', 'select-item']);
 
 const __ = useTranslate();
 
@@ -73,14 +73,27 @@ async function placeOrder() {
                         :key="index"
                         class="flex items-start gap-3 rounded-xl border border-border p-3"
                     >
-                        <div class="flex-1 text-sm">
+                        <button
+                            type="button"
+                            class="flex-1 text-left text-sm"
+                            @click="emit('select-item', index)"
+                        >
                             <p class="font-medium text-ocean-deep">{{ item.product_name }}</p>
                             <p v-if="item.variation_name" class="text-xs text-muted-foreground">{{ item.variation_name }}</p>
-                            <p v-if="item.notes" class="text-xs italic text-muted-foreground">{{ item.notes }}</p>
+                            <ul v-if="item.modifier_details?.length" class="mt-1 space-y-0.5">
+                                <li
+                                    v-for="(detail, detailIndex) in item.modifier_details"
+                                    :key="detailIndex"
+                                    class="text-xs text-muted-foreground"
+                                >
+                                    {{ detail.group }}: {{ detail.name }}
+                                </li>
+                            </ul>
+                            <p v-if="item.notes" class="mt-0.5 text-xs italic text-muted-foreground">{{ item.notes }}</p>
                             <p class="mt-1 text-xs font-semibold text-primary">
                                 {{ item.quantity }}x · R$ {{ (item.unit_price * item.quantity).toFixed(2) }}
                             </p>
-                        </div>
+                        </button>
                         <button
                             class="shrink-0 rounded-full p-1 text-destructive hover:bg-destructive/10"
                             @click="emit('remove', index)"

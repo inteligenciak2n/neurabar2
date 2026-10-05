@@ -1,7 +1,7 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import AppCard from '@/Components/AppCard.vue';
-import AppButton from '@/Components/AppButton.vue';
+import { useAutosaveForm } from '@/Composables/useAutosaveForm';
 import { useForm } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -15,8 +15,12 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.put(route('settings.general.update'));
+    form.put(route('settings.general.update'), {
+        preserveScroll: true,
+    });
 };
+
+useAutosaveForm(form, submit);
 </script>
 
 <template>
@@ -67,10 +71,6 @@ const submit = () => {
                         />
                         <p v-if="form.errors.table_count" class="mt-1 text-xs text-destructive">{{ form.errors.table_count }}</p>
                     </div>
-                </div>
-
-                <div class="mt-6 flex justify-end">
-                    <AppButton type="submit" :loading="form.processing">{{ __('Save Changes') }}</AppButton>
                 </div>
             </AppCard>
         </form>

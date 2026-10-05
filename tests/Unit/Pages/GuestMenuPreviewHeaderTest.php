@@ -130,7 +130,11 @@ class GuestMenuPreviewHeaderTest extends TestCase
         $this->assertStringContainsString('canScrollRight', $component);
         $this->assertStringContainsString('pointer-events-none', $component);
         $this->assertStringContainsString('scrollActiveChipIntoView', $component);
-        $this->assertStringContainsString("watch(() => props.activeId, scheduleScrollActiveChip)", $component);
+        $this->assertStringContainsString('watch(() => props.activeId, scheduleScrollActiveChip)', $component);
+        $this->assertStringContainsString('el.setPointerCapture?.(event.pointerId)', $component);
+        $this->assertStringContainsString('Math.abs(delta) <= 8', $component);
+        $this->assertStringContainsString('programmaticScrollUntil', $catalog);
+        $this->assertStringContainsString('window.scrollTo', $catalog);
         $this->assertStringContainsString("el.scrollTo({ left: nextLeft, behavior: 'smooth' })", $component);
     }
 
@@ -155,6 +159,8 @@ class GuestMenuPreviewHeaderTest extends TestCase
         $this->assertSame('Mesa nº :number', $translations['Table no. :number']);
         $this->assertSame('Versão Delivery', $translations['Delivery version']);
         $this->assertSame('Finalizar pedido', $translations['Checkout']);
+        $this->assertSame('Exibir itens do pedido', $translations['View Cart']);
+        $this->assertSame('Visualizar pedido', $translations['View order']);
     }
 
     public function test_table_preview_uses_cart_checkout_and_links_to_delivery(): void
@@ -171,23 +177,33 @@ class GuestMenuPreviewHeaderTest extends TestCase
         $this->assertStringContainsString('v-if="cartCount > 0"', $page);
         $this->assertStringContainsString('<Teleport to="body">', $page);
         $this->assertStringContainsString('fixed bottom-24 left-1/2 z-50', $page);
+        $this->assertStringContainsString('border-4 border-warm-gold', $page);
         $this->assertStringContainsString('<Teleport to="body">', $delivery);
         $this->assertStringContainsString('fixed bottom-24 left-1/2 z-50', $delivery);
+        $this->assertStringContainsString('border-4 border-warm-gold', $delivery);
         $this->assertStringNotContainsString('v-if="!preview && cartCount > 0"', $page);
         $this->assertStringContainsString('<DeliveryCheckoutPanel', $delivery);
+        $this->assertStringContainsString(':venue="venue"', $delivery);
         $this->assertStringContainsString('<GuestMenuCatalog', $delivery);
         $this->assertStringNotContainsString('#frameLabel', $delivery);
         $this->assertStringContainsString("__('Customer version - Delivery')", $delivery);
         $this->assertStringContainsString(':preview-watermark="preview ? __(\'Delivery version\') : null"', $delivery);
         $this->assertStringContainsString("route('menu.preview.customer')", $delivery);
-        $this->assertStringContainsString(':disabled="preview || !items.length"', $cart);
+        $this->assertStringContainsString(':editing-item="editingItem"', $page);
+        $this->assertStringContainsString('@select-item="openCartItem"', $page);
+        $this->assertStringContainsString(':editing-item="editingItem"', $delivery);
+        $this->assertStringContainsString('@select-item="openCartItem"', $delivery);
+        $this->assertStringContainsString("emit('select-item', index)", $cart);
         $catalog = file_get_contents(dirname(__DIR__, 3).'/resources/js/Components/Guest/GuestMenuCatalog.vue');
         $this->assertNotFalse($catalog);
         $this->assertStringContainsString('flex min-h-[4.5rem] items-stretch', $catalog);
         $this->assertStringContainsString('h-[4.5rem] w-[4.5rem] shrink-0 self-stretch overflow-hidden bg-muted', $catalog);
         $this->assertStringContainsString('grid grid-cols-1 gap-2', $catalog);
         $this->assertStringContainsString("__('Price:')", $catalog);
-        $this->assertStringContainsString("__('View Cart')", $delivery);
+        $this->assertStringContainsString("__('View order')", $delivery);
+        $this->assertStringContainsString("__('This venue has no menu items yet.')", $delivery);
+        $this->assertStringNotContainsString("__('View Cart')", $delivery);
+        $this->assertStringNotContainsString("__('This venue has no items available for delivery yet.')", $delivery);
         $this->assertStringNotContainsString('sm:grid-cols-2 pb-24', $catalog);
         $this->assertStringNotContainsString('rounded-xl bg-white p-4 shadow-card text-left', $catalog);
     }

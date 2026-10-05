@@ -6,9 +6,12 @@
     "Describe whether you serve at the counter, the tables you have, and so on.":  "Describe whether you serve at the counter, the tables you have, and so on.",
     "Venue Info":  "Venue Info",
     "General":  "General",
-    "Kitchen Stations":  "Kitchen Stations",
+    "Kitchen Stations":  "Prep station",
     "Preparation Statuses":  "Preparation Statuses",
     "Service Locations":  "Service Locations",
     "Attendance Channels":  "Attendance Channels",
-    "Users":  "Users"
+    "Users":  "Users",
+    "Enable editing":  "Enable editing",
+    "Automatic saving":  "Automatic saving",
+    "Enable editing to change this information":  "Enable editing to change this information"
 }

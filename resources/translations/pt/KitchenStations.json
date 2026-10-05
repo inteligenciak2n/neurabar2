@@ -1,15 +1,18 @@
 {
-    "Kitchen Stations": "Estações de cozinha",
+    "Kitchen Stations": "Setor de preparo",
     "Active": "Ativo",
-    "Add Station": "Adicionar estação",
-    "Delete Kitchen Station": "Excluir estação de cozinha",
+    "Add Station": "Adicionar setor",
+    "Delete Kitchen Station": "Excluir setor de preparo",
     "Delete": "Excluir",
-    "Are you sure you want to delete this station? This action cannot be undone.": "Tem certeza de que deseja excluir esta estação? Essa ação não pode ser desfeita.",
+    "Are you sure you want to delete this station? This action cannot be undone.": "Tem certeza de que deseja excluir este setor? Essa ação não pode ser desfeita.",
     "Edit": "Editar",
     "Cancel": "Cancelar",
     "Sort Order": "Ordem de classificação",
     "Name": "Nome",
-    "Edit Station": "Editar estação",
+    "Edit Station": "Editar setor",
     "Save": "Salvar",
-    "New Station": "Nova estação"
+    "New Station": "Novo setor",
+    "No kitchen stations yet": "Nenhum setor de preparo ainda",
+    "Add stations to organize your kitchen workflow.": "Adicione setores para organizar o fluxo de preparo.",
+    "Inactive": "Inativo"
 }

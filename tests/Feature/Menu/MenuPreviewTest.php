@@ -60,6 +60,11 @@ class MenuPreviewTest extends TestCase
     {
         $venue = Venue::factory()->create([
             'description' => 'Petiscos, chopp e música ao vivo.',
+            'street' => 'Rua das Flores',
+            'number' => '100',
+            'neighborhood' => 'Centro',
+            'city' => 'Londrina',
+            'state' => 'PR',
         ]);
         $this->loginAs(UserRole::Owner, $venue);
 
@@ -86,12 +91,19 @@ class MenuPreviewTest extends TestCase
                 ->where('token', null)
                 ->where('venue.name', $venue->name)
                 ->where('venue.description', 'Petiscos, chopp e música ao vivo.')
+                ->where('venue.street', 'Rua das Flores')
+                ->where('venue.number', '100')
+                ->where('venue.city', 'Londrina')
                 ->missing('serviceLocation')
                 ->has('categories', 1, fn ($cat) => $cat
                     ->where('name', 'Drinks')
-                    ->has('products', 1)
+                    ->has('products', 2)
                     ->has('products.0', fn ($product) => $product
                         ->where('name', 'Deliverable')
+                        ->etc()
+                    )
+                    ->has('products.1', fn ($product) => $product
+                        ->where('name', 'Table only')
                         ->etc()
                     )
                     ->etc()
