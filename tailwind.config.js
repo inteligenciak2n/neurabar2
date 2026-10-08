@@ -58,6 +58,16 @@ export default {
             boxShadow: {
                 ocean: '0 10px 40px -10px hsl(200 75% 45% / 0.25)',
                 card:  '0 4px 24px -4px hsl(210 30% 12% / 0.08)',
+                gold:  '0 12px 36px -8px rgba(162, 134, 101, 0.55)',
+            },
+            keyframes: {
+                shimmer: {
+                    '0%': { transform: 'translateX(-120%)' },
+                    '100%': { transform: 'translateX(220%)' },
+                },
+            },
+            animation: {
+                shimmer: 'shimmer 1s ease-in-out',
             },
         },
     },

@@ -17,6 +17,14 @@ class VenueSettingsController extends Controller
 
         return Inertia::render('Settings/General', [
             'settings' => $venue->settings,
+            'venue' => $venue->only([
+                'require_table',
+                'require_tab',
+                'require_location',
+                'latitude',
+                'longitude',
+                'require_geolocation',
+            ]),
         ]);
     }
 

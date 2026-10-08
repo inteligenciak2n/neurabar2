@@ -1,5 +1,6 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
+import SettingsSectionHeader from '@/Components/SettingsSectionHeader.vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
@@ -495,14 +496,11 @@ const statusLabel = (status) => ({
 <template>
     <SettingsLayout :title="__('Subscription')">
         <template #header>
-            <div class="flex min-w-0 items-center gap-3">
-                <h1 class="shrink-0 font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Subscription') }}</h1>
-                <p class="text-sm leading-snug text-muted-foreground dark:text-gray-400">
-                    <span class="block">{{ __('Save more time by subscribing to more modules') }}</span>
-                    <span class="block">{{ __('See each new feature and subscribe whenever you want') }}</span>
-                    <span class="block">{{ __('View your current subscription') }}</span>
-                </p>
-            </div>
+            <SettingsSectionHeader :title="__('Subscription')">
+                <span class="block">{{ __('Save more time by subscribing to more modules') }}</span>
+                <span class="block">{{ __('See each new feature and subscribe whenever you want') }}</span>
+                <span class="block">{{ __('View your current subscription') }}</span>
+            </SettingsSectionHeader>
         </template>
 
         <div class="space-y-6">

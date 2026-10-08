@@ -1,6 +1,7 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import SettingsSectionCard from '@/Components/SettingsSectionCard.vue';
+import SettingsSectionHeader from '@/Components/SettingsSectionHeader.vue';
 import { useTranslate } from '@/Composables/useTranslate';
 
 defineOptions({ name: 'Index' });
@@ -12,6 +13,7 @@ const sections = [
         description: __('Manage modules, invoices and payment methods.'),
         routeName: 'settings.subscription.index',
         icon: 'M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+        featured: true,
     },
     {
         label: __('Venue Info'),
@@ -44,6 +46,12 @@ const sections = [
         icon: 'M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z',
     },
     {
+        label: __('Attendance Channels'),
+        description: __('Choose how the customer is served: table, counter, delivery or pickup.'),
+        routeName: 'settings.attendance-channels.index',
+        icon: 'M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z',
+    },
+    {
         label: __('Users'),
         description: __('Staff accounts and role permissions for this venue.'),
         routeName: 'settings.users.index',
@@ -55,23 +63,14 @@ const sections = [
 <template>
     <SettingsLayout :title="__('Settings')" :lockable="false">
         <template #header>
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-6">
-                <h1 class="shrink-0 font-heading text-4xl font-bold text-ocean-deep dark:text-gray-100">
-                    {{ __('Settings') }}
-                </h1>
-                <div class="max-w-xl text-xs leading-relaxed text-muted-foreground dark:text-gray-500">
-                    <p>{{ __('Configure the system to best serve your establishment.') }}</p>
-                    <p class="mt-1.5">
-                        {{ __('Describe whether you serve at the counter, the tables you have, and so on.') }}
-                    </p>
-                    <p class="mt-1.5">
-                        {{ __('Choose a section to manage subscription, venue, users, locations and how the operation works.') }}
-                    </p>
-                </div>
-            </div>
+            <SettingsSectionHeader :title="__('Settings')">
+                <span class="block">{{ __('Configure the system to best serve your establishment.') }}</span>
+                <span class="block">{{ __('Describe whether you serve at the counter, the tables you have, and so on.') }}</span>
+                <span class="block">{{ __('Choose a section to manage subscription, venue, users, locations and how the operation works.') }}</span>
+            </SettingsSectionHeader>
         </template>
 
-        <div class="flex max-w-5xl flex-col gap-2">
+        <div class="flex flex-col gap-2">
             <SettingsSectionCard
                 v-for="section in sections"
                 :key="section.routeName"
@@ -79,6 +78,7 @@ const sections = [
                 :description="section.description"
                 :route-name="section.routeName"
                 :icon="section.icon"
+                :featured="section.featured"
             />
         </div>
     </SettingsLayout>

@@ -3,12 +3,13 @@
     "Subscription":  "Suscripción",
     "Settings":  "Configuración",
     "Configure the system to best serve your establishment.":  "Configure el sistema para atender su establecimiento de la mejor forma.",
-    "Describe whether you serve at the counter, the tables you have, and so on.":  "Indique si tiene atención en \"Mostrador\", las \"Mesas\" que posee, etc.",
+    "Describe whether you serve at the counter, the tables you have, and so on.":  "Describa si la atención es en el mostrador, en las mesas, etc.",
     "Venue Info":  "Información del establecimiento",
-    "General":  "General",
+    "General":  "Modo de trabajo del establecimiento",
     "Kitchen Stations":  "Sector de preparación",
     "Preparation Statuses":  "Estados de preparación",
     "Service Locations":  "Ubicaciones de servicio",
     "Attendance Channels":  "Canales de atención",
-    "Users":  "Usuarios"
+    "Users":  "Usuarios",
+    "Back":  "Volver"
 }

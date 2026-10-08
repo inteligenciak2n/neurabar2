@@ -7,6 +7,7 @@ const props = defineProps({
     description: { type: String, required: true },
     routeName: { type: String, required: true },
     icon: { type: String, required: true },
+    featured: { type: Boolean, default: false },
 });
 
 const titleRef = ref(null);
@@ -106,14 +107,37 @@ const descriptionTopics = computed(() => {
 <template>
     <Link
         :href="route(routeName)"
-        class="group flex min-h-[7.5rem] overflow-hidden rounded-lg border border-border bg-white shadow-card transition-shadow hover:shadow-ocean dark:border-gray-700 dark:bg-gray-800"
+        :class="[
+            'group relative flex min-h-[7.5rem] overflow-hidden rounded-lg border border-border bg-white shadow-card transition duration-300 dark:border-gray-700 dark:bg-gray-800',
+            featured
+                ? 'hover:border-warm-gold hover:shadow-gold'
+                : 'hover:shadow-ocean',
+        ]"
     >
         <div
             ref="titleWrapRef"
-            class="flex w-48 shrink-0 items-center gap-3 bg-gradient-to-br from-sand to-warm-gold px-4 sm:w-64"
+            :class="[
+                'relative flex w-48 shrink-0 items-center gap-3 overflow-hidden bg-gradient-to-br from-sand to-warm-gold px-4 transition duration-300 sm:w-64',
+                featured ? 'group-hover:from-[#d4c4aa] group-hover:to-[#c4a574]' : '',
+            ]"
         >
+            <span
+                v-if="featured"
+                class="pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-full bg-gradient-to-r from-transparent via-white/70 to-transparent opacity-0 group-hover:animate-shimmer group-hover:opacity-100"
+                aria-hidden="true"
+            />
+            <span
+                v-if="featured"
+                class="pointer-events-none absolute right-4 top-3 h-1.5 w-1.5 rotate-45 bg-white opacity-0 shadow-[0_0_10px_rgba(255,255,255,0.95)] transition-opacity duration-300 group-hover:opacity-100"
+                aria-hidden="true"
+            />
+            <span
+                v-if="featured"
+                class="pointer-events-none absolute bottom-4 left-8 h-1 w-1 rotate-45 bg-white/90 opacity-0 shadow-[0_0_8px_rgba(255,255,255,0.9)] transition-opacity delay-75 duration-300 group-hover:opacity-100"
+                aria-hidden="true"
+            />
             <svg
-                class="h-5 w-5 shrink-0 text-ocean-deep"
+                class="relative z-10 h-5 w-5 shrink-0 text-ocean-deep"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="1.5"
@@ -121,7 +145,7 @@ const descriptionTopics = computed(() => {
             >
                 <path stroke-linecap="round" stroke-linejoin="round" :d="icon" />
             </svg>
-            <p ref="titleRef" :class="titleClass">
+            <p ref="titleRef" :class="[titleClass, 'relative z-10']">
                 {{ label }}
             </p>
         </div>

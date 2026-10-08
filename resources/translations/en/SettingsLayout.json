@@ -4,8 +4,8 @@
     "Settings":  "Settings",
     "Configure the system to best serve your establishment.":  "Configure the system to best serve your establishment.",
     "Describe whether you serve at the counter, the tables you have, and so on.":  "Describe whether you serve at the counter, the tables you have, and so on.",
-    "Venue Info":  "Venue Info",
-    "General":  "General",
+    "Venue Info":  "Venue information",
+    "General":  "How the venue operates",
     "Kitchen Stations":  "Prep station",
     "Preparation Statuses":  "Preparation Statuses",
     "Service Locations":  "Service Locations",
@@ -13,5 +13,6 @@
     "Users":  "Users",
     "Enable editing":  "Enable editing",
     "Automatic saving":  "Automatic saving",
-    "Enable editing to change this information":  "Enable editing to change this information"
+    "Enable editing to change this information":  "Enable editing to change this information",
+    "Back":  "Back"
 }

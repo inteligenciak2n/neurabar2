@@ -11,8 +11,7 @@ class SubscriptionHeaderTest extends TestCase
         $page = file_get_contents(dirname(__DIR__, 3).'/resources/js/Pages/Settings/Subscription/Index.vue');
 
         $this->assertNotFalse($page);
-        $this->assertStringContainsString("__('Subscription')", $page);
-        $this->assertStringContainsString('flex min-w-0 items-center gap-3', $page);
+        $this->assertStringContainsString("<SettingsSectionHeader :title=\"__('Subscription')\">", $page);
         $this->assertStringContainsString("__('Save more time by subscribing to more modules')", $page);
         $this->assertStringContainsString("__('See each new feature and subscribe whenever you want')", $page);
         $this->assertStringContainsString("__('View your current subscription')", $page);

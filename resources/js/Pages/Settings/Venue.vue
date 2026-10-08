@@ -1,5 +1,6 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
+import SettingsSectionHeader from '@/Components/SettingsSectionHeader.vue';
 import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
 import { useAutosaveForm } from '@/Composables/useAutosaveForm';
@@ -24,14 +25,8 @@ const form = useForm({
     state: props.venue.state ?? '',
     zip_code: props.venue.zip_code ?? '',
     timezone: props.venue.timezone ?? '',
-    require_table: props.venue.require_table ?? false,
-    require_tab: props.venue.require_tab ?? false,
-    require_location: props.venue.require_location ?? false,
     logo: null,
     remove_logo: false,
-    latitude: props.venue.latitude ?? '',
-    longitude: props.venue.longitude ?? '',
-    require_geolocation: props.venue.require_geolocation ?? false,
 });
 
 const logoInput = ref(null);
@@ -91,10 +86,6 @@ const onLogoDrop = (event) => {
 const submit = () => {
     form.transform((data) => ({
         ...data,
-        require_table: data.require_table ? 1 : 0,
-        require_tab: data.require_tab ? 1 : 0,
-        require_location: data.require_location ? 1 : 0,
-        require_geolocation: data.require_geolocation ? 1 : 0,
         logo: data.logo || null,
         remove_logo: data.remove_logo ? 1 : 0,
         _method: 'put',
@@ -119,7 +110,10 @@ useAutosaveForm(form, submit);
 <template>
     <SettingsLayout :title="__('Venue Settings')">
         <template #header>
-            <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Venue Settings') }}</h1>
+            <SettingsSectionHeader :title="__('Venue Settings')">
+                <span class="block">{{ __('Name, address and contact') }}</span>
+                <span class="block">{{ __('and call waiter settings') }}</span>
+            </SettingsSectionHeader>
         </template>
 
         <form @submit.prevent="submit">
@@ -127,7 +121,10 @@ useAutosaveForm(form, submit);
                 <AppCard :title="__('Basic Information')">
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label class="block text-sm font-medium text-ocean-deep dark:text-gray-100 mb-1">{{ __('Name') }} <span class="text-destructive">*</span></label>
+                            <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">
+                                {{ __('Venue name') }} <span class="text-destructive">*</span>
+                                <span class="font-normal italic text-muted-foreground"> {{ __('(visible to the customer on the menu)') }}</span>
+                            </label>
                             <input
                                 v-model="form.name"
                                 type="text"
@@ -174,20 +171,27 @@ useAutosaveForm(form, submit);
                         </div>
 
                         <div class="sm:col-span-2">
-                            <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Establishment description') }}</label>
+                            <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">
+                                {{ __('Establishment description') }}
+                                <span class="font-normal italic text-muted-foreground"> {{ __('(visible to the customer on the menu)') }}</span>
+                            </label>
                             <textarea
                                 v-model="form.description"
                                 rows="3"
                                 class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100"
                             />
-                            <p class="mt-1 text-xs text-muted-foreground">{{ __('Shown on the customer menu. Write a short, inviting description of your venue.') }}</p>
+                            <p class="mt-1 text-xs italic text-muted-foreground">{{ __('(Write a short, inviting text about your venue.)') }}</p>
                             <p v-if="form.errors.description" class="mt-1 text-xs text-destructive">{{ form.errors.description }}</p>
                         </div>
                     </div>
                 </AppCard>
 
                 <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_12rem]">
-                    <AppCard :title="__('Address')">
+                    <AppCard>
+                    <h2 class="mb-4 font-heading text-base font-semibold text-ocean-deep dark:text-gray-100">
+                        {{ __('Venue address') }}
+                        <span class="font-normal italic text-muted-foreground"> {{ __('(visible to the customer on the menu)') }}</span>
+                    </h2>
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div class="sm:col-span-2">
                             <label class="block text-sm font-medium text-ocean-deep dark:text-gray-100 mb-1">{{ __('Street') }}</label>
@@ -308,56 +312,6 @@ useAutosaveForm(form, submit);
                     </AppButton>
                 </AppCard>
                 </div>
-
-                <AppCard :title="__('Operational Requirements')">
-                    <div class="space-y-3">
-                        <label class="flex cursor-pointer items-center gap-3">
-                            <input v-model="form.require_table" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary focus:ring-primary" />
-                            <span class="text-sm text-ocean-deep dark:text-gray-100">{{ __('Require table number on orders') }}</span>
-                        </label>
-
-                        <label class="flex cursor-pointer items-center gap-3">
-                            <input v-model="form.require_tab" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary focus:ring-primary" />
-                            <span class="text-sm text-ocean-deep dark:text-gray-100">{{ __('Require tab (customer name) on orders') }}</span>
-                        </label>
-
-                        <label class="flex cursor-pointer items-center gap-3">
-                            <input v-model="form.require_location" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary focus:ring-primary" />
-                            <span class="text-sm text-ocean-deep dark:text-gray-100">{{ __('Require service location on orders') }}</span>
-                        </label>
-                    </div>
-                </AppCard>
-
-                <AppCard :title="__('Geolocation')">                    <div class="space-y-4">
-                        <div class="grid gap-4 sm:grid-cols-2">
-                            <div>
-                                <label class="block text-sm font-medium text-ocean-deep dark:text-gray-100 mb-1">{{ __('Latitude') }}</label>
-                                <input
-                                    v-model="form.latitude"
-                                    type="number"
-                                    step="any"
-                                    placeholder="-23.5505"
-                                    class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
-                                />
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-ocean-deep dark:text-gray-100 mb-1">{{ __('Longitude') }}</label>
-                                <input
-                                    v-model="form.longitude"
-                                    type="number"
-                                    step="any"
-                                    placeholder="-46.6333"
-                                    class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
-                                />
-                            </div>
-                        </div>
-                        <label class="flex cursor-pointer items-center gap-3">
-                            <input v-model="form.require_geolocation" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary focus:ring-primary" />
-                            <span class="text-sm text-ocean-deep dark:text-gray-100">{{ __('Require guest geolocation to place orders') }}</span>
-                        </label>
-                        <p class="text-xs text-muted-foreground">{{ __('Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m.') }}</p>
-                    </div>
-                </AppCard>
             </div>
         </form>
     </SettingsLayout>

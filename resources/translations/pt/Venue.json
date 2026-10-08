@@ -1,5 +1,5 @@
 {
-    "Venue Settings": "Configurações do Ponto de Venda",
+    "Venue Settings": "Informações do estabelecimento",
     "Address": "Endereço",
     "Basic Information": "Informações básicas",
     "Call Waiter": "Chama Garçom",
@@ -14,8 +14,11 @@
     "Format: JPEG, PNG or WebP": "Formato: JPEG, PNG ou WebP",
     "Delete photo": "Apagar foto",
     "Name": "Nome",
+    "Venue name": "Nome do estabelecimento",
+    "Venue address": "Endereço do estabelecimento",
     "Establishment description": "Descrição do estabelecimento",
-    "Shown on the customer menu. Write a short, inviting description of your venue.": "Exibida no cardápio do cliente. Escreva um texto curto e convidativo sobre o seu estabelecimento.",
+    "(visible to the customer on the menu)": "(visível para o cliente no cardápio)",
+    "(Write a short, inviting text about your venue.)": "(Escreva um texto curto e convidativo sobre o seu estabelecimento.)",
     "Street": "Rua",
     "Timezone": "Fuso horário",
     "Complement": "Complemento",
@@ -27,12 +30,14 @@
     "City": "Cidade",
     "Require tab (customer name) on orders": "Exigir guia (nome do cliente) nos pedidos",
     "ZIP Code": "Código postal (CEP)",
-    "Used in the public guest QR code URL.": "Usado na URL do código QR do convidado público.",
+    "Used in the public guest QR code URL.": "Usado na URL pública do QR Code do cliente.",
     "Save Changes": "Salvar alterações",
     "Require service location on orders": "Exigir local de serviço nos pedidos",
     "Longitude": "Longitude",
     "Require guest geolocation to place orders": "Exigir a geolocalização dos clientes para fazer pedidos",
     "Latitude": "Latitude",
     "Geolocation": "Geolocalização",
-    "Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m.": "Os clientes serão questionados sobre sua localização ao acessarem por meio do código QR. Só permita pedidos quando estiver dentro de 200 m."
+    "Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m.": "Os clientes serão solicitados a informar a localização ao acessar pelo QR Code. Só permita pedidos quando o cliente estiver a até 200 m.",
+    "Name, address and contact": "Nome, endereço e contato",
+    "and call waiter settings": "e configurações de chamada do garçom"
 }

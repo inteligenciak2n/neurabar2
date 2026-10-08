@@ -1,10 +1,13 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
+import SettingsSectionHeader from '@/Components/SettingsSectionHeader.vue';
 import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import AppEmptyState from '@/Components/AppEmptyState.vue';
 import { useTranslate } from '@/Composables/useTranslate';
+import { useAutosaveForm } from '@/Composables/useAutosaveForm';
+import { useSettingsEditing } from '@/Composables/useSettingsEditing';
 import { useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { toast } from 'vue-sonner';
@@ -13,6 +16,7 @@ defineOptions({ name: 'ServiceLocations' });
 
 const __ = useTranslate();
 const t = (key) => __(key, {}, 'ServiceLocations');
+const { enableEditing } = useSettingsEditing();
 
 const props = defineProps({
     locations: Array,
@@ -33,20 +37,25 @@ const form = useForm({
 });
 
 const openCreate = () => {
+    enableEditing();
     editingLocation.value = null;
     form.reset();
     form.type = 'table';
     form.active = true;
     form.default_attendance_channel_id = null;
+    form.defaults();
     showForm.value = true;
 };
 
 const openEdit = (location) => {
+    enableEditing();
     editingLocation.value = location;
     form.name = location.name;
     form.type = location.type;
     form.active = location.active;
     form.default_attendance_channel_id = location.default_attendance_channel_id ?? null;
+    form.clearErrors();
+    form.defaults();
     showForm.value = true;
 };
 
@@ -56,17 +65,30 @@ const closeForm = () => {
     form.reset();
 };
 
+const persist = () => {
+    const locationId = editingLocation.value?.id;
+    if (!locationId || !form.isDirty || form.processing) {
+        return;
+    }
+
+    form.put(route('settings.service-locations.update', locationId), {
+        preserveScroll: true,
+        onSuccess: () => form.defaults(),
+    });
+};
+
 const submit = () => {
     if (editingLocation.value) {
-        form.put(route('settings.service-locations.update', editingLocation.value.id), {
-            onSuccess: closeForm,
-        });
-    } else {
-        form.post(route('settings.service-locations.store'), {
-            onSuccess: closeForm,
-        });
+        persist();
+        return;
     }
+
+    form.post(route('settings.service-locations.store'), {
+        onSuccess: closeForm,
+    });
 };
+
+useAutosaveForm(form, persist);
 
 const confirmDelete = (location) => {
     locationToDelete.value = location;
@@ -100,10 +122,13 @@ const generateQr = (location) => {
 <template>
     <SettingsLayout :title="t('Service Locations')">
         <template #header>
-            <div class="flex items-center justify-between">
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ t('Service Locations') }}</h1>
-                <AppButton @click="openCreate">{{ t('Add Location') }}</AppButton>
-            </div>
+            <SettingsSectionHeader :title="t('Service Locations')">
+                <span class="block">{{ t('Tables, counters and areas') }}</span>
+                <span class="block">{{ t('served by your venue') }}</span>
+                <template #actions>
+                    <AppButton @click="openCreate">{{ t('Add Location') }}</AppButton>
+                </template>
+            </SettingsSectionHeader>
         </template>
 
         <AppCard>
@@ -161,7 +186,7 @@ const generateQr = (location) => {
                         >
                             {{ location.qr_token ? t('Regenerate QR') : t('Generate QR') }}
                         </AppButton>
-                        <AppButton size="sm" variant="secondary" @click="openEdit(location)">{{ t('Edit') }}</AppButton>
+                        <AppButton size="sm" variant="secondary" data-enable-editing @click="openEdit(location)">{{ t('Edit') }}</AppButton>
                         <AppButton size="sm" variant="destructive" @click="confirmDelete(location)">{{ t('Delete') }}</AppButton>
                     </div>
                 </div>
@@ -215,7 +240,7 @@ const generateQr = (location) => {
                     </label>
 
                     <div class="flex gap-2 pt-1">
-                        <AppButton type="submit" :loading="form.processing">{{ t('Save') }}</AppButton>
+                        <AppButton v-if="!editingLocation" type="submit" :loading="form.processing">{{ t('Save') }}</AppButton>
                         <AppButton type="button" variant="ghost" @click="closeForm">{{ t('Cancel') }}</AppButton>
                     </div>
                 </form>

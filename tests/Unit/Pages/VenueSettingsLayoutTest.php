@@ -12,7 +12,7 @@ class VenueSettingsLayoutTest extends TestCase
 
         $this->assertNotFalse($page);
         $this->assertStringContainsString('lg:grid-cols-[minmax(0,1fr)_12rem]', $page);
-        $this->assertStringContainsString(":title=\"__('Address')\"", $page);
+        $this->assertStringContainsString("__('Venue address')", $page);
         $this->assertStringContainsString(":title=\"__('Logo')\"", $page);
         $this->assertStringContainsString('relative aspect-square cursor-pointer overflow-hidden rounded-md border-2 border-dashed', $page);
         $this->assertStringContainsString('@drop.prevent="onLogoDrop"', $page);
@@ -21,10 +21,8 @@ class VenueSettingsLayoutTest extends TestCase
         $this->assertStringNotContainsString("__('Save Changes')", $page);
         $this->assertStringNotContainsString(":title=\"__('Logo URL')\"", $page);
         $this->assertStringNotContainsString('v-model="form.logo_url"', $page);
-        $this->assertDoesNotMatchRegularExpression(
-            '/Basic Information[\s\S]*Logo[\s\S]*Address/s',
-            $page,
-        );
+        $this->assertStringNotContainsString(":title=\"__('Operational Requirements')\"", $page);
+        $this->assertStringNotContainsString(":title=\"__('Geolocation')\"", $page);
     }
 
     public function test_basic_information_includes_an_establishment_description_field(): void
@@ -42,12 +40,18 @@ class VenueSettingsLayoutTest extends TestCase
         $this->assertStringContainsString('preserveScroll: true', $page);
         $this->assertStringNotContainsString("__('Save Changes')", $page);
         $this->assertStringContainsString('v-model="form.description"', $page);
+        $this->assertStringContainsString("__('Venue name')", $page);
         $this->assertStringContainsString("__('Establishment description')", $page);
-        $this->assertStringContainsString("__('Shown on the customer menu. Write a short, inviting description of your venue.')", $page);
+        $this->assertStringContainsString("__('(visible to the customer on the menu)')", $page);
+        $this->assertStringContainsString("__('(Write a short, inviting text about your venue.)')", $page);
+        $this->assertStringContainsString('font-normal italic text-muted-foreground', $page);
+        $this->assertSame('Nome do estabelecimento', $translations['Venue name']);
         $this->assertSame('Descrição do estabelecimento', $translations['Establishment description']);
+        $this->assertSame('Endereço do estabelecimento', $translations['Venue address']);
+        $this->assertSame('(visível para o cliente no cardápio)', $translations['(visible to the customer on the menu)']);
         $this->assertSame(
-            'Exibida no cardápio do cliente. Escreva um texto curto e convidativo sobre o seu estabelecimento.',
-            $translations['Shown on the customer menu. Write a short, inviting description of your venue.'],
+            '(Escreva um texto curto e convidativo sobre o seu estabelecimento.)',
+            $translations['(Write a short, inviting text about your venue.)'],
         );
     }
 }

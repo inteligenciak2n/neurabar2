@@ -1,9 +1,24 @@
 {
-    "General Settings": "General Settings",
+    "General Settings": "How the venue operates",
     "Service Fee (%)": "Service Fee (%)",
     "Financial & Capacity": "Financial & Capacity",
-    "Table Count": "Table Count",
+    "Fees and services charged to the customer": "Fees and services charged to the customer",
+    "Maximum number of tables": "Maximum number of tables",
+    "Table Count": "Number of tables",
+    "This information helps the waiter find the table when taking the order.": "This information helps the waiter find the table when taking the order.",
     "Cover Charge (R$)": "Cover Charge (R$)",
     "Enter the establishment cover charge or entry fee if it applies equally to all customers.": "Enter the establishment cover charge or entry fee if it applies equally to all customers.",
-    "Save Changes": "Save Changes"
+    "Fee charged on the products from the menu.": "Fee charged on the products from the menu.",
+    "Save Changes": "Save Changes",
+    "Cover charge and service fee": "Cover charge and service fee",
+    "and how many tables you have": "and how many tables you have",
+    "Operational Requirements": "Operational Requirements",
+    "Require table number on orders": "Require table number on orders",
+    "Require tab (customer name) on orders": "Require tab (customer name) on orders",
+    "Require service location on orders": "Require service location on orders",
+    "Geolocation": "Geolocation",
+    "Latitude": "Latitude",
+    "Longitude": "Longitude",
+    "Require guest geolocation to place orders": "Require guest geolocation to place orders",
+    "Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m.": "Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m."
 }

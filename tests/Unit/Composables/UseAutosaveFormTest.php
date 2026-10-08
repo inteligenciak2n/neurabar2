@@ -25,6 +25,7 @@ class UseAutosaveFormTest extends TestCase
 
         $this->assertStringContainsString('useSettingsEditing', $layout);
         $this->assertStringContainsString('editingEnabled.value = !editingEnabled.value', $layout);
+        $this->assertStringContainsString('enableEditing', $editing);
         $this->assertStringNotContainsString('router.visit', $layout);
         $this->assertStringNotContainsString("provide('settingsEditingEnabled'", $layout);
     }

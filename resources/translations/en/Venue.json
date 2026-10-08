@@ -1,5 +1,5 @@
 {
-    "Venue Settings": "Venue Settings",
+    "Venue Settings": "Venue information",
     "Address": "Address",
     "Basic Information": "Basic Information",
     "Call Waiter": "Call Waiter",
@@ -14,8 +14,11 @@
     "Format: JPEG, PNG or WebP": "Format: JPEG, PNG or WebP",
     "Delete photo": "Delete photo",
     "Name": "Name",
+    "Venue name": "Venue name",
+    "Venue address": "Venue address",
     "Establishment description": "Establishment description",
-    "Shown on the customer menu. Write a short, inviting description of your venue.": "Shown on the customer menu. Write a short, inviting description of your venue.",
+    "(visible to the customer on the menu)": "(visible to the customer on the menu)",
+    "(Write a short, inviting text about your venue.)": "(Write a short, inviting text about your venue.)",
     "Street": "Street",
     "Timezone": "Timezone",
     "Complement": "Complement",
@@ -34,5 +37,7 @@
     "Require guest geolocation to place orders": "Require guest geolocation to place orders",
     "Latitude": "Latitude",
     "Geolocation": "Geolocation",
-    "Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m.": "Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m."
+    "Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m.": "Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m.",
+    "Name, address and contact": "Name, address and contact",
+    "and call waiter settings": "and call waiter settings"
 }

@@ -15,5 +15,14 @@
     "e.g. counter": "e.g. counter",
     "Save": "Save",
     "Cancel": "Cancel",
-    "Trackable": "Trackable"
+    "Trackable": "Trackable",
+    "Trackable by customer": "Trackable by customer",
+    "Requires customer identifier": "Requires customer identifier",
+    "Requires Identifier": "Requires Identifier",
+    "Inactive": "Inactive",
+    "New Channel": "New Channel",
+    "No attendance channels yet": "No attendance channels yet",
+    "Add channels like counter, table, or delivery.": "Add channels like counter, table, or delivery.",
+    "Choose how the customer is served": "Choose how the customer is served",
+    "Table, counter, delivery or pickup": "For example: table, counter, delivery or pickup"
 }

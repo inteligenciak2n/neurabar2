@@ -1,7 +1,7 @@
 {
-    "Venue Info": "Venue Info",
+    "Venue Info": "Venue information",
     "Name, address, contact and call waiter settings.": "Name, address, contact and call waiter settings.",
-    "General": "General",
+    "General": "How the venue operates",
     "Cover charge, service fee and table count.": "Cover charge, service fee and table count.",
     "Kitchen Stations": "Prep\nstation",
     "Preparation Statuses": "Preparation\nStatuses",
@@ -13,6 +13,8 @@
     "Choose a section to manage subscription, venue, users, locations and how the operation works.": "Choose a section to manage subscription, venue, users, locations and how the operation works.",
     "Service Locations": "Service\nLocations",
     "Tables, counters and other areas served by your venue.": "Tables, counters and other areas served by your venue.",
+    "Attendance Channels": "Attendance Channels",
+    "Choose how the customer is served: table, counter, delivery or pickup.": "Choose how the customer is served: table, counter, delivery or pickup.",
     "New Attendance": "New Attendance",
     "Open a new attendance to start taking orders.": "Open a new attendance to start taking orders.",
     "No open attendances": "No open attendances",

@@ -1,5 +1,5 @@
 {
-    "Venue Settings": "Configuración del lugar",
+    "Venue Settings": "Información del establecimiento",
     "Address": "Dirección",
     "Basic Information": "Información básica",
     "Call Waiter": "Llamar al camarero",
@@ -14,16 +14,19 @@
     "Format: JPEG, PNG or WebP": "Formato: JPEG, PNG o WebP",
     "Delete photo": "Borrar foto",
     "Name": "Nombre",
+    "Venue name": "Nombre del establecimiento",
+    "Venue address": "Dirección del establecimiento",
     "Establishment description": "Descripción del establecimiento",
-    "Shown on the customer menu. Write a short, inviting description of your venue.": "Se muestra en el menú del cliente. Escriba un texto breve y atractivo sobre su establecimiento.",
+    "(visible to the customer on the menu)": "(visible para el cliente en el menú)",
+    "(Write a short, inviting text about your venue.)": "(Escriba un texto breve y atractivo sobre su establecimiento.)",
     "Street": "Calle",
     "Timezone": "Zona horaria",
     "Complement": "Complementar",
     "Neighborhood": "Barrio",
     "Number": "Número",
-    "Require table number on orders": "Requerir el número de tabla en los pedidos",
+    "Require table number on orders": "Requerir el número de mesa en los pedidos",
     "State": "Estado",
-    "Slug": "Babosa",
+    "Slug": "Identificador",
     "City": "Ciudad",
     "Require tab (customer name) on orders": "Requerir la pestaña (nombre del cliente) en los pedidos",
     "ZIP Code": "Código postal",
@@ -34,5 +37,7 @@
     "Require guest geolocation to place orders": "Exigir la geolocalización de los huéspedes para realizar pedidos",
     "Latitude": "Latitud",
     "Geolocation": "Geolocalización",
-    "Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m.": "Se les preguntará a los huéspedes por su ubicación cuando accedan mediante un código QR. Solo se permiten pedidos en un radio de 200 metros."
+    "Guests will be asked for their location when accessing via QR code. Only allow orders when within 200m.": "Se les preguntará a los huéspedes por su ubicación cuando accedan mediante un código QR. Solo se permiten pedidos en un radio de 200 metros.",
+    "Name, address and contact": "Nombre, dirección y contacto",
+    "and call waiter settings": "y configuración de llamada al camarero"
 }

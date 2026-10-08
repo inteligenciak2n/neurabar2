@@ -1,15 +1,20 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
+import SettingsSectionHeader from '@/Components/SettingsSectionHeader.vue';
 import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import AppEmptyState from '@/Components/AppEmptyState.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { useAutosaveForm } from '@/Composables/useAutosaveForm';
+import { useSettingsEditing } from '@/Composables/useSettingsEditing';
 
 defineProps({
     statuses: Array,
 });
+
+const { enableEditing } = useSettingsEditing();
 
 const showForm = ref(false);
 const editingStatus = ref(null);
@@ -24,19 +29,24 @@ const form = useForm({
 });
 
 const openCreate = () => {
+    enableEditing();
     editingStatus.value = null;
     form.reset();
     form.color = '#6366f1';
+    form.defaults();
     showForm.value = true;
 };
 
 const openEdit = (status) => {
+    enableEditing();
     editingStatus.value = status;
     form.name = status.name;
     form.color = status.color ?? '#6366f1';
     form.sort_order = status.sort_order ?? '';
     form.show_to_customer = status.show_to_customer;
     form.is_final = status.is_final;
+    form.clearErrors();
+    form.defaults();
     showForm.value = true;
 };
 
@@ -46,17 +56,30 @@ const closeForm = () => {
     form.reset();
 };
 
+const persist = () => {
+    const statusId = editingStatus.value?.id;
+    if (!statusId || !form.isDirty || form.processing) {
+        return;
+    }
+
+    form.put(route('settings.preparation-statuses.update', statusId), {
+        preserveScroll: true,
+        onSuccess: () => form.defaults(),
+    });
+};
+
 const submit = () => {
     if (editingStatus.value) {
-        form.put(route('settings.preparation-statuses.update', editingStatus.value.id), {
-            onSuccess: closeForm,
-        });
-    } else {
-        form.post(route('settings.preparation-statuses.store'), {
-            onSuccess: closeForm,
-        });
+        persist();
+        return;
     }
+
+    form.post(route('settings.preparation-statuses.store'), {
+        onSuccess: closeForm,
+    });
 };
+
+useAutosaveForm(form, persist);
 
 const confirmDelete = (status) => {
     statusToDelete.value = status;
@@ -72,10 +95,13 @@ const deleteStatus = () => {
 <template>
     <SettingsLayout :title="__('Preparation Statuses')">
         <template #header>
-            <div class="flex items-center justify-between">
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Preparation Statuses') }}</h1>
-                <AppButton @click="openCreate">{{ __('Add Status') }}</AppButton>
-            </div>
+            <SettingsSectionHeader :title="__('Preparation Statuses')">
+                <span class="block">{{ __('Define the stages of preparation') }}</span>
+                <span class="block">{{ __('From received to ready') }}</span>
+                <template #actions>
+                    <AppButton @click="openCreate">{{ __('Add Status') }}</AppButton>
+                </template>
+            </SettingsSectionHeader>
         </template>
 
         <AppCard>
@@ -111,7 +137,7 @@ const deleteStatus = () => {
                         </span>
                     </div>
                     <div class="flex gap-2">
-                        <AppButton size="sm" variant="secondary" @click="openEdit(status)">{{ __('Edit') }}</AppButton>
+                        <AppButton size="sm" variant="secondary" data-enable-editing @click="openEdit(status)">{{ __('Edit') }}</AppButton>
                         <AppButton size="sm" variant="destructive" @click="confirmDelete(status)">{{ __('Delete') }}</AppButton>
                     </div>
                 </div>
@@ -166,7 +192,7 @@ const deleteStatus = () => {
                     </label>
 
                     <div class="flex gap-2 pt-1">
-                        <AppButton type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>
+                        <AppButton v-if="!editingStatus" type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>
                         <AppButton type="button" variant="ghost" @click="closeForm">{{ __('Cancel') }}</AppButton>
                     </div>
                 </form>

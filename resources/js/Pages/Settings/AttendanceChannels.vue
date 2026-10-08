@@ -1,15 +1,20 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
+import SettingsSectionHeader from '@/Components/SettingsSectionHeader.vue';
 import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import AppEmptyState from '@/Components/AppEmptyState.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { useAutosaveForm } from '@/Composables/useAutosaveForm';
+import { useSettingsEditing } from '@/Composables/useSettingsEditing';
 
 defineProps({
     channels: Array,
 });
+
+const { enableEditing } = useSettingsEditing();
 
 const showForm = ref(false);
 const editingChannel = ref(null);
@@ -24,22 +29,27 @@ const form = useForm({
 });
 
 const openCreate = () => {
+    enableEditing();
     editingChannel.value = null;
     form.reset();
     form.is_trackable = true;
     form.requires_customer_identifier = false;
     form.active = true;
     form.sort_order = 0;
+    form.defaults();
     showForm.value = true;
 };
 
 const openEdit = (channel) => {
+    enableEditing();
     editingChannel.value = channel;
     form.name = channel.name;
     form.is_trackable = channel.is_trackable;
     form.requires_customer_identifier = channel.requires_customer_identifier;
     form.active = channel.active;
     form.sort_order = channel.sort_order;
+    form.clearErrors();
+    form.defaults();
     showForm.value = true;
 };
 
@@ -49,17 +59,30 @@ const closeForm = () => {
     form.reset();
 };
 
+const persist = () => {
+    const channelId = editingChannel.value?.id;
+    if (!channelId || !form.isDirty || form.processing) {
+        return;
+    }
+
+    form.put(route('settings.attendance-channels.update', channelId), {
+        preserveScroll: true,
+        onSuccess: () => form.defaults(),
+    });
+};
+
 const submit = () => {
     if (editingChannel.value) {
-        form.put(route('settings.attendance-channels.update', editingChannel.value.id), {
-            onSuccess: closeForm,
-        });
-    } else {
-        form.post(route('settings.attendance-channels.store'), {
-            onSuccess: closeForm,
-        });
+        persist();
+        return;
     }
+
+    form.post(route('settings.attendance-channels.store'), {
+        onSuccess: closeForm,
+    });
 };
+
+useAutosaveForm(form, persist);
 
 const confirmDelete = (channel) => {
     channelToDelete.value = channel;
@@ -75,10 +98,13 @@ const deleteChannel = () => {
 <template>
     <SettingsLayout :title="__('Attendance Channels')">
         <template #header>
-            <div class="flex items-center justify-between">
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Attendance Channels') }}</h1>
-                <AppButton @click="openCreate">{{ __('Add Channel') }}</AppButton>
-            </div>
+            <SettingsSectionHeader :title="__('Attendance Channels')">
+                <span class="block">{{ __('Choose how the customer is served') }}</span>
+                <span class="block">{{ __('Table, counter, delivery or pickup') }}</span>
+                <template #actions>
+                    <AppButton @click="openCreate">{{ __('Add Channel') }}</AppButton>
+                </template>
+            </SettingsSectionHeader>
         </template>
 
         <AppCard>
@@ -106,7 +132,7 @@ const deleteChannel = () => {
                         <span v-if="channel.requires_customer_identifier" class="rounded-full bg-yellow-50 px-2 py-0.5 text-xs font-semibold text-yellow-700">{{ __('Requires Identifier') }}</span>
                     </div>
                     <div class="flex gap-2">
-                        <AppButton size="sm" variant="secondary" @click="openEdit(channel)">{{ __('Edit') }}</AppButton>
+                        <AppButton size="sm" variant="secondary" data-enable-editing @click="openEdit(channel)">{{ __('Edit') }}</AppButton>
                         <AppButton size="sm" variant="destructive" @click="confirmDelete(channel)">{{ __('Delete') }}</AppButton>
                     </div>
                 </div>
@@ -156,7 +182,7 @@ const deleteChannel = () => {
                     </div>
 
                     <div class="flex gap-2 pt-1">
-                        <AppButton type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>
+                        <AppButton v-if="!editingChannel" type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>
                         <AppButton type="button" variant="ghost" @click="closeForm">{{ __('Cancel') }}</AppButton>
                     </div>
                 </form>

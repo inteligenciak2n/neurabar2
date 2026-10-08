@@ -1,15 +1,20 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
+import SettingsSectionHeader from '@/Components/SettingsSectionHeader.vue';
 import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import AppEmptyState from '@/Components/AppEmptyState.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { useAutosaveForm } from '@/Composables/useAutosaveForm';
+import { useSettingsEditing } from '@/Composables/useSettingsEditing';
 
 defineProps({
     stations: Array,
 });
+
+const { enableEditing } = useSettingsEditing();
 
 const showForm = ref(false);
 const editingStation = ref(null);
@@ -22,17 +27,22 @@ const form = useForm({
 });
 
 const openCreate = () => {
+    enableEditing();
     editingStation.value = null;
     form.reset();
     form.active = true;
+    form.defaults();
     showForm.value = true;
 };
 
 const openEdit = (station) => {
+    enableEditing();
     editingStation.value = station;
     form.name = station.name;
     form.sort_order = station.sort_order ?? '';
     form.active = station.active;
+    form.clearErrors();
+    form.defaults();
     showForm.value = true;
 };
 
@@ -42,17 +52,30 @@ const closeForm = () => {
     form.reset();
 };
 
+const persist = () => {
+    const stationId = editingStation.value?.id;
+    if (!stationId || !form.isDirty || form.processing) {
+        return;
+    }
+
+    form.put(route('settings.kitchen-stations.update', stationId), {
+        preserveScroll: true,
+        onSuccess: () => form.defaults(),
+    });
+};
+
 const submit = () => {
     if (editingStation.value) {
-        form.put(route('settings.kitchen-stations.update', editingStation.value.id), {
-            onSuccess: closeForm,
-        });
-    } else {
-        form.post(route('settings.kitchen-stations.store'), {
-            onSuccess: closeForm,
-        });
+        persist();
+        return;
     }
+
+    form.post(route('settings.kitchen-stations.store'), {
+        onSuccess: closeForm,
+    });
 };
+
+useAutosaveForm(form, persist);
 
 const confirmDelete = (station) => {
     stationToDelete.value = station;
@@ -68,10 +91,13 @@ const deleteStation = () => {
 <template>
     <SettingsLayout :title="__('Kitchen Stations')">
         <template #header>
-            <div class="flex items-center justify-between">
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Kitchen Stations') }}</h1>
-                <AppButton @click="openCreate">{{ __('Add Station') }}</AppButton>
-            </div>
+            <SettingsSectionHeader :title="__('Kitchen Stations')">
+                <span class="block">{{ __('Manage the prep stations') }}</span>
+                <span class="block">{{ __('Send each item to the right area') }}</span>
+                <template #actions>
+                    <AppButton @click="openCreate">{{ __('Add Station') }}</AppButton>
+                </template>
+            </SettingsSectionHeader>
         </template>
 
         <AppCard>
@@ -97,7 +123,7 @@ const deleteStation = () => {
                         </span>
                     </div>
                     <div class="flex gap-2">
-                        <AppButton size="sm" variant="secondary" @click="openEdit(station)">{{ __('Edit') }}</AppButton>
+                        <AppButton size="sm" variant="secondary" data-enable-editing @click="openEdit(station)">{{ __('Edit') }}</AppButton>
                         <AppButton size="sm" variant="destructive" @click="confirmDelete(station)">{{ __('Delete') }}</AppButton>
                     </div>
                 </div>
@@ -134,7 +160,7 @@ const deleteStation = () => {
                     </label>
 
                     <div class="flex gap-2 pt-1">
-                        <AppButton type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>
+                        <AppButton v-if="!editingStation" type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>
                         <AppButton type="button" variant="ghost" @click="closeForm">{{ __('Cancel') }}</AppButton>
                     </div>
                 </form>

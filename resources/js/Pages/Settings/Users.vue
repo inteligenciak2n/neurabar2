@@ -1,5 +1,6 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
+import SettingsSectionHeader from '@/Components/SettingsSectionHeader.vue';
 import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
 import AppBadge from '@/Components/AppBadge.vue';
@@ -8,12 +9,14 @@ import AppEmptyState from '@/Components/AppEmptyState.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
+import { useSettingsEditing } from '@/Composables/useSettingsEditing';
 
 defineProps({
     users: Array,
 });
 
 const __  = useTranslate();
+const { enableEditing } = useSettingsEditing();
 
 const OPERATIONAL_ROLES = [
     'owner',
@@ -58,6 +61,7 @@ const form = useForm({
 });
 
 const openCreate = () => {
+    enableEditing();
     editingUser.value = null;
     form.reset();
     form.role = 'attendant';
@@ -66,6 +70,7 @@ const openCreate = () => {
 };
 
 const openEdit = (user) => {
+    enableEditing();
     editingUser.value = user;
     form.name = user.name;
     form.email = user.email;
@@ -108,10 +113,13 @@ const deleteUser = () => {
 <template>
     <SettingsLayout :title="__('Users')">
         <template #header>
-            <div class="flex items-center justify-between">
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Users') }}</h1>
-                <AppButton @click="openCreate">{{ __('Add User') }}</AppButton>
-            </div>
+            <SettingsSectionHeader :title="__('Users')">
+                <span class="block">{{ __('Staff accounts for this venue') }}</span>
+                <span class="block">{{ __('Roles and access permissions') }}</span>
+                <template #actions>
+                    <AppButton @click="openCreate">{{ __('Add User') }}</AppButton>
+                </template>
+            </SettingsSectionHeader>
         </template>
 
         <AppCard>
@@ -141,7 +149,7 @@ const deleteUser = () => {
                         </span>
                     </div>
                     <div class="flex gap-2">
-                        <AppButton size="sm" variant="secondary" @click="openEdit(user)">{{ __('Edit') }}</AppButton>
+                        <AppButton size="sm" variant="secondary" data-enable-editing @click="openEdit(user)">{{ __('Edit') }}</AppButton>
                         <AppButton size="sm" variant="destructive" @click="confirmDelete(user)">{{ __('Delete') }}</AppButton>
                     </div>
                 </div>
