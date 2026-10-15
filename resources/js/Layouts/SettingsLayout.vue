@@ -3,8 +3,9 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import AppButton from '@/Components/AppButton.vue';
 import { useTranslate } from '@/Composables/useTranslate';
 import { useSettingsEditing } from '@/Composables/useSettingsEditing';
+import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
-import { computed, onUnmounted } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 defineOptions({ name: 'SettingsLayout' });
 
@@ -14,20 +15,60 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
+    nested: {
+        type: Boolean,
+        default: false,
+    },
+    parentRoute: {
+        type: String,
+        default: 'settings.index',
+    },
 });
+
+const emit = defineEmits(['close-nested']);
 
 const translate = useTranslate();
 const t = (key, bindings = {}) => translate(key, bindings, 'SettingsLayout');
 
-const { editingEnabled } = useSettingsEditing();
-const showBack = computed(() => !route().current('settings.index'));
+const { editingEnabled, flushAutosave } = useSettingsEditing();
+const showBack = computed(() => props.nested || !route().current('settings.index'));
+const isLocked = computed(() => props.lockable && !editingEnabled.value);
+const lockHint = ref({ visible: false, x: 0, y: 0 });
+
+const commitFields = () => {
+    if (!editingEnabled.value) {
+        return;
+    }
+
+    flushAutosave();
+};
+
+const goBack = () => {
+    flushAutosave();
+
+    if (props.nested) {
+        emit('close-nested');
+        return;
+    }
+
+    router.visit(route(props.parentRoute));
+};
+
+onMounted(() => {
+    window.addEventListener('pagehide', flushAutosave);
+});
 
 onUnmounted(() => {
+    window.removeEventListener('pagehide', flushAutosave);
+    flushAutosave();
     editingEnabled.value = false;
 });
 
 const toggleEditing = () => {
     editingEnabled.value = !editingEnabled.value;
+    if (editingEnabled.value) {
+        hideLockHint();
+    }
 };
 
 const showLockedMessage = () => {
@@ -53,6 +94,7 @@ const onLockedInteract = (event) => {
 
     if (event.target.closest('[data-enable-editing]')) {
         editingEnabled.value = true;
+        hideLockHint();
         return;
     }
 
@@ -64,6 +106,22 @@ const onLockedInteract = (event) => {
     }
 
     showLockedMessage();
+};
+
+const onLockedPointerMove = (event) => {
+    if (!isLocked.value) {
+        return;
+    }
+
+    lockHint.value = {
+        visible: true,
+        x: event.clientX,
+        y: event.clientY,
+    };
+};
+
+const hideLockHint = () => {
+    lockHint.value.visible = false;
 };
 </script>
 
@@ -81,7 +139,7 @@ const onLockedInteract = (event) => {
                             size="sm"
                             variant="secondary"
                             class="mt-1 shrink-0"
-                            :href="route('settings.index')"
+                            @click="goBack"
                         >
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
@@ -112,21 +170,38 @@ const onLockedInteract = (event) => {
                                 />
                             </button>
                         </label>
-                        <p class="mt-1 text-sm italic text-muted-foreground">{{ t('Automatic saving') }}</p>
+                        <p v-if="editingEnabled" class="mt-1 text-sm italic text-muted-foreground">*{{ t('Automatic saving') }}</p>
                     </div>
                 </div>
             </div>
 
             <div
                 class="relative mx-auto w-full max-w-5xl"
-                :class="props.lockable && !editingEnabled ? 'cursor-not-allowed select-none opacity-75' : ''"
+                :class="isLocked ? 'cursor-none select-none opacity-75' : ''"
                 @click.capture="onLockedInteract"
                 @focusin.capture="onLockedInteract"
+                @change="commitFields"
+                @focusout="commitFields"
+                @mousemove="onLockedPointerMove"
+                @mouseleave="hideLockHint"
             >
                 <fieldset class="w-full min-w-0 border-0 p-0">
                     <slot />
                 </fieldset>
             </div>
+            <Teleport to="body">
+                <div
+                    v-if="isLocked && lockHint.visible"
+                    class="pointer-events-none fixed z-[100] flex -translate-x-1/2 flex-col items-center"
+                    :style="{ left: `${lockHint.x}px`, top: `${lockHint.y}px` }"
+                >
+                    <svg class="h-6 w-6 text-ocean-deep dark:text-gray-100" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" />
+                        <path stroke-linecap="round" d="M7 7l10 10" />
+                    </svg>
+                    <span class="mt-1 text-center text-xs font-medium text-ocean-deep dark:text-gray-100">{{ t('Unlock editing') }}</span>
+                </div>
+            </Teleport>
         </div>
     </AppLayout>
 </template>

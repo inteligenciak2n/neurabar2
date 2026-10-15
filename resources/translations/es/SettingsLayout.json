@@ -8,8 +8,12 @@
     "General":  "Modo de trabajo del establecimiento",
     "Kitchen Stations":  "Sector de preparación",
     "Preparation Statuses":  "Estados de preparación",
-    "Service Locations":  "Ubicaciones de servicio",
+    "Service Locations":  "Locales de atención",
     "Attendance Channels":  "Canales de atención",
     "Users":  "Usuarios",
+    "Enable editing":  "Habilitar edición",
+    "Automatic saving":  "Guardado automático",
+    "Enable editing to change this information":  "Habilite la edición para cambiar la información",
+    "Unlock editing":  "Desbloquee la edición",
     "Back":  "Volver"
 }

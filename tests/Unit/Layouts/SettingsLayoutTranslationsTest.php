@@ -24,7 +24,8 @@ class SettingsLayoutTranslationsTest extends TestCase
         $this->assertStringContainsString('mx-auto flex w-full max-w-5xl items-start justify-between gap-4', $layout);
         $this->assertStringContainsString('relative mx-auto w-full max-w-5xl', $layout);
         $this->assertStringContainsString("{{ t('Enable editing') }}", $layout);
-        $this->assertStringContainsString("{{ t('Automatic saving') }}", $layout);
+        $this->assertStringContainsString("*{{ t('Automatic saving') }}", $layout);
+        $this->assertStringContainsString('v-if="editingEnabled"', $layout);
         $this->assertStringContainsString("t('Enable editing to change this information')", $layout);
         $this->assertStringContainsString('!bg-warm-gold', $layout);
         $this->assertStringContainsString("'--normal-bg': '#a28665'", $layout);
@@ -34,13 +35,18 @@ class SettingsLayoutTranslationsTest extends TestCase
         $this->assertStringContainsString('@click.capture="onLockedInteract"', $layout);
         $this->assertStringContainsString("event.target.closest('[data-enable-editing]')", $layout);
         $this->assertStringContainsString('editingEnabled.value = true', $layout);
-        $this->assertStringContainsString('cursor-not-allowed select-none opacity-75', $layout);
+        $this->assertStringContainsString('cursor-none select-none opacity-75', $layout);
+        $this->assertStringContainsString("t('Unlock editing')", $layout);
+        $this->assertStringContainsString('onLockedPointerMove', $layout);
         $this->assertStringNotContainsString(':disabled="props.lockable && !editingEnabled"', $layout);
         $this->assertStringNotContainsString("{{ t('Cancel editing') }}", $layout);
         $this->assertStringContainsString("route().current('settings.index')", $layout);
-        $this->assertStringContainsString("route('settings.index')", $layout);
+        $this->assertStringContainsString("'settings.index'", $layout);
         $this->assertStringContainsString("{{ t('Back') }}", $layout);
         $this->assertStringContainsString('v-if="showBack"', $layout);
+        $this->assertStringContainsString('@click="goBack"', $layout);
+        $this->assertStringContainsString("emit('close-nested')", $layout);
+        $this->assertStringContainsString('parentRoute', $layout);
         $this->assertSame('Habilitar edição', $translations['Enable editing']);
         $this->assertSame('Salvamento automático', $translations['Automatic saving']);
         $this->assertSame('Voltar', $translations['Back']);
@@ -48,6 +54,7 @@ class SettingsLayoutTranslationsTest extends TestCase
             'Habilite a edição para alterar as informações',
             $translations['Enable editing to change this information'],
         );
+        $this->assertSame('Desbloqueie a edição', $translations['Unlock editing']);
 
         foreach ([
             'Subscription' => 'Assinatura',
@@ -55,7 +62,7 @@ class SettingsLayoutTranslationsTest extends TestCase
             'General' => 'Modo de trabalho do estabelecimento',
             'Kitchen Stations' => 'Setor de preparo',
             'Preparation Statuses' => 'Status de preparação',
-            'Service Locations' => 'Locais de serviço',
+            'Service Locations' => 'Locais de atendimento',
             'Attendance Channels' => 'Canais de atendimento',
             'Users' => 'Usuários',
         ] as $key => $portuguese) {

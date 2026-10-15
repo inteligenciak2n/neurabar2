@@ -89,7 +89,7 @@ const deleteStation = () => {
 </script>
 
 <template>
-    <SettingsLayout :title="__('Kitchen Stations')">
+    <SettingsLayout :title="__('Kitchen Stations')" :nested="showForm" @close-nested="closeForm">
         <template #header>
             <SettingsSectionHeader :title="__('Kitchen Stations')">
                 <span class="block">{{ __('Manage the prep stations') }}</span>
@@ -107,7 +107,7 @@ const deleteStation = () => {
                 :description="__('Add stations to organize your kitchen workflow.')"
             />
 
-            <div v-if="stations.length" class="divide-y divide-muted">
+            <div v-if="stations.length && !showForm" class="divide-y divide-muted">
                 <div
                     v-for="station in stations"
                     :key="station.id"

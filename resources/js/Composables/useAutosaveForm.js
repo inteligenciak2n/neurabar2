@@ -1,39 +1,28 @@
 import { onBeforeUnmount, watch } from 'vue';
-import { watchDebounced } from '@vueuse/core';
 import { useSettingsEditing } from '@/Composables/useSettingsEditing';
 
-export function useAutosaveForm(form, save, debounceMs = 500) {
-    const { editingEnabled } = useSettingsEditing();
+export function useAutosaveForm(form, save) {
+    const { editingEnabled, registerAutosave } = useSettingsEditing();
 
-    const persist = () => {
-        if (!form.isDirty || form.processing) {
+    const persist = ({ ignoreEditing = false } = {}) => {
+        if ((!ignoreEditing && !editingEnabled.value) || !form.isDirty || form.processing) {
             return;
         }
 
         save();
     };
 
-    watchDebounced(
-        form,
-        () => {
-            if (!editingEnabled.value) {
-                return;
-            }
-
-            persist();
-        },
-        { deep: true, debounce: debounceMs, maxWait: 2000 },
-    );
+    registerAutosave(() => persist());
 
     watch(editingEnabled, (enabled, wasEnabled) => {
         if (wasEnabled && !enabled) {
-            persist();
+            persist({ ignoreEditing: true });
         }
     });
 
     onBeforeUnmount(() => {
-        if (editingEnabled.value) {
-            persist();
-        }
+        persist({ ignoreEditing: true });
     });
+
+    return { persist };
 }

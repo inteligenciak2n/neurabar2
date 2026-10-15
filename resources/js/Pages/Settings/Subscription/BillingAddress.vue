@@ -1,9 +1,9 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
-import { Link, useForm } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
-import AppButton from '@/Components/AppButton.vue';
+import { useAutosaveForm } from '@/Composables/useAutosaveForm';
 import AppCard from '@/Components/AppCard.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
@@ -73,6 +73,7 @@ const submitCorporation = () => {
 
     corporationForm.put(route('settings.subscription.billing-address.update', 'corporation'), {
         preserveScroll: true,
+        onSuccess: () => corporationForm.defaults(),
     });
 };
 
@@ -83,23 +84,21 @@ const submitVenue = () => {
 
     venueForm.put(route('settings.subscription.billing-address.update', 'venue'), {
         preserveScroll: true,
+        onSuccess: () => venueForm.defaults(),
     });
 };
+
+useAutosaveForm(corporationForm, submitCorporation);
+useAutosaveForm(venueForm, submitVenue);
 </script>
 
 <template>
-    <SettingsLayout :title="__('Billing Address')">
+    <SettingsLayout :title="__('Billing Address')" parent-route="settings.subscription.index">
         <template #header>
             <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Billing Address') }}</h1>
         </template>
 
         <AppCard>
-            <Link :href="route('settings.subscription.index')" class="flex items-center text-sm text-primary hover:underline mb-3">
-                <svg class="inline-block h-4 w-4 mr-1" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
-                {{ __('Back') }}
-            </Link>
             <div class="flex gap-4 border-b" role="tablist">
                 <button
                     id="billing-tab-corporation"
@@ -148,11 +147,6 @@ const submitVenue = () => {
                     />
                     <InputError :id="`corporation-${field.name}-error`" :message="corporationForm.errors[field.name]" />
                 </div>
-                <div class="sm:col-span-2">
-                    <AppButton type="submit" :loading="corporationForm.processing" :disabled="corporationForm.processing">
-                        {{ __('Save') }}
-                    </AppButton>
-                </div>
             </form>
 
             <form
@@ -175,11 +169,6 @@ const submitVenue = () => {
                         :aria-describedby="venueForm.errors[field.name] ? `venue-${field.name}-error` : undefined"
                     />
                     <InputError :id="`venue-${field.name}-error`" :message="venueForm.errors[field.name]" />
-                </div>
-                <div class="sm:col-span-2">
-                    <AppButton type="submit" :loading="venueForm.processing" :disabled="venueForm.processing">
-                        {{ __('Save') }}
-                    </AppButton>
                 </div>
             </form>
         </AppCard>

@@ -15,6 +15,15 @@ class StoreServiceLocationRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (! $this->filled('type')) {
+            $this->merge([
+                'type' => ServiceLocationType::Table->value,
+            ]);
+        }
+    }
+
     /** @return array<string, mixed> */
     public function rules(): array
     {

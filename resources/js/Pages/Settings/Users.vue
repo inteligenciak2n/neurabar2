@@ -9,6 +9,7 @@ import AppEmptyState from '@/Components/AppEmptyState.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
+import { useAutosaveForm } from '@/Composables/useAutosaveForm';
 import { useSettingsEditing } from '@/Composables/useSettingsEditing';
 
 defineProps({
@@ -66,6 +67,7 @@ const openCreate = () => {
     form.reset();
     form.role = 'attendant';
     form.active = true;
+    form.defaults();
     showForm.value = true;
 };
 
@@ -78,6 +80,8 @@ const openEdit = (user) => {
     form.role = user.role;
     form.pin = '';
     form.active = user.active;
+    form.clearErrors();
+    form.defaults();
     showForm.value = true;
 };
 
@@ -87,17 +91,30 @@ const closeForm = () => {
     form.reset();
 };
 
+const persist = () => {
+    const userId = editingUser.value?.id;
+    if (!userId || !form.isDirty || form.processing) {
+        return;
+    }
+
+    form.put(route('settings.users.update', userId), {
+        preserveScroll: true,
+        onSuccess: () => form.defaults(),
+    });
+};
+
 const submit = () => {
     if (editingUser.value) {
-        form.put(route('settings.users.update', editingUser.value.id), {
-            onSuccess: closeForm,
-        });
-    } else {
-        form.post(route('settings.users.store'), {
-            onSuccess: closeForm,
-        });
+        persist();
+        return;
     }
+
+    form.post(route('settings.users.store'), {
+        onSuccess: closeForm,
+    });
 };
+
+useAutosaveForm(form, persist);
 
 const confirmDelete = (user) => {
     userToDelete.value = user;
@@ -111,7 +128,7 @@ const deleteUser = () => {
 </script>
 
 <template>
-    <SettingsLayout :title="__('Users')">
+    <SettingsLayout :title="__('Users')" :nested="showForm" @close-nested="closeForm">
         <template #header>
             <SettingsSectionHeader :title="__('Users')">
                 <span class="block">{{ __('Staff accounts for this venue') }}</span>
@@ -129,7 +146,7 @@ const deleteUser = () => {
                 :description="__('Add team members to this venue.')"
             />
 
-            <div v-if="users.length" class="divide-y divide-muted">
+            <div v-if="users.length && !showForm" class="divide-y divide-muted">
                 <div
                     v-for="user in users"
                     :key="user.id"
@@ -225,7 +242,7 @@ const deleteUser = () => {
                     </label>
 
                     <div class="flex gap-2 pt-1">
-                        <AppButton type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>
+                        <AppButton v-if="!editingUser" type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>
                         <AppButton type="button" variant="ghost" @click="closeForm">{{ __('Cancel') }}</AppButton>
                     </div>
                 </form>

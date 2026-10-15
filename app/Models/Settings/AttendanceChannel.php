@@ -20,6 +20,7 @@ class AttendanceChannel extends Model
     protected $fillable = [
         'venue_id',
         'name',
+        'description',
         'is_trackable',
         'requires_customer_identifier',
         'active',

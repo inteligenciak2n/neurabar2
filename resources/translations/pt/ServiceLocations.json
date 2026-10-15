@@ -1,7 +1,7 @@
 {
     "Add Location": "Adicionar localização",
     "Delete Service Location": "Excluir localização do serviço",
-    "No service locations yet": "Ainda não há locais de serviço",
+    "No service locations yet": "Ainda não há locais de atendimento",
     "Add locations such as tables, bars, or areas.": "Adicione locais como mesas, bares ou áreas.",
     "Are you sure you want to delete this location?": "Tem certeza de que deseja excluir esse local?",
     "Delete": "Excluir",
@@ -15,7 +15,7 @@
     "Active": "Ativo",
     "table": "mesa",
     "Save": "Salvar",
-    "Service Locations": "Locais de serviço",
+    "Service Locations": "Locais de atendimento",
     "bar": "bar",
     "Edit": "Editar",
     "Edit Location": "Editar localização",

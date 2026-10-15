@@ -10,6 +10,8 @@
     "Lowercase letters, numbers and underscores only.": "Lowercase letters, numbers and underscores only.",
     "Edit Channel": "Edit Channel",
     "Name": "Name",
+    "Description": "Description",
+    "The customer can check the preparation status of the order.": "The customer can check the preparation status of the order.",
     "Value (slug)": "Value (slug)",
     "Sort Order": "Sort Order",
     "e.g. counter": "e.g. counter",

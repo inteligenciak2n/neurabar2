@@ -10,6 +10,8 @@
     "Lowercase letters, numbers and underscores only.": "Somente letras minúsculas, números e sublinhados.",
     "Edit Channel": "Editar canal",
     "Name": "Nome",
+    "Description": "Descrição",
+    "The customer can check the preparation status of the order.": "O cliente pode localizar o status de preparo do pedido.",
     "Value (slug)": "Valor (identificador)",
     "Sort Order": "Ordem de classificação",
     "e.g. counter": "por exemplo, balcão",

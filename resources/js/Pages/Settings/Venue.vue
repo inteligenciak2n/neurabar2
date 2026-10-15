@@ -59,6 +59,7 @@ const assignLogo = (file) => {
     form.remove_logo = false;
     logoFailed.value = false;
     logoPreview.value = URL.createObjectURL(file);
+    persist();
 };
 
 const clearLogo = (event) => {
@@ -72,6 +73,7 @@ const clearLogo = (event) => {
     if (logoInput.value) {
         logoInput.value.value = '';
     }
+    persist();
 };
 
 const onLogoSelect = (event) => {
@@ -104,7 +106,7 @@ const submit = () => {
     });
 };
 
-useAutosaveForm(form, submit);
+const { persist } = useAutosaveForm(form, submit);
 </script>
 
 <template>

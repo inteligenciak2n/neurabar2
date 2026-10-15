@@ -27,7 +27,6 @@ class ServiceLocationSettingsTest extends TestCase
 
         $this->post(route('settings.service-locations.store'), [
             'name' => 'Mesa 10',
-            'type' => 'table',
             'active' => true,
         ])->assertRedirect();
 
@@ -46,14 +45,13 @@ class ServiceLocationSettingsTest extends TestCase
 
         $this->put(route('settings.service-locations.update', $location->id), [
             'name' => 'Área VIP',
-            'type' => 'area',
             'active' => true,
         ])->assertRedirect();
 
         $this->assertDatabaseHas('service_locations', [
             'id' => $location->id,
             'name' => 'Área VIP',
-            'type' => 'area',
+            'type' => $location->type->value,
         ]);
     }
 
@@ -87,7 +85,6 @@ class ServiceLocationSettingsTest extends TestCase
 
         $this->post(route('settings.service-locations.store'), [
             'name' => '',
-            'type' => 'table',
         ])->assertSessionHasErrors('name');
     }
 
@@ -115,15 +112,29 @@ class ServiceLocationSettingsTest extends TestCase
         $this->get(route('settings.service-locations.index'))->assertForbidden();
     }
 
-    public function test_index_provides_location_types_from_enum(): void
+    public function test_index_does_not_expose_location_types(): void
     {
         $this->loginAs(UserRole::Owner);
 
         $this->get(route('settings.service-locations.index'))
-            ->assertInertia(fn ($page) => $page
-                ->has('locationTypes')
-                ->where('locationTypes', array_column(ServiceLocationType::cases(), 'value'))
-            );
+            ->assertInertia(fn ($page) => $page->missing('locationTypes'));
+    }
+
+    public function test_store_defaults_type_to_table_when_omitted(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+
+        $this->post(route('settings.service-locations.store'), [
+            'name' => 'Mesa 3',
+            'active' => true,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('service_locations', [
+            'venue_id' => $venue->id,
+            'name' => 'Mesa 3',
+            'type' => ServiceLocationType::Table->value,
+        ]);
     }
 
     public function test_store_rejects_type_not_in_enum(): void
@@ -137,16 +148,26 @@ class ServiceLocationSettingsTest extends TestCase
         ])->assertSessionHasErrors('type');
     }
 
-    public function test_update_rejects_type_not_in_enum(): void
+    public function test_update_ignores_type_and_keeps_the_existing_value(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
         $this->loginAs(UserRole::Owner, $venue);
-        $location = ServiceLocation::factory()->create(['venue_id' => $venue->id]);
+        $location = ServiceLocation::factory()->create([
+            'venue_id' => $venue->id,
+            'type' => ServiceLocationType::Area,
+        ]);
 
         $this->put(route('settings.service-locations.update', $location->id), [
             'name' => 'Área X',
             'type' => 'counter',
-        ])->assertSessionHasErrors('type');
+            'active' => true,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('service_locations', [
+            'id' => $location->id,
+            'name' => 'Área X',
+            'type' => ServiceLocationType::Area->value,
+        ]);
     }
 
     public function test_owner_can_generate_qr_token_for_service_location(): void

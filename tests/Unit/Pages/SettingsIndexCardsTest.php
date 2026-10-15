@@ -21,6 +21,17 @@ class SettingsIndexCardsTest extends TestCase
         $this->assertStringContainsString('overflow-hidden', $card);
         $this->assertStringNotContainsString('sm:grid-cols-2', $page);
         $this->assertStringContainsString('SettingsSectionHeader', $page);
+        preg_match_all("/routeName: '([^']+)'/", $page, $matches);
+        $this->assertSame([
+            'settings.subscription.index',
+            'settings.venue',
+            'settings.general',
+            'settings.kitchen-stations.index',
+            'settings.preparation-statuses.index',
+            'settings.attendance-channels.index',
+            'settings.service-locations.index',
+            'settings.users.index',
+        ], $matches[1]);
         $this->assertStringContainsString('settings.attendance-channels.index', $page);
         $this->assertStringContainsString(
             'Choose a section to manage subscription, venue, users, locations and how the operation works.',
@@ -55,5 +66,6 @@ class SettingsIndexCardsTest extends TestCase
         );
         $this->assertSame('Informações do estabelecimento', $translations['Venue Info']);
         $this->assertSame('Modo de trabalho do estabelecimento', $translations['General']);
+        $this->assertSame("Locais de\natendimento", $translations['Service Locations']);
     }
 }

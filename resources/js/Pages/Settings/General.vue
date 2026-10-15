@@ -25,6 +25,7 @@ const form = useForm({
 const submit = () => {
     form.put(route('settings.general.update'), {
         preserveScroll: true,
+        onSuccess: () => form.defaults(),
     });
 };
 

@@ -26,6 +26,7 @@ class AttendanceChannelTest extends TestCase
 
         $this->post(route('settings.attendance-channels.store'), [
             'name' => 'Balcão',
+            'description' => 'Pedidos feitos no balcão.',
             'is_trackable' => true,
             'requires_customer_identifier' => false,
             'active' => true,
@@ -35,6 +36,7 @@ class AttendanceChannelTest extends TestCase
         $this->assertDatabaseHas('attendance_channels', [
             'venue_id' => $venue->id,
             'name' => 'Balcão',
+            'description' => 'Pedidos feitos no balcão.',
         ]);
     }
 
@@ -46,6 +48,7 @@ class AttendanceChannelTest extends TestCase
 
         $this->put(route('settings.attendance-channels.update', $channel->id), [
             'name' => 'Delivery',
+            'description' => 'Pedidos para entrega.',
             'is_trackable' => true,
             'requires_customer_identifier' => false,
             'active' => true,
@@ -55,6 +58,7 @@ class AttendanceChannelTest extends TestCase
         $this->assertDatabaseHas('attendance_channels', [
             'id' => $channel->id,
             'name' => 'Delivery',
+            'description' => 'Pedidos para entrega.',
         ]);
     }
 

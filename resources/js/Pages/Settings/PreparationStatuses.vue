@@ -93,7 +93,7 @@ const deleteStatus = () => {
 </script>
 
 <template>
-    <SettingsLayout :title="__('Preparation Statuses')">
+    <SettingsLayout :title="__('Preparation Statuses')" :nested="showForm" @close-nested="closeForm">
         <template #header>
             <SettingsSectionHeader :title="__('Preparation Statuses')">
                 <span class="block">{{ __('Define the stages of preparation') }}</span>
@@ -111,7 +111,7 @@ const deleteStatus = () => {
                 :description="__('Add statuses to track kitchen order progress.')"
             />
 
-            <div v-if="statuses.length" class="divide-y divide-muted">
+            <div v-if="statuses.length && !showForm" class="divide-y divide-muted">
                 <div
                     v-for="status in statuses"
                     :key="status.id"

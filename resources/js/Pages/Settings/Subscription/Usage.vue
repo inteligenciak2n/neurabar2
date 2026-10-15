@@ -64,7 +64,7 @@ const cancelPlanChange = () => {
 </script>
 
 <template>
-    <SettingsLayout :title="__('Usage and limits')">
+    <SettingsLayout :title="__('Usage and limits')" parent-route="settings.subscription.index">
         <template #header>
             <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Usage and limits') }}</h1>
         </template>
