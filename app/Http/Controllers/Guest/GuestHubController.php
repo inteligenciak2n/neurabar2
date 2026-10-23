@@ -31,7 +31,7 @@ class GuestHubController extends Controller
         return Inertia::render('Guest/Hub', [
             'token' => $token,
             'venue' => $venue->only('id', 'name', 'logo_url', 'require_geolocation'),
-            'serviceLocation' => $serviceLocation?->only('id', 'name', 'type'),
+            'serviceLocation' => $serviceLocation?->only('id', 'name'),
             'attendanceChannel' => $attendanceChannel?->only('id', 'name'),
             'hasSession' => $session !== null && $session->hasPin(),
             'geolocationVerified' => $session?->geolocation_verified ?? false,

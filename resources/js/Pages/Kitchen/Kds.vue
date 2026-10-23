@@ -178,6 +178,9 @@ const allStations = computed(() => {
                                 <p class="font-heading font-semibold text-sm text-ocean-deep dark:text-gray-100">
                                     {{ item.order?.attendance?.customer_identifier ?? __('Guest') }}
                                 </p>
+                                <p v-if="item.order?.attendance?.code" class="mt-0.5 inline-block rounded-md bg-warm-gold/30 px-1.5 py-0.5 text-xs font-bold tracking-wide text-ocean-deep dark:text-gray-100">
+                                    {{ __('Tab') }} {{ item.order.attendance.code }}
+                                </p>
                                 <p class="text-xs text-muted-foreground">
                                     {{ __('Order') }} #{{ item.order?.order_number }}
                                 </p>

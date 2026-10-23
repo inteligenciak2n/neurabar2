@@ -115,7 +115,6 @@ class ServiceLocationController extends Controller
         $pdf = Pdf::loadView('pdf.service-location-qr', [
             'venueName' => $venue->name,
             'locationName' => $location->name,
-            'locationType' => $location->type->value,
             'qrBase64' => $qrBase64,
             'logoBase64' => $logoBase64,
             'hubUrl' => $hubUrl,

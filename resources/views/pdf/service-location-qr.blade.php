@@ -39,19 +39,6 @@
         .location-name {
             font-size: 16px;
             color: #64748b;
-            margin-bottom: 4px;
-        }
-
-        .location-type {
-            display: inline-block;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #0ea5e9;
-            background: #e0f2fe;
-            padding: 2px 10px;
-            border-radius: 999px;
             margin-bottom: 24px;
         }
 
@@ -99,7 +86,6 @@
 
         <div class="venue-name">{{ $venueName }}</div>
         <div class="location-name">{{ $locationName }}</div>
-        <div class="location-type">{{ $locationType }}</div>
 
         <div class="qr-wrapper">
             <img src="{{ $qrBase64 }}" alt="QR Code" />

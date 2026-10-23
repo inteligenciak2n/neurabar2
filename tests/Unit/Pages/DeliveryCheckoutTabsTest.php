@@ -73,9 +73,9 @@ class DeliveryCheckoutTabsTest extends TestCase
         $this->assertStringContainsString('preview || submitting || !canSubmit', $component);
         $this->assertStringContainsString("__('This is a preview. Orders cannot be placed from here.')", $component);
         $this->assertStringContainsString("name: 'DeliveryCheckoutPanel'", $component);
-        $this->assertStringContainsString('allocateOrderCode', $component);
-        $this->assertStringContainsString('orderCode', $component);
-        $this->assertStringContainsString("__('Order code')", $component);
+        $this->assertStringNotContainsString('allocateOrderCode', $component);
+        $this->assertStringNotContainsString('orderCode', $component);
+        $this->assertStringContainsString('maxlength="500"', $component);
         $this->assertStringContainsString('checkoutPaymentOptions', $component);
         $this->assertStringContainsString('selectedPaymentTypes', $component);
         $this->assertStringContainsString("__('Payment method: At delivery time')", $component);
@@ -87,7 +87,7 @@ class DeliveryCheckoutTabsTest extends TestCase
         $this->assertStringNotContainsString('setPaymentAmount', $component);
         $this->assertStringNotContainsString('paymentAmounts', $component);
         $this->assertStringNotContainsString("__('Remaining')", $component);
-        $this->assertStringContainsString('code: orderCode.value ? Number(orderCode.value) : undefined', $component);
+        $this->assertStringNotContainsString('code: orderCode', $component);
         $this->assertStringContainsString('selectedPaymentMethods.value', $component);
         $this->assertStringNotContainsString('type="radio"', $component);
         $this->assertStringNotContainsString("__('Split into another payment method')", $component);

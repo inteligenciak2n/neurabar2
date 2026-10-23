@@ -118,7 +118,6 @@ class GuestPortugueseCopyTest extends TestCase
         $this->assertSame('Dinheiro', $checkout['Cash']);
         $this->assertSame('Cartão', $checkout['Card']);
         $this->assertSame('Pix antecipado', $checkout['Advance PIX']);
-        $this->assertSame('Código do pedido', $checkout['Order code']);
         $this->assertSame('Modo de pagamento: No momento da entrega', $checkout['Payment method: At delivery time']);
         $this->assertSame('Cartão de crédito', $checkout['Credit Card']);
         $this->assertSame('Cartão de débito', $checkout['Debit Card']);

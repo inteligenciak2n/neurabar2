@@ -347,5 +347,9 @@
     "Dashboard Financeiro": "Dashboard Financeiro",
     "Impressão Direta": "Impressão Direta",
     "Nota Fiscal": "Nota Fiscal",
-    "Comando por Voz": "Comando por Voz"
+    "Comando por Voz": "Comando por Voz",
+    "Tab card code": "Código da comanda",
+    "Code printed on the tab card": "Código impresso na comanda",
+    "Tab": "Comanda",
+    "This tab card is already in use.": "Esta comanda já está em uso."
 }

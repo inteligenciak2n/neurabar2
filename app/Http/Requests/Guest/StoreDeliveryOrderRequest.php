@@ -38,10 +38,9 @@ class StoreDeliveryOrderRequest extends FormRequest
             'address.reference_point' => ['nullable', 'string', 'max:255'],
             'address.save_address' => ['nullable', 'boolean'],
             'delivery_comment' => ['nullable', 'string', 'max:500'],
-            'code' => ['nullable', 'integer', 'min:1', 'max:99999'],
 
             'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'uuid', Rule::exists(Product::class, 'id')->where('available_for_delivery', true)],
+            'items.*.product_id' => ['required', 'uuid', Rule::exists(Product::class, 'id')],
             'items.*.variation_id' => ['nullable', 'uuid', Rule::exists(ProductVariation::class, 'id')],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
             'items.*.notes' => ['nullable', 'string', 'max:500'],

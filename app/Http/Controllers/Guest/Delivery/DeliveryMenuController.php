@@ -45,7 +45,9 @@ class DeliveryMenuController extends Controller
             ])
             ->first();
 
-        $categories = $menu ? $menu->categories : collect();
+        $categories = $menu
+            ? $menu->categories->filter(fn ($category) => $category->products->isNotEmpty())->values()
+            : collect();
 
         return Inertia::render('Guest/Delivery/Menu', [
             'token' => $token,

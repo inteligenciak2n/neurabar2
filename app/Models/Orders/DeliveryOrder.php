@@ -23,6 +23,7 @@ class DeliveryOrder extends Model
         'venue_id',
         'attendance_id',
         'code',
+        'code_expires_at',
         'fulfillment_type',
         'customer_id',
         'customer_address_id',
@@ -47,6 +48,7 @@ class DeliveryOrder extends Model
             'fulfillment_type' => FulfillmentType::class,
             'delivery_fee' => 'decimal:2',
             'code' => 'integer',
+            'code_expires_at' => 'datetime',
         ];
     }
 

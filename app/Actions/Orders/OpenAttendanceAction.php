@@ -7,6 +7,7 @@ use App\Http\Requests\Orders\StoreAttendanceRequest;
 use App\Models\Orders\Attendance;
 use App\Models\Settings\AttendanceChannel;
 use App\Models\Tenant\Venue;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Validation\ValidationException;
 
 class OpenAttendanceAction
@@ -23,15 +24,20 @@ class OpenAttendanceAction
             ]);
         }
 
-        return Attendance::create([
-            'venue_id' => $venue->id,
-            'attendance_channel_id' => $data['attendance_channel_id'],
-            'customer_identifier' => $data['customer_identifier'] ?? null,
-            'service_location_id' => $data['service_location_id'] ?? null,
-            'party_size' => $data['party_size'] ?? null,
-            'notes' => $data['notes'] ?? null,
-            'status' => AttendanceStatus::Open,
-            'created_by' => $request->user()->id,
-        ]);
+        try {
+            return Attendance::create([
+                'venue_id' => $venue->id,
+                'attendance_channel_id' => $data['attendance_channel_id'],
+                'customer_identifier' => $data['customer_identifier'] ?? null,
+                'code' => $data['code'] ?? null,
+                'service_location_id' => $data['service_location_id'] ?? null,
+                'party_size' => $data['party_size'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'status' => AttendanceStatus::Open,
+                'created_by' => $request->user()->id,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages(['code' => 'This tab card is already in use.']);
+        }
     }
 }

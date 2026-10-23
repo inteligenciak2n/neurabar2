@@ -44,7 +44,6 @@ function requiredClass(value, growing = false) {
     ];
 }
 
-const orderCode = ref('');
 const selectedPaymentTypes = ref([]);
 const activeTab = ref('order');
 const submitting = ref(false);
@@ -88,10 +87,6 @@ const venueAddress = computed(() => {
 });
 
 const feeZone = ref({ fee: null, label: null, loading: false, error: null });
-
-function allocateOrderCode() {
-    return String(Math.floor(1000 + Math.random() * 9000));
-}
 
 function formatReais(value) {
     return `R$${Number(value ?? 0).toLocaleString('pt-BR', {
@@ -193,12 +188,6 @@ watch(checkoutPaymentOptions, (options) => {
 
     if (kept.length !== selectedPaymentTypes.value.length) {
         selectedPaymentTypes.value = kept;
-    }
-}, { immediate: true });
-
-watch(() => props.modelValue, (open) => {
-    if (open && !orderCode.value) {
-        orderCode.value = allocateOrderCode();
     }
 }, { immediate: true });
 
@@ -393,7 +382,6 @@ async function submitOrder() {
             customer: { name: customerName.value, phone: customerPhone.value },
             address: fulfillmentType.value === 'delivery' ? { ...address.value, save_address: saveAddress.value } : undefined,
             delivery_comment: deliveryComment.value || null,
-            code: orderCode.value ? Number(orderCode.value) : undefined,
             items: props.items.map((item) => ({
                 product_id: item.product_id,
                 variation_id: item.variation_id,
@@ -418,7 +406,6 @@ function close() {
     activeTab.value = 'order';
     completedTabs.value = { order: false, location: false };
     tabLockMessage.value = '';
-    orderCode.value = '';
 }
 </script>
 
@@ -433,9 +420,6 @@ function close() {
                         <h3 class="font-heading text-lg font-bold text-ocean-deep">
                             {{ __('Your order') }}
                         </h3>
-                        <p v-if="orderCode" class="text-xs font-medium text-muted-foreground">
-                            {{ __('Order code') }} #{{ orderCode }}
-                        </p>
                     </div>
                     <button class="rounded-full p-1 text-muted-foreground hover:bg-muted" @click="close">
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -636,7 +620,7 @@ function close() {
                         <div v-if="fulfillmentType === 'pickup'" class="min-w-0 space-y-3">
                             <div class="min-w-0">
                                 <label class="mb-1 block text-xs font-medium text-ocean-deep">{{ __('Comment at pickup') }}</label>
-                                <textarea v-model="deliveryComment" rows="1" :placeholder="__('Pick up at the counter')" :class="growingFieldClass" />
+                                <textarea v-model="deliveryComment" rows="1" maxlength="500" :placeholder="__('Pick up at the counter')" :class="growingFieldClass" />
                             </div>
                             <div class="flex min-w-0 items-center gap-3 rounded-xl border border-border bg-muted/40 p-3">
                                 <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted">
@@ -683,7 +667,7 @@ function close() {
                             <textarea v-model="address.reference_point" rows="1" :placeholder="__('Reference point')" :class="growingFieldClass" />
                             <div class="min-w-0">
                                 <label class="mb-1 block text-xs font-medium text-ocean-deep">{{ __('Comment at delivery') }}</label>
-                                <textarea v-model="deliveryComment" rows="1" :placeholder="__('Leave at the reception')" :class="growingFieldClass" />
+                                <textarea v-model="deliveryComment" rows="1" maxlength="500" :placeholder="__('Leave at the reception')" :class="growingFieldClass" />
                             </div>
                             <label class="flex min-w-0 items-start gap-2 text-xs text-muted-foreground">
                                 <input v-model="saveAddress" type="checkbox" class="mt-0.5 shrink-0 rounded border-border" />
@@ -698,11 +682,6 @@ function close() {
                             <div v-if="serviceFeeTotal > 0" class="flex justify-between"><span class="text-muted-foreground">{{ __('Service fee') }}</span><span>R$ {{ serviceFeeTotal.toFixed(2) }}</span></div>
                             <div v-if="fulfillmentType === 'delivery'" class="flex justify-between"><span class="text-muted-foreground">{{ __('Delivery fee') }}</span><span>R$ {{ deliveryFeeTotal.toFixed(2) }}</span></div>
                             <div class="flex justify-between font-bold text-ocean-deep border-t border-border pt-1 mt-1"><span>{{ __('Total') }}</span><span>R$ {{ grandTotal.toFixed(2) }}</span></div>
-                        </div>
-
-                        <div v-if="orderCode" class="rounded-xl border border-border bg-muted/40 px-4 py-3 text-center">
-                            <p class="text-xs font-medium text-muted-foreground">{{ __('Order code') }}</p>
-                            <p class="mt-1 font-heading text-2xl font-bold tracking-wide text-ocean-deep">#{{ orderCode }}</p>
                         </div>
 
                         <div class="space-y-2">

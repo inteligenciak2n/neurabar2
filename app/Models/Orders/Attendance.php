@@ -10,6 +10,7 @@ use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\ServiceLocation;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,6 +30,7 @@ class Attendance extends Model
         'service_location_id',
         'attendance_channel_id',
         'customer_identifier',
+        'code',
         'status',
         'party_size',
         'notes',
@@ -44,6 +46,19 @@ class Attendance extends Model
             'closed_at' => 'datetime',
             'status' => AttendanceStatus::class,
         ];
+    }
+
+    /** Printed tab card codes are compared case-insensitively, so they are stored trimmed and upper-cased. */
+    public static function normalizeCode(?string $code): ?string
+    {
+        $code = strtoupper(trim((string) $code));
+
+        return $code === '' ? null : $code;
+    }
+
+    protected function code(): Attribute
+    {
+        return Attribute::set(fn (?string $value): ?string => self::normalizeCode($value));
     }
 
     public function attendanceChannel(): BelongsTo

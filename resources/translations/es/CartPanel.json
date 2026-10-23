@@ -3,5 +3,9 @@
     "Cart": "Carrito",
     "Subtotal": "Subtotal",
     "Error placing order.": "Error al enviar el pedido.",
-    "This is a preview. Orders cannot be placed from here.": "Esta es una vista previa. No se pueden hacer pedidos desde aquí."
+    "This is a preview. Orders cannot be placed from here.": "Esta es una vista previa. No se pueden hacer pedidos desde aquí.",
+    "Tab card code": "Código de la comanda",
+    "optional": "opcional",
+    "Code printed on your tab card": "Código impreso en tu comanda",
+    "This tab card is already in use.": "Esta comanda ya está en uso."
 }

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Menu;
 
 use App\Enums\PaymentMethod;
-use App\Enums\ServiceLocationType;
 use App\Http\Controllers\Controller;
 use App\Models\Menu\Category;
 use App\Models\Menu\Combo;
@@ -64,13 +63,12 @@ class MenuPreviewController extends Controller
     }
 
     /**
-     * @return array{id: string|null, name: string, type: string}
+     * @return array{id: string|null, name: string}
      */
     private function previewTable(Venue $venue): array
     {
         $table = ServiceLocation::withoutGlobalScopes()
             ->where('venue_id', $venue->id)
-            ->where('type', ServiceLocationType::Table)
             ->where('active', true)
             ->orderBy('name')
             ->first();
@@ -79,16 +77,12 @@ class MenuPreviewController extends Controller
             return [
                 'id' => $table->id,
                 'name' => $table->name,
-                'type' => $table->type instanceof ServiceLocationType
-                    ? $table->type->value
-                    : (string) $table->type,
             ];
         }
 
         return [
             'id' => null,
             'name' => 'Mesa 1',
-            'type' => ServiceLocationType::Table->value,
         ];
     }
 
@@ -109,7 +103,7 @@ class MenuPreviewController extends Controller
             return collect();
         }
 
-        return Category::withoutGlobalScopes()
+        $categories = Category::withoutGlobalScopes()
             ->where('menu_id', $menu->id)
             ->orderBy('sort_order')
             ->with([
@@ -125,5 +119,9 @@ class MenuPreviewController extends Controller
                     ]),
             ])
             ->get();
+
+        return $customerFacing
+            ? $categories->filter(fn (Category $category) => $category->products->isNotEmpty())->values()
+            : $categories;
     }
 }

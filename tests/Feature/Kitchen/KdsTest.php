@@ -6,11 +6,13 @@ use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
 use App\Enums\UserRole;
 use App\Events\Kitchen\ItemStatusUpdated;
+use App\Events\Kitchen\NewOrderReceived;
 use App\Events\Orders\OrderPlaced;
 use App\Models\Menu\Category;
 use App\Models\Menu\Menu;
 use App\Models\Menu\Product;
 use App\Models\Orders\Attendance;
+use App\Models\Orders\DeliveryOrder;
 use App\Models\Orders\Order;
 use App\Models\Orders\OrderItem;
 use App\Models\Settings\KitchenStation;
@@ -346,6 +348,46 @@ class KdsTest extends TestCase
                 ->has('venueId')
                 ->where('venueId', $venue->id)
             );
+    }
+
+    public function test_kds_items_carry_the_tab_card_code_of_their_attendance(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->enableKdsModule($venue);
+        $this->loginAs(UserRole::Attendant, $venue);
+
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id, 'code' => 'ab-12']);
+        $order = Order::factory()->create(['attendance_id' => $attendance->id]);
+        OrderItem::factory()->create(['order_id' => $order->id, 'ready_at' => null]);
+
+        $this->get(route('kitchen.kds'))->assertInertia(
+            fn ($page) => $page->where('openItems.unassigned.0.order.attendance.code', 'AB-12')
+        );
+    }
+
+    public function test_new_order_event_broadcasts_the_tab_card_code(): void
+    {
+        $venue = Venue::factory()->create();
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id, 'code' => '042']);
+        $order = Order::factory()->create(['attendance_id' => $attendance->id]);
+        $station = KitchenStation::factory()->create(['venue_id' => $venue->id]);
+
+        $payload = (new NewOrderReceived($order->load('attendance'), $station, []))->broadcastWith();
+
+        $this->assertSame('042', $payload['attendance_code']);
+    }
+
+    public function test_tab_card_code_cannot_be_set_on_a_delivery_attendance(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Attendant, $venue);
+        $attendance = Attendance::factory()->open()->create(['venue_id' => $venue->id]);
+        DeliveryOrder::factory()->create(['venue_id' => $venue->id, 'attendance_id' => $attendance->id]);
+
+        $this->put(route('attendances.update', $attendance->id), ['code' => '42'])
+            ->assertSessionHasErrors('code');
+
+        $this->assertNull($attendance->fresh()->code);
     }
 
     public function test_attendance_index_returns_venue_id(): void

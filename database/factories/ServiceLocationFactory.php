@@ -21,7 +21,6 @@ class ServiceLocationFactory extends Factory
         return [
             'venue_id' => Venue::factory(),
             'name' => 'Mesa '.fake()->numberBetween(1, 50),
-            'type' => 'table',
             'active' => true,
         ];
     }

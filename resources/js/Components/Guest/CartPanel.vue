@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
 import axios from 'axios';
 
@@ -24,11 +24,17 @@ const subtotal = computed(() =>
     props.items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0),
 );
 
+const tabCode = ref('');
+const tabCodeLocked = ref(false);
+const tabCodeError = ref(null);
+
 async function placeOrder() {
     if (props.preview) {
         emit('error', __('This is a preview. Orders cannot be placed from here.'));
         return;
     }
+
+    tabCodeError.value = null;
 
     try {
         const payload = props.items.map((item) => ({
@@ -38,10 +44,26 @@ async function placeOrder() {
             notes: item.notes,
             modifiers: item.modifiers,
         }));
-        await axios.post(`/g/${props.token}/orders`, { items: payload });
+        const { data } = await axios.post(`/g/${props.token}/orders`, {
+            items: payload,
+            tab_code: tabCodeLocked.value ? undefined : (tabCode.value.trim() || undefined),
+        });
+
+        if (data.tab_code) {
+            tabCode.value = data.tab_code;
+            tabCodeLocked.value = true;
+        }
+
         emit('order-placed');
         emit('update:modelValue', false);
     } catch (e) {
+        const fieldError = e.response?.data?.errors?.tab_code?.[0];
+
+        if (fieldError) {
+            tabCodeError.value = __(fieldError);
+            return;
+        }
+
         emit('error', e.response?.data?.message ?? __('Error placing order.'));
     }
 }
@@ -107,6 +129,19 @@ async function placeOrder() {
 
                 <!-- Footer -->
                 <div class="border-t border-border px-5 py-4">
+                    <div class="mb-3">
+                        <label class="mb-1 block text-xs font-medium text-ocean-deep">{{ __('Tab card code') }} <span class="font-normal text-muted-foreground">({{ __('optional') }})</span></label>
+                        <input
+                            v-model="tabCode"
+                            type="text"
+                            maxlength="32"
+                            autocomplete="off"
+                            :disabled="tabCodeLocked"
+                            :placeholder="__('Code printed on your tab card')"
+                            class="box-border w-full rounded-lg border border-border px-3 py-2 text-sm uppercase placeholder:text-xs placeholder:normal-case placeholder:italic disabled:bg-muted"
+                        />
+                        <p v-if="tabCodeError" class="mt-1 text-xs text-destructive">{{ tabCodeError }}</p>
+                    </div>
                     <div class="mb-3 flex items-center justify-between text-sm">
                         <span class="text-muted-foreground">{{ __('Subtotal') }}</span>
                         <span class="font-bold text-ocean-deep">R$ {{ subtotal.toFixed(2) }}</span>

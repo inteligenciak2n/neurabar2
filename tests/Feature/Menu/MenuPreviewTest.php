@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Menu;
 
-use App\Enums\ServiceLocationType;
 use App\Enums\UserRole;
 use App\Models\Menu\Category;
 use App\Models\Menu\Combo;
@@ -31,7 +30,6 @@ class MenuPreviewTest extends TestCase
         ServiceLocation::factory()->create([
             'venue_id' => $venue->id,
             'name' => 'Mesa 7',
-            'type' => ServiceLocationType::Table,
             'active' => true,
         ]);
 
@@ -74,14 +72,13 @@ class MenuPreviewTest extends TestCase
             'category_id' => $category->id,
             'active' => true,
             'name' => 'Deliverable',
-            'available_for_delivery' => true,
         ]);
         Product::factory()->create([
             'category_id' => $category->id,
             'active' => true,
             'name' => 'Table only',
-            'available_for_delivery' => false,
         ]);
+        Category::factory()->create(['menu_id' => $menu->id, 'name' => 'Empty']);
 
         $this->get(route('menu.preview.customer.delivery'))
             ->assertOk()

@@ -41,12 +41,14 @@ class PublicMenuController extends Controller
             ])
             ->first();
 
-        $categories = $menu ? $menu->categories : collect();
+        $categories = $menu
+            ? $menu->categories->filter(fn ($category) => $category->products->isNotEmpty())->values()
+            : collect();
 
         return Inertia::render('Guest/Menu', [
             'token' => $token,
             'venue' => $venue->only('id', 'name', 'description', 'logo_url', 'require_geolocation'),
-            'serviceLocation' => $serviceLocation?->only('id', 'name', 'type'),
+            'serviceLocation' => $serviceLocation?->only('id', 'name'),
             'categories' => $categories,
         ]);
     }

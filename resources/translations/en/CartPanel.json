@@ -3,5 +3,9 @@
     "Cart": "Cart",
     "Subtotal": "Subtotal",
     "Error placing order.": "Error placing order.",
-    "This is a preview. Orders cannot be placed from here.": "This is a preview. Orders cannot be placed from here."
+    "This is a preview. Orders cannot be placed from here.": "This is a preview. Orders cannot be placed from here.",
+    "Tab card code": "Tab card code",
+    "optional": "optional",
+    "Code printed on your tab card": "Code printed on your tab card",
+    "This tab card is already in use.": "This tab card is already in use."
 }

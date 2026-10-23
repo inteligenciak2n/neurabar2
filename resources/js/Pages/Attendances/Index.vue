@@ -22,6 +22,7 @@ const showLocator = ref(false);
 const locatorQuery = ref('');
 const locatorInput = ref(null);
 const identifierInput = ref(null);
+const codeInput = ref(null);
 const serviceCallRequests = ref([...(props.serviceCallRequests ?? [])]);
 
 function requestsForLocation(locationId) {
@@ -50,35 +51,11 @@ function updateServiceLocation(attendance, serviceLocationId) {
 const form = useForm({
     attendance_channel_id: '',
     customer_identifier: '',
+    code: '',
     service_location_id: '',
     party_size: 1,
     notes: '',
 });
-
-const hiddenServiceLocationTypes = ['bar'];
-const selectableServiceLocations = () =>
-    (props.serviceLocations ?? []).filter((loc) => !hiddenServiceLocationTypes.includes(loc.type));
-const stateServiceLocation = ref(
-    [selectableServiceLocations()[0]?.type].filter(Boolean),
-);
-const serviceLocationsByType = () => {
-    let types = {};
-    for (const loc of selectableServiceLocations()) {
-        if (!types[loc.type]) {
-            types[loc.type] = [];
-        }
-        types[loc.type].push(loc);
-    }
-    return types;
-};
-
-const toggleServiceLocationType = (type) => {
-    if (stateServiceLocation.value.includes(type)) {
-        stateServiceLocation.value = stateServiceLocation.value.filter(t => t !== type);
-    } else {
-        stateServiceLocation.value.push(type);
-    }
-};
 
 const elapsedMinutes = (createdAt) => {
     const diff = Date.now() - new Date(createdAt).getTime();
@@ -98,6 +75,7 @@ const ordersTotal = (attendance) => {
 const initForm = () => {
     form.attendance_channel_id = props.channels?.[0]?.id ?? '';
     form.customer_identifier = '';
+    form.code = '';
     form.service_location_id = '';
     form.party_size = 1;
     form.notes = '';
@@ -107,12 +85,9 @@ const openCreate = (mode) => {
     formMode.value = mode;
     showLocator.value = false;
     initForm();
-    if (mode === 'table') {
-        stateServiceLocation.value = ['table'];
-    }
     showForm.value = true;
     if (mode === 'tab') {
-        nextTick(() => identifierInput.value?.focus());
+        nextTick(() => codeInput.value?.focus());
     }
 };
 
@@ -132,6 +107,7 @@ const visibleAttendances = computed(() => {
     return list.filter((attendance) => {
         const haystack = [
             attendance.customer_identifier,
+            attendance.code,
             attendance.service_location?.name,
             attendance.attendance_channel?.name,
             attendance.created_by?.name,
@@ -143,7 +119,7 @@ const visibleAttendances = computed(() => {
 
 const submit = () => {
     if (formMode.value === 'table' && !form.customer_identifier && form.service_location_id) {
-        const location = selectableServiceLocations().find((loc) => loc.id === form.service_location_id);
+        const location = (props.serviceLocations ?? []).find((loc) => loc.id === form.service_location_id);
         if (location) {
             form.customer_identifier = location.name;
         }
@@ -250,34 +226,33 @@ onUnmounted(() => {
                     <p v-if="form.errors.customer_identifier" class="mt-1 text-xs text-destructive">{{ form.errors.customer_identifier }}</p>
                 </div>
 
-                <div v-if="selectableServiceLocations().length">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Tab card code') }}</label>
+                    <input
+                        ref="codeInput"
+                        v-model="form.code"
+                        type="text"
+                        maxlength="32"
+                        autocomplete="off"
+                        :placeholder="__('Code printed on the tab card')"
+                        class="w-full rounded-md border border-border px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                    />
+                    <p v-if="form.errors.code" class="mt-1 text-xs text-destructive">{{ __(form.errors.code) }}</p>
+                </div>
+
+                <div v-if="serviceLocations?.length">
                     <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Service Location') }}</label>
 
-                    <template v-for="(locType, type) in serviceLocationsByType()" :key="type" >
-                        <div class="mb-2 font-semibold text-ocean-deep dark:text-gray-300 border dark:border-gray-700 rounded-md relative">
-                            <button 
-                                type="button" 
-                                class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium"
-                                @click="() => toggleServiceLocationType(type)"
-                                >{{ __(type) }}</button>
-                            <div v-if="stateServiceLocation.includes(type)" class="p-2">
-                                <template v-for="loc in locType" :key="loc.id">
-                                    <button
-                                        type="button"
-                                        @click="form.service_location_id = loc.id"
-                                        :class="{'bg-primary text-white': form.service_location_id === loc.id, 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200': form.service_location_id !== loc.id}"
-                                        class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
-                                    >
-                                        {{ loc.name }}
-                                    </button>
-                                </template>
-                            </div>
-                            <div v-else
-                            class="w-full h-full absolute top-0 left-0 opacity-50 cursor-pointer"
-                            @click="() => toggleServiceLocationType(type)"
-                            ></div>
-                        </div>
-                    </template>
+                    <button
+                        v-for="loc in serviceLocations"
+                        :key="loc.id"
+                        type="button"
+                        :class="{'bg-primary text-white': form.service_location_id === loc.id, 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200': form.service_location_id !== loc.id}"
+                        class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                        @click="form.service_location_id = loc.id"
+                    >
+                        {{ loc.name }}
+                    </button>
                 </div>
 
                 <div>
@@ -347,6 +322,9 @@ onUnmounted(() => {
                             <span v-if="attendance.customer_identifier" class="text-sm font-semibold text-ocean-deep dark:text-gray-100">
                                 {{ __('Identifier:') }} {{ attendance.customer_identifier }}
                             </span>
+                            <span v-if="attendance.code" class="rounded-md bg-warm-gold/30 px-2 py-0.5 text-xs font-bold tracking-wide text-ocean-deep dark:text-gray-100">
+                                {{ __('Tab') }} #{{ attendance.code }}
+                            </span>
                             <span v-if="attendance.service_location" class="text-sm text-ocean-deep dark:text-gray-300">
                                 {{ attendance.service_location.name }}
                             </span>
@@ -369,7 +347,7 @@ onUnmounted(() => {
                                 @change="updateServiceLocation(attendance, $event.target.value)"
                             >
                                 <option value="">{{ __('None') }}</option>
-                                <option v-for="loc in selectableServiceLocations()" :key="loc.id" :value="loc.id">{{ loc.name }}</option>
+                                <option v-for="loc in serviceLocations" :key="loc.id" :value="loc.id">{{ loc.name }}</option>
                             </select>
                         </div>
 
