@@ -24,6 +24,7 @@ class AttendanceChannelFactory extends Factory
             'description' => fake()->optional()->sentence(),
             'is_trackable' => true,
             'requires_customer_identifier' => false,
+            'requires_tab' => false,
             'active' => true,
             'sort_order' => fake()->numberBetween(0, 10),
         ];

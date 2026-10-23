@@ -81,7 +81,7 @@ onUnmounted(() => {
             <div class="flex items-center gap-4">
                 <Link :href="route('attendances.index')" class="text-sm font-medium text-primary hover:underline">← {{ __('Attendances') }}</Link>
                 <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">
-                    {{ attendance.customer_identifier ?? attendance.attendance_channel?.name ?? '' }}
+                    {{ attendance.tab?.code ? `${__('Tab')} ${attendance.tab.code}` : (attendance.customer_identifier ?? attendance.attendance_channel?.name ?? '') }}
                 </h1>
                 <AppBadge :label="attendance.status" :color="attendance.status === 'open' ? '#22c55e' : '#94a3b8'" />
             </div>

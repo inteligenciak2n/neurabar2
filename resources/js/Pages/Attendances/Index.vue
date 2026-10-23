@@ -5,13 +5,17 @@ import AppButton from '@/Components/AppButton.vue';
 import AppBadge from '@/Components/AppBadge.vue';
 import AppEmptyState from '@/Components/AppEmptyState.vue';
 import { useForm, Link, router } from '@inertiajs/vue3';
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue';
 import { useNotificationSound } from '@/Composables/useNotificationSound';
+import { formatPrefixLabel, groupTabsByPrefix } from '@/Utils/tabRows';
+import { attendanceMatchesLocator } from '@/Utils/attendanceLocator';
 
 const props = defineProps({
     attendances: Array,
     serviceLocations: Array,
     channels: Array,
+    tabs: Array,
+    tabSeries: Array,
     venueId: String,
     serviceCallRequests: Array,
 });
@@ -21,6 +25,20 @@ const formMode = ref('order');
 const showLocator = ref(false);
 const locatorQuery = ref('');
 const locatorInput = ref(null);
+const locatorFieldOptions = [
+    { key: 'tables', label: 'Tables' },
+    { key: 'tab', label: 'Tab' },
+    { key: 'order', label: 'Order' },
+    { key: 'name', label: 'Name' },
+    { key: 'product', label: 'Product' },
+];
+const locatorFields = reactive({
+    tables: true,
+    tab: true,
+    order: true,
+    name: true,
+    product: true,
+});
 const identifierInput = ref(null);
 const codeInput = ref(null);
 const serviceCallRequests = ref([...(props.serviceCallRequests ?? [])]);
@@ -52,10 +70,44 @@ const form = useForm({
     attendance_channel_id: '',
     customer_identifier: '',
     code: '',
+    tab_id: '',
     service_location_id: '',
     party_size: 1,
     notes: '',
 });
+
+const selectedChannel = computed(() =>
+    (props.channels ?? []).find((channel) => channel.id === form.attendance_channel_id),
+);
+
+const formChannels = computed(() => {
+    const list = props.channels ?? [];
+    if (formMode.value !== 'tab') {
+        return list;
+    }
+
+    const tabChannels = list.filter((channel) => channel.requires_tab);
+
+    return tabChannels.length ? tabChannels : list;
+});
+
+const availableTabs = computed(() => props.tabs ?? []);
+
+const availableTabGroups = computed(() => {
+    const notesByPrefix = Object.fromEntries(
+        (props.tabSeries ?? []).map((series) => [series.prefix ?? '', series.notes ?? '']),
+    );
+
+    return groupTabsByPrefix(availableTabs.value).map((group) => ({
+        ...group,
+        notes: notesByPrefix[group.prefix] ?? '',
+    }));
+});
+
+const selectChannel = (channelId) => {
+    form.attendance_channel_id = channelId;
+    form.tab_id = '';
+};
 
 const elapsedMinutes = (createdAt) => {
     const diff = Date.now() - new Date(createdAt).getTime();
@@ -76,6 +128,7 @@ const initForm = () => {
     form.attendance_channel_id = props.channels?.[0]?.id ?? '';
     form.customer_identifier = '';
     form.code = '';
+    form.tab_id = '';
     form.service_location_id = '';
     form.party_size = 1;
     form.notes = '';
@@ -85,6 +138,12 @@ const openCreate = (mode) => {
     formMode.value = mode;
     showLocator.value = false;
     initForm();
+    if (mode === 'tab') {
+        const tabChannel = (props.channels ?? []).find((channel) => channel.requires_tab);
+        if (tabChannel) {
+            form.attendance_channel_id = tabChannel.id;
+        }
+    }
     showForm.value = true;
     if (mode === 'tab') {
         nextTick(() => codeInput.value?.focus());
@@ -97,24 +156,22 @@ const openLocator = () => {
     nextTick(() => locatorInput.value?.focus());
 };
 
+const selectedLocatorFields = computed(() =>
+    locatorFieldOptions
+        .filter((field) => locatorFields[field.key])
+        .map((field) => field.key),
+);
+
 const visibleAttendances = computed(() => {
     const list = props.attendances ?? [];
-    const query = locatorQuery.value.trim().toLowerCase();
+    const query = locatorQuery.value.trim();
     if (!query) {
         return list;
     }
 
-    return list.filter((attendance) => {
-        const haystack = [
-            attendance.customer_identifier,
-            attendance.code,
-            attendance.service_location?.name,
-            attendance.attendance_channel?.name,
-            attendance.created_by?.name,
-        ].filter(Boolean).join(' ').toLowerCase();
-
-        return haystack.includes(query);
-    });
+    return list.filter((attendance) =>
+        attendanceMatchesLocator(attendance, query, selectedLocatorFields.value),
+    );
 });
 
 const submit = () => {
@@ -201,10 +258,10 @@ onUnmounted(() => {
             <form class="grid grid-cols-1 gap-3 sm:grid-cols-2" @submit.prevent="submit">
                 <div>
                     <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Channel') }} <span class="text-destructive">*</span></label>
-                    <template v-for="ch in channels" :key="ch.id">
+                    <template v-for="ch in formChannels" :key="ch.id">
                         <button
                             type="button"
-                            @click="form.attendance_channel_id = ch.id"
+                            @click="selectChannel(ch.id)"
                             :class="{'bg-primary text-white': form.attendance_channel_id === ch.id, 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200': form.attendance_channel_id !== ch.id}"
                             class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
                         >
@@ -212,6 +269,41 @@ onUnmounted(() => {
                         </button>
                     </template>
                     <p v-if="form.errors.attendance_channel_id" class="mt-1 text-xs text-destructive">{{ form.errors.attendance_channel_id }}</p>
+                </div>
+
+                <div v-if="selectedChannel?.requires_tab">
+                    <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Tab') }} <span class="text-destructive">*</span></label>
+                    <p v-if="!availableTabs.length" class="mb-2 text-xs text-muted-foreground">{{ __('No free tabs.') }}</p>
+                    <div v-else class="space-y-3">
+                        <div
+                            v-for="group in availableTabGroups"
+                            :key="group.prefix || 'numbers'"
+                        >
+                            <p class="text-xs font-medium text-ocean-deep dark:text-gray-200">
+                                {{ group.prefix ? `${__('Prefix')} ${formatPrefixLabel(group.prefix)}` : __('Numbers') }}
+                            </p>
+                            <p v-if="group.notes" class="mb-1 text-xs text-muted-foreground dark:text-gray-400">{{ group.notes }}</p>
+                            <div class="mt-1 space-y-2">
+                                <div
+                                    v-for="(row, rowIndex) in group.rows"
+                                    :key="rowIndex"
+                                    class="grid grid-cols-5 gap-2 sm:grid-cols-10"
+                                >
+                                    <button
+                                        v-for="tab in row"
+                                        :key="tab.id"
+                                        type="button"
+                                        @click="form.tab_id = tab.id"
+                                        :class="{'bg-primary text-white': form.tab_id === tab.id, 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200': form.tab_id !== tab.id}"
+                                        class="rounded-md px-2 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                                    >
+                                        {{ tab.code }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <p v-if="form.errors.tab_id" class="mt-1 text-xs text-destructive">{{ form.errors.tab_id }}</p>
                 </div>
 
                 <div>
@@ -295,15 +387,34 @@ onUnmounted(() => {
             </form>
         </AppCard>
 
-        <div v-if="showLocator && !showForm" class="mb-6">
-            <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Locate orders') }}</label>
-            <input
-                ref="locatorInput"
-                v-model="locatorQuery"
-                type="search"
-                :placeholder="__('Search by table, name or channel')"
-                class="w-full max-w-lg rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            />
+        <div v-if="showLocator && !showForm" class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start">
+            <div class="w-full max-w-lg">
+                <label class="mb-1 block font-heading text-xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Locate orders') }}</label>
+                <input
+                    ref="locatorInput"
+                    v-model="locatorQuery"
+                    type="search"
+                    :placeholder="__('Search by table, name or channel')"
+                    class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                />
+            </div>
+            <div>
+                <p class="mb-1 text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Items to search') }}</p>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <label
+                        v-for="field in locatorFieldOptions"
+                        :key="field.key"
+                        class="inline-flex cursor-pointer items-center gap-2"
+                    >
+                        <input
+                            v-model="locatorFields[field.key]"
+                            type="checkbox"
+                            class="h-4 w-4 rounded border-border text-primary focus:ring-primary dark:border-gray-600"
+                        />
+                        <span class="text-sm text-ocean-deep dark:text-gray-300">{{ __(field.label) }}</span>
+                    </label>
+                </div>
+            </div>
         </div>
 
         <AppEmptyState
@@ -319,6 +430,9 @@ onUnmounted(() => {
                     <div>
                         <div class="flex items-center gap-2">
                             <AppBadge :label="attendance.attendance_channel?.name ?? ''" color="#3b82f6" />
+                            <span v-if="attendance.tab" class="text-sm font-semibold text-ocean-deep dark:text-gray-100">
+                                {{ __('Tab:') }} {{ attendance.tab.code }}
+                            </span>
                             <span v-if="attendance.customer_identifier" class="text-sm font-semibold text-ocean-deep dark:text-gray-100">
                                 {{ __('Identifier:') }} {{ attendance.customer_identifier }}
                             </span>

@@ -23,6 +23,7 @@ class AttendanceChannel extends Model
         'description',
         'is_trackable',
         'requires_customer_identifier',
+        'requires_tab',
         'active',
         'sort_order',
     ];
@@ -32,6 +33,7 @@ class AttendanceChannel extends Model
         return [
             'is_trackable' => 'boolean',
             'requires_customer_identifier' => 'boolean',
+            'requires_tab' => 'boolean',
             'active' => 'boolean',
             'sort_order' => 'integer',
         ];
@@ -40,5 +42,10 @@ class AttendanceChannel extends Model
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    public function serviceLocations(): HasMany
+    {
+        return $this->hasMany(ServiceLocation::class, 'default_attendance_channel_id');
     }
 }

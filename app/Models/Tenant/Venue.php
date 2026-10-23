@@ -11,6 +11,8 @@ use App\Models\Settings\DeliveryFeeZone;
 use App\Models\Settings\KitchenStation;
 use App\Models\Settings\PreparationStatus;
 use App\Models\Settings\ServiceLocation;
+use App\Models\Settings\Tab;
+use App\Models\Settings\TabSeries;
 use App\Models\Settings\VenueSettings;
 use App\Models\User;
 use App\Models\UserVenue;
@@ -129,6 +131,16 @@ class Venue extends Model
     public function attendanceChannels(): HasMany
     {
         return $this->hasMany(AttendanceChannel::class)->orderBy('sort_order');
+    }
+
+    public function tabSeries(): HasMany
+    {
+        return $this->hasMany(TabSeries::class)->orderBy('prefix');
+    }
+
+    public function tabs(): HasMany
+    {
+        return $this->hasMany(Tab::class);
     }
 
     public function subscription(): HasOne

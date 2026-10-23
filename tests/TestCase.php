@@ -131,6 +131,8 @@ abstract class TestCase extends BaseTestCase
         'order_item_modifiers',
         'attendances',
         'attendance_channels',
+        'tabs',
+        'tab_series',
         'service_requests',
         'payments',
         'payment_items',

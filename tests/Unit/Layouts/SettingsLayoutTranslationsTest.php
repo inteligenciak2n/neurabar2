@@ -36,8 +36,14 @@ class SettingsLayoutTranslationsTest extends TestCase
         $this->assertStringContainsString("event.target.closest('[data-enable-editing]')", $layout);
         $this->assertStringContainsString('editingEnabled.value = true', $layout);
         $this->assertStringContainsString('cursor-none select-none opacity-75', $layout);
+        $this->assertStringContainsString('[&_*]:!cursor-none', $layout);
         $this->assertStringContainsString("t('Unlock editing')", $layout);
         $this->assertStringContainsString('onLockedPointerMove', $layout);
+        $this->assertStringContainsString('overEdit', $layout);
+        $this->assertStringContainsString("lockHint.overEdit ? 'mt-4' : 'mt-1'", $layout);
+        $this->assertStringContainsString('whitespace-nowrap', $layout);
+        $this->assertStringContainsString('v-if="lockHint.overEdit"', $layout);
+        $this->assertStringContainsString('M22 14a8 8 0 0 1-8 8', $layout);
         $this->assertStringNotContainsString(':disabled="props.lockable && !editingEnabled"', $layout);
         $this->assertStringNotContainsString("{{ t('Cancel editing') }}", $layout);
         $this->assertStringContainsString("route().current('settings.index')", $layout);

@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Actions\Settings\CreateServiceLocationAction;
+use App\Actions\Settings\CreateServiceLocationRangeAction;
 use App\Actions\Settings\DeleteServiceLocationAction;
 use App\Actions\Settings\GenerateQrTokenAction;
 use App\Actions\Settings\UpdateServiceLocationAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\StoreServiceLocationRangeRequest;
 use App\Http\Requests\Settings\StoreServiceLocationRequest;
 use App\Http\Requests\Settings\UpdateServiceLocationRequest;
 use App\Models\Settings\ServiceLocation;
@@ -54,6 +56,13 @@ class ServiceLocationController extends Controller
         $action->execute($venue, $request);
 
         return back()->with('success', 'Service location created.');
+    }
+
+    public function storeRange(StoreServiceLocationRangeRequest $request, CreateServiceLocationRangeAction $action): RedirectResponse
+    {
+        $action->execute(app('tenant'), $request);
+
+        return back()->with('success', 'Locations created successfully');
     }
 
     public function update(UpdateServiceLocationRequest $request, ServiceLocation $location, UpdateServiceLocationAction $action): RedirectResponse

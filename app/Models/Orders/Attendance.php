@@ -8,6 +8,7 @@ use App\Models\Concerns\HasOperationalConnection;
 use App\Models\Payment\Payment;
 use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\ServiceLocation;
+use App\Models\Settings\Tab;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -29,6 +30,7 @@ class Attendance extends Model
         'venue_id',
         'service_location_id',
         'attendance_channel_id',
+        'tab_id',
         'customer_identifier',
         'code',
         'status',
@@ -64,6 +66,11 @@ class Attendance extends Model
     public function attendanceChannel(): BelongsTo
     {
         return $this->belongsTo(AttendanceChannel::class);
+    }
+
+    public function tab(): BelongsTo
+    {
+        return $this->belongsTo(Tab::class);
     }
 
     public function serviceLocation(): BelongsTo

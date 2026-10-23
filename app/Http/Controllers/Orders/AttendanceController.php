@@ -11,6 +11,7 @@ use App\Models\Orders\Attendance;
 use App\Models\Orders\ServiceRequest;
 use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\ServiceLocation;
+use App\Models\Settings\Tab;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
@@ -24,7 +25,15 @@ class AttendanceController extends Controller
         $venue = app('tenant');
 
         $attendances = Attendance::open()
-            ->with(['attendanceChannel:id,name', 'serviceLocation', 'createdBy', 'orders' => fn ($q) => $q->latest(), 'orders.items'])
+            ->with([
+                'attendanceChannel:id,name,requires_tab',
+                'tab:id,code',
+                'serviceLocation',
+                'createdBy',
+                'orders' => fn ($q) => $q->latest(),
+                'orders.items.product:id,name',
+                'orders.items.combo:id,name',
+            ])
             ->latest()
             ->get();
 
@@ -33,11 +42,20 @@ class AttendanceController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        $occupiedTabIds = Attendance::open()->whereNotNull('tab_id')->pluck('tab_id');
+
         $channels = AttendanceChannel::withoutGlobalScopes()
             ->where('venue_id', $venue->id)
             ->where('active', true)
             ->orderBy('sort_order')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'requires_tab', 'requires_customer_identifier']);
+
+        $tabs = Tab::query()
+            ->where('venue_id', $venue->id)
+            ->where('active', true)
+            ->whereNotIn('id', $occupiedTabIds)
+            ->orderByRaw('length(code), code')
+            ->get(['id', 'code', 'tab_series_id']);
 
         // Chamados de "chamar garçom p/ anotar pedido" e "fechar conta" — as
         // mensagens de texto do Direct Garçom têm painel próprio (/direct-waiter).
@@ -51,6 +69,8 @@ class AttendanceController extends Controller
             'attendances' => $attendances,
             'serviceLocations' => $serviceLocations,
             'channels' => $channels,
+            'tabs' => $tabs,
+            'tabSeries' => $venue->tabSeries()->orderBy('prefix')->get(['id', 'prefix', 'notes']),
             'venueId' => $venue->id,
             'serviceCallRequests' => $serviceCallRequests,
         ]);
@@ -60,9 +80,9 @@ class AttendanceController extends Controller
     {
         $venue = app('tenant');
 
-        $action->execute($venue, $request);
+        $attendance = $action->execute($venue, $request);
 
-        return redirect()->route('attendances.index');
+        return redirect()->route('orders.take', $attendance);
     }
 
     public function show(Attendance $attendance): Response
@@ -73,6 +93,8 @@ class AttendanceController extends Controller
             'orders' => fn ($q) => $q->latest(),
             'orders.items.product',
             'orders.items.preparationStatus',
+            'attendanceChannel:id,name',
+            'tab:id,code',
             'serviceLocation',
             'createdBy',
         ]);

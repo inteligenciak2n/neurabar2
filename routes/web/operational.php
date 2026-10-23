@@ -32,6 +32,7 @@ use App\Http\Controllers\Settings\SubscriptionController;
 use App\Http\Controllers\Settings\SubscriptionInvoiceController;
 use App\Http\Controllers\Settings\SubscriptionPaymentMethodController;
 use App\Http\Controllers\Settings\SubscriptionUsageController;
+use App\Http\Controllers\Settings\TabController;
 use App\Http\Controllers\Settings\UserController;
 use App\Http\Controllers\Settings\VenueController;
 use App\Http\Controllers\Settings\VenuePlanChangeRequestController;
@@ -234,6 +235,7 @@ Route::middleware([
 
         Route::get('/service-locations', [ServiceLocationController::class, 'index'])->name('service-locations.index');
         Route::post('/service-locations', [ServiceLocationController::class, 'store'])->name('service-locations.store');
+        Route::post('/service-locations/range', [ServiceLocationController::class, 'storeRange'])->name('service-locations.range');
         Route::put('/service-locations/{location}', [ServiceLocationController::class, 'update'])->name('service-locations.update');
         Route::delete('/service-locations/{location}', [ServiceLocationController::class, 'destroy'])->name('service-locations.destroy');
         Route::post('/service-locations/{location}/qr', [ServiceLocationController::class, 'generateQr'])->name('service-locations.qr');
@@ -243,6 +245,12 @@ Route::middleware([
         Route::post('/attendance-channels', [AttendanceChannelController::class, 'store'])->name('attendance-channels.store');
         Route::put('/attendance-channels/{channel}', [AttendanceChannelController::class, 'update'])->name('attendance-channels.update');
         Route::delete('/attendance-channels/{channel}', [AttendanceChannelController::class, 'destroy'])->name('attendance-channels.destroy');
+        Route::delete('/attendance-channels/{channel}/locations', [AttendanceChannelController::class, 'destroyLocations'])->name('attendance-channels.locations.destroy');
+        Route::post('/tabs', [TabController::class, 'store'])->name('tabs.store');
+        Route::post('/tabs/range', [TabController::class, 'storeRange'])->name('tabs.range');
+        Route::put('/tab-series/{series}', [TabController::class, 'updateSeries'])->name('tab-series.update');
+        Route::delete('/tab-series/{series}', [TabController::class, 'destroySeries'])->name('tab-series.destroy');
+        Route::delete('/tabs/{tab}', [TabController::class, 'destroy'])->name('tabs.destroy');
 
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');

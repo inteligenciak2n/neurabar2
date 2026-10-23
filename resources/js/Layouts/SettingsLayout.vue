@@ -33,7 +33,7 @@ const t = (key, bindings = {}) => translate(key, bindings, 'SettingsLayout');
 const { editingEnabled, flushAutosave } = useSettingsEditing();
 const showBack = computed(() => props.nested || !route().current('settings.index'));
 const isLocked = computed(() => props.lockable && !editingEnabled.value);
-const lockHint = ref({ visible: false, x: 0, y: 0 });
+const lockHint = ref({ visible: false, x: 0, y: 0, overEdit: false });
 
 const commitFields = () => {
     if (!editingEnabled.value) {
@@ -117,6 +117,7 @@ const onLockedPointerMove = (event) => {
         visible: true,
         x: event.clientX,
         y: event.clientY,
+        overEdit: Boolean(event.target.closest('[data-enable-editing]')),
     };
 };
 
@@ -177,7 +178,7 @@ const hideLockHint = () => {
 
             <div
                 class="relative mx-auto w-full max-w-5xl"
-                :class="isLocked ? 'cursor-none select-none opacity-75' : ''"
+                :class="isLocked ? 'cursor-none select-none opacity-75 [&_*]:!cursor-none' : ''"
                 @click.capture="onLockedInteract"
                 @focusin.capture="onLockedInteract"
                 @change="commitFields"
@@ -195,11 +196,39 @@ const hideLockHint = () => {
                     class="pointer-events-none fixed z-[100] flex -translate-x-1/2 flex-col items-center"
                     :style="{ left: `${lockHint.x}px`, top: `${lockHint.y}px` }"
                 >
-                    <svg class="h-6 w-6 text-ocean-deep dark:text-gray-100" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg
+                        v-if="lockHint.overEdit"
+                        class="h-6 w-6 text-ocean-deep dark:text-gray-100"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M22 14a8 8 0 0 1-8 8" />
+                        <path d="M18 11v-1a2 2 0 0 0-2-2 2 2 0 0 0-2 2" />
+                        <path d="M14 10V9a2 2 0 0 0-2-2 2 2 0 0 0-2 2v1" />
+                        <path d="M10 9.5V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v10" />
+                        <path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+                    </svg>
+                    <svg
+                        v-else
+                        class="h-6 w-6 text-ocean-deep dark:text-gray-100"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
                         <circle cx="12" cy="12" r="9" />
                         <path stroke-linecap="round" d="M7 7l10 10" />
                     </svg>
-                    <span class="mt-1 text-center text-xs font-medium text-ocean-deep dark:text-gray-100">{{ t('Unlock editing') }}</span>
+                    <span
+                        class="whitespace-nowrap text-center text-xs font-medium text-ocean-deep dark:text-gray-100"
+                        :class="lockHint.overEdit ? 'mt-4' : 'mt-1'"
+                    >{{ t('Unlock editing') }}</span>
                 </div>
             </Teleport>
         </div>
