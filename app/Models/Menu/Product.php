@@ -28,7 +28,6 @@ class Product extends Model
         'price',
         'image_url',
         'active',
-        'available_for_delivery',
         'sort_order',
     ];
 
@@ -38,7 +37,6 @@ class Product extends Model
             'price' => 'decimal:2',
             'servings' => 'integer',
             'active' => 'boolean',
-            'available_for_delivery' => 'boolean',
             'sort_order' => 'integer',
         ];
     }

@@ -262,7 +262,6 @@ onMounted(() => {
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 <span class="text-sm font-medium text-ocean-deep capitalize">{{ serviceLocation.name }}</span>
-                <span class="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground capitalize">{{ serviceLocation.type }}</span>
             </div>
 
             <!-- Geo blocked warning -->

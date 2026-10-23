@@ -25,7 +25,7 @@ class GuestOrderController extends Controller
 
         abort_if($session === null || ! $session->hasPin(), 403, 'No active session.');
 
-        $this->tokenService->createAttendanceIfNeeded($session);
+        $attendance = $this->tokenService->createAttendanceIfNeeded($session, $request->validated('tab_code'));
         $session->refresh();
 
         $order = $action->execute($session, $request->validated());
@@ -33,6 +33,7 @@ class GuestOrderController extends Controller
         return response()->json([
             'order_id' => $order->id,
             'order_number' => $order->order_number,
+            'tab_code' => $attendance->code,
         ], 201);
     }
 

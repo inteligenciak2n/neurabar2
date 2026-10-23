@@ -3,6 +3,7 @@
 namespace Tests\Feature\Guest;
 
 use App\Models\Orders\Attendance;
+use App\Models\Orders\DeliveryOrder;
 use App\Models\Orders\Order;
 use App\Models\Orders\OrderItem;
 use App\Models\Settings\AttendanceChannel;
@@ -94,5 +95,28 @@ class TrackOrderTest extends TestCase
         $order = Order::factory()->create(['attendance_id' => $attendance->id]);
 
         $this->get(route('orders.track', $order->id))->assertNotFound();
+    }
+
+    public function test_tracking_exposes_delivery_order_code(): void
+    {
+        $venue = Venue::factory()->create();
+        $attendance = Attendance::factory()->create(['venue_id' => $venue->id]);
+        $order = Order::factory()->create([
+            'attendance_id' => $attendance->id,
+            'order_number' => 4321,
+        ]);
+        DeliveryOrder::factory()->create([
+            'venue_id' => $venue->id,
+            'attendance_id' => $attendance->id,
+            'code' => 4321,
+        ]);
+
+        $response = $this->get(route('orders.track', $order->id));
+        $response->assertOk();
+
+        $tracked = $response->original->getData()['page']['props']['order'];
+
+        $this->assertSame(4321, $tracked['code']);
+        $this->assertSame(4321, $tracked['order_number']);
     }
 }

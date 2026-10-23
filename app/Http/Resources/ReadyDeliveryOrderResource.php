@@ -22,6 +22,7 @@ class ReadyDeliveryOrderResource extends JsonResource
                 'customer_identifier' => $this->attendance->customer_identifier,
                 'delivery_order' => [
                     'fulfillment_type' => $this->attendance->deliveryOrder->fulfillment_type,
+                    'code' => $this->attendance->deliveryOrder->code,
                 ],
             ],
         ];

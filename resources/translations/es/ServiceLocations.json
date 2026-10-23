@@ -15,7 +15,7 @@
     "Active": "Activo",
     "table": "mesa",
     "Save": "Guardar",
-    "Service Locations": "Ubicaciones de servicio",
+    "Service Locations": "Locales de atención",
     "bar": "bar",
     "Edit": "Editar",
     "Edit Location": "Editar ubicación",
@@ -24,5 +24,7 @@
     "— None —": "— Ninguna —",
     "PDF QR": "PDF QR",
     "Regenerate QR": "Regenerar QR",
-    "View Hub": "Ver Hub"
+    "View Hub": "Ver Hub",
+    "Tables, counters and areas": "Mesas, mostradores y áreas",
+    "served by your venue": "atendidas por su establecimiento"
 }

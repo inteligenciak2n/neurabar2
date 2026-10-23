@@ -22,6 +22,8 @@ class DeliveryOrder extends Model
     protected $fillable = [
         'venue_id',
         'attendance_id',
+        'code',
+        'code_expires_at',
         'fulfillment_type',
         'customer_id',
         'customer_address_id',
@@ -37,6 +39,7 @@ class DeliveryOrder extends Model
         'address_state',
         'address_zip_code',
         'address_reference_point',
+        'delivery_comment',
     ];
 
     protected function casts(): array
@@ -44,6 +47,8 @@ class DeliveryOrder extends Model
         return [
             'fulfillment_type' => FulfillmentType::class,
             'delivery_fee' => 'decimal:2',
+            'code' => 'integer',
+            'code_expires_at' => 'datetime',
         ];
     }
 

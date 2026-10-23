@@ -75,6 +75,9 @@ onUnmounted(() => {
                 <p v-if="item.order?.attendance?.customer_identifier" class="text-sm text-gray-400">
                     {{ __('Table') }}: {{ item.order.attendance.customer_identifier }}
                 </p>
+                <p v-if="item.order?.attendance?.code" class="text-sm font-semibold text-warm-gold">
+                    {{ __('Tab') }} {{ item.order.attendance.code }}
+                </p>
             </div>
         </div>
     </div>

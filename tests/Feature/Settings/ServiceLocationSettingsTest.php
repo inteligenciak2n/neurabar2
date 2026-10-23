@@ -2,10 +2,11 @@
 
 namespace Tests\Feature\Settings;
 
-use App\Enums\ServiceLocationType;
 use App\Enums\UserRole;
 use App\Models\Settings\ServiceLocation;
 use App\Models\Tenant\Venue;
+use App\Support\OperationalConnection;
+use Illuminate\Support\Facades\Schema;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
@@ -27,14 +28,12 @@ class ServiceLocationSettingsTest extends TestCase
 
         $this->post(route('settings.service-locations.store'), [
             'name' => 'Mesa 10',
-            'type' => 'table',
             'active' => true,
         ])->assertRedirect();
 
         $this->assertDatabaseHas('service_locations', [
             'venue_id' => $venue->id,
             'name' => 'Mesa 10',
-            'type' => 'table',
         ]);
     }
 
@@ -46,14 +45,12 @@ class ServiceLocationSettingsTest extends TestCase
 
         $this->put(route('settings.service-locations.update', $location->id), [
             'name' => 'Área VIP',
-            'type' => 'area',
             'active' => true,
         ])->assertRedirect();
 
         $this->assertDatabaseHas('service_locations', [
             'id' => $location->id,
             'name' => 'Área VIP',
-            'type' => 'area',
         ]);
     }
 
@@ -69,17 +66,6 @@ class ServiceLocationSettingsTest extends TestCase
         $this->assertDatabaseMissing('service_locations', ['id' => $location->id]);
     }
 
-    public function test_invalid_type_returns_validation_error(): void
-    {
-        $venue = Venue::factory()->create(['active' => true]);
-        $this->loginAs(UserRole::Owner, $venue);
-
-        $this->post(route('settings.service-locations.store'), [
-            'name' => 'Área X',
-            'type' => 'invalid_type',
-        ])->assertSessionHasErrors('type');
-    }
-
     public function test_location_name_is_required(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
@@ -87,7 +73,6 @@ class ServiceLocationSettingsTest extends TestCase
 
         $this->post(route('settings.service-locations.store'), [
             'name' => '',
-            'type' => 'table',
         ])->assertSessionHasErrors('name');
     }
 
@@ -115,38 +100,29 @@ class ServiceLocationSettingsTest extends TestCase
         $this->get(route('settings.service-locations.index'))->assertForbidden();
     }
 
-    public function test_index_provides_location_types_from_enum(): void
+    public function test_index_does_not_expose_location_types(): void
     {
         $this->loginAs(UserRole::Owner);
 
         $this->get(route('settings.service-locations.index'))
-            ->assertInertia(fn ($page) => $page
-                ->has('locationTypes')
-                ->where('locationTypes', array_column(ServiceLocationType::cases(), 'value'))
-            );
+            ->assertInertia(fn ($page) => $page->missing('locationTypes'));
     }
 
-    public function test_store_rejects_type_not_in_enum(): void
+    public function test_store_creates_a_location_without_a_type(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
         $this->loginAs(UserRole::Owner, $venue);
 
         $this->post(route('settings.service-locations.store'), [
-            'name' => 'Área X',
-            'type' => 'counter',
-        ])->assertSessionHasErrors('type');
-    }
+            'name' => 'Mesa 3',
+            'active' => true,
+        ])->assertRedirect();
 
-    public function test_update_rejects_type_not_in_enum(): void
-    {
-        $venue = Venue::factory()->create(['active' => true]);
-        $this->loginAs(UserRole::Owner, $venue);
-        $location = ServiceLocation::factory()->create(['venue_id' => $venue->id]);
-
-        $this->put(route('settings.service-locations.update', $location->id), [
-            'name' => 'Área X',
-            'type' => 'counter',
-        ])->assertSessionHasErrors('type');
+        $this->assertDatabaseHas('service_locations', [
+            'venue_id' => $venue->id,
+            'name' => 'Mesa 3',
+        ]);
+        $this->assertFalse(Schema::connection(OperationalConnection::current())->hasColumn('service_locations', 'type'));
     }
 
     public function test_owner_can_generate_qr_token_for_service_location(): void

@@ -5,7 +5,7 @@ import AppButton from '@/Components/AppButton.vue';
 import AppBadge from '@/Components/AppBadge.vue';
 import AppEmptyState from '@/Components/AppEmptyState.vue';
 import { useForm, Link, router } from '@inertiajs/vue3';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { useNotificationSound } from '@/Composables/useNotificationSound';
 
 const props = defineProps({
@@ -17,6 +17,12 @@ const props = defineProps({
 });
 
 const showForm = ref(false);
+const formMode = ref('order');
+const showLocator = ref(false);
+const locatorQuery = ref('');
+const locatorInput = ref(null);
+const identifierInput = ref(null);
+const codeInput = ref(null);
 const serviceCallRequests = ref([...(props.serviceCallRequests ?? [])]);
 
 function requestsForLocation(locationId) {
@@ -45,30 +51,11 @@ function updateServiceLocation(attendance, serviceLocationId) {
 const form = useForm({
     attendance_channel_id: '',
     customer_identifier: '',
+    code: '',
     service_location_id: '',
     party_size: 1,
     notes: '',
 });
-
-const stateServiceLocation = ref([props.serviceLocations?.[0]?.type]); // Track which service location types are expanded
-const serviceLocationsByType = () => {
-    let types = {};
-    for (const loc of props.serviceLocations) {
-        if (!types[loc.type]) {
-            types[loc.type] = [];
-        }
-        types[loc.type].push(loc);
-    }
-    return types;
-};
-
-const toggleServiceLocationType = (type) => {
-    if (stateServiceLocation.value.includes(type)) {
-        stateServiceLocation.value = stateServiceLocation.value.filter(t => t !== type);
-    } else {
-        stateServiceLocation.value.push(type);
-    }
-};
 
 const elapsedMinutes = (createdAt) => {
     const diff = Date.now() - new Date(createdAt).getTime();
@@ -88,15 +75,60 @@ const ordersTotal = (attendance) => {
 const initForm = () => {
     form.attendance_channel_id = props.channels?.[0]?.id ?? '';
     form.customer_identifier = '';
+    form.code = '';
     form.service_location_id = '';
     form.party_size = 1;
     form.notes = '';
 };
 
+const openCreate = (mode) => {
+    formMode.value = mode;
+    showLocator.value = false;
+    initForm();
+    showForm.value = true;
+    if (mode === 'tab') {
+        nextTick(() => codeInput.value?.focus());
+    }
+};
+
+const openLocator = () => {
+    showForm.value = false;
+    showLocator.value = true;
+    nextTick(() => locatorInput.value?.focus());
+};
+
+const visibleAttendances = computed(() => {
+    const list = props.attendances ?? [];
+    const query = locatorQuery.value.trim().toLowerCase();
+    if (!query) {
+        return list;
+    }
+
+    return list.filter((attendance) => {
+        const haystack = [
+            attendance.customer_identifier,
+            attendance.code,
+            attendance.service_location?.name,
+            attendance.attendance_channel?.name,
+            attendance.created_by?.name,
+        ].filter(Boolean).join(' ').toLowerCase();
+
+        return haystack.includes(query);
+    });
+});
+
 const submit = () => {
+    if (formMode.value === 'table' && !form.customer_identifier && form.service_location_id) {
+        const location = (props.serviceLocations ?? []).find((loc) => loc.id === form.service_location_id);
+        if (location) {
+            form.customer_identifier = location.name;
+        }
+    }
+
     form.post(route('attendances.store'), {
         onSuccess: () => {
             showForm.value = false;
+            formMode.value = 'order';
             initForm();
         },
     });
@@ -150,15 +182,22 @@ onUnmounted(() => {
 <template>
     <AppLayout :title="__('Attendances')">
         <template #header>
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-3">
                 <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Attendances') }}</h1>
-                <AppButton @click="initForm(); showForm = true">{{ __('New Attendance') }}</AppButton>
+                <div class="flex flex-wrap items-center gap-2">
+                    <AppButton size="sm" @click="openCreate('order')">{{ __('New Order') }}</AppButton>
+                    <AppButton size="sm" variant="secondary" @click="openCreate('table')">{{ __('New Table') }}</AppButton>
+                    <AppButton size="sm" variant="secondary" @click="openCreate('tab')">{{ __('New Tab') }}</AppButton>
+                    <AppButton size="sm" variant="ghost" @click="openLocator">{{ __('Locate orders') }}</AppButton>
+                </div>
             </div>
         </template>
 
         <!-- New attendance form -->
         <AppCard v-if="showForm" class="mb-6">
-            <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep dark:text-gray-100">{{ __('New Attendance') }}</h3>
+            <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep dark:text-gray-100">
+                {{ formMode === 'table' ? __('New Table') : formMode === 'tab' ? __('New Tab') : __('New Order') }}
+            </h3>
             <form class="grid grid-cols-1 gap-3 sm:grid-cols-2" @submit.prevent="submit">
                 <div>
                     <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Channel') }} <span class="text-destructive">*</span></label>
@@ -176,44 +215,44 @@ onUnmounted(() => {
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Identifier (table/name)') }}</label>
+                    <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-300">{{ formMode === 'tab' ? __('Customer name') : __('Identifier (table/name)') }}</label>
                     <input
+                        ref="identifierInput"
                         v-model="form.customer_identifier"
                         type="text"
-                        :placeholder="__('e.g. Table 5 or John')"
+                        :placeholder="formMode === 'tab' ? __('e.g. John') : __('e.g. Table 5 or John')"
                         class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                     />
                     <p v-if="form.errors.customer_identifier" class="mt-1 text-xs text-destructive">{{ form.errors.customer_identifier }}</p>
                 </div>
 
-                <div v-if="serviceLocations.length">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Tab card code') }}</label>
+                    <input
+                        ref="codeInput"
+                        v-model="form.code"
+                        type="text"
+                        maxlength="32"
+                        autocomplete="off"
+                        :placeholder="__('Code printed on the tab card')"
+                        class="w-full rounded-md border border-border px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                    />
+                    <p v-if="form.errors.code" class="mt-1 text-xs text-destructive">{{ __(form.errors.code) }}</p>
+                </div>
+
+                <div v-if="serviceLocations?.length">
                     <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Service Location') }}</label>
-                    
-                    <template v-for="(locType, type) in serviceLocationsByType()" :key="type" >
-                        <div class="mb-2 font-semibold text-ocean-deep dark:text-gray-300 border dark:border-gray-700 rounded-md relative">
-                            <button 
-                                type="button" 
-                                class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium"
-                                @click="() => toggleServiceLocationType(type)"
-                                >{{ __(type) }}</button>
-                            <div v-if="stateServiceLocation.includes(type)" class="p-2">
-                                <template v-for="loc in locType" :key="loc.id">
-                                    <button
-                                        type="button"
-                                        @click="form.service_location_id = loc.id"
-                                        :class="{'bg-primary text-white': form.service_location_id === loc.id, 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200': form.service_location_id !== loc.id}"
-                                        class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
-                                    >
-                                        {{ loc.name }}
-                                    </button>
-                                </template>
-                            </div>
-                            <div v-else
-                            class="w-full h-full absolute top-0 left-0 opacity-50 cursor-pointer"
-                            @click="() => toggleServiceLocationType(type)"
-                            ></div>
-                        </div>
-                    </template>
+
+                    <button
+                        v-for="loc in serviceLocations"
+                        :key="loc.id"
+                        type="button"
+                        :class="{'bg-primary text-white': form.service_location_id === loc.id, 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200': form.service_location_id !== loc.id}"
+                        class="mr-2 mb-2 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                        @click="form.service_location_id = loc.id"
+                    >
+                        {{ loc.name }}
+                    </button>
                 </div>
 
                 <div>
@@ -256,21 +295,35 @@ onUnmounted(() => {
             </form>
         </AppCard>
 
+        <div v-if="showLocator && !showForm" class="mb-6">
+            <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-300">{{ __('Locate orders') }}</label>
+            <input
+                ref="locatorInput"
+                v-model="locatorQuery"
+                type="search"
+                :placeholder="__('Search by table, name or channel')"
+                class="w-full max-w-lg rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            />
+        </div>
+
         <AppEmptyState
-            v-if="!attendances.length && !showForm"
-            :title="__('No open attendances')"
-            :description="__('Open a new attendance to start taking orders.')"
-            :action-label="__('New Attendance')"
-            @action="initForm(); showForm = true"
+            v-if="!visibleAttendances.length && !showForm"
+            :title="locatorQuery ? __('No matching orders') : __('No open attendances')"
+            :description="locatorQuery ? __('Try another table, name or channel.') : __('Open a new attendance to start taking orders.')"
+            :action-label="locatorQuery ? null : __('New Order')"
+            @action="openCreate('order')"
         />
-        <div v-if="attendances.length && !showForm" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <AppCard v-for="attendance in attendances" :key="attendance.id">
+        <div v-if="visibleAttendances.length && !showForm" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <AppCard v-for="attendance in visibleAttendances" :key="attendance.id">
                 <div class="flex items-start justify-between">
                     <div>
                         <div class="flex items-center gap-2">
                             <AppBadge :label="attendance.attendance_channel?.name ?? ''" color="#3b82f6" />
                             <span v-if="attendance.customer_identifier" class="text-sm font-semibold text-ocean-deep dark:text-gray-100">
                                 {{ __('Identifier:') }} {{ attendance.customer_identifier }}
+                            </span>
+                            <span v-if="attendance.code" class="rounded-md bg-warm-gold/30 px-2 py-0.5 text-xs font-bold tracking-wide text-ocean-deep dark:text-gray-100">
+                                {{ __('Tab') }} #{{ attendance.code }}
                             </span>
                             <span v-if="attendance.service_location" class="text-sm text-ocean-deep dark:text-gray-300">
                                 {{ attendance.service_location.name }}

@@ -51,18 +51,12 @@ const statusClass = (status) => {
 </script>
 
 <template>
-    <SettingsLayout :title="__('Invoice Details')">
+    <SettingsLayout :title="__('Invoice Details')" parent-route="settings.subscription.invoices.index">
         <template #header>
             <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Invoice Details') }}</h1>
         </template>
 
         <div class="rounded-xl border border-border bg-white p-6 shadow-card">
-            <div class="mb-6">
-                <Link :href="route('settings.subscription.invoices.index')" class="text-sm text-primary hover:underline">
-                    &larr; {{ __('Back to invoices') }}
-                </Link>
-            </div>
-
             <dl class="grid gap-4 sm:grid-cols-2">
                 <div>
                     <dt class="text-xs text-muted-foreground">{{ __('Period') }}</dt>

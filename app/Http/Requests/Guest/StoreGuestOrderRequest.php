@@ -19,6 +19,7 @@ class StoreGuestOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'tab_code' => ['nullable', 'string', 'max:32', 'regex:/^[A-Za-z0-9._-]+$/'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'uuid', Rule::exists(Product::class, 'id')],
             'items.*.variation_id' => ['nullable', 'uuid', Rule::exists(ProductVariation::class, 'id')],

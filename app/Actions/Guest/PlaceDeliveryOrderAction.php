@@ -18,11 +18,20 @@ use App\Models\Tenant\Customer;
 use App\Models\Tenant\CustomerAddress;
 use App\Models\Tenant\Venue;
 use App\Support\OperationalConnection;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class PlaceDeliveryOrderAction
 {
+    private const CODE_MIN = 100000;
+
+    private const CODE_MAX = 999999;
+
+    private const CODE_PICK_ATTEMPTS = 5;
+
+    private const PLACE_ATTEMPTS = 3;
+
     public function __construct(private readonly ResolveOrderItemsAction $resolveOrderItemsAction) {}
 
     /**
@@ -42,38 +51,59 @@ class PlaceDeliveryOrderAction
 
         $this->assertAcceptedPaymentMethods($settings, $validated['methods']);
 
-        $resolvedItems = $this->resolveOrderItemsAction->execute(
-            $venue,
-            $validated['items'],
-            fn ($query) => $query->where('available_for_delivery', true)
-        );
+        $resolvedItems = $this->resolveOrderItemsAction->execute($venue, $validated['items']);
 
         $this->assertMethodsMatchTotal($resolvedItems, $settings, $deliveryFee, $validated['methods']);
 
         $connection = OperationalConnection::current();
 
-        $order = DB::connection($connection)->transaction(function () use (
-            $venue, $validated, $fulfillmentType, $deliveryFeeZone, $deliveryFee, $resolvedItems
-        ): Order {
-            $customer = $this->createCustomer($venue, $validated['customer']);
+        for ($attempt = 1; ; $attempt++) {
+            try {
+                $order = DB::connection($connection)->transaction(fn (): Order => $this->persistOrder(
+                    $venue, $validated, $fulfillmentType, $deliveryFeeZone, $deliveryFee, $resolvedItems
+                ));
 
-            $customerAddress = $fulfillmentType === FulfillmentType::Delivery
-                ? $this->persistAddressIfRequested($customer, $validated['address'])
-                : null;
-
-            $attendanceChannel = $this->createOrRetrieveAttendanceChannel($venue, $fulfillmentType);
-            $attendance = $this->createAttendance($venue, $attendanceChannel, $validated['customer']['name']);
-            $order = $this->createOrderWithItems($venue, $attendance, $resolvedItems);
-
-            $this->createDeliveryOrderWithPaymentMethods(
-                $venue, $attendance, $fulfillmentType, $customer, $customerAddress,
-                $deliveryFeeZone, $deliveryFee, $validated
-            );
-
-            return $order;
-        });
+                break;
+            } catch (UniqueConstraintViolationException $e) {
+                // Concurrent order took the same code; the transaction rolled back, so draw again.
+                if ($attempt >= self::PLACE_ATTEMPTS) {
+                    throw $e;
+                }
+            }
+        }
 
         event(new OrderPlaced($order->load('attendance')));
+
+        return $order;
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @param  array<int, array<string, mixed>>  $resolvedItems
+     */
+    private function persistOrder(
+        Venue $venue,
+        array $validated,
+        FulfillmentType $fulfillmentType,
+        ?DeliveryFeeZone $deliveryFeeZone,
+        float $deliveryFee,
+        array $resolvedItems,
+    ): Order {
+        $customer = $this->createCustomer($venue, $validated['customer']);
+
+        $customerAddress = $fulfillmentType === FulfillmentType::Delivery
+            ? $this->persistAddressIfRequested($customer, $validated['address'])
+            : null;
+
+        $attendanceChannel = $this->createOrRetrieveAttendanceChannel($venue, $fulfillmentType);
+        $attendance = $this->createAttendance($venue, $attendanceChannel, $validated['customer']['name']);
+        $code = $this->generateDeliveryOrderCode($venue);
+        $order = $this->createOrderWithItems($venue, $attendance, $resolvedItems, $code);
+
+        $this->createDeliveryOrderWithPaymentMethods(
+            $venue, $attendance, $fulfillmentType, $customer, $customerAddress,
+            $deliveryFeeZone, $deliveryFee, $validated, $code
+        );
 
         return $order;
     }
@@ -112,13 +142,11 @@ class PlaceDeliveryOrderAction
     /**
      * @param  array<int, array{product_id: ?string, variation_id: ?string, quantity: int, unit_price: float, notes: ?string, modifiers: array<int, array<string, mixed>>}>  $resolvedItems
      */
-    private function createOrderWithItems(Venue $venue, Attendance $attendance, array $resolvedItems): Order
+    private function createOrderWithItems(Venue $venue, Attendance $attendance, array $resolvedItems, int $code): Order
     {
-        $orderNumber = Order::where('attendance_id', $attendance->id)->max('order_number') + 1;
-
         $order = Order::create([
             'attendance_id' => $attendance->id,
-            'order_number' => $orderNumber,
+            'order_number' => $code,
             'status' => OrderStatus::Open,
             'created_by' => null,
         ]);
@@ -143,6 +171,26 @@ class PlaceDeliveryOrderAction
     }
 
     /**
+     * Random 6-digit code, unique among the venue's live (not yet released) codes.
+     * The unique index on (venue_id, code) is the final guard against races.
+     */
+    private function generateDeliveryOrderCode(Venue $venue): int
+    {
+        for ($attempt = 1; ; $attempt++) {
+            $code = random_int(self::CODE_MIN, self::CODE_MAX);
+
+            $taken = DeliveryOrder::withoutGlobalScopes()
+                ->where('venue_id', $venue->id)
+                ->where('code', $code)
+                ->exists();
+
+            if (! $taken || $attempt >= self::CODE_PICK_ATTEMPTS) {
+                return $code;
+            }
+        }
+    }
+
+    /**
      * @param  array<string, mixed>  $validated
      */
     private function createDeliveryOrderWithPaymentMethods(
@@ -153,11 +201,14 @@ class PlaceDeliveryOrderAction
         ?CustomerAddress $customerAddress,
         ?DeliveryFeeZone $deliveryFeeZone,
         float $deliveryFee,
-        array $validated
+        array $validated,
+        int $code,
     ): DeliveryOrder {
         $deliveryOrder = DeliveryOrder::withoutGlobalScopes()->create([
             'venue_id' => $venue->id,
             'attendance_id' => $attendance->id,
+            'code' => $code,
+            'code_expires_at' => now()->addHours((int) config('platform.delivery_code_ttl_hours')),
             'fulfillment_type' => $fulfillmentType,
             'customer_id' => $customer->id,
             'customer_address_id' => $customerAddress?->id,
@@ -173,6 +224,7 @@ class PlaceDeliveryOrderAction
             'address_state' => $validated['address']['state'] ?? null,
             'address_zip_code' => $validated['address']['zip_code'] ?? null,
             'address_reference_point' => $validated['address']['reference_point'] ?? null,
+            'delivery_comment' => $validated['delivery_comment'] ?? null,
         ]);
 
         // The charge itself is only recognized once the order is Delivered

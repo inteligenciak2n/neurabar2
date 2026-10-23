@@ -1,6 +1,10 @@
 {
     "optional": "optional",
     "Notes": "Notes",
+    "Observations": "Observations",
+    "Comments about the dish or the order.": "Comments about the dish or the order.",
+    "Update item": "Update item",
+    "Reviewing order": "Reviewing order",
     "e.g. No onions": "e.g. No onions",
     "Add": "Add",
     "Choose an option": "Choose an option",

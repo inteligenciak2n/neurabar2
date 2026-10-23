@@ -32,7 +32,6 @@ class DeliveryMenuController extends Controller
                         ->with([
                             'products' => fn ($q) => $q
                                 ->where('active', true)
-                                ->where('available_for_delivery', true)
                                 ->orderBy('sort_order')
                                 ->orderBy('name')
                                 ->with([
@@ -52,7 +51,7 @@ class DeliveryMenuController extends Controller
 
         return Inertia::render('Guest/Delivery/Menu', [
             'token' => $token,
-            'venue' => $venue->only('id', 'name', 'logo_url'),
+            'venue' => $venue->only('id', 'name', 'description', 'logo_url', 'street', 'number', 'complement', 'neighborhood', 'city', 'state', 'zip_code'),
             'categories' => $categories,
             'deliveryEnabled' => $settings?->delivery_enabled ?? true,
             'pickupEnabled' => $settings?->pickup_enabled ?? true,

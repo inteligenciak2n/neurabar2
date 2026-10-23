@@ -11,7 +11,9 @@ use App\Models\Orders\Attendance;
 use App\Models\Orders\ServiceRequest;
 use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\ServiceLocation;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -28,7 +30,8 @@ class AttendanceController extends Controller
 
         $serviceLocations = ServiceLocation::withoutGlobalScopes()
             ->where('venue_id', $venue->id)
-            ->get(['id', 'name', 'type']);
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
         $channels = AttendanceChannel::withoutGlobalScopes()
             ->where('venue_id', $venue->id)
@@ -89,7 +92,11 @@ class AttendanceController extends Controller
 
     public function update(UpdateAttendanceRequest $request, Attendance $attendance)
     {
-        $attendance->update($request->validated());
+        try {
+            $attendance->update($request->validated());
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages(['code' => 'This tab card is already in use.']);
+        }
 
         return redirect()->route('attendances.show', $attendance->id);
     }

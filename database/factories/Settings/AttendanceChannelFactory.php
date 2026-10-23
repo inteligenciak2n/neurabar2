@@ -21,6 +21,7 @@ class AttendanceChannelFactory extends Factory
         return [
             'venue_id' => Venue::factory(),
             'name' => fake()->randomElement(['Balcão', 'Mesa', 'Delivery', 'Retirada']),
+            'description' => fake()->optional()->sentence(),
             'is_trackable' => true,
             'requires_customer_identifier' => false,
             'active' => true,

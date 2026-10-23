@@ -9,6 +9,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    editingItem: {
+        type: Object,
+        default: null,
+    },
 });
 
 const emit = defineEmits(['update:modelValue', 'add-to-cart']);
@@ -19,13 +23,7 @@ const selectedVariationId = ref('');
 const quantity = ref(1);
 const notes = ref('');
 const selectedModifiers = ref({});
-
-// initialise modifier selections
-props.product.modifier_groups?.forEach((group) => {
-    selectedModifiers.value[group.id] = group.min_selections === 1 && group.max_selections === 1
-        ? (group.options?.[0]?.id ?? null)
-        : [];
-});
+const isEditing = computed(() => Boolean(props.editingItem));
 
 const selectedVariation = computed(() => {
     if (!selectedVariationId.value) {
@@ -79,24 +77,121 @@ function findOption(optId) {
     return null;
 }
 
+function isSingleChoice(group) {
+    return !group.multiple_selection;
+}
+
+function isOptionSelected(group, optionId) {
+    const current = selectedModifiers.value[group.id];
+
+    if (Array.isArray(current)) {
+        return current.includes(optionId);
+    }
+
+    return current === optionId;
+}
+
+function toggleOption(group, optionId) {
+    if (isSingleChoice(group)) {
+        selectedModifiers.value = {
+            ...selectedModifiers.value,
+            [group.id]: optionId,
+        };
+
+        return;
+    }
+
+    const current = Array.isArray(selectedModifiers.value[group.id])
+        ? [...selectedModifiers.value[group.id]]
+        : [];
+    const index = current.indexOf(optionId);
+
+    if (index >= 0) {
+        current.splice(index, 1);
+    } else {
+        current.push(optionId);
+    }
+
+    selectedModifiers.value = {
+        ...selectedModifiers.value,
+        [group.id]: current,
+    };
+}
+
+function resetModifiers() {
+    const next = {};
+
+    props.product?.modifier_groups?.forEach((group) => {
+        next[group.id] = isSingleChoice(group) ? null : [];
+    });
+
+    selectedModifiers.value = next;
+}
+
+function applyEditingItem(item) {
+    selectedVariationId.value = item.variation_id ?? '';
+    quantity.value = item.quantity ?? 1;
+    notes.value = item.notes ?? '';
+
+    const selectedIds = new Set(item.modifiers ?? []);
+    const next = {};
+
+    props.product?.modifier_groups?.forEach((group) => {
+        const selected = (group.options ?? [])
+            .filter((option) => selectedIds.has(option.id))
+            .map((option) => option.id);
+
+        next[group.id] = isSingleChoice(group) ? (selected[0] ?? null) : selected;
+    });
+
+    selectedModifiers.value = next;
+}
+
 watch(
-    () => `${props.product?.id}:${props.modelValue}`,
+    () => `${props.product?.id}:${props.modelValue}:${props.editingItem?.product_id}:${props.editingItem?.quantity}:${props.editingItem?.variation_id}:${props.editingItem?.notes}:${(props.editingItem?.modifiers ?? []).join(',')}`,
     () => {
-        if (props.modelValue) {
-            selectedVariationId.value = '';
-            quantity.value = 1;
+        if (!props.modelValue || !props.product) {
+            return;
         }
+
+        if (props.editingItem) {
+            applyEditingItem(props.editingItem);
+            return;
+        }
+
+        selectedVariationId.value = '';
+        quantity.value = 1;
+        notes.value = '';
+        resetModifiers();
     },
+    { immediate: true },
 );
 
 function addToCart() {
     const modifiers = [];
+    const modifierDetails = [];
+
     Object.entries(selectedModifiers.value).forEach(([, val]) => {
         if (Array.isArray(val)) {
             val.forEach((id) => modifiers.push(id));
         } else if (val) {
             modifiers.push(val);
         }
+    });
+
+    (props.product.modifier_groups ?? []).forEach((group) => {
+        const selected = selectedModifiers.value[group.id];
+        const selectedIds = Array.isArray(selected) ? selected : (selected ? [selected] : []);
+
+        selectedIds.forEach((optionId) => {
+            const option = group.options?.find((current) => current.id === optionId);
+            if (option) {
+                modifierDetails.push({
+                    group: group.name,
+                    name: option.name,
+                });
+            }
+        });
     });
 
     emit('add-to-cart', {
@@ -107,6 +202,7 @@ function addToCart() {
         quantity: quantity.value,
         notes: notes.value || null,
         modifiers,
+        modifier_details: modifierDetails,
         unit_price: basePrice.value + modifiersTotal.value,
     });
 
@@ -120,23 +216,23 @@ function addToCart() {
     <Teleport to="body">
         <div
             v-if="modelValue"
-            class="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+            class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
             @click.self="emit('update:modelValue', false)"
         >
             <div class="absolute inset-0 bg-black/50" @click="emit('update:modelValue', false)" />
 
             <div class="relative w-full max-w-sm max-h-[90vh] overflow-y-auto overflow-x-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-2xl">
-                <div class="sticky top-0 z-20 h-0 overflow-visible">
-                    <div class="flex justify-end p-3">
-                        <button
-                            class="rounded-full bg-white/90 p-1.5 text-muted-foreground shadow-sm hover:bg-white"
-                            @click="emit('update:modelValue', false)"
-                        >
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
+                <div class="sticky top-0 z-30 flex items-center justify-between bg-white px-4 py-3 shadow-sm">
+                    <h2 class="font-heading text-base font-bold text-ocean-deep">{{ __('Reviewing order') }}</h2>
+                    <button
+                        type="button"
+                        class="rounded-full p-1.5 text-muted-foreground hover:bg-muted"
+                        @click="emit('update:modelValue', false)"
+                    >
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
 
                 <div v-if="product.image_url" class="bg-muted">
@@ -149,7 +245,7 @@ function addToCart() {
 
                 <div
                     class="relative bg-white px-5 pb-5"
-                    :class="product.image_url ? '-mt-8 rounded-t-3xl pt-6 shadow-[0_-12px_24px_rgba(0,0,0,0.08)]' : 'pt-12'"
+                    :class="product.image_url ? '-mt-8 rounded-t-3xl pt-6 shadow-[0_-12px_24px_rgba(0,0,0,0.08)]' : 'pt-5'"
                 >
                     <div class="mb-5 text-center">
                         <h3 class="font-heading text-xl font-bold text-ocean-deep">{{ product.name }}</h3>
@@ -199,66 +295,46 @@ function addToCart() {
 
                 <!-- Modifier groups -->
                 <div v-for="group in product.modifier_groups" :key="group.id" class="mb-4">
-                    <p class="mb-1 text-sm font-semibold text-ocean-deep">{{ group.name }}</p>
+                    <p class="mb-1 text-sm font-semibold text-ocean-deep">
+                        {{ group.name }}
+                        <span v-if="group.required" class="text-destructive">*</span>
+                    </p>
                     <p class="mb-2 text-xs text-muted-foreground">
-                        <template v-if="group.min_selections === group.max_selections">
-                            {{ __('Choose') }} {{ group.min_selections }}
-                        </template>
-                        <template v-else>
-                            {{ __('Choose up to') }} {{ group.max_selections }}
-                        </template>
+                        <template v-if="isSingleChoice(group)">{{ __('Choose') }} 1</template>
+                        <template v-else>{{ __('Choose') }}</template>
+                        <span v-if="!group.required"> ({{ __('optional') }})</span>
                     </p>
 
-                    <!-- Radio (max 1) -->
-                    <template v-if="group.max_selections === 1">
-                        <div class="space-y-1.5">
-                            <label
-                                v-for="option in group.options"
-                                :key="option.id"
-                                class="flex cursor-pointer items-center justify-between rounded-xl border px-3 py-2.5 transition-colors"
-                                :class="selectedModifiers[group.id] === option.id ? 'border-primary bg-primary/5' : 'border-border'"
-                            >
-                                <div class="flex items-center gap-2">
-                                    <input
-                                        v-model="selectedModifiers[group.id]"
-                                        type="radio"
-                                        :value="option.id"
-                                        class="text-primary focus:ring-primary"
-                                    />
-                                    <span class="text-sm text-ocean-deep">{{ option.name }}</span>
-                                </div>
-                                <span v-if="option.extra_price > 0" class="text-xs font-medium text-primary">+R$ {{ Number(option.extra_price).toFixed(2) }}</span>
-                            </label>
-                        </div>
-                    </template>
-
-                    <!-- Checkbox (max > 1) -->
-                    <template v-else>
-                        <div class="space-y-1.5">
-                            <label
-                                v-for="option in group.options"
-                                :key="option.id"
-                                class="flex cursor-pointer items-center justify-between rounded-xl border px-3 py-2.5 transition-colors"
-                                :class="selectedModifiers[group.id]?.includes(option.id) ? 'border-primary bg-primary/5' : 'border-border'"
-                            >
-                                <div class="flex items-center gap-2">
-                                    <input
-                                        v-model="selectedModifiers[group.id]"
-                                        type="checkbox"
-                                        :value="option.id"
-                                        class="rounded text-primary focus:ring-primary"
-                                    />
-                                    <span class="text-sm text-ocean-deep">{{ option.name }}</span>
-                                </div>
-                                <span v-if="option.extra_price > 0" class="text-xs font-medium text-primary">+R$ {{ Number(option.extra_price).toFixed(2) }}</span>
-                            </label>
-                        </div>
-                    </template>
+                    <div class="space-y-1.5">
+                        <label
+                            v-for="option in group.options"
+                            :key="option.id"
+                            class="flex cursor-pointer items-center justify-between rounded-xl border px-3 py-2.5 transition-colors"
+                            :class="isOptionSelected(group, option.id) ? 'border-primary bg-primary/5' : 'border-border'"
+                            @click.prevent="toggleOption(group, option.id)"
+                        >
+                            <div class="flex items-center gap-2">
+                                <input
+                                    :type="isSingleChoice(group) ? 'radio' : 'checkbox'"
+                                    :name="`modifier-${group.id}`"
+                                    :value="option.id"
+                                    :checked="isOptionSelected(group, option.id)"
+                                    tabindex="0"
+                                    :class="isSingleChoice(group) ? 'text-primary focus:ring-primary' : 'rounded text-primary focus:ring-primary'"
+                                    @click.stop.prevent="toggleOption(group, option.id)"
+                                    @keydown.enter.prevent="toggleOption(group, option.id)"
+                                    @keydown.space.prevent="toggleOption(group, option.id)"
+                                />
+                                <span class="text-sm text-ocean-deep">{{ option.name }}</span>
+                            </div>
+                            <span v-if="option.extra_price > 0" class="text-xs font-medium text-primary">+R$ {{ Number(option.extra_price).toFixed(2) }}</span>
+                        </label>
+                    </div>
                 </div>
 
-                <!-- Notes -->
-                <div v-if="!preview" class="mb-4">
-                    <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Notes') }} <span class="text-xs text-muted-foreground">({{ __('optional') }})</span></label>
+                <div class="mb-4">
+                    <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Observations') }}</label>
+                    <p class="mb-2 text-xs text-muted-foreground">{{ __('Comments about the dish or the order.') }}</p>
                     <textarea
                         v-model="notes"
                         rows="2"
@@ -291,7 +367,7 @@ function addToCart() {
                     class="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white active:opacity-80"
                     @click="addToCart"
                 >
-                    {{ __('Send order') }} · R$ {{ totalPrice.toFixed(2) }}
+                    {{ isEditing ? __('Update item') : __('Send order') }} · R$ {{ totalPrice.toFixed(2) }}
                 </button>
                 </div>
             </div>

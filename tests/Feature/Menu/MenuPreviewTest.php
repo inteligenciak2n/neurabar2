@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Menu;
 
-use App\Enums\ServiceLocationType;
 use App\Enums\UserRole;
 use App\Models\Menu\Category;
 use App\Models\Menu\Combo;
@@ -31,7 +30,6 @@ class MenuPreviewTest extends TestCase
         ServiceLocation::factory()->create([
             'venue_id' => $venue->id,
             'name' => 'Mesa 7',
-            'type' => ServiceLocationType::Table,
             'active' => true,
         ]);
 
@@ -60,6 +58,11 @@ class MenuPreviewTest extends TestCase
     {
         $venue = Venue::factory()->create([
             'description' => 'Petiscos, chopp e música ao vivo.',
+            'street' => 'Rua das Flores',
+            'number' => '100',
+            'neighborhood' => 'Centro',
+            'city' => 'Londrina',
+            'state' => 'PR',
         ]);
         $this->loginAs(UserRole::Owner, $venue);
 
@@ -69,14 +72,13 @@ class MenuPreviewTest extends TestCase
             'category_id' => $category->id,
             'active' => true,
             'name' => 'Deliverable',
-            'available_for_delivery' => true,
         ]);
         Product::factory()->create([
             'category_id' => $category->id,
             'active' => true,
             'name' => 'Table only',
-            'available_for_delivery' => false,
         ]);
+        Category::factory()->create(['menu_id' => $menu->id, 'name' => 'Empty']);
 
         $this->get(route('menu.preview.customer.delivery'))
             ->assertOk()
@@ -86,12 +88,19 @@ class MenuPreviewTest extends TestCase
                 ->where('token', null)
                 ->where('venue.name', $venue->name)
                 ->where('venue.description', 'Petiscos, chopp e música ao vivo.')
+                ->where('venue.street', 'Rua das Flores')
+                ->where('venue.number', '100')
+                ->where('venue.city', 'Londrina')
                 ->missing('serviceLocation')
                 ->has('categories', 1, fn ($cat) => $cat
                     ->where('name', 'Drinks')
-                    ->has('products', 1)
+                    ->has('products', 2)
                     ->has('products.0', fn ($product) => $product
                         ->where('name', 'Deliverable')
+                        ->etc()
+                    )
+                    ->has('products.1', fn ($product) => $product
+                        ->where('name', 'Table only')
                         ->etc()
                     )
                     ->etc()

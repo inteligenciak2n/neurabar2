@@ -1,5 +1,6 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
+import SettingsSectionHeader from '@/Components/SettingsSectionHeader.vue';
 import AppCard from '@/Components/AppCard.vue';
 import AppButton from '@/Components/AppButton.vue';
 import AppBadge from '@/Components/AppBadge.vue';
@@ -8,12 +9,15 @@ import AppEmptyState from '@/Components/AppEmptyState.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
+import { useAutosaveForm } from '@/Composables/useAutosaveForm';
+import { useSettingsEditing } from '@/Composables/useSettingsEditing';
 
 defineProps({
     users: Array,
 });
 
 const __  = useTranslate();
+const { enableEditing } = useSettingsEditing();
 
 const OPERATIONAL_ROLES = [
     'owner',
@@ -58,14 +62,17 @@ const form = useForm({
 });
 
 const openCreate = () => {
+    enableEditing();
     editingUser.value = null;
     form.reset();
     form.role = 'attendant';
     form.active = true;
+    form.defaults();
     showForm.value = true;
 };
 
 const openEdit = (user) => {
+    enableEditing();
     editingUser.value = user;
     form.name = user.name;
     form.email = user.email;
@@ -73,6 +80,8 @@ const openEdit = (user) => {
     form.role = user.role;
     form.pin = '';
     form.active = user.active;
+    form.clearErrors();
+    form.defaults();
     showForm.value = true;
 };
 
@@ -82,17 +91,30 @@ const closeForm = () => {
     form.reset();
 };
 
+const persist = () => {
+    const userId = editingUser.value?.id;
+    if (!userId || !form.isDirty || form.processing) {
+        return;
+    }
+
+    form.put(route('settings.users.update', userId), {
+        preserveScroll: true,
+        onSuccess: () => form.defaults(),
+    });
+};
+
 const submit = () => {
     if (editingUser.value) {
-        form.put(route('settings.users.update', editingUser.value.id), {
-            onSuccess: closeForm,
-        });
-    } else {
-        form.post(route('settings.users.store'), {
-            onSuccess: closeForm,
-        });
+        persist();
+        return;
     }
+
+    form.post(route('settings.users.store'), {
+        onSuccess: closeForm,
+    });
 };
+
+useAutosaveForm(form, persist);
 
 const confirmDelete = (user) => {
     userToDelete.value = user;
@@ -106,12 +128,15 @@ const deleteUser = () => {
 </script>
 
 <template>
-    <SettingsLayout :title="__('Users')">
+    <SettingsLayout :title="__('Users')" :nested="showForm" @close-nested="closeForm">
         <template #header>
-            <div class="flex items-center justify-between">
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Users') }}</h1>
-                <AppButton @click="openCreate">{{ __('Add User') }}</AppButton>
-            </div>
+            <SettingsSectionHeader :title="__('Users')">
+                <span class="block">{{ __('Staff accounts for this venue') }}</span>
+                <span class="block">{{ __('Roles and access permissions') }}</span>
+                <template #actions>
+                    <AppButton @click="openCreate">{{ __('Add User') }}</AppButton>
+                </template>
+            </SettingsSectionHeader>
         </template>
 
         <AppCard>
@@ -121,7 +146,7 @@ const deleteUser = () => {
                 :description="__('Add team members to this venue.')"
             />
 
-            <div v-if="users.length" class="divide-y divide-muted">
+            <div v-if="users.length && !showForm" class="divide-y divide-muted">
                 <div
                     v-for="user in users"
                     :key="user.id"
@@ -141,7 +166,7 @@ const deleteUser = () => {
                         </span>
                     </div>
                     <div class="flex gap-2">
-                        <AppButton size="sm" variant="secondary" @click="openEdit(user)">{{ __('Edit') }}</AppButton>
+                        <AppButton size="sm" variant="secondary" data-enable-editing @click="openEdit(user)">{{ __('Edit') }}</AppButton>
                         <AppButton size="sm" variant="destructive" @click="confirmDelete(user)">{{ __('Delete') }}</AppButton>
                     </div>
                 </div>
@@ -217,7 +242,7 @@ const deleteUser = () => {
                     </label>
 
                     <div class="flex gap-2 pt-1">
-                        <AppButton type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>
+                        <AppButton v-if="!editingUser" type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>
                         <AppButton type="button" variant="ghost" @click="closeForm">{{ __('Cancel') }}</AppButton>
                     </div>
                 </form>

@@ -25,7 +25,7 @@ class SchemaIntegrityTest extends TestCase
             'venue_settings' => ['venue_settings', ['id', 'venue_id', 'cover_charge', 'service_fee_percent']],
             'kitchen_stations' => ['kitchen_stations', ['id', 'venue_id', 'name', 'sort_order', 'active']],
             'preparation_statuses' => ['preparation_statuses', ['id', 'venue_id', 'name', 'color', 'sort_order']],
-            'service_locations' => ['service_locations', ['id', 'venue_id', 'name', 'type', 'active']],
+            'service_locations' => ['service_locations', ['id', 'venue_id', 'name', 'active']],
             'menus' => ['menus', ['id', 'venue_id', 'name', 'active']],
             'menu_categories' => ['menu_categories', ['id', 'menu_id', 'name', 'sort_order']],
             'products' => ['products', ['id', 'category_id', 'name', 'price', 'active', 'sort_order', 'servings']],
@@ -38,6 +38,7 @@ class SchemaIntegrityTest extends TestCase
             'order_items' => ['order_items', ['id', 'order_id', 'product_id', 'quantity', 'unit_price']],
             'order_item_modifiers' => ['order_item_modifiers', ['id', 'order_item_id', 'modifier_option_id']],
             'payments' => ['payments', ['id', 'attendance_id', 'grand_total']],
+            'delivery_orders' => ['delivery_orders', ['id', 'venue_id', 'attendance_id', 'code', 'fulfillment_type']],
             'payment_items' => ['payment_items', ['id', 'payment_id', 'method', 'amount']],
         ];
     }

@@ -3,7 +3,6 @@
 namespace App\Actions\Corporation;
 
 use App\Enums\ProfileEnum;
-use App\Enums\ServiceLocationType;
 use App\Enums\UserRole;
 use App\Models\Menu\Category;
 use App\Models\Menu\Combo;
@@ -198,7 +197,6 @@ class CreateVenueDefaultsAction
                     'description' => $productData['description'],
                     'price' => $productData['price'],
                     'active' => true,
-                    'available_for_delivery' => true,
                     'kitchen_station_id' => $productData['station_id'],
                     'sort_order' => $index + 1,
                 ]);
@@ -246,16 +244,15 @@ class CreateVenueDefaultsAction
         $tableChannel = $channels['Mesa'] ?? null;
 
         $locations = [
-            ...array_map(fn (int $n) => ['name' => "Mesa {$n}", 'type' => ServiceLocationType::Table, 'default_attendance_channel_id' => $tableChannel?->id], range(1, 3)),
-            ['name' => 'Balcão', 'type' => ServiceLocationType::Bar, 'default_attendance_channel_id' => $balcaoChannel?->id],
-            ['name' => 'Área Externa 1', 'type' => ServiceLocationType::Area, 'default_attendance_channel_id' => null],
+            ...array_map(fn (int $n) => ['name' => "Mesa {$n}", 'default_attendance_channel_id' => $tableChannel?->id], range(1, 3)),
+            ['name' => 'Balcão', 'default_attendance_channel_id' => $balcaoChannel?->id],
+            ['name' => 'Área Externa 1', 'default_attendance_channel_id' => null],
         ];
 
         foreach ($locations as $location) {
             ServiceLocation::create([
                 'venue_id' => $venue->id,
                 'name' => $location['name'],
-                'type' => $location['type'],
                 'active' => true,
                 'default_attendance_channel_id' => $location['default_attendance_channel_id'],
             ]);

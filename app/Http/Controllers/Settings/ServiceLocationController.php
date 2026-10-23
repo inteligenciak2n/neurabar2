@@ -6,7 +6,6 @@ use App\Actions\Settings\CreateServiceLocationAction;
 use App\Actions\Settings\DeleteServiceLocationAction;
 use App\Actions\Settings\GenerateQrTokenAction;
 use App\Actions\Settings\UpdateServiceLocationAction;
-use App\Enums\ServiceLocationType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\StoreServiceLocationRequest;
 use App\Http\Requests\Settings\UpdateServiceLocationRequest;
@@ -36,15 +35,14 @@ class ServiceLocationController extends Controller
                 ->map(fn ($location) => [
                     'id' => $location->id,
                     'name' => $location->name,
-                    'type' => $location->type->value,
                     'active' => $location->active,
+                    'default_attendance_channel_id' => $location->default_attendance_channel_id,
                     'default_attendance_channel' => $location->defaultAttendanceChannel,
                     'qr_token' => $location->qr_token,
                     'hub_url' => $location->qr_token
                         ? url('/g/'.$location->qr_token)
                         : null,
                 ]),
-            'locationTypes' => array_column(ServiceLocationType::cases(), 'value'),
             'attendanceChannels' => $venue->attendanceChannels()->where('active', true)->get(['id', 'name']),
         ]);
     }
@@ -117,7 +115,6 @@ class ServiceLocationController extends Controller
         $pdf = Pdf::loadView('pdf.service-location-qr', [
             'venueName' => $venue->name,
             'locationName' => $location->name,
-            'locationType' => $location->type->value,
             'qrBase64' => $qrBase64,
             'logoBase64' => $logoBase64,
             'hubUrl' => $hubUrl,

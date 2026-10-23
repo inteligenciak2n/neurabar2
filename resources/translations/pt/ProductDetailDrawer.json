@@ -1,6 +1,10 @@
 {
-    "optional": "opcionais",
+    "optional": "opcional",
     "Notes": "Notas",
+    "Observations": "Observações",
+    "Comments about the dish or the order.": "Comentários sobre o prato ou o pedido.",
+    "Update item": "Atualizar item",
+    "Reviewing order": "Conferindo pedido",
     "e.g. No onions": "por exemplo, sem cebolas",
     "Add": "Adicionar",
     "Choose an option": "Escolha uma opção",

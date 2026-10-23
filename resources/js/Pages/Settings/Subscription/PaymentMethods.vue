@@ -1,6 +1,6 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
-import { Link, router, useForm } from '@inertiajs/vue3';
+import { router, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
 import AppBadge from '@/Components/AppBadge.vue';
@@ -97,7 +97,12 @@ const confirmRemoval = () => {
 </script>
 
 <template>
-    <SettingsLayout :title="__('Payment Methods')">
+    <SettingsLayout
+        :title="__('Payment Methods')"
+        parent-route="settings.subscription.index"
+        :nested="showAddCardModal"
+        @close-nested="closeAddCardModal"
+    >
         <template #header>
             <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Payment Methods') }}</h1>
         </template>
@@ -106,12 +111,6 @@ const confirmRemoval = () => {
             <AppCard>
                 <div class="flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
-                        <Link :href="route('settings.subscription.index')" class="flex items-center text-sm text-primary hover:underline">
-                            <svg class="inline-block h-4 w-4 mr-1" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                            </svg>
-                            {{ __('Back') }}
-                        </Link>
                         <h2 class="font-heading text-lg font-semibold">{{ __('Saved Cards') }}</h2>
                     </div>
                     <AppButton size="sm" @click="openAddCardModal">

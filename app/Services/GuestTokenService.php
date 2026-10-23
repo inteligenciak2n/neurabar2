@@ -8,8 +8,10 @@ use App\Models\Orders\Attendance;
 use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\ServiceLocation;
 use App\Models\Tenant\Venue;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class GuestTokenService
 {
@@ -116,23 +118,67 @@ class GuestTokenService
 
     /**
      * Create an Attendance linked to the session if one doesn't exist yet.
+     *
+     * A tab card code attaches the session to the open attendance holding that card
+     * (e.g. opened by staff at the entrance), or opens a new one carrying the code.
+     * Once the session has an attendance the code is ignored.
      */
-    public function createAttendanceIfNeeded(GuestSession $session): Attendance
+    public function createAttendanceIfNeeded(GuestSession $session, ?string $tabCode = null): Attendance
     {
         if ($session->attendance_id) {
             return $session->attendance()->withoutGlobalScopes()->first();
         }
 
-        $attendance = Attendance::withoutGlobalScopes()->create([
-            'venue_id' => $session->venue_id,
-            'service_location_id' => $session->service_location_id,
-            'attendance_channel_id' => $session->attendance_channel_id,
-            'status' => AttendanceStatus::Open,
-        ]);
+        $code = Attendance::normalizeCode($tabCode);
+
+        $attendance = $code !== null
+            ? $this->attendanceForTabCode($session, $code)
+            : $this->openAttendance($session, null);
 
         $session->update(['attendance_id' => $attendance->id]);
 
         return $attendance;
+    }
+
+    private function attendanceForTabCode(GuestSession $session, string $code): Attendance
+    {
+        $existing = Attendance::withoutGlobalScopes()
+            ->open()
+            ->where('venue_id', $session->venue_id)
+            ->where('code', $code)
+            ->first();
+
+        if ($existing === null) {
+            return $this->openAttendance($session, $code);
+        }
+
+        // Another guest's live session already owns this card; sharing it would expose their orders.
+        $heldByAnotherGuest = GuestSession::withoutGlobalScopes()
+            ->where('attendance_id', $existing->id)
+            ->where('id', '!=', $session->id)
+            ->where('expires_at', '>', now())
+            ->exists();
+
+        if ($heldByAnotherGuest) {
+            throw ValidationException::withMessages(['tab_code' => 'This tab card is already in use.']);
+        }
+
+        return $existing;
+    }
+
+    private function openAttendance(GuestSession $session, ?string $code): Attendance
+    {
+        try {
+            return Attendance::withoutGlobalScopes()->create([
+                'venue_id' => $session->venue_id,
+                'service_location_id' => $session->service_location_id,
+                'attendance_channel_id' => $session->attendance_channel_id,
+                'code' => $code,
+                'status' => AttendanceStatus::Open,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages(['tab_code' => 'This tab card is already in use.']);
+        }
     }
 
     /**

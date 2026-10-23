@@ -16,6 +16,7 @@ class StoreAttendanceChannelRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:1000'],
             'is_trackable' => ['boolean'],
             'requires_customer_identifier' => ['boolean'],
             'active' => ['boolean'],

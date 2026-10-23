@@ -2,7 +2,7 @@
     "Open Attendances": "Asistencias abiertas",
     "Dashboard": "Tablero",
     "Quick Actions": "Acciones rápidas",
-    "Stations": "Estaciones",
+    "Stations": "Sector de preparación",
     "Items in Preparation": "Artículos en preparación",
     "Today's Revenue": "Ingresos actuales",
     "Open KDS": "Abrir KDS",
@@ -28,5 +28,5 @@
     "Total Corporations": "Total de sociedades",
     "Inactive": "Inactivo",
     "MRR": "MRR",
-    "No kitchen stations configured.": "No hay estaciones de cocina configuradas."
+    "No kitchen stations configured.": "No hay sectores de preparación configurados."
 }

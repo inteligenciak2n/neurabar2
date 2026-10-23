@@ -28,14 +28,8 @@ class UpdateVenueRequest extends FormRequest
             'state' => ['nullable', 'string', 'max:50'],
             'zip_code' => ['nullable', 'string', 'max:20'],
             'timezone' => ['nullable', 'string', 'max:50'],
-            'require_table' => ['boolean'],
-            'require_tab' => ['boolean'],
-            'require_location' => ['boolean'],
             'logo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
             'remove_logo' => ['sometimes', 'boolean'],
-            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
-            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
-            'require_geolocation' => ['boolean'],
         ];
     }
 }

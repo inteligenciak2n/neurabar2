@@ -14,5 +14,7 @@
     "Name": "Nome",
     "Final status (marks item as done)": "Status final (marca o item como concluído)",
     "Sort Order": "Ordem de classificação",
-    "Final": "Final"
+    "Final": "Final",
+    "Define the stages of preparation": "Defina as etapas de preparo",
+    "From received to ready": "Do recebido ao pronto"
 }

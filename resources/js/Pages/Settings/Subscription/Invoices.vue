@@ -1,6 +1,6 @@
 <script setup>
 import SettingsLayout from '@/Layouts/SettingsLayout.vue';
-import { Link, useForm } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
 import { useCurrency } from '@/Composables/useCurrency';
@@ -82,19 +82,17 @@ const statusClass = (status) => ({
 </script>
 
 <template>
-    <SettingsLayout :title="__('Invoices')">
+    <SettingsLayout
+        :title="__('Invoices')"
+        parent-route="settings.subscription.index"
+        :nested="!!payingInvoice"
+        @close-nested="closePayModal"
+    >
         <template #header>
             <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Invoices') }}</h1>
         </template>
 
         <div class="space-y-6">
-            <Link :href="route('settings.subscription.index')" class="flex items-center text-sm text-primary hover:underline">
-                <svg class="inline-block h-4 w-4 mr-1" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
-                {{ __('Back') }}
-            </Link>
-
             <AppCard v-for="section in [
                 { key: 'venue', title: __('Venue invoices'), rows: venueRows, paginator: venueInvoices },
                 { key: 'corporation', title: __('Corporation invoices'), rows: corporationRows, paginator: corporationInvoices },

@@ -4,6 +4,7 @@ import AppButton from '@/Components/AppButton.vue';
 import ProductDetailDrawer from '@/Components/Guest/ProductDetailDrawer.vue';
 import CartPanel from '@/Components/Guest/CartPanel.vue';
 import GuestMenuCatalog from '@/Components/Guest/GuestMenuCatalog.vue';
+import { mergeGuestCartItem } from '@/Utils/guestCart';
 import { ref, computed } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
 
@@ -29,8 +30,12 @@ const cartOpen = ref(false);
 const cartItems = ref([]);
 const orderPlaced = ref(false);
 const orderError = ref(null);
+const editingCartIndex = ref(null);
 
 const cartCount = computed(() => cartItems.value.reduce((s, i) => s + i.quantity, 0));
+const editingItem = computed(() => (
+    editingCartIndex.value === null ? null : cartItems.value[editingCartIndex.value] ?? null
+));
 
 const tableLabel = computed(() => {
     const name = props.serviceLocation?.name ?? '';
@@ -43,21 +48,43 @@ const tableLabel = computed(() => {
     return name;
 });
 
+function findProduct(productId) {
+    for (const category of props.categories ?? []) {
+        const product = category.products?.find((item) => item.id === productId);
+        if (product) {
+            return product;
+        }
+    }
+
+    return null;
+}
+
 function openProduct(product) {
+    editingCartIndex.value = null;
+    selectedProduct.value = product;
+    showProductDrawer.value = true;
+}
+
+function openCartItem(index) {
+    const item = cartItems.value[index];
+    const product = findProduct(item?.product_id);
+    if (!product) {
+        return;
+    }
+
+    editingCartIndex.value = index;
     selectedProduct.value = product;
     showProductDrawer.value = true;
 }
 
 function addToCart(item) {
-    // merge with existing same product+variation
-    const existing = cartItems.value.find(
-        (i) => i.product_id === item.product_id && i.variation_id === item.variation_id,
-    );
-    if (existing) {
-        existing.quantity += item.quantity;
-    } else {
-        cartItems.value.push(item);
+    if (editingCartIndex.value !== null) {
+        cartItems.value.splice(editingCartIndex.value, 1, item);
+        editingCartIndex.value = null;
+        return;
     }
+
+    mergeGuestCartItem(cartItems.value, item);
 }
 
 function removeFromCart(index) {
@@ -119,7 +146,7 @@ function handleOrderPlaced() {
         <Teleport to="body">
             <button
                 v-if="cartCount > 0"
-                class="fixed bottom-24 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg active:opacity-80"
+                class="fixed bottom-24 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border-4 border-warm-gold bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg active:opacity-80"
                 @click="cartOpen = true"
             >
                 <span class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-bold text-primary">{{ cartCount }}</span>
@@ -133,6 +160,7 @@ function handleOrderPlaced() {
             v-model="showProductDrawer"
             :product="selectedProduct"
             :preview="preview"
+            :editing-item="editingItem"
             @add-to-cart="addToCart"
         />
 
@@ -143,6 +171,7 @@ function handleOrderPlaced() {
             :items="cartItems"
             :preview="preview"
             @remove="removeFromCart"
+            @select-item="openCartItem"
             @order-placed="handleOrderPlaced"
             @error="orderError = $event"
         />

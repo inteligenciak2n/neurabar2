@@ -47,6 +47,7 @@ class NewOrderReceived implements ShouldBroadcast
             'order_id' => $this->order->id,
             'order_number' => $this->order->order_number,
             'customer_identifier' => $this->order->attendance->customer_identifier,
+            'attendance_code' => $this->order->attendance->code,
             'station_id' => $this->station->id,
             'items' => $this->items,
         ];

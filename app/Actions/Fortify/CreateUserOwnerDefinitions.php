@@ -6,7 +6,6 @@ use App\Actions\Corporation\CreateVenueDefaultsAction;
 use App\Actions\Corporation\ProvisionPlanModulesAction;
 use App\Enums\BillingMode;
 use App\Enums\ProfileEnum;
-use App\Enums\ServiceLocationType;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Models\Menu\Category;
@@ -219,7 +218,6 @@ class CreateUserOwnerDefinitions
                     'description' => $productData['description'],
                     'price' => $productData['price'],
                     'active' => true,
-                    'available_for_delivery' => true,
                     'kitchen_station_id' => $productData['station_id'],
                     'sort_order' => $index + 1,
                 ]);
@@ -261,17 +259,16 @@ class CreateUserOwnerDefinitions
     private function createServiceLocations(Venue $venue): void
     {
         $locations = [
-            ...array_map(fn (int $n) => ['name' => "Mesa {$n}", 'type' => ServiceLocationType::Table], range(1, 10)),
-            ['name' => 'Balcão', 'type' => ServiceLocationType::Bar],
-            ['name' => 'Área Externa 1', 'type' => ServiceLocationType::Area],
-            ['name' => 'Área Externa 2', 'type' => ServiceLocationType::Area],
+            ...array_map(fn (int $n) => ['name' => "Mesa {$n}"], range(1, 10)),
+            ['name' => 'Balcão'],
+            ['name' => 'Área Externa 1'],
+            ['name' => 'Área Externa 2'],
         ];
 
         foreach ($locations as $location) {
             ServiceLocation::create([
                 'venue_id' => $venue->id,
                 'name' => $location['name'],
-                'type' => $location['type'],
                 'active' => true,
             ]);
         }

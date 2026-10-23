@@ -53,7 +53,6 @@ class PlaceDeliveryOrderTest extends TestCase
             'category_id' => $category->id,
             'price' => 20,
             'active' => true,
-            'available_for_delivery' => true,
         ]);
     }
 
@@ -92,9 +91,16 @@ class PlaceDeliveryOrderTest extends TestCase
         $product = $this->makeDeliverableProduct($venue);
         $token = $this->makeToken($venue);
 
-        $response = $this->postJson("/delivery/{$token}/orders", $this->basePayload($product));
+        $payload = $this->basePayload($product);
+        $payload['delivery_comment'] = 'Retirar no balcão';
+
+        $response = $this->postJson("/delivery/{$token}/orders", $payload);
 
         $response->assertCreated();
+        $code = $response->json('code');
+        $this->assertGreaterThanOrEqual(100000, $code);
+        $this->assertLessThanOrEqual(999999, $code);
+        $this->assertSame($code, $response->json('order_number'));
         $this->assertDatabaseHas('customers', [
             'corporation_id' => $venue->corporation_id,
             'phone' => '11999998888',
@@ -113,6 +119,92 @@ class PlaceDeliveryOrderTest extends TestCase
             'method' => 'cash',
             'amount' => 40,
         ]);
+        $this->assertDatabaseHas('delivery_orders', [
+            'venue_id' => $venue->id,
+            'fulfillment_type' => 'pickup',
+            'delivery_comment' => 'Retirar no balcão',
+            'code' => $code,
+        ]);
+    }
+
+    public function test_guest_can_split_payment_across_accepted_methods(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->activateDelivery($venue);
+        VenueSettings::factory()->create([
+            'venue_id' => $venue->id,
+            'service_fee_percent' => 0,
+            'accepted_delivery_payment_methods' => ['cash', 'pix', 'credit_card'],
+        ]);
+        $product = $this->makeDeliverableProduct($venue);
+        $token = $this->makeToken($venue);
+
+        $payload = $this->basePayload($product);
+        $payload['methods'] = [
+            ['type' => 'cash', 'amount' => 25],
+            ['type' => 'pix', 'amount' => 15],
+        ];
+
+        $response = $this->postJson("/delivery/{$token}/orders", $payload);
+
+        $response->assertCreated();
+        $this->assertDatabaseHas('delivery_order_payment_methods', [
+            'method' => 'cash',
+            'amount' => 25,
+        ]);
+        $this->assertDatabaseHas('delivery_order_payment_methods', [
+            'method' => 'pix',
+            'amount' => 15,
+        ]);
+    }
+
+    public function test_delivery_order_code_is_server_generated_and_expires_after_the_configured_ttl(): void
+    {
+        config(['platform.delivery_code_ttl_hours' => 12]);
+        $this->freezeTime();
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->activateDelivery($venue);
+        VenueSettings::factory()->create([
+            'venue_id' => $venue->id,
+            'service_fee_percent' => 0,
+            'accepted_delivery_payment_methods' => ['cash'],
+        ]);
+        $product = $this->makeDeliverableProduct($venue);
+        $token = $this->makeToken($venue);
+
+        $payload = $this->basePayload($product);
+        $payload['code'] = 4321;
+        $response = $this->postJson("/delivery/{$token}/orders", $payload);
+
+        $response->assertCreated();
+        $this->assertNotSame(4321, $response->json('code'));
+        $this->assertDatabaseHas('delivery_orders', [
+            'venue_id' => $venue->id,
+            'code' => $response->json('code'),
+            'code_expires_at' => now()->addHours(12)->toDateTimeString(),
+        ]);
+    }
+
+    public function test_each_order_gets_a_distinct_code(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->activateDelivery($venue);
+        VenueSettings::factory()->create([
+            'venue_id' => $venue->id,
+            'service_fee_percent' => 0,
+            'accepted_delivery_payment_methods' => ['cash'],
+        ]);
+        $product = $this->makeDeliverableProduct($venue);
+        $token = $this->makeToken($venue);
+
+        $codes = collect(range(1, 4))->map(function () use ($token, $product) {
+            $response = $this->postJson("/delivery/{$token}/orders", $this->basePayload($product));
+            $response->assertCreated();
+
+            return $response->json('code');
+        });
+
+        $this->assertCount(4, $codes->unique());
     }
 
     public function test_guest_can_place_a_delivery_order_within_a_fee_zone(): void
@@ -139,6 +231,7 @@ class PlaceDeliveryOrderTest extends TestCase
             'street' => 'Rua A', 'number' => '100', 'neighborhood' => 'Centro',
             'city' => 'São Paulo', 'state' => 'SP', 'zip_code' => '01310100',
         ];
+        $payload['delivery_comment'] = 'Deixar na recepção';
         $payload['methods'] = [['type' => 'cash', 'amount' => 50]];
 
         $response = $this->postJson("/delivery/{$token}/orders", $payload);
@@ -148,6 +241,7 @@ class PlaceDeliveryOrderTest extends TestCase
             'venue_id' => $venue->id,
             'fulfillment_type' => 'delivery',
             'delivery_fee' => 10,
+            'delivery_comment' => 'Deixar na recepção',
         ]);
     }
 
@@ -246,7 +340,30 @@ class PlaceDeliveryOrderTest extends TestCase
         $this->assertDatabaseCount('orders', 0);
     }
 
-    public function test_product_not_available_for_delivery_is_rejected(): void
+    public function test_delivery_comment_accepts_500_characters_and_rejects_more(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->activateDelivery($venue);
+        VenueSettings::factory()->create([
+            'venue_id' => $venue->id,
+            'service_fee_percent' => 0,
+            'accepted_delivery_payment_methods' => ['cash'],
+        ]);
+        $product = $this->makeDeliverableProduct($venue);
+        $token = $this->makeToken($venue);
+
+        $tooLong = $this->basePayload($product);
+        $tooLong['delivery_comment'] = str_repeat('a', 501);
+        $this->postJson("/delivery/{$token}/orders", $tooLong)->assertStatus(422)->assertJsonValidationErrors('delivery_comment');
+
+        $limit = $this->basePayload($product);
+        $limit['delivery_comment'] = str_repeat('a', 500);
+        $this->postJson("/delivery/{$token}/orders", $limit)->assertCreated();
+
+        $this->assertDatabaseHas('delivery_orders', ['delivery_comment' => str_repeat('a', 500)]);
+    }
+
+    public function test_product_from_another_venue_is_rejected(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
         $this->activateDelivery($venue);
@@ -255,15 +372,10 @@ class PlaceDeliveryOrderTest extends TestCase
             'accepted_delivery_payment_methods' => ['cash'],
         ]);
 
-        $menu = Menu::factory()->create(['venue_id' => $venue->id]);
-        $category = Category::factory()->create(['menu_id' => $menu->id]);
-        $product = Product::factory()->create([
-            'category_id' => $category->id,
-            'available_for_delivery' => false,
-        ]);
+        $foreignProduct = $this->makeDeliverableProduct(Venue::factory()->create(['active' => true]));
         $token = $this->makeToken($venue);
 
-        $response = $this->postJson("/delivery/{$token}/orders", $this->basePayload($product));
+        $response = $this->postJson("/delivery/{$token}/orders", $this->basePayload($foreignProduct));
 
         $response->assertStatus(422);
     }

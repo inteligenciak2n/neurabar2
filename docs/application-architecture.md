@@ -624,20 +624,9 @@ O `Kds.vue` exibe, por item:
 ```
 Venue
   └── ServiceLocation (mesas, balcões, áreas...)
-        ├── type: ServiceLocationType
         ├── active: boolean
         ├── default_attendance_channel_id → AttendanceChannel
         └── qr_token: string nullable
-```
-
-### Enum `ServiceLocationType`
-
-```php
-ServiceLocationType::Table     // 'table'
-ServiceLocationType::Bar       // 'bar'
-ServiceLocationType::Area      // 'area'
-ServiceLocationType::Delivery  // 'delivery'
-ServiceLocationType::Takeaway  // 'takeaway'
 ```
 
 ### Tabela `service_locations`
@@ -647,7 +636,6 @@ ServiceLocationType::Takeaway  // 'takeaway'
 | `id` | UUID PK | Identificador único |
 | `venue_id` | UUID FK | → `venues.id` (cascade delete) |
 | `name` | string | Nome do local (ex: "Mesa 7") |
-| `type` | varchar | Valor do enum `ServiceLocationType` |
 | `active` | boolean default true | Se falso, não aparece no order taker |
 | `default_attendance_channel_id` | UUID FK nullable | → `attendance_channels.id` (null on delete) |
 | `qr_token` | string unique nullable | Token codificado em base64 para o QR code |
@@ -696,8 +684,7 @@ GET    /settings/service-locations/{location}/qr-pdf → qrPdf (download PDF)
 
 | Arquivo | Responsabilidade |
 |---|---|
-| `app/Models/Settings/ServiceLocation.php` | Model com cast de `type` para `ServiceLocationType` |
-| `app/Enums/ServiceLocationType.php` | Enum dos tipos de local |
+| `app/Models/Settings/ServiceLocation.php` | Model do local de atendimento |
 | `app/Actions/Settings/CreateServiceLocationAction.php` | Criação do local |
 | `app/Actions/Settings/UpdateServiceLocationAction.php` | Atualização do local |
 | `app/Actions/Settings/DeleteServiceLocationAction.php` | Exclusão do local |

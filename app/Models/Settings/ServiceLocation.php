@@ -3,7 +3,6 @@
 namespace App\Models\Settings;
 
 use App\Concerns\BelongsToVenue;
-use App\Enums\ServiceLocationType;
 use App\Models\Concerns\HasOperationalConnection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,7 +19,6 @@ class ServiceLocation extends Model
     protected $fillable = [
         'venue_id',
         'name',
-        'type',
         'active',
         'default_attendance_channel_id',
         'qr_token',
@@ -29,7 +27,6 @@ class ServiceLocation extends Model
     protected function casts(): array
     {
         return [
-            'type' => ServiceLocationType::class,
             'active' => 'boolean',
         ];
     }

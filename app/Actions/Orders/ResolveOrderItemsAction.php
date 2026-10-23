@@ -21,7 +21,7 @@ class ResolveOrderItemsAction
      * Runs 3 batched `whereIn` queries regardless of cart size (no N+1).
      *
      * @param  array<int, array{product_id: string, variation_id?: ?string, quantity: int, notes?: ?string, modifiers?: ?array<int, string>}>  $items
-     * @param  Closure(Builder<Product>): void|null  $scopeProducts  Extra constraint applied to the product query (e.g. available_for_delivery).
+     * @param  Closure(Builder<Product>): void|null  $scopeProducts  Extra constraint applied to the product query.
      * @return array<int, array{product_id: string, variation_id: ?string, quantity: int, unit_price: float, notes: ?string, modifiers: array<int, array{modifier_option_id: string, extra_price_snapshot: float}>}>
      */
     public function execute(Venue $venue, array $items, ?Closure $scopeProducts = null): array
