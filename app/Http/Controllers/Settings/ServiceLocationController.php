@@ -60,9 +60,19 @@ class ServiceLocationController extends Controller
 
     public function storeRange(StoreServiceLocationRangeRequest $request, CreateServiceLocationRangeAction $action): RedirectResponse
     {
-        $action->execute(app('tenant'), $request);
+        $result = $action->execute(app('tenant'), $request);
+        $payload = [
+            ...$result,
+            'source' => $request->validated('source'),
+        ];
 
-        return back()->with('success', 'Locations created successfully');
+        $redirect = back()->with('location_create_result', $payload);
+
+        if ($result['created'] > 0 && $result['skipped'] === 0) {
+            return $redirect->with('success', 'Locations created successfully');
+        }
+
+        return $redirect;
     }
 
     public function update(UpdateServiceLocationRequest $request, ServiceLocation $location, UpdateServiceLocationAction $action): RedirectResponse

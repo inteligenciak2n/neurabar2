@@ -8,6 +8,7 @@ use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\Tab;
 use App\Models\Settings\TabSeries;
 use App\Models\Tenant\Venue;
+use App\Services\TenantConnectionResolver;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
@@ -158,6 +159,18 @@ class ChannelTabTest extends TestCase
         ])->assertSessionHasErrors('code');
     }
 
+    public function test_tab_range_requires_numbers(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+
+        $this->post(route('settings.tabs.range'), [
+            'prefix' => 'A',
+            'from' => null,
+            'to' => null,
+        ])->assertSessionHasErrors(['from', 'to']);
+    }
+
     public function test_owner_can_delete_a_tab(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
@@ -171,6 +184,29 @@ class ChannelTabTest extends TestCase
             ->assertRedirect();
 
         $this->assertDatabaseMissing('tabs', ['id' => $tab->id]);
+    }
+
+    public function test_owner_can_delete_a_tab_stored_on_a_non_default_operational_connection(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $venue->corporation->update(['self_connection' => 'operation_default_2']);
+        app(TenantConnectionResolver::class)->invalidate($venue);
+
+        $this->loginAs(UserRole::Owner, $venue);
+
+        app()->instance('operational_connection', 'operation_default_2');
+        $tab = Tab::factory()->create([
+            'venue_id' => $venue->id,
+            'code' => '9',
+        ]);
+
+        app()->forgetInstance('operational_connection');
+        app()->forgetInstance('tenant');
+
+        $this->delete(route('settings.tabs.destroy', $tab))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('tabs', ['id' => $tab->id], 'operation_default_2');
     }
 
     public function test_cannot_delete_a_tab_in_use_on_an_open_attendance(): void
@@ -190,7 +226,7 @@ class ChannelTabTest extends TestCase
         ]);
 
         $this->delete(route('settings.tabs.destroy', $tab))
-            ->assertSessionHasErrors('tab');
+            ->assertSessionHasErrors(['tab' => 'Cannot delete this tab while an attendance is open. Close the attendance first.']);
 
         $this->assertDatabaseHas('tabs', ['id' => $tab->id]);
     }
@@ -249,7 +285,7 @@ class ChannelTabTest extends TestCase
         ]);
 
         $this->delete(route('settings.tab-series.destroy', $series))
-            ->assertSessionHasErrors(['tabs' => 'Some tabs in this prefix are in use on an open attendance.']);
+            ->assertSessionHasErrors(['tabs' => 'Cannot delete these tabs while an attendance is open. Close the open attendances first.']);
 
         $this->assertDatabaseHas('tabs', ['id' => $tab->id]);
         $this->assertDatabaseHas('tab_series', ['id' => $series->id]);
@@ -291,7 +327,7 @@ class ChannelTabTest extends TestCase
         ]);
         $tab = Tab::factory()->create([
             'venue_id' => $venue->id,
-            'code' => 'VIP',
+            'code' => 'VIP1',
         ]);
 
         $this->get(route('settings.attendance-channels.index'))
@@ -301,8 +337,23 @@ class ChannelTabTest extends TestCase
                 ->has('channels', 1)
                 ->has('tabSeries', 1)
                 ->where('tabSeries.0.tabs.0.id', $tab->id)
-                ->where('tabSeries.0.tabs.0.code', 'VIP')
+                ->where('tabSeries.0.tabs.0.code', 'VIP1')
             );
+    }
+
+    public function test_tab_code_must_include_a_number(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+
+        $this->post(route('settings.tabs.store'), [
+            'code' => 'VIP',
+        ])->assertSessionHasErrors(['code' => 'A tab code must include a number.']);
+
+        $this->assertDatabaseMissing('tabs', [
+            'venue_id' => $venue->id,
+            'code' => 'VIP',
+        ]);
     }
 
     public function test_owner_can_update_series_notes(): void

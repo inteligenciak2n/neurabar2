@@ -4,6 +4,13 @@ namespace App\Support;
 
 class TabCode
 {
+    public const CODE_REGEX = '/^(?:[A-Z0-9]+-)?[A-Z]*\d+$/';
+
+    public static function hasNumber(string $code): bool
+    {
+        return preg_match('/\d/', $code) === 1;
+    }
+
     public static function normalizePrefix(?string $prefix): string
     {
         return strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', (string) $prefix));

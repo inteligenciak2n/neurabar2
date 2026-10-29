@@ -188,15 +188,24 @@ class ServiceLocationSettingsTest extends TestCase
         $this->post(route('settings.service-locations.range'), [
             'from' => 1,
             'to' => 3,
+            'source' => 'several',
             'default_attendance_channel_id' => $channel->id,
-        ])->assertRedirect();
+        ])
+            ->assertRedirect()
+            ->assertSessionHas('location_create_result', function (array $result): bool {
+                return $result['source'] === 'several'
+                    && $result['created'] === 2
+                    && $result['skipped'] === 1
+                    && $result['created_names'] === ['Mesas 1', 'Mesas 3']
+                    && $result['skipped_names'] === ['Mesas 2'];
+            });
 
         $this->assertDatabaseHas('service_locations', ['venue_id' => $venue->id, 'name' => 'Mesas 1']);
         $this->assertDatabaseHas('service_locations', ['venue_id' => $venue->id, 'name' => 'Mesas 3']);
         $this->assertDatabaseCount('service_locations', 3);
     }
 
-    public function test_location_range_fails_when_every_name_already_exists(): void
+    public function test_location_range_reports_when_every_name_already_exists(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
         $this->loginAs(UserRole::Owner, $venue);
@@ -213,8 +222,38 @@ class ServiceLocationSettingsTest extends TestCase
         $this->post(route('settings.service-locations.range'), [
             'from' => 1,
             'to' => 1,
+            'source' => 'one',
             'default_attendance_channel_id' => $channel->id,
-        ])->assertSessionHasErrors(['from' => 'Every location in this range already exists.']);
+        ])
+            ->assertRedirect()
+            ->assertSessionHas('location_create_result', function (array $result): bool {
+                return $result['source'] === 'one'
+                    && $result['created'] === 0
+                    && $result['skipped_names'] === ['Mesas 1'];
+            });
+
+        $this->assertDatabaseCount('service_locations', 1);
+    }
+
+    public function test_location_range_requires_a_number(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+        $channel = AttendanceChannel::factory()->create([
+            'venue_id' => $venue->id,
+            'name' => 'Balcão',
+        ]);
+
+        $this->post(route('settings.service-locations.range'), [
+            'from' => null,
+            'to' => null,
+            'default_attendance_channel_id' => $channel->id,
+        ])->assertSessionHasErrors(['from', 'to']);
+
+        $this->assertDatabaseMissing('service_locations', [
+            'venue_id' => $venue->id,
+            'name' => 'Balcão',
+        ]);
     }
 
     public function test_owner_can_delete_a_channel_location(): void
@@ -254,7 +293,7 @@ class ServiceLocationSettingsTest extends TestCase
         ]);
 
         $this->delete(route('settings.service-locations.destroy', $location->id))
-            ->assertSessionHasErrors(['location' => 'This location is in use on an open attendance.']);
+            ->assertSessionHasErrors(['location' => 'Cannot delete this location while an attendance is open. Close the attendance first.']);
 
         $this->assertDatabaseHas('service_locations', ['id' => $location->id]);
     }
@@ -322,7 +361,7 @@ class ServiceLocationSettingsTest extends TestCase
         ]);
 
         $this->delete(route('settings.attendance-channels.locations.destroy', $channel))
-            ->assertSessionHasErrors(['locations' => 'Some locations are in use on an open attendance.']);
+            ->assertSessionHasErrors(['locations' => 'Cannot delete these locations while an attendance is open. Close the open attendances first.']);
 
         $this->assertDatabaseHas('service_locations', ['name' => 'Mesas 1']);
         $this->assertDatabaseHas('service_locations', ['name' => 'Mesas 2']);

@@ -9,11 +9,17 @@ use App\Models\Tenant\Venue;
 use App\Support\OperationalConnection;
 use App\Support\ServiceLocationName;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 class CreateServiceLocationRangeAction
 {
-    /** @return array{created: int, skipped: int} */
+    /**
+     * @return array{
+     *     created: int,
+     *     skipped: int,
+     *     created_names: list<string>,
+     *     skipped_names: list<string>
+     * }
+     */
     public function execute(Venue $venue, StoreServiceLocationRangeRequest $request): array
     {
         $from = (int) $request->validated('from');
@@ -28,15 +34,15 @@ class CreateServiceLocationRangeAction
                 ->map(fn (string $name): string => mb_strtolower($name))
                 ->all();
 
-            $created = 0;
-            $skipped = 0;
+            $createdNames = [];
+            $skippedNames = [];
 
             for ($number = $from; $number <= $to; $number++) {
                 $name = ServiceLocationName::compose($prefix, $number);
                 $key = mb_strtolower($name);
 
                 if (in_array($key, $existing, true)) {
-                    $skipped++;
+                    $skippedNames[] = $name;
 
                     continue;
                 }
@@ -49,16 +55,15 @@ class CreateServiceLocationRangeAction
                 ]);
 
                 $existing[] = $key;
-                $created++;
+                $createdNames[] = $name;
             }
 
-            if ($created === 0) {
-                throw ValidationException::withMessages([
-                    'from' => 'Every location in this range already exists.',
-                ]);
-            }
-
-            return ['created' => $created, 'skipped' => $skipped];
+            return [
+                'created' => count($createdNames),
+                'skipped' => count($skippedNames),
+                'created_names' => $createdNames,
+                'skipped_names' => $skippedNames,
+            ];
         });
     }
 }

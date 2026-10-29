@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Settings;
 
 use App\Models\Settings\Tab;
+use App\Support\TabCode;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -32,7 +33,7 @@ class StoreTabRequest extends FormRequest
                 'required',
                 'string',
                 'max:20',
-                'regex:/^[A-Z0-9]+(?:-[0-9]+)?$/',
+                'regex:'.TabCode::CODE_REGEX,
                 Rule::unique(Tab::class, 'code')->where('venue_id', $venue->id),
             ],
             'notes' => ['nullable', 'string', 'max:1000'],
@@ -46,5 +47,19 @@ class StoreTabRequest extends FormRequest
             'code.regex' => 'Use only letters, numbers and a hyphen.',
             'code.unique' => 'This tab code is already in use.',
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator): void {
+            $code = (string) $this->input('code');
+
+            if ($code === '' || TabCode::hasNumber($code)) {
+                return;
+            }
+
+            $validator->errors()->forget('code');
+            $validator->errors()->add('code', 'A tab code must include a number.');
+        });
     }
 }

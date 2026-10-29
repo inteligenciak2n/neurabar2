@@ -21,7 +21,7 @@ class DeleteChannelServiceLocationsAction
 
             if ($inUse) {
                 throw ValidationException::withMessages([
-                    'locations' => 'Some locations are in use on an open attendance.',
+                    'locations' => 'Cannot delete these locations while an attendance is open. Close the open attendances first.',
                 ]);
             }
 

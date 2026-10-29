@@ -17,6 +17,7 @@ const props = defineProps({
     channels: Array,
     tabSeries: Array,
     serviceLocations: Array,
+    locationCreateResult: Object,
 });
 
 const __ = useTranslate();
@@ -53,10 +54,12 @@ const rangeForm = useForm({
 });
 
 const locationNumber = ref(1);
+const locationResult = ref(null);
 const locationForm = useForm({
     from: 1,
     to: 100,
     default_attendance_channel_id: null,
+    source: 'several',
 });
 
 const anyChannelUsesTabs = computed(() =>
@@ -69,12 +72,52 @@ const channelLocations = computed(() =>
     ),
 );
 
+const isPositiveInteger = (value) => {
+    const number = Number(value);
+
+    return Number.isInteger(number) && number >= 1;
+};
+
+const locationNumberIsValid = computed(() => isPositiveInteger(locationNumber.value));
+const locationRangeIsValid = computed(() => (
+    isPositiveInteger(locationForm.from)
+    && isPositiveInteger(locationForm.to)
+    && Number(locationForm.to) >= Number(locationForm.from)
+));
+const tabCodeHasNumber = computed(() => /\d/.test(String(tabForm.code ?? '').trim()));
+const tabRangeIsValid = computed(() => (
+    isPositiveInteger(rangeForm.from)
+    && isPositiveInteger(rangeForm.to)
+    && Number(rangeForm.to) >= Number(rangeForm.from)
+));
+
+const locationAlreadyExistsMessage = computed(() => __(
+    'The ":name" number already exists.',
+    { name: form.name || '' },
+));
+
+const formatLocationNames = (names) => (names ?? []).join(', ');
+
+const singleLocationResult = computed(() => (
+    locationResult.value?.source === 'one' && locationResult.value?.skipped_names?.length
+        ? locationResult.value
+        : null
+));
+
+const severalLocationResult = computed(() => (
+    locationResult.value?.source === 'several' && locationResult.value?.skipped_names?.length
+        ? locationResult.value
+        : null
+));
+
 const resetLocationForm = () => {
     locationForm.reset();
     locationForm.from = 1;
     locationForm.to = 100;
     locationForm.default_attendance_channel_id = editingChannel.value?.id ?? null;
+    locationForm.source = 'several';
     locationNumber.value = 1;
+    locationResult.value = null;
     locationForm.clearErrors();
 };
 
@@ -151,7 +194,7 @@ const deleteChannel = () => {
     });
 };
 
-const postLocationRange = (from, to) => {
+const postLocationRange = (from, to, source) => {
     if (!editingChannel.value) {
         return;
     }
@@ -159,18 +202,31 @@ const postLocationRange = (from, to) => {
     enableEditing();
     const previousFrom = locationForm.from;
     const previousTo = locationForm.to;
+    locationResult.value = null;
     locationForm.default_attendance_channel_id = editingChannel.value.id;
     locationForm.from = from;
     locationForm.to = to;
+    locationForm.source = source;
     locationForm.post(route('settings.service-locations.range'), {
         preserveScroll: true,
-        onSuccess: () => {
+        onSuccess: (page) => {
+            locationForm.from = previousFrom;
+            locationForm.to = previousTo;
+            const result = page.props.locationCreateResult ?? null;
+            locationResult.value = result;
+
+            if (result?.skipped_names?.length) {
+                return;
+            }
+
             toast.success(__('Locations created successfully'));
             locationForm.reset();
             locationForm.from = 1;
             locationForm.to = 100;
             locationForm.default_attendance_channel_id = editingChannel.value.id;
+            locationForm.source = 'several';
             locationNumber.value = Number(to) + 1;
+            locationResult.value = null;
         },
         onError: () => {
             locationForm.from = previousFrom;
@@ -180,16 +236,28 @@ const postLocationRange = (from, to) => {
 };
 
 const addOneLocation = () => {
-    postLocationRange(locationNumber.value, locationNumber.value);
+    if (!locationNumberIsValid.value) {
+        toast.error(__('A number is required.'));
+        return;
+    }
+
+    postLocationRange(locationNumber.value, locationNumber.value, 'one');
 };
 
 const addLocationRange = () => {
-    postLocationRange(locationForm.from, locationForm.to);
+    if (!locationRangeIsValid.value) {
+        toast.error(__('A number is required.'));
+        return;
+    }
+
+    postLocationRange(locationForm.from, locationForm.to, 'several');
 };
 
 const confirmDeleteLocation = (location) => {
     enableEditing();
     locationToDelete.value = location;
+
+    nextTick(() => deleteLocation());
 };
 
 const deleteLocation = () => {
@@ -197,11 +265,12 @@ const deleteLocation = () => {
         return;
     }
 
-    router.delete(route('settings.service-locations.destroy', locationToDelete.value.id), {
+    router.delete(route('settings.service-locations.destroy', { location: locationToDelete.value.id }), {
         preserveScroll: true,
-        onSuccess: () => { locationToDelete.value = null; },
+        preserveState: true,
         onError: (errors) => {
-            toast.error(__(errors.location || 'Could not delete this location.'));
+            toast.error(__(errors.location || 'Could not delete this location.'), { duration: 8000 });
+            locationToDelete.value = null;
         },
     });
 };
@@ -209,6 +278,8 @@ const deleteLocation = () => {
 const confirmDeleteChannelLocations = () => {
     enableEditing();
     channelLocationsToDelete.value = editingChannel.value;
+
+    nextTick(() => deleteChannelLocations());
 };
 
 const deleteChannelLocations = () => {
@@ -216,12 +287,13 @@ const deleteChannelLocations = () => {
         return;
     }
 
-    router.delete(route('settings.attendance-channels.locations.destroy', channelLocationsToDelete.value.id), {
+    router.delete(route('settings.attendance-channels.locations.destroy', { channel: channelLocationsToDelete.value.id }), {
         preserveScroll: true,
-        onSuccess: () => { channelLocationsToDelete.value = null; },
+        preserveState: true,
         onError: (errors) => {
-            toast.error(__(errors.locations || 'Could not delete these locations.'));
+            toast.error(__(errors.locations || 'Could not delete these locations.'), { duration: 8000 });
         },
+        onFinish: () => { channelLocationsToDelete.value = null; },
     });
 };
 
@@ -237,6 +309,11 @@ const revealCreatedSeries = (prefix) => {
 };
 
 const addTab = () => {
+    if (!tabCodeHasNumber.value) {
+        tabForm.setError('code', __('A tab code must include a number.'));
+        return;
+    }
+
     enableEditing();
     const prefix = prefixFromCode(tabForm.code);
     tabForm.post(route('settings.tabs.store'), {
@@ -251,6 +328,11 @@ const addTab = () => {
 };
 
 const addTabRange = () => {
+    if (!tabRangeIsValid.value) {
+        toast.error(__('A number is required.'));
+        return;
+    }
+
     enableEditing();
     const prefix = rangeForm.prefix;
     rangeForm.post(route('settings.tabs.range'), {
@@ -278,7 +360,10 @@ const saveSeriesNotes = (series, notes) => {
 };
 
 const confirmDeleteTab = (tab) => {
+    enableEditing();
     tabToDelete.value = tab;
+
+    nextTick(() => deleteTab());
 };
 
 const deleteTab = () => {
@@ -286,9 +371,13 @@ const deleteTab = () => {
         return;
     }
 
-    router.delete(route('settings.tabs.destroy', tabToDelete.value.id), {
+    router.delete(route('settings.tabs.destroy', { tab: tabToDelete.value.id }), {
         preserveScroll: true,
-        onSuccess: () => { tabToDelete.value = null; },
+        preserveState: true,
+        onError: (errors) => {
+            toast.error(__(errors.tab || 'Could not delete this tab.'), { duration: 8000 });
+            tabToDelete.value = null;
+        },
     });
 };
 
@@ -302,16 +391,34 @@ const deleteSeries = () => {
         return;
     }
 
-    router.delete(route('settings.tab-series.destroy', seriesToDelete.value.id), {
+    router.delete(route('settings.tab-series.destroy', { series: seriesToDelete.value.id }), {
         preserveScroll: true,
+        preserveState: true,
         onSuccess: () => { seriesToDelete.value = null; },
         onError: (errors) => {
-            toast.error(__(errors.tabs || 'Could not delete these tabs.'));
+            toast.error(__(errors.tabs || 'Could not delete these tabs.'), { duration: 8000 });
         },
+        onFinish: () => { seriesToDelete.value = null; },
     });
 };
 
 const seriesTabRows = (series) => groupTabsForDisplay(series?.tabs ?? []);
+
+const locationIsPendingDelete = (location) => (
+    locationToDelete.value?.id === location.id
+    || channelLocationsToDelete.value?.id === location.default_attendance_channel_id
+);
+
+const tabIsPendingDelete = (tab, series) => (
+    tabToDelete.value?.id === tab.id
+    || seriesToDelete.value?.id === series.id
+);
+
+const chipClass = (pending) => (
+    pending
+        ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+        : 'bg-muted text-ocean-deep dark:bg-gray-700 dark:text-gray-100'
+);
 </script>
 
 <template>
@@ -405,9 +512,12 @@ const seriesTabRows = (series) => groupTabsForDisplay(series?.tabs ?? []);
                                 <span class="text-sm text-ocean-deep dark:text-gray-100">{{ __('Active') }}</span>
                             </label>
 
-                            <label class="flex cursor-pointer items-center gap-3">
-                                <input v-model="form.requires_customer_identifier" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary focus:ring-primary" />
-                                <span class="text-sm text-ocean-deep dark:text-gray-100">{{ __('Requires customer identifier') }}</span>
+                            <label class="flex cursor-pointer items-start gap-3">
+                                <input v-model="form.requires_customer_identifier" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-border dark:border-gray-700 text-primary focus:ring-primary" />
+                                <span>
+                                    <span class="block text-sm text-ocean-deep dark:text-gray-100">{{ __('Requires customer identifier') }}</span>
+                                    <span class="mt-0.5 block text-xs italic text-muted-foreground dark:text-gray-400">{{ __('Ideal for Delivery (example).') }}</span>
+                                </span>
                             </label>
 
                             <label class="flex cursor-pointer items-start gap-3">
@@ -444,7 +554,7 @@ const seriesTabRows = (series) => groupTabsForDisplay(series?.tabs ?? []);
                     </h3>
 
                     <div class="rounded-lg border border-border p-4 dark:border-gray-700">
-                        <h4 class="mb-3 font-heading text-base font-bold text-ocean-deep dark:text-gray-100">{{ __('Create one') }}</h4>
+                        <h4 class="mb-3 font-heading text-base font-bold text-ocean-deep dark:text-gray-100">{{ __('Create one') }} {{ form.name }}</h4>
                         <div class="flex flex-wrap items-end gap-2">
                             <div>
                                 <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Number') }}</label>
@@ -452,15 +562,18 @@ const seriesTabRows = (series) => groupTabsForDisplay(series?.tabs ?? []);
                                     v-model="locationNumber"
                                     type="number"
                                     min="1"
+                                    required
                                     class="w-24 rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                                 />
                             </div>
-                            <AppButton type="button" data-enable-editing :loading="locationForm.processing" @click="addOneLocation">{{ __('Add') }}</AppButton>
+                            <AppButton type="button" data-enable-editing :disabled="!locationNumberIsValid" :loading="locationForm.processing" @click="addOneLocation">{{ __('Add') }}</AppButton>
                         </div>
+                        <p v-if="!locationNumberIsValid" class="mt-2 text-xs text-destructive">{{ __('A number is required.') }}</p>
+                        <p v-else-if="singleLocationResult" class="mt-2 text-xs text-destructive">{{ locationAlreadyExistsMessage }}</p>
                     </div>
 
                     <div class="mt-4 rounded-lg border border-border p-4 dark:border-gray-700">
-                        <h4 class="mb-3 font-heading text-base font-bold text-ocean-deep dark:text-gray-100">{{ __('Create several') }}</h4>
+                        <h4 class="mb-3 font-heading text-base font-bold text-ocean-deep dark:text-gray-100">{{ __('Create several') }} {{ form.name }}</h4>
                         <div class="flex flex-wrap items-end gap-2">
                             <div>
                                 <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('From') }}</label>
@@ -468,6 +581,7 @@ const seriesTabRows = (series) => groupTabsForDisplay(series?.tabs ?? []);
                                     v-model="locationForm.from"
                                     type="number"
                                     min="1"
+                                    required
                                     class="w-24 rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                                 />
                             </div>
@@ -477,13 +591,20 @@ const seriesTabRows = (series) => groupTabsForDisplay(series?.tabs ?? []);
                                     v-model="locationForm.to"
                                     type="number"
                                     min="1"
+                                    required
                                     class="w-24 rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                                 />
                             </div>
-                            <AppButton type="button" variant="secondary" data-enable-editing :loading="locationForm.processing" @click="addLocationRange">{{ __('Create range') }}</AppButton>
+                            <AppButton type="button" variant="secondary" data-enable-editing :disabled="!locationRangeIsValid" :loading="locationForm.processing" @click="addLocationRange">{{ __('Create range') }}</AppButton>
                         </div>
+                        <p v-if="!locationRangeIsValid" class="mt-2 text-xs text-destructive">{{ __('A number is required.') }}</p>
                         <p v-if="locationForm.errors.from" class="mt-2 text-xs text-destructive">{{ __(locationForm.errors.from) }}</p>
                         <p v-if="locationForm.errors.to" class="mt-2 text-xs text-destructive">{{ __(locationForm.errors.to) }}</p>
+                        <div v-if="severalLocationResult" class="mt-2 space-y-1 text-xs text-destructive">
+                            <p>{{ locationAlreadyExistsMessage }}</p>
+                            <p>{{ __('Not created: :names', { names: formatLocationNames(severalLocationResult.skipped_names) }) }}</p>
+                            <p v-if="severalLocationResult.created_names?.length">{{ __('Created: :names', { names: formatLocationNames(severalLocationResult.created_names) }) }}</p>
+                        </div>
                     </div>
 
                     <div v-if="channelLocations.length" class="mt-4">
@@ -503,9 +624,10 @@ const seriesTabRows = (series) => groupTabsForDisplay(series?.tabs ?? []);
                             <span
                                 v-for="location in channelLocations"
                                 :key="location.id"
-                                class="inline-flex min-w-0 items-center justify-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-ocean-deep dark:bg-gray-700 dark:text-gray-100"
+                                class="inline-flex min-w-0 items-center justify-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
+                                :class="chipClass(locationIsPendingDelete(location))"
                             >
-                                {{ location.name }}
+                                <span :class="{ 'line-through': locationIsPendingDelete(location) }">{{ location.name }}</span>
                                 <button
                                     type="button"
                                     data-enable-editing
@@ -545,13 +667,15 @@ const seriesTabRows = (series) => groupTabsForDisplay(series?.tabs ?? []);
                                     v-model="tabForm.code"
                                     type="text"
                                     maxlength="20"
+                                    required
                                     :placeholder="__('e.g. 15 or A1')"
                                     :aria-label="__('Create a single tab')"
                                     class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                                 />
                                 <p v-if="tabForm.errors.code" class="mt-1 text-xs text-destructive">{{ __(tabForm.errors.code) }}</p>
+                                <p v-else-if="String(tabForm.code ?? '').trim() !== '' && !tabCodeHasNumber" class="mt-1 text-xs text-destructive">{{ __('A tab code must include a number.') }}</p>
                             </div>
-                            <AppButton type="submit" data-enable-editing :loading="tabForm.processing">{{ __('Add tab') }}</AppButton>
+                            <AppButton type="submit" data-enable-editing :disabled="!tabCodeHasNumber" :loading="tabForm.processing">{{ __('Add tab') }}</AppButton>
                         </div>
                         <div>
                             <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Observation') }}</label>
@@ -586,6 +710,7 @@ const seriesTabRows = (series) => groupTabsForDisplay(series?.tabs ?? []);
                                     v-model="rangeForm.from"
                                     type="number"
                                     min="1"
+                                    required
                                     class="w-24 rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                                 />
                             </div>
@@ -595,11 +720,13 @@ const seriesTabRows = (series) => groupTabsForDisplay(series?.tabs ?? []);
                                     v-model="rangeForm.to"
                                     type="number"
                                     min="1"
+                                    required
                                     class="w-24 rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                                 />
                             </div>
-                            <AppButton type="submit" variant="secondary" data-enable-editing :loading="rangeForm.processing">{{ __('Create range') }}</AppButton>
+                            <AppButton type="submit" variant="secondary" data-enable-editing :disabled="!tabRangeIsValid" :loading="rangeForm.processing">{{ __('Create range') }}</AppButton>
                         </div>
+                        <p v-if="!tabRangeIsValid" class="text-xs text-destructive">{{ __('A number is required.') }}</p>
                         <div>
                             <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Observation') }}</label>
                             <textarea
@@ -656,9 +783,10 @@ const seriesTabRows = (series) => groupTabsForDisplay(series?.tabs ?? []);
                                 <span
                                     v-for="tab in row"
                                     :key="tab.id"
-                                    class="inline-flex min-w-0 items-center justify-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-ocean-deep dark:bg-gray-700 dark:text-gray-100"
+                                    class="inline-flex min-w-0 items-center justify-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
+                                    :class="chipClass(tabIsPendingDelete(tab, series))"
                                 >
-                                    {{ tab.code }}
+                                    <span :class="{ 'line-through': tabIsPendingDelete(tab, series) }">{{ tab.code }}</span>
                                     <button
                                         type="button"
                                         data-enable-editing
@@ -687,36 +815,6 @@ const seriesTabRows = (series) => groupTabsForDisplay(series?.tabs ?? []);
             variant="destructive"
             @confirm="deleteChannel"
             @cancel="channelToDelete = null"
-        />
-
-        <AppConfirmModal
-            :show="!!locationToDelete"
-            :title="__('Delete location')"
-            :message="__('Are you sure you want to delete this location?')"
-            :confirm-label="__('Delete')"
-            variant="destructive"
-            @confirm="deleteLocation"
-            @cancel="locationToDelete = null"
-        />
-
-        <AppConfirmModal
-            :show="!!channelLocationsToDelete"
-            :title="__('Delete all')"
-            :message="__('Are you sure you want to delete all locations for this channel?')"
-            :confirm-label="__('Delete all')"
-            variant="destructive"
-            @confirm="deleteChannelLocations"
-            @cancel="channelLocationsToDelete = null"
-        />
-
-        <AppConfirmModal
-            :show="!!tabToDelete"
-            :title="__('Delete tab')"
-            :message="__('Are you sure you want to delete this tab?')"
-            :confirm-label="__('Delete')"
-            variant="destructive"
-            @confirm="deleteTab"
-            @cancel="tabToDelete = null"
         />
 
         <AppConfirmModal

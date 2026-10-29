@@ -21,7 +21,7 @@ class DeleteTabSeriesAction
 
             if ($inUse) {
                 throw ValidationException::withMessages([
-                    'tabs' => 'Some tabs in this prefix are in use on an open attendance.',
+                    'tabs' => 'Cannot delete these tabs while an attendance is open. Close the open attendances first.',
                 ]);
             }
 

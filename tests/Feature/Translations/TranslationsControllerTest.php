@@ -104,10 +104,10 @@ class TranslationsControllerTest extends TestCase
         $this->assertSame([
             'Dashboard' => 'Dashboard',
             'Welcome' => 'Welcome',
-        ], $service->getTranslateData('Dashboard'));
+        ], $service->getTranslateData('Dashboard', 'en'));
         $this->assertSame([
             'Settings' => 'Settings',
-        ], $service->getTranslateData('AppLayout'));
+        ], $service->getTranslateData('AppLayout', 'en'));
     }
 
     public function test_it_rejects_invalid_or_duplicate_components(): void

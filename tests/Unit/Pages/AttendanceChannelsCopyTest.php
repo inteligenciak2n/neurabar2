@@ -29,12 +29,13 @@ class AttendanceChannelsCopyTest extends TestCase
             strpos($page, 'v-model="form.sort_order"'),
         );
         $this->assertStringContainsString("__('Requires customer identifier')", $page);
+        $this->assertStringContainsString("__('Ideal for Delivery (example).')", $page);
         $this->assertStringContainsString("__('Requires tab')", $page);
         $this->assertStringContainsString("__('Add') }} {{ form.name }}", $page);
         $this->assertStringNotContainsString("__('Create the prefix')", $page);
         $this->assertStringContainsString('font-heading text-lg font-bold', $page);
-        $this->assertStringContainsString("__('Create one')", $page);
-        $this->assertStringContainsString("__('Create several')", $page);
+        $this->assertStringContainsString("__('Create one') }} {{ form.name }}", $page);
+        $this->assertStringContainsString("__('Create several') }} {{ form.name }}", $page);
         $this->assertStringContainsString('settings.service-locations.range', $page);
         $this->assertStringContainsString('channelLocations', $page);
         $this->assertStringContainsString(':disabled="!!editingChannel"', $page);
@@ -43,7 +44,9 @@ class AttendanceChannelsCopyTest extends TestCase
         $this->assertStringContainsString('confirmDeleteLocation', $page);
         $this->assertStringContainsString('settings.service-locations.destroy', $page);
         $this->assertStringContainsString('confirmDeleteChannelLocations', $page);
+        $this->assertStringContainsString('nextTick(() => deleteChannelLocations())', $page);
         $this->assertStringContainsString('settings.attendance-channels.locations.destroy', $page);
+        $this->assertStringNotContainsString("__('Are you sure you want to delete all locations for this channel?')", $page);
         $this->assertStringContainsString('v-model="form.requires_tab"', $page);
         $this->assertStringContainsString("__('Tabs')", $page);
         $this->assertStringContainsString('font-heading text-2xl font-bold', $page);
@@ -56,6 +59,15 @@ class AttendanceChannelsCopyTest extends TestCase
         $this->assertStringContainsString("__('Create several tabs')", $page);
         $this->assertStringContainsString('rounded-lg border border-border p-4', $page);
         $this->assertStringContainsString("__('Add tab')", $page);
+        $this->assertStringContainsString('tabCodeHasNumber', $page);
+        $this->assertStringContainsString('locationNumberIsValid', $page);
+        $this->assertStringContainsString("__('A number is required.')", $page);
+        $this->assertStringContainsString("__('A tab code must include a number.')", $page);
+        $this->assertStringContainsString("'The \":name\" number already exists.'", $page);
+        $this->assertStringContainsString("__('Not created: :names'", $page);
+        $this->assertStringContainsString("__('Created: :names'", $page);
+        $this->assertStringContainsString('singleLocationResult', $page);
+        $this->assertStringContainsString('severalLocationResult', $page);
         $this->assertStringContainsString("__('Create range')", $page);
         $this->assertStringContainsString('settings.tabs.store', $page);
         $this->assertStringContainsString('anyChannelUsesTabs', $page);
@@ -74,6 +86,17 @@ class AttendanceChannelsCopyTest extends TestCase
         $this->assertStringContainsString('confirmDeleteSeries', $page);
         $this->assertStringContainsString('groupTabsForDisplay', $page);
         $this->assertStringContainsString('sm:grid-cols-10', $page);
+        $this->assertStringContainsString('locationIsPendingDelete', $page);
+        $this->assertStringContainsString('tabIsPendingDelete', $page);
+        $this->assertStringNotContainsString("__('Are you sure you want to delete this tab?')", $page);
+        $this->assertStringNotContainsString("__('Are you sure you want to delete this location?')", $page);
+        $this->assertStringContainsString('nextTick(() => deleteTab())', $page);
+        $this->assertStringContainsString('nextTick(() => deleteLocation())', $page);
+        $this->assertStringContainsString("__(errors.tab || 'Could not delete this tab.')", $page);
+        $this->assertStringContainsString("route('settings.tabs.destroy', { tab: tabToDelete.value.id })", $page);
+        $this->assertStringContainsString("'line-through': locationIsPendingDelete(location)", $page);
+        $this->assertStringContainsString("'line-through': tabIsPendingDelete(tab, series)", $page);
+        $this->assertStringContainsString('bg-red-100 text-red-700', $page);
         $this->assertSame('Rastreável pelo cliente', $translations['Trackable by customer']);
         $this->assertSame('Descrição', $translations['Description']);
         $this->assertSame(
@@ -81,6 +104,7 @@ class AttendanceChannelsCopyTest extends TestCase
             $translations['The customer can check the preparation status of the order.'],
         );
         $this->assertSame('Exige identificador do cliente', $translations['Requires customer identifier']);
+        $this->assertSame('Ideal para Delivery (exemplo)', $translations['Ideal for Delivery (example).']);
         $this->assertSame('Exige comanda', $translations['Requires tab']);
         $this->assertSame('Comandas', $translations['Tabs']);
         $this->assertSame('Adicionar', $translations['Add']);
@@ -93,6 +117,22 @@ class AttendanceChannelsCopyTest extends TestCase
         $this->assertSame(
             'Tem certeza de que deseja apagar todos os locais deste canal?',
             $translations['Are you sure you want to delete all locations for this channel?'],
+        );
+        $this->assertSame(
+            'Não é possível excluir: há um atendimento aberto neste local. Feche o atendimento e tente novamente.',
+            $translations['Cannot delete this location while an attendance is open. Close the attendance first.'],
+        );
+        $this->assertSame(
+            'Não é possível apagar: há atendimento aberto em um destes locais. Feche os atendimentos e tente novamente.',
+            $translations['Cannot delete these locations while an attendance is open. Close the open attendances first.'],
+        );
+        $this->assertSame(
+            'Não é possível excluir esta comanda: há um atendimento aberto. Feche o atendimento e tente novamente.',
+            $translations['Cannot delete this tab while an attendance is open. Close the attendance first.'],
+        );
+        $this->assertSame(
+            'Não é possível apagar estas comandas: há atendimento aberto em uma delas. Feche os atendimentos e tente novamente.',
+            $translations['Cannot delete these tabs while an attendance is open. Close the open attendances first.'],
         );
         $this->assertSame('Criar uma', $translations['Create one']);
         $this->assertSame('Criar várias', $translations['Create several']);
@@ -109,6 +149,12 @@ class AttendanceChannelsCopyTest extends TestCase
         $this->assertSame('Cada código de comanda deve ser único.', $translations['Each tab code can be used only once.']);
         $this->assertSame('Comandas Criadas com Sucesso', $translations['Tabs created successfully']);
         $this->assertSame('Este código de comanda já está em uso.', $translations['This tab code is already in use.']);
+        $this->assertSame('O código da comanda precisa ter um número.', $translations['A tab code must include a number.']);
+        $this->assertSame('Informe um número.', $translations['A number is required.']);
+        $this->assertSame('Não foi possível excluir esta comanda.', $translations['Could not delete this tab.']);
+        $this->assertSame('Número de ":name" Já existente', $translations['The ":name" number already exists.']);
+        $this->assertSame('Não criados: :names', $translations['Not created: :names']);
+        $this->assertSame('Criados: :names', $translations['Created: :names']);
         $this->assertSame('Todos os códigos deste intervalo já existem.', $translations['Every code in this range already exists.']);
         $this->assertSame('Números', $translations['Numbers']);
         $this->assertSame(

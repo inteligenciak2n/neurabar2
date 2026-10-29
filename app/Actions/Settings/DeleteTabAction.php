@@ -18,7 +18,7 @@ class DeleteTabAction
 
         if ($inUse) {
             throw ValidationException::withMessages([
-                'tab' => 'This tab is in use on an open attendance.',
+                'tab' => 'Cannot delete this tab while an attendance is open. Close the attendance first.',
             ]);
         }
 

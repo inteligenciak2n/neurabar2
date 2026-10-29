@@ -37,4 +37,18 @@ class TabCodeTest extends TestCase
         $this->assertSame('VIP', TabCode::prefixFromCode('VIP'));
         $this->assertSame('CASA', TabCode::prefixFromCode('CASA1'));
     }
+
+    public function test_codes_must_include_a_number(): void
+    {
+        $this->assertTrue(TabCode::hasNumber('15'));
+        $this->assertTrue(TabCode::hasNumber('A1'));
+        $this->assertTrue(TabCode::hasNumber('CASA1-1'));
+        $this->assertFalse(TabCode::hasNumber('VIP'));
+        $this->assertFalse(TabCode::hasNumber('A'));
+        $this->assertSame(1, preg_match(TabCode::CODE_REGEX, '15'));
+        $this->assertSame(1, preg_match(TabCode::CODE_REGEX, 'A1'));
+        $this->assertSame(1, preg_match(TabCode::CODE_REGEX, 'CASA1-1'));
+        $this->assertSame(0, preg_match(TabCode::CODE_REGEX, 'VIP'));
+        $this->assertSame(0, preg_match(TabCode::CODE_REGEX, 'A'));
+    }
 }

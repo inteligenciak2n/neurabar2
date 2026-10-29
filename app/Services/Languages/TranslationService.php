@@ -13,7 +13,9 @@ class TranslationService
 
     protected string $storage_path;
 
-    const DEFAULT_LOCALE = 'en';
+    const DEFAULT_LOCALE = 'pt';
+
+    private const SOURCE_LOCALE = 'en';
 
     public function __construct(?string $storagePath = null)
     {
@@ -88,7 +90,7 @@ class TranslationService
      */
     private function writeMissingTranslations(string $component, array $translations): void
     {
-        $locale = self::DEFAULT_LOCALE;
+        $locale = self::SOURCE_LOCALE;
         $file_path = $this->storage_path."/{$locale}/{$component}.json";
         $dir = dirname($file_path);
 

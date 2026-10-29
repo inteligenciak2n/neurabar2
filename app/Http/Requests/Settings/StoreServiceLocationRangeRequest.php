@@ -13,6 +13,22 @@ class StoreServiceLocationRangeRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('source')) {
+            return;
+        }
+
+        $from = $this->input('from');
+        $to = $this->input('to');
+
+        $this->merge([
+            'source' => is_numeric($from) && is_numeric($to) && (int) $from === (int) $to
+                ? 'one'
+                : 'several',
+        ]);
+    }
+
     /** @return array<string, mixed> */
     public function rules(): array
     {
@@ -20,6 +36,7 @@ class StoreServiceLocationRangeRequest extends FormRequest
             'from' => ['required', 'integer', 'min:1', 'max:99999'],
             'to' => ['required', 'integer', 'min:1', 'max:99999', 'gte:from'],
             'default_attendance_channel_id' => ['required', 'uuid', Rule::exists(AttendanceChannel::class, 'id')],
+            'source' => ['required', 'in:one,several'],
         ];
     }
 

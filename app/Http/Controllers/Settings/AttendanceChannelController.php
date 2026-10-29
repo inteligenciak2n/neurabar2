@@ -29,6 +29,7 @@ class AttendanceChannelController extends Controller
             'serviceLocations' => $venue->serviceLocations()
                 ->orderBy('name')
                 ->get(['id', 'name', 'default_attendance_channel_id']),
+            'locationCreateResult' => session('location_create_result'),
         ]);
     }
 

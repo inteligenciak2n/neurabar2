@@ -18,7 +18,7 @@ class DeleteServiceLocationAction
 
         if ($inUse) {
             throw ValidationException::withMessages([
-                'location' => 'This location is in use on an open attendance.',
+                'location' => 'Cannot delete this location while an attendance is open. Close the attendance first.',
             ]);
         }
 
