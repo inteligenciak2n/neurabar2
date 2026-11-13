@@ -336,7 +336,7 @@ create_products_table
   id uuid PK, category_id uuid FK, kitchen_station_id uuid FK nullable
   name, description text nullable, price decimal(10,2)
   image_url string nullable, active boolean default true
-  available_for_delivery boolean default false, timestamps
+  timestamps
 
 create_product_variations_table
   id uuid PK, product_id uuid FK

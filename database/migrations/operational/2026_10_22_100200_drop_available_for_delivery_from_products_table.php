@@ -13,6 +13,7 @@ return new class extends Migration
         });
     }
 
+    /** Destructive: the per-product delivery flags are not recoverable; every product comes back as not available. */
     public function down(): void
     {
         Schema::table('products', function (Blueprint $table): void {
