@@ -13,6 +13,7 @@ use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueModule;
 use App\Services\GuestTokenService;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
@@ -130,5 +131,29 @@ class GuestOrderTabCodeTest extends TestCase
         $session = $this->openGuestSession();
 
         $this->placeOrder($session, ['tab_code' => 'a b;--'])->assertJsonValidationErrors('tab_code');
+    }
+
+    public function test_tab_code_attempts_are_throttled_per_session(): void
+    {
+        $session = $this->openGuestSession();
+
+        for ($i = 0; $i < 5; $i++) {
+            RateLimiter::hit('guest-tab-code:'.$session->id, 900);
+        }
+
+        $this->placeOrder($session, ['tab_code' => '123'])->assertJsonValidationErrors('tab_code');
+
+        $this->assertSame(0, Attendance::withoutGlobalScopes()->where('code', '123')->count());
+        $this->placeOrder($session)->assertCreated();
+    }
+
+    public function test_failed_attach_does_not_leave_an_orphan_attendance(): void
+    {
+        $session = $this->openGuestSession();
+
+        $this->placeOrder($session, ['tab_code' => '321', 'items' => [['product_id' => 'not-a-uuid', 'quantity' => 1]]])
+            ->assertJsonValidationErrors('items.0.product_id');
+
+        $this->assertSame(0, Attendance::withoutGlobalScopes()->where('code', '321')->count());
     }
 }

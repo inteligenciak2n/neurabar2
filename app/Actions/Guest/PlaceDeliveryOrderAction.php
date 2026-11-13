@@ -21,6 +21,7 @@ use App\Support\OperationalConnection;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class PlaceDeliveryOrderAction
 {
@@ -31,6 +32,8 @@ class PlaceDeliveryOrderAction
     private const CODE_PICK_ATTEMPTS = 5;
 
     private const PLACE_ATTEMPTS = 3;
+
+    private const CODE_UNIQUE_INDEX = 'delivery_orders_venue_id_code_unique';
 
     public function __construct(private readonly ResolveOrderItemsAction $resolveOrderItemsAction) {}
 
@@ -66,7 +69,8 @@ class PlaceDeliveryOrderAction
                 break;
             } catch (UniqueConstraintViolationException $e) {
                 // Concurrent order took the same code; the transaction rolled back, so draw again.
-                if ($attempt >= self::PLACE_ATTEMPTS) {
+                // Any other unique violation is a real error and must surface untouched.
+                if (! str_contains($e->getMessage(), self::CODE_UNIQUE_INDEX) || $attempt >= self::PLACE_ATTEMPTS) {
                     throw $e;
                 }
             }
@@ -176,7 +180,7 @@ class PlaceDeliveryOrderAction
      */
     private function generateDeliveryOrderCode(Venue $venue): int
     {
-        for ($attempt = 1; ; $attempt++) {
+        for ($attempt = 1; $attempt <= self::CODE_PICK_ATTEMPTS; $attempt++) {
             $code = random_int(self::CODE_MIN, self::CODE_MAX);
 
             $taken = DeliveryOrder::withoutGlobalScopes()
@@ -184,10 +188,12 @@ class PlaceDeliveryOrderAction
                 ->where('code', $code)
                 ->exists();
 
-            if (! $taken || $attempt >= self::CODE_PICK_ATTEMPTS) {
+            if (! $taken) {
                 return $code;
             }
         }
+
+        throw new RuntimeException('No free delivery order code is available for this venue.');
     }
 
     /**

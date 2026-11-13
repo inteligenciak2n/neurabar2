@@ -8,13 +8,20 @@ use App\Models\Orders\Attendance;
 use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\ServiceLocation;
 use App\Models\Tenant\Venue;
+use App\Support\OperationalConnection;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class GuestTokenService
 {
+    private const TAB_CODE_MAX_ATTEMPTS = 5;
+
+    private const TAB_CODE_DECAY_SECONDS = 900;
+
     /**
      * Encode a deterministic, venue-only token (no service_location/channel).
      * Used for fixed public links such as the Delivery/Takeaway ordering page.
@@ -131,13 +138,35 @@ class GuestTokenService
 
         $code = Attendance::normalizeCode($tabCode);
 
-        $attendance = $code !== null
-            ? $this->attendanceForTabCode($session, $code)
-            : $this->openAttendance($session, null);
+        if ($code !== null) {
+            $this->throttleTabCodeAttempts($session);
+        }
 
-        $session->update(['attendance_id' => $attendance->id]);
+        // Attendance lives on the operational connection (GuestSession doesn't), so the transaction
+        // must target it explicitly; the session link is written inside so a failure rolls back the attendance.
+        return DB::connection(OperationalConnection::current())->transaction(function () use ($session, $code): Attendance {
+            $attendance = $code !== null
+                ? $this->attendanceForTabCode($session, $code)
+                : $this->openAttendance($session, null);
 
-        return $attendance;
+            $session->update(['attendance_id' => $attendance->id]);
+
+            return $attendance;
+        });
+    }
+
+    /**
+     * Tab codes are short, so attaching to an existing tab is rate limited per session to block guessing.
+     */
+    private function throttleTabCodeAttempts(GuestSession $session): void
+    {
+        $key = 'guest-tab-code:'.$session->id;
+
+        if (RateLimiter::tooManyAttempts($key, self::TAB_CODE_MAX_ATTEMPTS)) {
+            throw ValidationException::withMessages(['tab_code' => 'This tab card is already in use.']);
+        }
+
+        RateLimiter::hit($key, self::TAB_CODE_DECAY_SECONDS);
     }
 
     private function attendanceForTabCode(GuestSession $session, string $code): Attendance
@@ -146,6 +175,7 @@ class GuestTokenService
             ->open()
             ->where('venue_id', $session->venue_id)
             ->where('code', $code)
+            ->lockForUpdate()
             ->first();
 
         if ($existing === null) {
