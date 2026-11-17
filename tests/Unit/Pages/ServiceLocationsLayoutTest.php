@@ -6,16 +6,19 @@ use PHPUnit\Framework\TestCase;
 
 class ServiceLocationsLayoutTest extends TestCase
 {
-    public function test_form_hides_type_and_matches_menu_category_layout(): void
+    public function test_standalone_service_locations_settings_were_moved_into_channels(): void
     {
-        $page = file_get_contents(dirname(__DIR__, 3).'/resources/js/Pages/Settings/ServiceLocations.vue');
+        $root = dirname(__DIR__, 3);
+        $index = file_get_contents($root.'/resources/js/Pages/Settings/Index.vue');
+        $channels = file_get_contents($root.'/resources/js/Pages/Settings/AttendanceChannels.vue');
 
-        $this->assertNotFalse($page);
-        $this->assertStringNotContainsString("t('Type')", $page);
-        $this->assertStringNotContainsString('locationTypes', $page);
-        $this->assertStringNotContainsString('form.type', $page);
-        $this->assertStringContainsString('bg-warm-gold/20', $page);
-        $this->assertStringContainsString('rounded-lg border-4 border-[#5c9a6c]', $page);
-        $this->assertStringContainsString('font-heading text-lg font-bold tracking-tight', $page);
+        $this->assertFileDoesNotExist($root.'/resources/js/Pages/Settings/ServiceLocations.vue');
+        $this->assertNotFalse($index);
+        $this->assertNotFalse($channels);
+        $this->assertStringNotContainsString('settings.service-locations.index', $index);
+        $this->assertStringNotContainsString("__('Service Locations')", $index);
+        $this->assertStringContainsString('settings.service-locations.range', $channels);
+        $this->assertStringContainsString('settings.service-locations.qr', $channels);
+        $this->assertStringContainsString('inactivateLocation', $channels);
     }
 }

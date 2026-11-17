@@ -7,6 +7,7 @@ use App\Models\Orders\Attendance;
 use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\Tab;
 use App\Models\Settings\TabSeries;
+use App\Models\Settings\VenueSettings;
 use App\Models\Tenant\Venue;
 use App\Services\TenantConnectionResolver;
 use Tests\RefreshAllDatabases;
@@ -330,15 +331,51 @@ class ChannelTabTest extends TestCase
             'code' => 'VIP1',
         ]);
 
-        $this->get(route('settings.attendance-channels.index'))
+        $this->get(route('settings.tabs.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Settings/AttendanceChannels')
-                ->has('channels', 1)
+                ->component('Settings/Tabs')
                 ->has('tabSeries', 1)
                 ->where('tabSeries.0.tabs.0.id', $tab->id)
                 ->where('tabSeries.0.tabs.0.code', 'VIP1')
+                ->where('tabsEnabled', true)
             );
+    }
+
+    public function test_owner_can_disable_tabs(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+
+        $this->from(route('settings.tabs.index'))
+            ->put(route('settings.tabs.enabled'), [
+                'tabs_enabled' => 0,
+            ])
+            ->assertRedirect(route('settings.tabs.index'));
+
+        $this->assertDatabaseHas('venue_settings', [
+            'venue_id' => $venue->id,
+            'tabs_enabled' => false,
+        ]);
+    }
+
+    public function test_owner_cannot_create_a_tab_when_tabs_are_disabled(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+        VenueSettings::factory()->create([
+            'venue_id' => $venue->id,
+            'tabs_enabled' => false,
+        ]);
+
+        $this->post(route('settings.tabs.store'), [
+            'code' => '1',
+        ])->assertSessionHasErrors(['tab' => 'Tabs are disabled.']);
+
+        $this->assertDatabaseMissing('tabs', [
+            'venue_id' => $venue->id,
+            'code' => '1',
+        ]);
     }
 
     public function test_tab_code_must_include_a_number(): void

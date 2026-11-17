@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ModuleCode;
+use App\Enums\PreferredPhoneHand;
 use App\Enums\ProfileEnum;
 use App\Enums\UserRole;
 use App\Models\Tenant\AffiliateCode;
@@ -49,6 +50,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'current_venue_id',
         'pin',
+        'preferred_phone_hand',
         'active',
         'lang',
         'profile',
@@ -80,6 +82,13 @@ class User extends Authenticatable implements MustVerifyEmail
         'profile_photo_url',
     ];
 
+    /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'preferred_phone_hand' => 'right',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -88,6 +97,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'active' => 'boolean',
             'onboarding_completed_at' => 'datetime',
             'profile' => ProfileEnum::class,
+            'preferred_phone_hand' => PreferredPhoneHand::class,
         ];
     }
 

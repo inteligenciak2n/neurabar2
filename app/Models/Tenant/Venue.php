@@ -130,7 +130,7 @@ class Venue extends Model
 
     public function attendanceChannels(): HasMany
     {
-        return $this->hasMany(AttendanceChannel::class)->orderBy('sort_order');
+        return $this->hasMany(AttendanceChannel::class)->orderBy('sort_order')->orderBy('name');
     }
 
     public function tabSeries(): HasMany

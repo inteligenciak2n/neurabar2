@@ -32,6 +32,8 @@ class MenuProductsCategoryTabsTest extends TestCase
         $this->assertStringContainsString('text-[9px] font-normal leading-tight', $page);
         $this->assertStringContainsString("route('menu.products.reorder')", $page);
         $this->assertStringContainsString('@dragstart="onProductDragStart($event, product.id)"', $page);
+        $this->assertStringContainsString('categoryNameStyle(category.color)', $page);
+        $this->assertStringContainsString('categoryNameStyle(product.category.color)', $page);
     }
 
     public function test_portuguese_all_categories_label_matches_the_requested_copy(): void
@@ -336,12 +338,16 @@ class MenuProductsCategoryTabsTest extends TestCase
         $page = file_get_contents(dirname(__DIR__, 3).'/resources/js/Pages/Menu/Products.vue');
 
         $this->assertNotFalse($page);
-        $this->assertSame(3, substr_count($page, 'h-0.5 w-10 rounded-full bg-warm-gold'));
+        $this->assertSame(4, substr_count($page, 'h-0.5 w-10 rounded-full bg-warm-gold'));
         $this->assertStringContainsString("__('Modifier Groups')", $page);
         $this->assertStringContainsString("__('Variations')", $page);
+        $this->assertStringContainsString("__('Can be removed')", $page);
+        $this->assertStringContainsString('addRemovableIngredients', $page);
+        $this->assertStringContainsString('form.removable_ingredients', $page);
 
         $modifiers = strpos($page, "__('Modifier Groups')");
         $variations = strpos($page, "__('Variations')");
+        $removable = strpos($page, "__('Can be removed')");
         $goldBars = [];
         $offset = 0;
 
@@ -350,11 +356,13 @@ class MenuProductsCategoryTabsTest extends TestCase
             $offset = $pos + 1;
         }
 
-        $this->assertCount(3, $goldBars);
+        $this->assertCount(4, $goldBars);
         $this->assertLessThan($goldBars[1], $modifiers);
         $this->assertGreaterThan($goldBars[0], $modifiers);
         $this->assertLessThan($goldBars[2], $variations);
         $this->assertGreaterThan($goldBars[1], $variations);
+        $this->assertLessThan($goldBars[3], $removable);
+        $this->assertGreaterThan($goldBars[2], $removable);
     }
 
     public function test_variation_edit_and_delete_buttons_are_on_the_right(): void
@@ -384,6 +392,10 @@ class MenuProductsCategoryTabsTest extends TestCase
         $this->assertStringContainsString('rounded-md bg-primary px-3 py-1.5 text-sm text-white', $page);
         $this->assertStringContainsString('toggleGroupInSync(group.id)', $page);
         $this->assertStringContainsString("__('Done')", $page);
+        $this->assertStringContainsString("__('Register new modifier')", $page);
+        $this->assertStringContainsString('goCreateModifier', $page);
+        $this->assertStringContainsString('menu:create-modifier', $page);
+        $this->assertStringContainsString("__('For example: Extra Cheese, extra fries, swap water for milk in juices')", $page);
         $this->assertStringContainsString('submitSync(editingProduct.value)', $page);
         $this->assertStringNotContainsString("__('Save Modifiers')", $page);
         $this->assertStringNotContainsString('@click="submitSync(editingProduct)"', $page);
@@ -401,7 +413,17 @@ class MenuProductsCategoryTabsTest extends TestCase
         );
 
         $this->assertSame('Adicionar modificadores', $translations['Add Modifiers']);
+        $this->assertSame('Cadastrar novo modificador', $translations['Register new modifier']);
+        $this->assertSame(
+            'Por exemplo: Queijo Extra, Adicional de batata, Trocar Água por leite em sucos',
+            $translations['For example: Extra Cheese, extra fries, swap water for milk in juices'],
+        );
         $this->assertSame('Adicionar variações', $translations['Add Variations']);
+        $this->assertSame('Pode retirar', $translations['Can be removed']);
+        $this->assertSame(
+            'Escreva os ingredientes que o cliente pode pedir para tirar do pedido.',
+            $translations['List ingredients the customer can ask to leave out.'],
+        );
         $this->assertSame('Salvar', $translations['Save']);
         $this->assertSame('Pronto', $translations['Done']);
         $this->assertSame('Modificadores selecionados:', $translations['Selected modifiers:']);

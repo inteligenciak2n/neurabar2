@@ -14,6 +14,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    hasTable: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(['update:modelValue', 'remove', 'order-placed', 'error', 'select-item']);
@@ -27,27 +31,43 @@ const subtotal = computed(() =>
 const tabCode = ref('');
 const tabCodeLocked = ref(false);
 const tabCodeError = ref(null);
+const submitting = ref(false);
+const pendingTabChoice = ref(false);
+const tabChoices = ref([]);
 
-async function placeOrder() {
+function orderPayload() {
+    return props.items.map((item) => ({
+        product_id: item.product_id,
+        variation_id: item.variation_id,
+        quantity: item.quantity,
+        notes: item.notes,
+        modifiers: item.modifiers,
+    }));
+}
+
+async function placeOrder(extra = {}) {
     if (props.preview) {
         emit('error', __('This is a preview. Orders cannot be placed from here.'));
         return;
     }
 
     tabCodeError.value = null;
+    submitting.value = true;
 
     try {
-        const payload = props.items.map((item) => ({
-            product_id: item.product_id,
-            variation_id: item.variation_id,
-            quantity: item.quantity,
-            notes: item.notes,
-            modifiers: item.modifiers,
-        }));
-        const { data } = await axios.post(`/g/${props.token}/orders`, {
-            items: payload,
-            tab_code: tabCodeLocked.value ? undefined : (tabCode.value.trim() || undefined),
-        });
+        const payload = {
+            items: orderPayload(),
+            ...extra,
+        };
+
+        if (!props.hasTable && !tabCodeLocked.value && tabCode.value.trim()) {
+            payload.tab_code = tabCode.value.trim();
+        }
+
+        const { data } = await axios.post(`/g/${props.token}/orders`, payload);
+
+        pendingTabChoice.value = false;
+        tabChoices.value = [];
 
         if (data.tab_code) {
             tabCode.value = data.tab_code;
@@ -57,7 +77,14 @@ async function placeOrder() {
         emit('order-placed');
         emit('update:modelValue', false);
     } catch (e) {
-        const fieldError = e.response?.data?.errors?.tab_code?.[0];
+        if (e.response?.status === 409 && e.response?.data?.needs_tab_choice) {
+            pendingTabChoice.value = true;
+            tabChoices.value = e.response.data.tabs ?? [];
+            return;
+        }
+
+        const fieldError = e.response?.data?.errors?.tab_code?.[0]
+            ?? e.response?.data?.errors?.attendance_id?.[0];
 
         if (fieldError) {
             tabCodeError.value = __(fieldError);
@@ -65,7 +92,17 @@ async function placeOrder() {
         }
 
         emit('error', e.response?.data?.message ?? __('Error placing order.'));
+    } finally {
+        submitting.value = false;
     }
+}
+
+function chooseTab(attendanceId) {
+    placeOrder({ attendance_id: attendanceId });
+}
+
+function waiterDefines() {
+    placeOrder({ waiter_defines: true });
 }
 </script>
 
@@ -129,7 +166,7 @@ async function placeOrder() {
 
                 <!-- Footer -->
                 <div class="border-t border-border px-5 py-4">
-                    <div class="mb-3">
+                    <div v-if="!hasTable" class="mb-3">
                         <label class="mb-1 block text-xs font-medium text-ocean-deep">{{ __('Tab card code') }} <span class="font-normal text-muted-foreground">({{ __('optional') }})</span></label>
                         <input
                             v-model="tabCode"
@@ -140,16 +177,44 @@ async function placeOrder() {
                             :placeholder="__('Code printed on your tab card')"
                             class="box-border w-full rounded-lg border border-border px-3 py-2 text-sm uppercase placeholder:text-xs placeholder:normal-case placeholder:italic disabled:bg-muted"
                         />
-                        <p v-if="tabCodeError" class="mt-1 text-xs text-destructive">{{ tabCodeError }}</p>
+                    </div>
+                    <p v-if="tabCodeError" class="mb-3 text-xs text-destructive">{{ tabCodeError }}</p>
+                    <div
+                        v-if="pendingTabChoice"
+                        data-tab-choice
+                        class="mb-3"
+                    >
+                        <p class="mb-2 text-sm font-semibold text-ocean-deep">{{ __('Which tab?') }}</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button
+                                v-for="tab in tabChoices"
+                                :key="tab.id"
+                                type="button"
+                                :disabled="submitting"
+                                class="rounded-full border border-primary bg-primary/10 px-3 py-2 text-sm font-semibold text-primary disabled:opacity-50"
+                                @click="chooseTab(tab.id)"
+                            >
+                                {{ __('Tab :code', { code: tab.code }) }}
+                            </button>
+                            <button
+                                type="button"
+                                :disabled="submitting"
+                                class="rounded-full border border-border px-3 py-2 text-sm font-medium text-ocean-deep disabled:opacity-50"
+                                @click="waiterDefines"
+                            >
+                                {{ __("I don't know / waiter decides") }}
+                            </button>
+                        </div>
                     </div>
                     <div class="mb-3 flex items-center justify-between text-sm">
                         <span class="text-muted-foreground">{{ __('Subtotal') }}</span>
                         <span class="font-bold text-ocean-deep">R$ {{ subtotal.toFixed(2) }}</span>
                     </div>
                     <button
-                        :disabled="preview || !items.length"
+                        v-if="!pendingTabChoice"
+                        :disabled="preview || !items.length || submitting"
                         class="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white disabled:opacity-50 active:opacity-80"
-                        @click="placeOrder"
+                        @click="placeOrder()"
                     >
                         {{ __('Place Order') }}
                     </button>

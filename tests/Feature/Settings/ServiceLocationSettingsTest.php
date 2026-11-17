@@ -16,27 +16,15 @@ class ServiceLocationSettingsTest extends TestCase
 {
     use RefreshAllDatabases;
 
-    public function test_owner_can_list_service_locations(): void
+    public function test_standalone_service_locations_page_is_not_available(): void
     {
         $this->loginAs(UserRole::Owner);
 
-        $this->get(route('settings.service-locations.index'))->assertOk();
-    }
-
-    public function test_owner_can_create_service_location(): void
-    {
-        $venue = Venue::factory()->create(['active' => true]);
-        $this->loginAs(UserRole::Owner, $venue);
-
-        $this->post(route('settings.service-locations.store'), [
-            'name' => 'Mesa 10',
+        $this->get('/settings/service-locations')->assertNotFound();
+        $this->post('/settings/service-locations', [
+            'name' => 'Área VIP',
             'active' => true,
-        ])->assertRedirect();
-
-        $this->assertDatabaseHas('service_locations', [
-            'venue_id' => $venue->id,
-            'name' => 'Mesa 10',
-        ]);
+        ])->assertNotFound();
     }
 
     public function test_owner_can_update_service_location(): void
@@ -68,62 +56,37 @@ class ServiceLocationSettingsTest extends TestCase
         $this->assertDatabaseMissing('service_locations', ['id' => $location->id]);
     }
 
-    public function test_location_name_is_required(): void
-    {
-        $venue = Venue::factory()->create(['active' => true]);
-        $this->loginAs(UserRole::Owner, $venue);
-
-        $this->post(route('settings.service-locations.store'), [
-            'name' => '',
-        ])->assertSessionHasErrors('name');
-    }
-
     public function test_location_is_scoped_to_tenant(): void
     {
         $venue = Venue::factory()->create(['active' => true]);
         $otherVenue = Venue::factory()->create(['active' => true]);
 
         $this->loginAs(UserRole::Owner, $venue);
+        ServiceLocation::factory()->create(['venue_id' => $venue->id, 'name' => 'Mine']);
         ServiceLocation::factory()->create(['venue_id' => $otherVenue->id, 'name' => 'OtherLocation']);
 
-        $response = $this->get(route('settings.service-locations.index'));
-        $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->where('locations', fn ($locations) => collect($locations)->every(
-                fn ($l) => $l['venue_id'] === $venue->id
-            ))
-        );
+        $this->get(route('settings.attendance-channels.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('serviceLocations', fn ($locations) => collect($locations)->every(
+                    fn ($location) => $location['id'] !== null && ($location['name'] ?? null) !== 'OtherLocation'
+                ))
+            );
     }
 
     public function test_attendant_cannot_manage_service_locations(): void
     {
-        $this->loginAs(UserRole::Attendant);
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Attendant, $venue);
+        $location = ServiceLocation::factory()->create(['venue_id' => $venue->id]);
 
-        $this->get(route('settings.service-locations.index'))->assertForbidden();
+        $this->post(route('settings.service-locations.qr', $location->id))->assertForbidden();
     }
 
-    public function test_index_does_not_expose_location_types(): void
+    public function test_locations_table_does_not_have_a_type_column(): void
     {
         $this->loginAs(UserRole::Owner);
 
-        $this->get(route('settings.service-locations.index'))
-            ->assertInertia(fn ($page) => $page->missing('locationTypes'));
-    }
-
-    public function test_store_creates_a_location_without_a_type(): void
-    {
-        $venue = Venue::factory()->create(['active' => true]);
-        $this->loginAs(UserRole::Owner, $venue);
-
-        $this->post(route('settings.service-locations.store'), [
-            'name' => 'Mesa 3',
-            'active' => true,
-        ])->assertRedirect();
-
-        $this->assertDatabaseHas('service_locations', [
-            'venue_id' => $venue->id,
-            'name' => 'Mesa 3',
-        ]);
         $this->assertFalse(Schema::connection(OperationalConnection::current())->hasColumn('service_locations', 'type'));
     }
 
@@ -136,13 +99,180 @@ class ServiceLocationSettingsTest extends TestCase
             'qr_token' => null,
         ]);
 
-        $this->post(route('settings.service-locations.qr', $location->id))
-            ->assertRedirect(route('settings.service-locations.index'))
+        $this->from(route('settings.attendance-channels.index'))
+            ->post(route('settings.service-locations.qr', $location->id))
+            ->assertRedirect(route('settings.attendance-channels.index'))
             ->assertSessionHas('success');
 
         $location->refresh();
 
         $this->assertNotNull($location->qr_token);
+    }
+
+    public function test_generating_qr_from_attendance_channels_stays_on_that_page(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+        $channel = AttendanceChannel::factory()->create([
+            'venue_id' => $venue->id,
+            'name' => 'Mesas',
+        ]);
+        $location = ServiceLocation::factory()->create([
+            'venue_id' => $venue->id,
+            'name' => 'Mesas 1',
+            'default_attendance_channel_id' => $channel->id,
+            'qr_token' => null,
+        ]);
+
+        $this->from(route('settings.attendance-channels.index'))
+            ->post(route('settings.service-locations.qr', $location->id))
+            ->assertRedirect(route('settings.attendance-channels.index'))
+            ->assertSessionHas('success');
+
+        $location->refresh();
+
+        $this->assertNotNull($location->qr_token);
+    }
+
+    public function test_owner_can_preview_qr_png_when_token_exists(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+        $location = ServiceLocation::factory()->create([
+            'venue_id' => $venue->id,
+            'qr_token' => 'abc123token',
+        ]);
+
+        $response = $this->get(route('settings.service-locations.qr-png', $location->id));
+
+        $response->assertOk();
+        $this->assertSame('image/png', $response->headers->get('content-type'));
+        $this->assertStringContainsString('inline', (string) $response->headers->get('content-disposition'));
+        $this->assertStringStartsWith("\x89PNG", $response->getContent());
+    }
+
+    public function test_owner_can_download_qr_png(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+        $location = ServiceLocation::factory()->create([
+            'venue_id' => $venue->id,
+            'qr_token' => 'abc123token',
+        ]);
+
+        $response = $this->get(route('settings.service-locations.qr-png', [
+            'location' => $location->id,
+            'download' => 1,
+        ]));
+
+        $response->assertOk();
+        $this->assertSame('image/png', $response->headers->get('content-type'));
+        $this->assertStringContainsString('attachment', (string) $response->headers->get('content-disposition'));
+    }
+
+    public function test_owner_can_download_qr_svg(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+        $location = ServiceLocation::factory()->create([
+            'venue_id' => $venue->id,
+            'qr_token' => 'abc123token',
+        ]);
+
+        $response = $this->get(route('settings.service-locations.qr-svg', [
+            'location' => $location->id,
+            'download' => 1,
+        ]));
+
+        $response->assertOk();
+        $this->assertSame('image/svg+xml', $response->headers->get('content-type'));
+        $this->assertStringContainsString('attachment', (string) $response->headers->get('content-disposition'));
+        $this->assertStringContainsString('<svg', $response->getContent());
+    }
+
+    public function test_qr_png_returns_not_found_when_token_is_missing(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+        $location = ServiceLocation::factory()->create([
+            'venue_id' => $venue->id,
+            'qr_token' => null,
+        ]);
+
+        $this->get(route('settings.service-locations.qr-png', $location->id))->assertNotFound();
+    }
+
+    public function test_owner_can_download_qr_pdf(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+        $location = ServiceLocation::factory()->create([
+            'venue_id' => $venue->id,
+            'name' => 'Mesas 1',
+            'qr_token' => 'abc123token',
+        ]);
+
+        $response = $this->get(route('settings.service-locations.qr-pdf', [
+            'location' => $location->id,
+            'download' => 1,
+        ]));
+
+        $response->assertOk();
+        $this->assertStringContainsString('application/pdf', (string) $response->headers->get('content-type'));
+        $this->assertStringContainsString('attachment', (string) $response->headers->get('content-disposition'));
+    }
+
+    public function test_attendance_channels_index_includes_location_qr_token(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+        $channel = AttendanceChannel::factory()->create([
+            'venue_id' => $venue->id,
+            'name' => 'Mesas',
+        ]);
+        $location = ServiceLocation::factory()->create([
+            'venue_id' => $venue->id,
+            'name' => 'Mesas 1',
+            'default_attendance_channel_id' => $channel->id,
+            'qr_token' => 'abc123',
+            'active' => true,
+        ]);
+
+        $this->get(route('settings.attendance-channels.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Settings/AttendanceChannels')
+                ->where('serviceLocations.0.id', $location->id)
+                ->where('serviceLocations.0.qr_token', 'abc123')
+                ->where('serviceLocations.0.active', true)
+            );
+    }
+
+    public function test_owner_can_inactivate_a_channel_location(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+        $channel = AttendanceChannel::factory()->create([
+            'venue_id' => $venue->id,
+            'name' => 'Mesas',
+        ]);
+        $location = ServiceLocation::factory()->create([
+            'venue_id' => $venue->id,
+            'name' => 'Mesas 1',
+            'default_attendance_channel_id' => $channel->id,
+            'active' => true,
+        ]);
+
+        $this->put(route('settings.service-locations.update', $location->id), [
+            'name' => 'Mesas 1',
+            'active' => false,
+            'default_attendance_channel_id' => $channel->id,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('service_locations', [
+            'id' => $location->id,
+            'active' => false,
+        ]);
     }
 
     public function test_owner_can_create_a_prefixed_location_range_for_a_channel(): void

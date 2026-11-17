@@ -20,7 +20,7 @@ class GuestCheckoutController extends Controller
 
         $session = $this->tokenService->resolveSession($request, $venue);
 
-        abort_if($session === null || ! $session->hasPin(), 403, 'No active session.');
+        abort_if($session === null, 403, 'No active session.');
 
         $attendance = $serviceLocation !== null
             ? Attendance::withoutGlobalScopes()

@@ -41,12 +41,16 @@ class CategoryTest extends TestCase
         $venue = Venue::factory()->create();
         $this->loginAs(UserRole::Owner, $venue);
 
-        $this->post(route('menu.categories.store'), ['name' => 'Drinks'])
+        $this->post(route('menu.categories.store'), ['name' => 'Drinks', 'color' => '#dc2626'])
             ->assertRedirect();
 
         $menu = Menu::withoutGlobalScopes()->where('venue_id', $venue->id)->first();
         $this->assertNotNull($menu);
-        $this->assertDatabaseHas('menu_categories', ['menu_id' => $menu->id, 'name' => 'Drinks']);
+        $this->assertDatabaseHas('menu_categories', [
+            'menu_id' => $menu->id,
+            'name' => 'Drinks',
+            'color' => '#dc2626',
+        ]);
     }
 
     public function test_owner_can_update_category(): void
@@ -57,10 +61,24 @@ class CategoryTest extends TestCase
         $menu = Menu::factory()->create(['venue_id' => $venue->id]);
         $category = Category::factory()->create(['menu_id' => $menu->id, 'name' => 'Old']);
 
-        $this->put(route('menu.categories.update', $category->id), ['name' => 'Updated'])
+        $this->put(route('menu.categories.update', $category->id), ['name' => 'Updated', 'color' => '#2563eb'])
             ->assertRedirect();
 
-        $this->assertDatabaseHas('menu_categories', ['id' => $category->id, 'name' => 'Updated']);
+        $this->assertDatabaseHas('menu_categories', [
+            'id' => $category->id,
+            'name' => 'Updated',
+            'color' => '#2563eb',
+        ]);
+    }
+
+    public function test_category_color_must_be_a_hex_value(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Owner, $venue);
+
+        $this->from(route('menu.index'))
+            ->post(route('menu.categories.store'), ['name' => 'Drinks', 'color' => 'red'])
+            ->assertSessionHasErrors('color');
     }
 
     public function test_owner_can_delete_category(): void

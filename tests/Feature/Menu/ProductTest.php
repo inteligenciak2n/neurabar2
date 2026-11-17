@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Menu;
 
+use App\Actions\Kitchen\EnsureWaiterCallerKitchenStationAction;
 use App\Enums\UserRole;
 use App\Models\Menu\Category;
 use App\Models\Menu\Menu;
@@ -70,6 +71,23 @@ class ProductTest extends TestCase
             'price' => 29.90,
             'category_id' => $category->id,
             'kitchen_station_id' => $otherStation->id,
+        ])->assertSessionHasErrors('kitchen_station_id');
+    }
+
+    public function test_waiter_caller_station_cannot_be_assigned_to_a_product(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Owner, $venue);
+
+        $menu = Menu::factory()->create(['venue_id' => $venue->id]);
+        $category = Category::factory()->create(['menu_id' => $menu->id]);
+        $station = app(EnsureWaiterCallerKitchenStationAction::class)->execute($venue);
+
+        $this->post(route('menu.products.store'), [
+            'name' => 'Burger',
+            'price' => 29.90,
+            'category_id' => $category->id,
+            'kitchen_station_id' => $station->id,
         ])->assertSessionHasErrors('kitchen_station_id');
     }
 
@@ -375,5 +393,62 @@ class ProductTest extends TestCase
         ])->assertRedirect();
 
         $this->assertDatabaseHas('products', ['name' => 'Burger', 'servings' => 1]);
+    }
+
+    public function test_owner_can_save_ingredients_that_can_be_removed(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Owner, $venue);
+
+        $menu = Menu::factory()->create(['venue_id' => $venue->id]);
+        $category = Category::factory()->create(['menu_id' => $menu->id]);
+
+        $this->post(route('menu.products.store'), [
+            'name' => 'X Burger',
+            'price' => 29.90,
+            'category_id' => $category->id,
+            'removable_ingredients' => "Hamburguer\ntomate\nalface\npão\nketchup\nmostarda",
+            'active' => true,
+        ])->assertRedirect();
+
+        $product = Product::query()->where('name', 'X Burger')->first();
+
+        $this->assertNotNull($product);
+        $this->assertSame(
+            ['Hamburguer', 'tomate', 'alface', 'pão', 'ketchup', 'mostarda'],
+            $product->removable_ingredients,
+        );
+
+        $this->put(route('menu.products.update', $product), [
+            'name' => 'X Burger',
+            'price' => 29.90,
+            'category_id' => $category->id,
+            'removable_ingredients' => ['tomate', 'alface', 'ketchup'],
+            'active' => true,
+        ])->assertRedirect();
+
+        $this->assertSame(['tomate', 'alface', 'ketchup'], $product->fresh()->removable_ingredients);
+    }
+
+    public function test_blank_removable_ingredients_are_stored_as_an_empty_list(): void
+    {
+        $venue = Venue::factory()->create();
+        $this->loginAs(UserRole::Owner, $venue);
+
+        $menu = Menu::factory()->create(['venue_id' => $venue->id]);
+        $category = Category::factory()->create(['menu_id' => $menu->id]);
+
+        $this->post(route('menu.products.store'), [
+            'name' => 'Soda',
+            'price' => 8.90,
+            'category_id' => $category->id,
+            'removable_ingredients' => '',
+            'active' => true,
+        ])->assertRedirect();
+
+        $product = Product::query()->where('name', 'Soda')->first();
+
+        $this->assertNotNull($product);
+        $this->assertSame([], $product->removable_ingredients ?? []);
     }
 }

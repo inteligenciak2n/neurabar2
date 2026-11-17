@@ -40,6 +40,8 @@
     "Edit Product": "Editar producto",
     "Modifier Groups": "Grupos de modificadores",
     "Select which modifier groups apply to this product.": "Selecciona los grupos de modificadores que se aplican a este producto.",
+    "For example: Extra Cheese, extra fries, swap water for milk in juices": "Por ejemplo: Queso extra, adicional de papas, cambiar agua por leche en jugos",
+    "Register new modifier": "Registrar nuevo modificador",
     "req.": "requisito.",
     "Save Modifiers": "Guardar modificadores",
     "Delete Variation": "Eliminar variante",
@@ -77,5 +79,10 @@
     "Delete photo": "Borrar foto",
     "Format: JPEG, PNG or WebP": "Formato: JPEG, PNG o WebP",
     "A square image is preferred.": "Es preferible una imagen cuadrada.",
-    "No photo": "sin foto"
+    "No photo": "sin foto",
+    "Can be removed": "Se puede quitar",
+    "List ingredients the customer can ask to leave out.": "Escribe los ingredientes que el cliente puede pedir que se quiten del pedido.",
+    "e.g. tomato, lettuce, ketchup": "ej.: tomate, lechuga, ketchup",
+    "Remove ingredient": "Quitar ingrediente",
+    "No removable ingredients yet. Add items such as burger, tomato, lettuce, bun, ketchup or mustard.": "Aún no hay ingredientes para quitar. Añade ítems como hamburguesa, tomate, lechuga, pan, ketchup o mostaza."
 }

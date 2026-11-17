@@ -20,10 +20,12 @@ class AttendanceChannel extends Model
     protected $fillable = [
         'venue_id',
         'name',
+        'color',
         'description',
         'is_trackable',
         'requires_customer_identifier',
         'requires_tab',
+        'uses_service_location',
         'active',
         'sort_order',
     ];
@@ -34,6 +36,7 @@ class AttendanceChannel extends Model
             'is_trackable' => 'boolean',
             'requires_customer_identifier' => 'boolean',
             'requires_tab' => 'boolean',
+            'uses_service_location' => 'boolean',
             'active' => 'boolean',
             'sort_order' => 'integer',
         ];

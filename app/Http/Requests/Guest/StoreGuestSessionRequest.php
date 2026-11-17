@@ -15,7 +15,7 @@ class StoreGuestSessionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'pin' => ['required', 'string', 'digits:4'],
+            'pin' => ['nullable', 'string', 'digits:4'],
         ];
     }
 }

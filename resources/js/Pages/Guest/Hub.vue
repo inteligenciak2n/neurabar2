@@ -21,11 +21,7 @@ const __ = useTranslate();
 const { predefinedMessages } = useServiceRequestMessages();
 
 // ── State ──────────────────────────────────────────────────────────────────
-const view = ref(props.hasSession ? 'hub' : 'pin-setup');
-const pinInput = ref('');
-const pinConfirm = ref('');
-const pinError = ref(null);
-const pinLoading = ref(false);
+const view = ref('hub');
 
 const signalOpen = ref(false);
 const signalMessage = ref('');
@@ -34,11 +30,10 @@ const signalLoading = ref(false);
 const signalSent = ref(false);
 
 const ordersOpen = ref(false);
-const ordersPin = ref('');
-const ordersPinError = ref(null);
 const ordersLoading = ref(false);
 const orders = ref([]);
 const ordersVerified = ref(false);
+const ordersError = ref(null);
 
 const checkoutConfirm = ref(false);
 const checkoutLoading = ref(false);
@@ -80,29 +75,12 @@ function requestGeolocation() {
     );
 }
 
-// ── PIN Setup ──────────────────────────────────────────────────────────────
-async function submitPin() {
-    pinError.value = null;
-    if (pinInput.value.length !== 4 || !/^\d{4}$/.test(pinInput.value)) {
-        pinError.value = __('PIN must be 4 digits.');
+async function ensureSession() {
+    if (props.hasSession) {
         return;
     }
-    if (pinInput.value !== pinConfirm.value) {
-        pinError.value = __('PINs do not match.');
-        return;
-    }
-    pinLoading.value = true;
-    try {
-        await axios.post(`/g/${props.token}/session`, { pin: pinInput.value });
-        view.value = 'hub';
-        if (props.venue.require_geolocation && !props.geolocationVerified) {
-            requestGeolocation();
-        }
-    } catch (e) {
-        pinError.value = e.response?.data?.message ?? __('Error creating session.');
-    } finally {
-        pinLoading.value = false;
-    }
+
+    await axios.post(`/g/${props.token}/session`, {});
 }
 
 // ── Signal ─────────────────────────────────────────────────────────────────
@@ -144,22 +122,25 @@ async function requestOrderAssistance() {
 
 // ── Orders ─────────────────────────────────────────────────────────────────
 async function loadOrders() {
-    ordersPinError.value = null;
-    if (ordersPin.value.length !== 4) {
-        ordersPinError.value = __('Enter your 4-digit PIN.');
-        return;
-    }
+    ordersError.value = null;
     ordersLoading.value = true;
     try {
-        const res = await axios.get(`/g/${props.token}/orders`, { params: { pin: ordersPin.value } });
+        await ensureSession();
+        const res = await axios.get(`/g/${props.token}/orders`);
         orders.value = res.data.orders;
         ordersVerified.value = true;
-    } catch (e) {
-        ordersPinError.value = e.response?.status === 403
-            ? __('Invalid PIN.')
-            : __('Error loading orders.');
+    } catch {
+        ordersError.value = __('Error loading orders.');
     } finally {
         ordersLoading.value = false;
+    }
+}
+
+function toggleOrders() {
+    ordersOpen.value = !ordersOpen.value;
+
+    if (ordersOpen.value && !ordersVerified.value) {
+        loadOrders();
     }
 }
 
@@ -178,8 +159,14 @@ async function requestCheckout() {
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
-onMounted(() => {
-    if (props.hasSession && props.venue.require_geolocation && !props.geolocationVerified) {
+onMounted(async () => {
+    try {
+        await ensureSession();
+    } catch {
+        // noop
+    }
+
+    if (props.venue.require_geolocation && !props.geolocationVerified) {
         requestGeolocation();
     }
 });
@@ -200,54 +187,6 @@ onMounted(() => {
                     @click="deliveryConfirmed = true"
                 >
                     {{ __('Continue') }}
-                </button>
-            </div>
-        </div>
-
-        <!-- ── PIN Setup ── -->
-        <div v-if="view === 'pin-setup'" class="min-h-[60vh] flex flex-col items-center justify-center gap-6 py-8">
-            <div class="text-center">
-                <div class="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                    <svg class="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                </div>
-                <h2 class="font-heading text-xl font-bold text-ocean-deep">{{ __('Create your PIN') }}</h2>
-                <p class="mt-1 text-sm text-muted-foreground">{{ __('You will use this 4-digit PIN to view your orders.') }}</p>
-            </div>
-
-            <div class="w-full max-w-xs space-y-3">
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('PIN') }}</label>
-                    <input
-                        v-model="pinInput"
-                        type="password"
-                        inputmode="numeric"
-                        maxlength="4"
-                        pattern="\d{4}"
-                        placeholder="••••"
-                        class="w-full rounded-xl border border-border px-4 py-3 text-center text-xl tracking-widest focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-ocean-deep">{{ __('Confirm PIN') }}</label>
-                    <input
-                        v-model="pinConfirm"
-                        type="password"
-                        inputmode="numeric"
-                        maxlength="4"
-                        pattern="\d{4}"
-                        placeholder="••••"
-                        class="w-full rounded-xl border border-border px-4 py-3 text-center text-xl tracking-widest focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                </div>
-                <p v-if="pinError" class="text-center text-sm text-destructive">{{ pinError }}</p>
-                <button
-                    :disabled="pinLoading"
-                    class="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white disabled:opacity-60 active:opacity-80"
-                    @click="submitPin"
-                >
-                    {{ pinLoading ? __('Saving...') : __('Access') }}
                 </button>
             </div>
         </div>
@@ -341,7 +280,7 @@ onMounted(() => {
                 <!-- Meu pedido -->
                 <button
                     class="flex flex-col items-center gap-3 rounded-2xl bg-white p-5 shadow-card active:scale-95 transition-transform"
-                    @click="ordersOpen = !ordersOpen"
+                    @click="toggleOrders"
                 >
                     <div class="flex h-12 w-12 items-center justify-center rounded-full bg-ocean-light">
                         <svg class="h-6 w-6 text-ocean-deep" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -410,26 +349,10 @@ onMounted(() => {
             <div v-if="ordersOpen" class="mt-4 rounded-2xl bg-white p-5 shadow-card">
                 <h3 class="mb-3 font-heading text-sm font-semibold text-ocean-deep">{{ __('My Order') }}</h3>
 
-                <template v-if="!ordersVerified">
-                    <p class="mb-3 text-xs text-muted-foreground">{{ __('Enter your PIN to view your orders.') }}</p>
-                    <input
-                        v-model="ordersPin"
-                        type="password"
-                        inputmode="numeric"
-                        maxlength="4"
-                        pattern="\d{4}"
-                        placeholder="••••"
-                        class="w-full rounded-xl border border-border px-4 py-3 text-center text-xl tracking-widest focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                    <p v-if="ordersPinError" class="mt-1 text-xs text-destructive">{{ ordersPinError }}</p>
-                    <button
-                        :disabled="ordersLoading"
-                        class="mt-3 w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white disabled:opacity-50 active:opacity-80"
-                        @click="loadOrders"
-                    >
-                        {{ ordersLoading ? __('Loading...') : __('View Orders') }}
-                    </button>
-                </template>
+                <p v-if="ordersError" class="mb-3 text-xs text-destructive">{{ ordersError }}</p>
+                <p v-else-if="ordersLoading && !ordersVerified" class="py-4 text-center text-sm text-muted-foreground">
+                    {{ __('Loading...') }}
+                </p>
 
                 <template v-else>
                     <div v-if="!orders.length" class="py-4 text-center text-sm text-muted-foreground">

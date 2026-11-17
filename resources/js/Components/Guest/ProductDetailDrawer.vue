@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
+import NumberScrollPicker from '@/Components/NumberScrollPicker.vue';
 import { useTranslate } from '@/Composables/useTranslate';
 
 const props = defineProps({
@@ -13,9 +14,45 @@ const props = defineProps({
         type: Object,
         default: null,
     },
+    canRemove: {
+        type: Boolean,
+        default: false,
+    },
+    canChangeTab: {
+        type: Boolean,
+        default: false,
+    },
+    tabItems: {
+        type: Array,
+        default: () => [],
+    },
+    currentTabId: {
+        type: [String, Number],
+        default: '',
+    },
+    accentColor: {
+        type: String,
+        default: '',
+    },
+    tabLocations: {
+        type: Object,
+        default: () => ({}),
+    },
+    currentLocationId: {
+        type: [String, Number],
+        default: '',
+    },
+    currentLocationLabel: {
+        type: String,
+        default: '',
+    },
 });
 
-const emit = defineEmits(['update:modelValue', 'add-to-cart']);
+const emit = defineEmits(['update:modelValue', 'add-to-cart', 'remove-item', 'change-tab']);
+const showTabPicker = ref(false);
+const pendingTabId = ref('');
+const deliveryChoices = ref([]);
+const selectedDeliveryLocationId = ref('');
 
 const __ = useTranslate();
 
@@ -147,6 +184,116 @@ function applyEditingItem(item) {
     selectedModifiers.value = next;
 }
 
+const resetDeliveryChoice = () => {
+    pendingTabId.value = '';
+    deliveryChoices.value = [];
+    selectedDeliveryLocationId.value = '';
+};
+
+watch(
+    () => props.modelValue,
+    (isOpen) => {
+        if (!isOpen) {
+            showTabPicker.value = false;
+            resetDeliveryChoice();
+        }
+    },
+);
+
+const hasNewTabTone = computed(() =>
+    (props.tabItems ?? []).some((item) => item.tone === 'new'),
+);
+
+const currentTabLabel = computed(() =>
+    (props.tabItems ?? []).find((item) => item.kind !== 'header' && String(item.id) === String(props.currentTabId))?.label
+    ?? String(props.currentTabId ?? ''),
+);
+
+const locationForTab = (tabId) =>
+    props.tabLocations?.[tabId] ?? props.tabLocations?.[String(tabId)] ?? null;
+
+const deliveryPrompt = computed(() => {
+    if (deliveryChoices.value.length > 1) {
+        const locations = deliveryChoices.value
+            .map((item) => item.label)
+            .join(` ${__('and')} `);
+
+        return __('Deliver item where: :locations, to choose', { locations });
+    }
+
+    return __('Deliver item where:');
+});
+
+const toggleTabPicker = () => {
+    showTabPicker.value = !showTabPicker.value;
+
+    if (!showTabPicker.value) {
+        resetDeliveryChoice();
+    }
+};
+
+const startDeliveryChoice = (tabId) => {
+    pendingTabId.value = tabId;
+
+    const current = props.currentLocationId
+        ? { id: props.currentLocationId, label: props.currentLocationLabel || __('another table') }
+        : null;
+    const other = locationForTab(tabId);
+    const otherLocation = other?.id
+        ? { id: other.id, label: other.label || __('another table') }
+        : null;
+
+    if (current && otherLocation && String(current.id) !== String(otherLocation.id)) {
+        deliveryChoices.value = [current, otherLocation];
+        selectedDeliveryLocationId.value = '';
+
+        return;
+    }
+
+    if (current && otherLocation && String(current.id) === String(otherLocation.id)) {
+        emit('change-tab', tabId, current.id);
+        resetDeliveryChoice();
+        showTabPicker.value = false;
+
+        return;
+    }
+
+    const single = current || otherLocation;
+
+    if (single) {
+        deliveryChoices.value = [single];
+        selectedDeliveryLocationId.value = single.id;
+
+        return;
+    }
+
+    emit('change-tab', tabId, null);
+    resetDeliveryChoice();
+    showTabPicker.value = false;
+};
+
+const chooseTab = (tabId) => {
+    if (!tabId || String(tabId) === String(props.currentTabId)) {
+        showTabPicker.value = false;
+        resetDeliveryChoice();
+
+        return;
+    }
+
+    startDeliveryChoice(tabId);
+};
+
+const chooseDeliveryLocation = (locationId) => {
+    if (!pendingTabId.value || !locationId) {
+        return;
+    }
+
+    selectedDeliveryLocationId.value = locationId;
+    emit('change-tab', pendingTabId.value, locationId);
+    resetDeliveryChoice();
+    showTabPicker.value = false;
+};
+
 watch(
     () => `${props.product?.id}:${props.modelValue}:${props.editingItem?.product_id}:${props.editingItem?.quantity}:${props.editingItem?.variation_id}:${props.editingItem?.notes}:${(props.editingItem?.modifiers ?? []).join(',')}`,
     () => {
@@ -221,8 +368,8 @@ function addToCart() {
         >
             <div class="absolute inset-0 bg-black/50" @click="emit('update:modelValue', false)" />
 
-            <div class="relative w-full max-w-sm max-h-[90vh] overflow-y-auto overflow-x-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-2xl">
-                <div class="sticky top-0 z-30 flex items-center justify-between bg-white px-4 py-3 shadow-sm">
+            <div class="relative flex w-full max-w-sm max-h-[90vh] flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-2xl">
+                <div class="z-30 flex shrink-0 items-center justify-between bg-white px-4 py-3 shadow-sm">
                     <h2 class="font-heading text-base font-bold text-ocean-deep">{{ __('Reviewing order') }}</h2>
                     <button
                         type="button"
@@ -235,6 +382,7 @@ function addToCart() {
                     </button>
                 </div>
 
+                <div class="min-h-0 flex-1 overflow-y-auto overflow-x-hidden" data-product-drawer-scroll>
                 <div v-if="product.image_url" class="bg-muted">
                     <img
                         :src="product.image_url"
@@ -361,14 +509,99 @@ function addToCart() {
                         >+</button>
                     </div>
                 </div>
+                </div>
+                </div>
 
-                <button
-                    type="button"
-                    class="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white active:opacity-80"
-                    @click="addToCart"
+                <div
+                    data-send-order
+                    class="shrink-0 space-y-2 border-t border-border bg-white px-5 py-3 shadow-[0_-8px_16px_rgba(0,0,0,0.06)] pb-[max(0.75rem,env(safe-area-inset-bottom))]"
                 >
-                    {{ isEditing ? __('Update item') : __('Send order') }} · R$ {{ totalPrice.toFixed(2) }}
-                </button>
+                    <button
+                        type="button"
+                        class="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white active:opacity-80"
+                        @click="addToCart"
+                    >
+                        {{ isEditing ? __('Update item') : __('Add to order') }} · R$ {{ totalPrice.toFixed(2) }}
+                    </button>
+                    <button
+                        v-if="isEditing && canChangeTab"
+                        type="button"
+                        data-change-tab
+                        class="w-full rounded-xl border border-border py-2.5 text-sm font-semibold text-ocean-deep active:bg-muted"
+                        @click="toggleTabPicker"
+                    >
+                        {{ __('Change tab') }}
+                    </button>
+                    <div
+                        v-if="isEditing && canChangeTab && showTabPicker"
+                        data-drawer-tab-picker
+                        class="space-y-1.5"
+                    >
+                        <p data-initial-tab-label class="text-[10px] font-medium leading-none text-muted-foreground">
+                            {{ __('Initial tab:') }}
+                        </p>
+                        <div
+                            data-initial-tab-value
+                            class="flex min-h-9 items-center justify-center rounded-lg bg-primary px-3 text-xs font-semibold text-white"
+                        >
+                            {{ currentTabLabel }}
+                        </div>
+                        <p data-change-to-label class="pt-1 text-[10px] font-medium leading-none text-muted-foreground">
+                            {{ __('Change to:') }}
+                        </p>
+                        <NumberScrollPicker
+                            compact
+                            hide-trigger
+                            :open="true"
+                            :items="tabItems"
+                            :model-value="String(pendingTabId || currentTabId || '')"
+                            :accent-color="accentColor"
+                            :placeholder="__('Change tab')"
+                            :empty-text="__('No free tabs.')"
+                            @update:model-value="chooseTab"
+                        />
+                        <p
+                            v-if="hasNewTabTone"
+                            data-drawer-tab-legend
+                            class="mt-1 flex items-center gap-1 text-[9px] font-normal leading-none text-muted-foreground"
+                        >
+                            <span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
+                            *{{ __('New tab') }}
+                        </p>
+                        <div
+                            v-if="deliveryChoices.length"
+                            data-delivery-location
+                            class="pt-2"
+                        >
+                            <p data-delivery-prompt class="text-[10px] font-medium leading-tight text-ocean-deep">
+                                {{ deliveryPrompt }}
+                            </p>
+                            <div class="mt-1.5 flex flex-wrap gap-2">
+                                <button
+                                    v-for="location in deliveryChoices"
+                                    :key="location.id"
+                                    type="button"
+                                    data-delivery-choice
+                                    class="min-h-9 rounded-lg px-3 text-xs font-semibold touch-manipulation"
+                                    :class="String(selectedDeliveryLocationId) === String(location.id)
+                                        ? 'bg-primary text-white'
+                                        : 'border border-border text-ocean-deep active:bg-muted'"
+                                    @click="chooseDeliveryLocation(location.id)"
+                                >
+                                    {{ location.label }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        v-if="isEditing && canRemove"
+                        type="button"
+                        data-cancel-item
+                        class="w-full rounded-xl py-2.5 text-sm font-semibold text-destructive active:bg-red-50"
+                        @click="emit('remove-item')"
+                    >
+                        {{ __('Cancel item') }}
+                    </button>
                 </div>
             </div>
         </div>

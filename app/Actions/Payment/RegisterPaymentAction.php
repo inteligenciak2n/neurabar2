@@ -32,6 +32,8 @@ class RegisterPaymentAction
             ]);
         }
 
+        $this->closeAttendanceAction->assertTableHasNoUnlinkedItems($attendance);
+
         $validated = $request->validated();
         $partySize = isset($validated['party_size']) ? (int) $validated['party_size'] : (int) $attendance->party_size;
         $totals = $this->paymentService->calculateTotal($attendance, $partySize);

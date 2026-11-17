@@ -3,14 +3,21 @@
 namespace App\Http\Controllers\Kitchen;
 
 use App\Actions\Kitchen\AdvanceDeliveryOrderStatusAction;
+use App\Actions\Kitchen\EnsureWaiterCallerKitchenStationAction;
 use App\Actions\Kitchen\UpdateItemStatusAction;
 use App\Enums\AttendanceStatus;
+use App\Enums\KitchenStationCode;
 use App\Enums\OrderStatus;
+use App\Enums\ServiceRequestType;
 use App\Http\Resources\ReadyDeliveryOrderResource;
+use App\Http\Resources\ServiceRequestResource;
+use App\Models\Orders\Attendance;
 use App\Models\Orders\Order;
 use App\Models\Orders\OrderItem;
+use App\Models\Orders\ServiceRequest;
 use App\Models\Settings\KitchenStation;
 use App\Models\Settings\PreparationStatus;
+use App\Models\Settings\Tab;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -19,12 +26,20 @@ use Inertia\Response;
 
 class KdsController
 {
-    public function index(): Response
+    public function index(EnsureWaiterCallerKitchenStationAction $ensureWaiterCaller): Response
     {
-        $venueId = app('tenant')->id;
+        $venue = app('tenant');
+        $venueId = $venue->id;
 
-        $stations = KitchenStation::where('active', true)
+        $ensureWaiterCaller->execute($venue);
+
+        $stations = KitchenStation::query()
+            ->where(function ($query): void {
+                $query->where('active', true)
+                    ->orWhere('code', KitchenStationCode::WaiterCaller);
+            })
             ->orderBy('sort_order')
+            ->orderBy('name')
             ->get();
 
         $preparationStatuses = PreparationStatus::orderBy('sort_order')->get();
@@ -36,6 +51,7 @@ class KdsController
             'modifiers.modifierOption',
             'preparationStatus',
             'order.attendance.serviceLocation',
+            'order.attendance.tab:id,code',
         ])
             ->whereNull('ready_at')
             ->whereHas('order.attendance', fn ($q) => $q->where('venue_id', $venueId)->where('status', AttendanceStatus::Open))
@@ -52,11 +68,36 @@ class KdsController
             ->orderBy('created_at')
             ->get();
 
+        $waiterCalls = ServiceRequest::query()
+            ->open()
+            ->ofType(ServiceRequestType::Message)
+            ->with(['serviceLocation:id,name'])
+            ->latest()
+            ->get();
+
+        $occupiedTabIds = Attendance::query()->open()->whereNotNull('tab_id')->pluck('tab_id');
+
+        $availableTabs = Tab::query()
+            ->where('venue_id', $venueId)
+            ->where('active', true)
+            ->whereNotIn('id', $occupiedTabIds)
+            ->orderByRaw('length(code), code')
+            ->get(['id', 'code']);
+
+        $openTabbedAttendances = Attendance::query()
+            ->open()
+            ->whereNotNull('tab_id')
+            ->with('tab:id,code')
+            ->get(['id', 'tab_id', 'service_location_id']);
+
         return Inertia::render('Kitchen/Kds', [
             'stations' => $stations,
             'preparationStatuses' => $preparationStatuses,
             'openItems' => $openItems,
             'readyDeliveryOrders' => ReadyDeliveryOrderResource::collection($readyDeliveryOrders),
+            'waiterCalls' => ServiceRequestResource::collection($waiterCalls),
+            'availableTabs' => $availableTabs,
+            'openTabbedAttendances' => $openTabbedAttendances,
         ]);
     }
 

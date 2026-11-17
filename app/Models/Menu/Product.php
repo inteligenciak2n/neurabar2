@@ -24,6 +24,7 @@ class Product extends Model
         'kitchen_station_id',
         'name',
         'description',
+        'removable_ingredients',
         'servings',
         'price',
         'image_url',
@@ -35,10 +36,67 @@ class Product extends Model
     {
         return [
             'price' => 'decimal:2',
+            'removable_ingredients' => 'array',
             'servings' => 'integer',
             'active' => 'boolean',
             'sort_order' => 'integer',
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function normalizeRemovableIngredients(mixed $value): array
+    {
+        if (is_string($value)) {
+            $trimmed = trim($value);
+
+            if ($trimmed === '') {
+                return [];
+            }
+
+            if (str_starts_with($trimmed, '[')) {
+                $decoded = json_decode($trimmed, true);
+                $value = is_array($decoded) ? $decoded : [];
+            } else {
+                $value = preg_split('/[\r\n,]+/', $trimmed) ?: [];
+            }
+        }
+
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $items = [];
+        $seen = [];
+
+        foreach ($value as $item) {
+            if (! is_string($item) && ! is_numeric($item)) {
+                continue;
+            }
+
+            $name = trim((string) $item);
+
+            if ($name === '') {
+                continue;
+            }
+
+            $name = mb_substr($name, 0, 80);
+            $key = mb_strtolower($name);
+
+            if (isset($seen[$key])) {
+                continue;
+            }
+
+            $seen[$key] = true;
+            $items[] = $name;
+
+            if (count($items) === 40) {
+                break;
+            }
+        }
+
+        return array_values($items);
     }
 
     public function category(): BelongsTo

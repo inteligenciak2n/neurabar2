@@ -7,5 +7,9 @@
     "Tab card code": "Tab card code",
     "optional": "optional",
     "Code printed on your tab card": "Code printed on your tab card",
-    "This tab card is already in use.": "This tab card is already in use."
+    "This tab card is already in use.": "This tab card is already in use.",
+    "Which tab?": "Which tab?",
+    "Tab :code": "Tab :code",
+    "I don't know / waiter decides": "I don't know / waiter decides",
+    "Choose a tab from this table.": "Choose a tab from this table."
 }

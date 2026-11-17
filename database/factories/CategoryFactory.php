@@ -21,6 +21,7 @@ class CategoryFactory extends Factory
         return [
             'menu_id' => Menu::factory(),
             'name' => fake()->words(2, true),
+            'color' => fake()->hexColor(),
             'sort_order' => fake()->numberBetween(1, 20),
         ];
     }

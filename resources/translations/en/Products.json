@@ -40,6 +40,8 @@
     "Edit Product": "Edit Product",
     "Modifier Groups": "Modifier Groups",
     "Select which modifier groups apply to this product.": "Select which modifier groups apply to this product.",
+    "For example: Extra Cheese, extra fries, swap water for milk in juices": "For example: Extra Cheese, extra fries, swap water for milk in juices",
+    "Register new modifier": "Register new modifier",
     "req.": "req.",
     "Save Modifiers": "Save Modifiers",
     "Delete Variation": "Delete Variation",
@@ -77,5 +79,10 @@
     "Delete photo": "Delete photo",
     "Format: JPEG, PNG or WebP": "Format: JPEG, PNG or WebP",
     "A square image is preferred.": "A square image is preferred.",
-    "No photo": "no photo"
+    "No photo": "no photo",
+    "Can be removed": "Can be removed",
+    "List ingredients the customer can ask to leave out.": "List ingredients the customer can ask to leave out.",
+    "e.g. tomato, lettuce, ketchup": "e.g. tomato, lettuce, ketchup",
+    "Remove ingredient": "Remove ingredient",
+    "No removable ingredients yet. Add items such as burger, tomato, lettuce, bun, ketchup or mustard.": "No removable ingredients yet. Add items such as burger, tomato, lettuce, bun, ketchup or mustard."
 }

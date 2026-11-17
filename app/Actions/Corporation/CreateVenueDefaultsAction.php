@@ -2,6 +2,8 @@
 
 namespace App\Actions\Corporation;
 
+use App\Actions\Kitchen\EnsureWaiterCallerKitchenStationAction;
+use App\Enums\AttendanceChannelColor;
 use App\Enums\ProfileEnum;
 use App\Enums\UserRole;
 use App\Models\Menu\Category;
@@ -72,6 +74,8 @@ class CreateVenueDefaultsAction
      */
     private function createKitchenStations(Venue $venue): array
     {
+        app(EnsureWaiterCallerKitchenStationAction::class)->execute($venue);
+
         $stations = ['Cozinha', 'Bar'];
         $created = [];
 
@@ -91,10 +95,10 @@ class CreateVenueDefaultsAction
     private function createChannels(Venue $venue): array
     {
         $channels = [
-            ['name' => 'Mesa', 'sort_order' => 1],
-            ['name' => 'Balcão', 'sort_order' => 2],
-            ['name' => 'Delivery', 'sort_order' => 3],
-            ['name' => 'Retirada', 'sort_order' => 4],
+            ['name' => 'Mesa', 'color' => AttendanceChannelColor::Blue->value, 'uses_service_location' => true, 'sort_order' => 1],
+            ['name' => 'Balcão', 'color' => AttendanceChannelColor::Orange->value, 'uses_service_location' => true, 'sort_order' => 2],
+            ['name' => 'Delivery', 'color' => AttendanceChannelColor::Green->value, 'uses_service_location' => false, 'sort_order' => 3],
+            ['name' => 'Retirada', 'color' => AttendanceChannelColor::Purple->value, 'uses_service_location' => false, 'sort_order' => 4],
         ];
 
         $created = [];
@@ -129,6 +133,7 @@ class CreateVenueDefaultsAction
         $categories = [
             [
                 'name' => 'Bebidas',
+                'color' => '#2563eb',
                 'sort_order' => 1,
                 'products' => [
                     ['name' => 'Cerveja Long Neck', 'description' => 'Cerveja gelada 355ml', 'price' => 9.90, 'station_id' => $bar->id],
@@ -141,6 +146,7 @@ class CreateVenueDefaultsAction
             ],
             [
                 'name' => 'Porções',
+                'color' => '#ea580c',
                 'sort_order' => 2,
                 'products' => [
                     ['name' => 'Frango à Passarinho', 'description' => 'Porção de frango frito temperado (500g)', 'price' => 39.90, 'station_id' => $cozinha->id],
@@ -152,6 +158,7 @@ class CreateVenueDefaultsAction
             ],
             [
                 'name' => 'Lanches',
+                'color' => '#dc2626',
                 'sort_order' => 3,
                 'products' => [
                     ['name' => 'X-Burguer', 'description' => 'Hambúrguer, queijo, alface e tomate', 'price' => 22.90, 'station_id' => $cozinha->id],
@@ -162,6 +169,7 @@ class CreateVenueDefaultsAction
             ],
             [
                 'name' => 'Sobremesas',
+                'color' => '#7c3aed',
                 'sort_order' => 4,
                 'products' => [
                     ['name' => 'Pudim de Leite', 'description' => 'Pudim caseiro com calda de caramelo', 'price' => 12.00, 'station_id' => $cozinha->id],
@@ -187,6 +195,7 @@ class CreateVenueDefaultsAction
             $category = Category::create([
                 'menu_id' => $menu->id,
                 'name' => $categoryData['name'],
+                'color' => $categoryData['color'],
                 'sort_order' => $categoryData['sort_order'],
             ]);
 

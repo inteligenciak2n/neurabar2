@@ -40,6 +40,8 @@ class AppLayoutTriggerLabelTest extends TestCase
         $this->assertNotFalse($layout);
         $this->assertStringContainsString('sticky top-0 z-30', $layout);
         $this->assertStringContainsString('sticky top-16 z-10', $layout);
+        $this->assertStringContainsString('data-app-nav', $layout);
+        $this->assertStringContainsString('data-page-header', $layout);
         $this->assertStringContainsString('whitespace-pre-line', $layout);
         $this->assertStringContainsString('v-if="$slots.header"', $layout);
         $this->assertStringContainsString('-mx-4 -mt-4 mb-6 border-b border-border bg-muted px-4 py-4', $layout);
@@ -54,6 +56,27 @@ class AppLayoutTriggerLabelTest extends TestCase
         $this->assertStringContainsString(":description=\"__('Manage the venue, users and preferences')\"", $layout);
         $this->assertStringContainsString(":description=\"__('Open tickets and browse tutorials')\"", $layout);
         $this->assertStringContainsString(":description=\"__('End the current session')\"", $layout);
+    }
+
+    public function test_attendances_nav_is_split_into_open_and_new(): void
+    {
+        $layout = file_get_contents(dirname(__DIR__, 3).'/resources/js/Layouts/AppLayout.vue');
+        $translations = json_decode(
+            file_get_contents(dirname(__DIR__, 3).'/resources/translations/pt/AppLayout.json'),
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        );
+
+        $this->assertNotFalse($layout);
+        $this->assertStringContainsString("__('Open Attendances')", $layout);
+        $this->assertStringContainsString("__('New Attendance')", $layout);
+        $this->assertStringContainsString("'attendances.index'", $layout);
+        $this->assertStringContainsString("'attendances.create'", $layout);
+        $this->assertStringContainsString("'orders.take'", $layout);
+        $this->assertStringContainsString('isNavActive', $layout);
+        $this->assertStringNotContainsString('item.children', $layout);
+        $this->assertSame("Atendimentos\nAbertos", $translations['Open Attendances']);
+        $this->assertSame("Novo\nAtendimento", $translations['New Attendance']);
     }
 
     public function test_portuguese_settings_label_is_configuracoes(): void

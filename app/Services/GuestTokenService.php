@@ -12,6 +12,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Cookie;
 
 class GuestTokenService
 {
@@ -77,6 +78,22 @@ class GuestTokenService
     }
 
     /**
+     * Cookie that identifies the guest session on subsequent requests.
+     */
+    public function sessionCookie(string $guestToken): Cookie
+    {
+        return cookie(
+            name: 'guest_token',
+            value: $guestToken,
+            minutes: 60 * 24,
+            path: '/',
+            secure: app()->isProduction(),
+            httpOnly: true,
+            sameSite: 'Strict',
+        );
+    }
+
+    /**
      * Resolve an existing active GuestSession from cookie or return null.
      */
     public function resolveSession(Request $request, Venue $venue): ?GuestSession
@@ -92,6 +109,27 @@ class GuestTokenService
             ->where('venue_id', $venue->id)
             ->active()
             ->first();
+    }
+
+    /**
+     * Reuse the cookie session, or open a new one without a PIN and queue the cookie.
+     */
+    public function ensureSession(
+        Request $request,
+        Venue $venue,
+        ?ServiceLocation $serviceLocation,
+        ?AttendanceChannel $attendanceChannel
+    ): GuestSession {
+        $existing = $this->resolveSession($request, $venue);
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $session = $this->createSession($venue, $serviceLocation, $attendanceChannel);
+        cookie()->queue($this->sessionCookie($session->guest_token));
+
+        return $session;
     }
 
     /**

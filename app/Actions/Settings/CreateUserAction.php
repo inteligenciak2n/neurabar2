@@ -2,6 +2,7 @@
 
 namespace App\Actions\Settings;
 
+use App\Enums\PreferredPhoneHand;
 use App\Enums\UserRole;
 use App\Http\Requests\Settings\StoreUserRequest;
 use App\Models\Tenant\Venue;
@@ -29,6 +30,7 @@ class CreateUserAction
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'pin' => $data['pin'] ?? null,
+            'preferred_phone_hand' => $data['preferred_phone_hand'] ?? PreferredPhoneHand::default()->value,
             'active' => $data['active'] ?? true,
             'onboarding_completed_at' => now(),
         ]);

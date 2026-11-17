@@ -45,10 +45,11 @@ const managerRoles = ['owner', 'general_manager'];
 const operationalRoles = ['owner', 'general_manager', 'section_manager', 'attendant'];
 
 const coreNavItems = [
-    { label: __('Dashboard'),   routeName: 'dashboard',         activePattern: 'dashboard', module: 'menu', roles: [...operationalRoles, 'attendant'] },
-    { label: __('Attendances'), routeName: 'attendances.index', activePattern: 'attendances.*', module: 'menu', roles: [...operationalRoles, 'attendant'] },
-    { label: __('Kitchen'),     routeName: 'kitchen.kds',       activePattern: 'kitchen.*', module: 'kds', roles: operationalRoles },
-    { label: __('Menu'),        routeName: 'menu.index',        activePattern: 'menu.*', module: 'menu', roles: managerRoles },
+    { label: __('Dashboard'),         routeName: 'dashboard',           activePattern: 'dashboard', module: 'menu', roles: [...operationalRoles, 'attendant'] },
+    { label: __('Open Attendances'),  routeName: 'attendances.index',   activePattern: ['attendances.index', 'attendances.show'], module: 'menu', roles: [...operationalRoles, 'attendant'] },
+    { label: __('New Attendance'),    routeName: 'attendances.create',  activePattern: ['attendances.create', 'orders.take'], module: 'menu', roles: [...operationalRoles, 'attendant'] },
+    { label: __('Kitchen'),           routeName: 'kitchen.kds',         activePattern: 'kitchen.*', module: 'kds', roles: operationalRoles },
+    { label: __('Menu'),              routeName: 'menu.index',          activePattern: 'menu.*', module: 'menu', roles: managerRoles },
 ];
 
 // Módulos contratados ganham entrada própria no menu — sem isso as telas só
@@ -65,6 +66,12 @@ const moduleNavItems = [
 
 const isVisible = (item) => item.roles.includes(page.props.defs.current_venue_role)
     && (! item.module || hasModule(item.module));
+
+const isNavActive = (item) => {
+    const patterns = Array.isArray(item.activePattern) ? item.activePattern : [item.activePattern];
+
+    return patterns.some((pattern) => route().current(pattern));
+};
 
 const navItems = computed(() => coreNavItems.filter(isVisible));
 const moduleLinks = computed(() => moduleNavItems.filter(isVisible));
@@ -113,7 +120,7 @@ const roleLabel = (role) => {
 
         <div class="flex min-h-screen flex-col bg-muted dark:bg-gray-950">
             <!-- Top Header -->
-            <header class="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border bg-white px-4 shadow-card sm:px-6 dark:border-gray-700 dark:bg-gray-900">
+            <header data-app-nav class="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border bg-white px-4 shadow-card sm:px-6 dark:border-gray-700 dark:bg-gray-900">
                 <!-- Left: Logo + Venue badge -->
                 <div class="flex items-center gap-4">
                     <Link :href="route('dashboard')" class="flex items-center gap-1">
@@ -214,7 +221,7 @@ const roleLabel = (role) => {
                         :href="route(item.routeName)"
                         :class="[
                             'whitespace-pre-line rounded-md px-3 py-1.5 text-center text-sm font-body font-medium leading-tight transition-colors',
-                            route().current(item.activePattern)
+                            isNavActive(item)
                                 ? 'bg-primary-light text-primary dark:bg-primary/20'
                                 : 'text-muted-foreground hover:bg-muted hover:text-ocean-deep dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100',
                         ]"
@@ -348,7 +355,7 @@ const roleLabel = (role) => {
                         :href="route(item.routeName)"
                         :class="[
                             'whitespace-pre-line rounded-md px-3 py-2.5 text-sm font-body font-medium leading-tight transition-colors',
-                            route().current(item.activePattern)
+                            isNavActive(item)
                                 ? 'bg-primary-light text-primary dark:bg-primary/20'
                                 : 'text-muted-foreground hover:bg-muted hover:text-ocean-deep dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100',
                         ]"
@@ -383,6 +390,7 @@ const roleLabel = (role) => {
             <main class="flex-1 p-4 sm:p-6">
                 <div
                     v-if="$slots.header"
+                    data-page-header
                     class="sticky top-16 z-10 -mx-4 -mt-4 mb-6 border-b border-border bg-muted px-4 py-4 sm:-mx-6 sm:-mt-6 sm:px-6 sm:py-6 dark:border-gray-700 dark:bg-gray-950"
                 >
                     <slot name="header" />

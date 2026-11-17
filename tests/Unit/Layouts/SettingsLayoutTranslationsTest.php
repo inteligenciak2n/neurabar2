@@ -67,6 +67,7 @@ class SettingsLayoutTranslationsTest extends TestCase
             'Venue Info' => 'Informações do estabelecimento',
             'General' => 'Modo de trabalho do estabelecimento',
             'Kitchen Stations' => 'Setor de preparo',
+            'Waiter call phrases' => 'Frases do chama garçom',
             'Preparation Statuses' => 'Status de preparação',
             'Service Locations' => 'Locais de atendimento',
             'Attendance Channels' => 'Canais de atendimento',

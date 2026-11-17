@@ -18,8 +18,11 @@ use App\Http\Controllers\Menu\ProductController;
 use App\Http\Controllers\Menu\ProductVariationController;
 use App\Http\Controllers\NoVenueController;
 use App\Http\Controllers\Orders\AttendanceController;
+use App\Http\Controllers\Orders\AttendantNeighborhoodController;
+use App\Http\Controllers\Orders\AttendantServiceLocationController;
 use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\Orders\ServiceRequestController;
+use App\Http\Controllers\Orders\VenueCustomerLookupController;
 use App\Http\Controllers\Payment\PaymentController;
 use App\Http\Controllers\Production\DashboardController as ProductionDashboardController;
 use App\Http\Controllers\Settings\AttendanceChannelController;
@@ -37,6 +40,7 @@ use App\Http\Controllers\Settings\UserController;
 use App\Http\Controllers\Settings\VenueController;
 use App\Http\Controllers\Settings\VenuePlanChangeRequestController;
 use App\Http\Controllers\Settings\VenueSettingsController;
+use App\Http\Controllers\Settings\WaiterCallPhraseController;
 use App\Http\Controllers\Support\SupportDashboardController;
 use App\Http\Controllers\Support\TicketController;
 use App\Http\Controllers\Support\TicketMessageController;
@@ -117,15 +121,21 @@ Route::middleware([
     // Attendances
     Route::prefix('attendances')->name('attendances.')->middleware('module:menu')->group(function () {
         Route::get('/', [AttendanceController::class, 'index'])->name('index');
+        Route::get('/create', [AttendanceController::class, 'create'])->name('create');
+        Route::get('/customers/lookup', [VenueCustomerLookupController::class, 'show'])->name('customers.lookup');
+        Route::post('/neighborhoods', [AttendantNeighborhoodController::class, 'store'])->name('neighborhoods.store');
+        Route::post('/locations', [AttendantServiceLocationController::class, 'store'])->name('locations.store');
+        Route::post('/take-order', [AttendanceController::class, 'takeOrder'])->name('take-order');
         Route::post('/', [AttendanceController::class, 'store'])->name('store');
         Route::get('/{attendance}', [AttendanceController::class, 'show'])->name('show');
         Route::put('/{attendance}', [AttendanceController::class, 'update'])->name('update');
+        Route::put('/{attendance}/link-tab', [AttendanceController::class, 'linkTab'])->name('link-tab');
         Route::get('/{attendance}/orders', [AttendanceController::class, 'orders'])->name('orders');
         Route::post('/{attendance}/orders', [OrderController::class, 'store'])->name('orders.store');
     });
 
     // Order Taker
-    Route::get('/orders/take/{attendance}', [OrderController::class, 'create'])->name('orders.take')->middleware('module:taker');
+    Route::get('/orders/take/{attendance}', [OrderController::class, 'create'])->name('orders.take')->middleware('module:menu');
 
     // Service requests — shared by the Direct Garçom panel and the Attendances panel,
     // deliberately outside module:direct_waiter/module:taker (ServiceRequest is already
@@ -228,24 +238,30 @@ Route::middleware([
         Route::put('/kitchen-stations/{station}', [KitchenStationController::class, 'update'])->name('kitchen-stations.update');
         Route::delete('/kitchen-stations/{station}', [KitchenStationController::class, 'destroy'])->name('kitchen-stations.destroy');
 
+        Route::get('/waiter-call-phrases', [WaiterCallPhraseController::class, 'index'])->name('waiter-call-phrases.index');
+        Route::put('/waiter-call-phrases', [WaiterCallPhraseController::class, 'update'])->name('waiter-call-phrases.update');
+
         Route::get('/preparation-statuses', [PreparationStatusController::class, 'index'])->name('preparation-statuses.index');
         Route::post('/preparation-statuses', [PreparationStatusController::class, 'store'])->name('preparation-statuses.store');
         Route::put('/preparation-statuses/{status}', [PreparationStatusController::class, 'update'])->name('preparation-statuses.update');
         Route::delete('/preparation-statuses/{status}', [PreparationStatusController::class, 'destroy'])->name('preparation-statuses.destroy');
 
-        Route::get('/service-locations', [ServiceLocationController::class, 'index'])->name('service-locations.index');
-        Route::post('/service-locations', [ServiceLocationController::class, 'store'])->name('service-locations.store');
         Route::post('/service-locations/range', [ServiceLocationController::class, 'storeRange'])->name('service-locations.range');
         Route::put('/service-locations/{location}', [ServiceLocationController::class, 'update'])->name('service-locations.update');
         Route::delete('/service-locations/{location}', [ServiceLocationController::class, 'destroy'])->name('service-locations.destroy');
         Route::post('/service-locations/{location}/qr', [ServiceLocationController::class, 'generateQr'])->name('service-locations.qr');
         Route::get('/service-locations/{location}/qr-pdf', [ServiceLocationController::class, 'qrPdf'])->name('service-locations.qr-pdf');
+        Route::get('/service-locations/{location}/qr-png', [ServiceLocationController::class, 'qrPng'])->name('service-locations.qr-png');
+        Route::get('/service-locations/{location}/qr-svg', [ServiceLocationController::class, 'qrSvg'])->name('service-locations.qr-svg');
 
         Route::get('/attendance-channels', [AttendanceChannelController::class, 'index'])->name('attendance-channels.index');
+        Route::post('/attendance-channels/reorder', [AttendanceChannelController::class, 'reorder'])->name('attendance-channels.reorder');
         Route::post('/attendance-channels', [AttendanceChannelController::class, 'store'])->name('attendance-channels.store');
         Route::put('/attendance-channels/{channel}', [AttendanceChannelController::class, 'update'])->name('attendance-channels.update');
         Route::delete('/attendance-channels/{channel}', [AttendanceChannelController::class, 'destroy'])->name('attendance-channels.destroy');
         Route::delete('/attendance-channels/{channel}/locations', [AttendanceChannelController::class, 'destroyLocations'])->name('attendance-channels.locations.destroy');
+        Route::get('/tabs', [TabController::class, 'index'])->name('tabs.index');
+        Route::put('/tabs/enabled', [TabController::class, 'updateEnabled'])->name('tabs.enabled');
         Route::post('/tabs', [TabController::class, 'store'])->name('tabs.store');
         Route::post('/tabs/range', [TabController::class, 'storeRange'])->name('tabs.range');
         Route::put('/tab-series/{series}', [TabController::class, 'updateSeries'])->name('tab-series.update');

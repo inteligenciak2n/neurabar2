@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\PreferredPhoneHand;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -37,6 +38,7 @@ class UserFactory extends Factory
             'profile_photo_path' => null,
             'current_team_id' => null,
             'active' => true,
+            'preferred_phone_hand' => PreferredPhoneHand::Right,
         ];
     }
 

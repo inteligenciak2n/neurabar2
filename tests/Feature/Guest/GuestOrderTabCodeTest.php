@@ -48,9 +48,9 @@ class GuestOrderTabCodeTest extends TestCase
         $this->product = Product::factory()->create(['category_id' => $category->id, 'price' => 10, 'active' => true]);
     }
 
-    private function openGuestSession(): GuestSession
+    private function openGuestSession(?string $pin = '1234'): GuestSession
     {
-        return app(GuestTokenService::class)->createSession($this->venue, null, null, '1234');
+        return app(GuestTokenService::class)->createSession($this->venue, null, null, $pin);
     }
 
     private function placeOrder(GuestSession $session, array $extra = [])
@@ -130,5 +130,12 @@ class GuestOrderTabCodeTest extends TestCase
         $session = $this->openGuestSession();
 
         $this->placeOrder($session, ['tab_code' => 'a b;--'])->assertJsonValidationErrors('tab_code');
+    }
+
+    public function test_guest_can_place_an_order_without_a_pin(): void
+    {
+        $session = $this->openGuestSession(null);
+
+        $this->placeOrder($session)->assertCreated();
     }
 }

@@ -23,6 +23,7 @@ class VenueSettingsFactory extends Factory
             'cover_charge' => 10.00,
             'service_fee_percent' => 10.00,
             'table_count' => 30,
+            'waiter_call_phrases' => null,
         ];
     }
 }

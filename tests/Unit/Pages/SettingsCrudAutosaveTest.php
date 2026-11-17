@@ -12,7 +12,6 @@ class SettingsCrudAutosaveTest extends TestCase
             'resources/js/Pages/Settings/AttendanceChannels.vue',
             'resources/js/Pages/Settings/KitchenStations.vue',
             'resources/js/Pages/Settings/PreparationStatuses.vue',
-            'resources/js/Pages/Settings/ServiceLocations.vue',
             'resources/js/Pages/Settings/Users.vue',
         ];
 
@@ -32,7 +31,6 @@ class SettingsCrudAutosaveTest extends TestCase
             'resources/js/Pages/Settings/AttendanceChannels.vue' => 'editingChannel',
             'resources/js/Pages/Settings/KitchenStations.vue' => 'editingStation',
             'resources/js/Pages/Settings/PreparationStatuses.vue' => 'editingStatus',
-            'resources/js/Pages/Settings/ServiceLocations.vue' => 'editingLocation',
             'resources/js/Pages/Settings/Users.vue' => 'editingUser',
         ];
 
@@ -53,7 +51,6 @@ class SettingsCrudAutosaveTest extends TestCase
             'resources/js/Pages/Settings/AttendanceChannels.vue',
             'resources/js/Pages/Settings/KitchenStations.vue',
             'resources/js/Pages/Settings/PreparationStatuses.vue',
-            'resources/js/Pages/Settings/ServiceLocations.vue',
             'resources/js/Pages/Settings/Users.vue',
         ];
 

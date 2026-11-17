@@ -14,6 +14,8 @@ class AttendancesIndexHidesBarTypeTest extends TestCase
         $this->assertStringNotContainsString('hiddenServiceLocationTypes', $page);
         $this->assertStringNotContainsString('serviceLocationsByType', $page);
         $this->assertStringNotContainsString('loc.type', $page);
-        $this->assertStringContainsString('v-for="loc in serviceLocations"', $page);
+        $this->assertStringContainsString('channelLocations', $page);
+        $this->assertStringContainsString('locationPickerItems', $page);
+        $this->assertStringContainsString('locationChipLabel', $page);
     }
 }

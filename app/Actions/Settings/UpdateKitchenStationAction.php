@@ -9,7 +9,13 @@ class UpdateKitchenStationAction
 {
     public function execute(KitchenStation $station, UpdateKitchenStationRequest $request): KitchenStation
     {
-        $station->update($request->validated());
+        $payload = $request->validated();
+
+        if ($station->isWaiterCaller()) {
+            $payload['active'] = true;
+        }
+
+        $station->update($payload);
 
         return $station->fresh();
     }

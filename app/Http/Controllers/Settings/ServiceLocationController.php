@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers\Settings;
 
-use App\Actions\Settings\CreateServiceLocationAction;
 use App\Actions\Settings\CreateServiceLocationRangeAction;
 use App\Actions\Settings\DeleteServiceLocationAction;
 use App\Actions\Settings\GenerateQrTokenAction;
 use App\Actions\Settings\UpdateServiceLocationAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\StoreServiceLocationRangeRequest;
-use App\Http\Requests\Settings\StoreServiceLocationRequest;
 use App\Http\Requests\Settings\UpdateServiceLocationRequest;
 use App\Models\Settings\ServiceLocation;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -18,46 +16,14 @@ use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\RoundBlockSizeMode;
 use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\Writer\SvgWriter;
+use Endroid\QrCode\Writer\WriterInterface;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class ServiceLocationController extends Controller
 {
-    public function index(): Response
-    {
-        $venue = app('tenant');
-
-        return Inertia::render('Settings/ServiceLocations', [
-            'locations' => $venue
-                ->serviceLocations()
-                ->with('defaultAttendanceChannel:id,name')
-                ->get()
-                ->map(fn ($location) => [
-                    'id' => $location->id,
-                    'name' => $location->name,
-                    'active' => $location->active,
-                    'default_attendance_channel_id' => $location->default_attendance_channel_id,
-                    'default_attendance_channel' => $location->defaultAttendanceChannel,
-                    'qr_token' => $location->qr_token,
-                    'hub_url' => $location->qr_token
-                        ? url('/g/'.$location->qr_token)
-                        : null,
-                ]),
-            'attendanceChannels' => $venue->attendanceChannels()->where('active', true)->get(['id', 'name']),
-        ]);
-    }
-
-    public function store(StoreServiceLocationRequest $request, CreateServiceLocationAction $action): RedirectResponse
-    {
-        $venue = app('tenant');
-
-        $action->execute($venue, $request);
-
-        return back()->with('success', 'Service location created.');
-    }
-
     public function storeRange(StoreServiceLocationRangeRequest $request, CreateServiceLocationRangeAction $action): RedirectResponse
     {
         $result = $action->execute(app('tenant'), $request);
@@ -93,30 +59,14 @@ class ServiceLocationController extends Controller
     {
         $action->execute($location);
 
-        return redirect()
-            ->route('settings.service-locations.index')
-            ->with('success', 'QR code generated.');
+        return back()->with('success', 'QR code generated.');
     }
 
-    public function qrPdf(ServiceLocation $location): HttpResponse
+    public function qrPdf(Request $request, ServiceLocation $location): HttpResponse
     {
-        abort_if($location->qr_token === null, 404, 'QR code not generated yet.');
-
+        $hubUrl = $this->hubUrl($location);
+        $qrBase64 = 'data:image/png;base64,'.base64_encode($this->qrPngBinary($location));
         $venue = $location->venue()->withoutGlobalScopes()->first();
-
-        $hubUrl = url('/g/'.$location->qr_token);
-
-        $qrResult = (new Builder(
-            writer: new PngWriter,
-            data: $hubUrl,
-            encoding: new Encoding('UTF-8'),
-            errorCorrectionLevel: ErrorCorrectionLevel::High,
-            size: 400,
-            margin: 10,
-            roundBlockSizeMode: RoundBlockSizeMode::Margin,
-        ))->build();
-
-        $qrBase64 = 'data:image/png;base64,'.base64_encode($qrResult->getString());
 
         $logoBase64 = null;
         $logoContents = $venue->logoFileContents();
@@ -141,6 +91,55 @@ class ServiceLocationController extends Controller
 
         $filename = 'qr-'.str($location->name)->slug().'.pdf';
 
-        return $pdf->stream($filename);
+        return $request->boolean('download')
+            ? $pdf->download($filename)
+            : $pdf->stream($filename);
+    }
+
+    public function qrPng(Request $request, ServiceLocation $location): HttpResponse
+    {
+        $filename = 'qr-'.str($location->name)->slug().'.png';
+        $disposition = $request->boolean('download') ? 'attachment' : 'inline';
+
+        return response($this->qrBinary($location, new PngWriter), 200, [
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => $disposition.'; filename="'.$filename.'"',
+        ]);
+    }
+
+    public function qrSvg(Request $request, ServiceLocation $location): HttpResponse
+    {
+        $filename = 'qr-'.str($location->name)->slug().'.svg';
+        $disposition = $request->boolean('download') ? 'attachment' : 'inline';
+
+        return response($this->qrBinary($location, new SvgWriter), 200, [
+            'Content-Type' => 'image/svg+xml',
+            'Content-Disposition' => $disposition.'; filename="'.$filename.'"',
+        ]);
+    }
+
+    private function hubUrl(ServiceLocation $location): string
+    {
+        abort_if($location->qr_token === null, 404, 'QR code not generated yet.');
+
+        return url('/g/'.$location->qr_token);
+    }
+
+    private function qrPngBinary(ServiceLocation $location): string
+    {
+        return $this->qrBinary($location, new PngWriter);
+    }
+
+    private function qrBinary(ServiceLocation $location, WriterInterface $writer): string
+    {
+        return (new Builder(
+            writer: $writer,
+            data: $this->hubUrl($location),
+            encoding: new Encoding('UTF-8'),
+            errorCorrectionLevel: ErrorCorrectionLevel::High,
+            size: 400,
+            margin: 10,
+            roundBlockSizeMode: RoundBlockSizeMode::Margin,
+        ))->build()->getString();
     }
 }

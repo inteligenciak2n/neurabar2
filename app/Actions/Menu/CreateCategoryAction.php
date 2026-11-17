@@ -21,6 +21,7 @@ class CreateCategoryAction
         return Category::create([
             'menu_id' => $menu->id,
             'name' => $request->validated('name'),
+            'color' => $request->validated('color'),
             'sort_order' => $maxSortOrder + 1,
         ]);
     }

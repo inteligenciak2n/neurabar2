@@ -58,6 +58,7 @@ const form = useForm({
     password: '',
     role: 'attendant',
     pin: '',
+    preferred_phone_hand: 'right',
     active: true,
 });
 
@@ -66,6 +67,7 @@ const openCreate = () => {
     editingUser.value = null;
     form.reset();
     form.role = 'attendant';
+    form.preferred_phone_hand = 'right';
     form.active = true;
     form.defaults();
     showForm.value = true;
@@ -79,6 +81,7 @@ const openEdit = (user) => {
     form.password = '';
     form.role = user.role;
     form.pin = '';
+    form.preferred_phone_hand = user.preferred_phone_hand || 'right';
     form.active = user.active;
     form.clearErrors();
     form.defaults();
@@ -233,6 +236,23 @@ const deleteUser = () => {
                                 maxlength="10"
                                 class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
                             />
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-ocean-deep dark:text-gray-100 mb-1">{{ __('Preferred phone hand') }}</label>
+                            <div class="flex gap-2">
+                                <button
+                                    v-for="hand in ['right', 'left']"
+                                    :key="hand"
+                                    type="button"
+                                    :class="{'bg-primary text-white': form.preferred_phone_hand === hand, 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200': form.preferred_phone_hand !== hand}"
+                                    class="min-h-10 flex-1 rounded-md px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+                                    @click="form.preferred_phone_hand = hand"
+                                >
+                                    {{ hand === 'right' ? __('Right') : __('Left') }}
+                                </button>
+                            </div>
+                            <p v-if="form.errors.preferred_phone_hand" class="mt-1 text-xs text-destructive">{{ form.errors.preferred_phone_hand }}</p>
                         </div>
                     </div>
 

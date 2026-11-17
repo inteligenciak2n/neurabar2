@@ -128,7 +128,10 @@ class TenantMoveToDedicated extends Command
             'product_modifier_group',
             'combos',
             'combo_items',
+            'venue_customers',
+            'venue_customer_addresses',
             'attendances',
+            'attendance_delivery_addresses',
             'orders',
             'order_items',
             'order_item_modifiers',
@@ -149,7 +152,7 @@ class TenantMoveToDedicated extends Command
             'venue_settings', 'kitchen_stations', 'preparation_statuses',
             'service_locations', 'attendance_channels', 'menus', 'menu_categories',
             'products', 'product_variations', 'modifier_groups', 'modifier_options',
-            'product_modifier_group', 'combos', 'combo_items', 'attendances',
+            'product_modifier_group', 'combos', 'combo_items', 'venue_customers', 'venue_customer_addresses', 'attendances',
             'payments',
         ];
 
@@ -170,6 +173,15 @@ class TenantMoveToDedicated extends Command
         $attendanceIds = DB::connection($to)->table('attendances')->pluck('id')->toArray();
 
         if (! empty($attendanceIds)) {
+            $deliveryAddresses = DB::connection($from)->table('attendance_delivery_addresses')
+                ->whereIn('attendance_id', $attendanceIds)
+                ->get()->map(fn ($r) => (array) $r)->toArray();
+
+            if (! empty($deliveryAddresses)) {
+                DB::connection($to)->table('attendance_delivery_addresses')->insert($deliveryAddresses);
+                $this->line('  → attendance_delivery_addresses: '.count($deliveryAddresses).' linhas');
+            }
+
             $orders = DB::connection($from)->table('orders')
                 ->whereIn('attendance_id', $attendanceIds)
                 ->get()->map(fn ($r) => (array) $r)->toArray();
@@ -237,6 +249,9 @@ class TenantMoveToDedicated extends Command
                 ->whereIn('venue_id', $venueIds)->pluck('id')->toArray();
 
             if (! empty($attendanceIds)) {
+                DB::connection($sharedConnection)->table('attendance_delivery_addresses')
+                    ->whereIn('attendance_id', $attendanceIds)->delete();
+
                 $orderIds = DB::connection($sharedConnection)->table('orders')
                     ->whereIn('attendance_id', $attendanceIds)->pluck('id')->toArray();
 
@@ -269,7 +284,7 @@ class TenantMoveToDedicated extends Command
                 ->whereIn('venue_id', $venueIds)->delete();
 
             foreach (array_reverse($this->operationalTables()) as $table) {
-                if (! in_array($table, ['orders', 'order_items', 'order_item_modifiers', 'attendances', 'payments', 'payment_items'])) {
+                if (! in_array($table, ['orders', 'order_items', 'order_item_modifiers', 'attendances', 'attendance_delivery_addresses', 'payments', 'payment_items'])) {
                     DB::connection($sharedConnection)->table($table)
                         ->whereIn('venue_id', $venueIds)->delete();
                 }

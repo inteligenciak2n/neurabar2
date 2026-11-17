@@ -22,6 +22,20 @@ class AttendanceChannelsCopyTest extends TestCase
         $this->assertStringContainsString("__('Trackable by customer')", $page);
         $this->assertStringContainsString("__('The customer can check the preparation status of the order.')", $page);
         $this->assertStringContainsString("__('Description')", $page);
+        $this->assertStringContainsString("__('Color of :name'", $page);
+        $this->assertStringContainsString('flex-nowrap items-center gap-2', $page);
+        $this->assertStringContainsString('form.color = color', $page);
+        $this->assertStringNotContainsString('type="color"', $page);
+        $this->assertStringContainsString('v-for="color in palette"', $page);
+        $this->assertStringContainsString('channelSectionStyle(form.color)', $page);
+        preg_match('/const CHANNEL_COLORS = \[([^\]]+)\]/s', $page, $paletteMatch);
+        $this->assertNotEmpty($paletteMatch[1] ?? null);
+        preg_match_all('/#[0-9A-Fa-f]{6}/', $paletteMatch[1], $paletteColors);
+        $this->assertCount(8, $paletteColors[0]);
+        $enum = file_get_contents(dirname(__DIR__, 3).'/app/Enums/AttendanceChannelColor.php');
+        preg_match_all("/case \\w+ = '(#[0-9A-Fa-f]{6})'/", $enum, $enumColors);
+        $this->assertSame($enumColors[1], $paletteColors[0]);
+        $this->assertStringContainsString('channel-form-card', $page);
         $this->assertStringContainsString('v-model="form.description"', $page);
         $this->assertStringContainsString('channel.description', $page);
         $this->assertLessThan(
@@ -31,6 +45,11 @@ class AttendanceChannelsCopyTest extends TestCase
         $this->assertStringContainsString("__('Requires customer identifier')", $page);
         $this->assertStringContainsString("__('Ideal for Delivery (example).')", $page);
         $this->assertStringContainsString("__('Requires tab')", $page);
+        $this->assertStringContainsString("__('Uses service location')", $page);
+        $this->assertStringContainsString('form.active = true', $page);
+        $this->assertStringContainsString('form.active = false', $page);
+        $this->assertStringContainsString('v-model="form.uses_service_location"', $page);
+        $this->assertStringContainsString('editingChannel && form.uses_service_location', $page);
         $this->assertStringContainsString("__('Add') }} {{ form.name }}", $page);
         $this->assertStringNotContainsString("__('Create the prefix')", $page);
         $this->assertStringContainsString('font-heading text-lg font-bold', $page);
@@ -38,67 +57,69 @@ class AttendanceChannelsCopyTest extends TestCase
         $this->assertStringContainsString("__('Create several') }} {{ form.name }}", $page);
         $this->assertStringContainsString('settings.service-locations.range', $page);
         $this->assertStringContainsString('channelLocations', $page);
+        $this->assertStringContainsString('numeric: true', $page);
+        $this->assertStringContainsString("sensitivity: 'base'", $page);
         $this->assertStringContainsString(':disabled="!!editingChannel"', $page);
         $this->assertStringContainsString("__('The channel name cannot be changed after it is created.')", $page);
-        $this->assertStringContainsString("__('Delete location')", $page);
-        $this->assertStringContainsString('confirmDeleteLocation', $page);
-        $this->assertStringContainsString('settings.service-locations.destroy', $page);
+        $this->assertStringContainsString("__('Inactivate location')", $page);
+        $this->assertStringContainsString("__('Generate QR')", $page);
+        $this->assertStringContainsString('generateLocationQr', $page);
+        $this->assertStringContainsString('inactivateLocation', $page);
+        $this->assertStringContainsString('settings.service-locations.qr', $page);
+        $this->assertStringContainsString('settings.service-locations.qr-pdf', $page);
+        $this->assertStringContainsString('settings.service-locations.qr-png', $page);
+        $this->assertStringContainsString('settings.service-locations.qr-svg', $page);
+        $this->assertStringContainsString('showLocationQr', $page);
+        $this->assertStringContainsString("__('Download PDF format')", $page);
+        $this->assertStringContainsString("__('Download PNG image format')", $page);
+        $this->assertStringContainsString("__('Download vectorized version')", $page);
+        $this->assertStringNotContainsString('window.open', $page);
+        $this->assertStringContainsString('settings.service-locations.update', $page);
         $this->assertStringContainsString('confirmDeleteChannelLocations', $page);
         $this->assertStringContainsString('nextTick(() => deleteChannelLocations())', $page);
         $this->assertStringContainsString('settings.attendance-channels.locations.destroy', $page);
         $this->assertStringNotContainsString("__('Are you sure you want to delete all locations for this channel?')", $page);
         $this->assertStringContainsString('v-model="form.requires_tab"', $page);
-        $this->assertStringContainsString("__('Tabs')", $page);
-        $this->assertStringContainsString('font-heading text-2xl font-bold', $page);
-        $this->assertStringContainsString("__('All channels that require a tab share this list.')", $page);
-        $this->assertStringContainsString("__('Use a prefix before the numbers to organize internally.')", $page);
-        $this->assertStringContainsString(":title=\"__('Create a new tab number')\"", $page);
-        $this->assertStringContainsString(":title=\"__('Created tab numbers')\"", $page);
-        $this->assertStringContainsString("__('Create a single tab')", $page);
-        $this->assertStringContainsString('v-model="tabForm.notes"', $page);
-        $this->assertStringContainsString("__('Create several tabs')", $page);
+        $this->assertStringContainsString('data-section="channels"', $page);
+        $this->assertStringContainsString('rounded-xl border-2 border-ocean-deep/25', $page);
+        $this->assertStringNotContainsString("__('Add Channel')", $page);
+        $this->assertStringNotContainsString('openCreate', $page);
+        $this->assertStringContainsString('moveUp(index)', $page);
+        $this->assertStringContainsString('moveDown(index)', $page);
+        $this->assertStringContainsString("route('settings.attendance-channels.reorder')", $page);
+        $this->assertStringContainsString("__('Sort the attendance channels. This order is used by the order taker in New Order.')", $page);
+        $this->assertStringContainsString("__('This makes New Order more practical.')", $page);
+        $this->assertStringNotContainsString('<template #actions>', $page);
+        $this->assertStringNotContainsString('data-section="tabs"', $page);
+        $this->assertStringNotContainsString('settings.tabs.store', $page);
         $this->assertStringContainsString('rounded-lg border border-border p-4', $page);
-        $this->assertStringContainsString("__('Add tab')", $page);
-        $this->assertStringContainsString('tabCodeHasNumber', $page);
         $this->assertStringContainsString('locationNumberIsValid', $page);
         $this->assertStringContainsString("__('A number is required.')", $page);
-        $this->assertStringContainsString("__('A tab code must include a number.')", $page);
         $this->assertStringContainsString("'The \":name\" number already exists.'", $page);
         $this->assertStringContainsString("__('Not created: :names'", $page);
         $this->assertStringContainsString("__('Created: :names'", $page);
         $this->assertStringContainsString('singleLocationResult', $page);
         $this->assertStringContainsString('severalLocationResult', $page);
         $this->assertStringContainsString("__('Create range')", $page);
-        $this->assertStringContainsString('settings.tabs.store', $page);
-        $this->assertStringContainsString('anyChannelUsesTabs', $page);
-        $this->assertStringContainsString("__('Prefix')", $page);
-        $this->assertStringContainsString("__('e.g. A or CASA1')", $page);
-        $this->assertStringContainsString('formatPrefixLabel', $page);
-        $this->assertStringContainsString('w-40', $page);
-        $this->assertStringContainsString("__('Observation')", $page);
-        $this->assertStringContainsString("__('Each tab code can be used only once.')", $page);
-        $this->assertStringContainsString("__('Tabs created successfully')", $page);
         $this->assertStringContainsString('toast.success', $page);
-        $this->assertStringContainsString('scrollIntoView', $page);
-        $this->assertStringContainsString('tabSeriesDomId', $page);
         $this->assertStringContainsString("__('Delete all')", $page);
-        $this->assertStringContainsString('settings.tab-series.destroy', $page);
-        $this->assertStringContainsString('confirmDeleteSeries', $page);
-        $this->assertStringContainsString('groupTabsForDisplay', $page);
-        $this->assertStringContainsString('sm:grid-cols-10', $page);
         $this->assertStringContainsString('locationIsPendingDelete', $page);
-        $this->assertStringContainsString('tabIsPendingDelete', $page);
-        $this->assertStringNotContainsString("__('Are you sure you want to delete this tab?')", $page);
         $this->assertStringNotContainsString("__('Are you sure you want to delete this location?')", $page);
-        $this->assertStringContainsString('nextTick(() => deleteTab())', $page);
-        $this->assertStringContainsString('nextTick(() => deleteLocation())', $page);
-        $this->assertStringContainsString("__(errors.tab || 'Could not delete this tab.')", $page);
-        $this->assertStringContainsString("route('settings.tabs.destroy', { tab: tabToDelete.value.id })", $page);
+        $this->assertStringContainsString('inactivateLocation', $page);
         $this->assertStringContainsString("'line-through': locationIsPendingDelete(location)", $page);
-        $this->assertStringContainsString("'line-through': tabIsPendingDelete(tab, series)", $page);
         $this->assertStringContainsString('bg-red-100 text-red-700', $page);
         $this->assertSame('Rastreável pelo cliente', $translations['Trackable by customer']);
         $this->assertSame('Descrição', $translations['Description']);
+        $this->assertSame('Cor do :name', $translations['Color of :name']);
+        $this->assertSame(
+            'Ordene os canais de atendimento. Essa ordem será utilizada pelo realizador de pedidos "Novo Pedido".',
+            $translations['Sort the attendance channels. This order is used by the order taker in New Order.'],
+        );
+        $this->assertSame(
+            'Deixando mais prático o "Novo Pedido".',
+            $translations['This makes New Order more practical.'],
+        );
+        $this->assertSame('Cor', $translations['Color']);
         $this->assertSame(
             'O cliente pode localizar o status de preparo do pedido.',
             $translations['The customer can check the preparation status of the order.'],
@@ -106,7 +127,15 @@ class AttendanceChannelsCopyTest extends TestCase
         $this->assertSame('Exige identificador do cliente', $translations['Requires customer identifier']);
         $this->assertSame('Ideal para Delivery (exemplo)', $translations['Ideal for Delivery (example).']);
         $this->assertSame('Exige comanda', $translations['Requires tab']);
+        $this->assertSame('Utilizará local de atendimento', $translations['Uses service location']);
+        $this->assertSame(
+            'Mostra mesas ou balcões deste canal no Novo Pedido.',
+            $translations['Show tables or counters for this channel in New Order.'],
+        );
         $this->assertSame('Comandas', $translations['Tabs']);
+        $this->assertSame('Ativado', $translations['Enabled']);
+        $this->assertSame('Desativado', $translations['Disabled']);
+        $this->assertSame('Comandas estão desativadas.', $translations['Tabs are disabled.']);
         $this->assertSame('Adicionar', $translations['Add']);
         $this->assertSame('Crie o prefixo', $translations['Create the prefix']);
         $this->assertSame(
@@ -114,6 +143,12 @@ class AttendanceChannelsCopyTest extends TestCase
             $translations['The channel name cannot be changed after it is created.'],
         );
         $this->assertSame('Excluir local', $translations['Delete location']);
+        $this->assertSame('Inativar local', $translations['Inactivate location']);
+        $this->assertSame('Gerar QR', $translations['Generate QR']);
+        $this->assertSame('QR Code gerado.', $translations['QR code generated.']);
+        $this->assertSame('Baixar formato pdf', $translations['Download PDF format']);
+        $this->assertSame('Baixar formato imagem (PNG)', $translations['Download PNG image format']);
+        $this->assertSame('Baixar versão vetorizada', $translations['Download vectorized version']);
         $this->assertSame(
             'Tem certeza de que deseja apagar todos os locais deste canal?',
             $translations['Are you sure you want to delete all locations for this channel?'],
@@ -140,6 +175,10 @@ class AttendanceChannelsCopyTest extends TestCase
         $this->assertSame('Criar intervalo', $translations['Create range']);
         $this->assertSame('Prefixo', $translations['Prefix']);
         $this->assertSame('por exemplo, A ou CASA1', $translations['e.g. A or CASA1']);
+        $this->assertSame(
+            'Utilize palavras no início de cada comanda caso queira diferenciar os usos de suas comandas',
+            $translations['Use words at the start of each tab if you want to distinguish how the tabs are used.'],
+        );
         $this->assertSame('Observação', $translations['Observation']);
         $this->assertSame('Apagar todos', $translations['Delete all']);
         $this->assertSame(

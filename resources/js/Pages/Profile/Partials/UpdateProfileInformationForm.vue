@@ -19,6 +19,7 @@ const form = useForm({
     name: props.user.name,
     email: props.user.email,
     lang: props.user.lang,
+    preferred_phone_hand: props.user.preferred_phone_hand === 'left' ? 'left' : 'right',
     photo: null,
 });
 
@@ -188,6 +189,20 @@ const clearPhotoFileInput = () => {
                     class="mt-1 block w-full"
                 />
                 <InputError :message="form.errors.lang" class="mt-2" />
+            </div>
+
+            <div class="col-span-6 sm:col-span-4">
+                <InputLabel for="preferred_phone_hand" :value="__('Preferred phone hand')" />
+                <InputSelect
+                    id="preferred_phone_hand"
+                    v-model="form.preferred_phone_hand"
+                    :options="[
+                        { value: 'right', label: __('Right') },
+                        { value: 'left', label: __('Left') },
+                    ]"
+                    class="mt-1 block w-full"
+                />
+                <InputError :message="form.errors.preferred_phone_hand" class="mt-2" />
             </div>
         </template>
 

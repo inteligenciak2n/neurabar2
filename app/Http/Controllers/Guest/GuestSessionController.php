@@ -32,15 +32,7 @@ class GuestSessionController extends Controller
 
         return response()
             ->json(['session_id' => $session->id])
-            ->withCookie(cookie(
-                name: 'guest_token',
-                value: $session->guest_token,
-                minutes: 60 * 24,
-                path: '/',
-                secure: app()->isProduction(),
-                httpOnly: true,
-                sameSite: 'Strict',
-            ));
+            ->withCookie($this->tokenService->sessionCookie($session->guest_token));
     }
 
     public function verify(string $token, VerifyGuestPinRequest $request): JsonResponse
@@ -51,7 +43,7 @@ class GuestSessionController extends Controller
 
         abort_if($session === null, 403, 'No active session.');
 
-        $valid = Hash::check($request->validated('pin'), $session->pin);
+        $valid = is_string($session->pin) && Hash::check($request->validated('pin'), $session->pin);
 
         return response()->json(['valid' => $valid]);
     }

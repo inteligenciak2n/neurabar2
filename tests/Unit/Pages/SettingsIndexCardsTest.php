@@ -27,12 +27,14 @@ class SettingsIndexCardsTest extends TestCase
             'settings.venue',
             'settings.general',
             'settings.kitchen-stations.index',
+            'settings.waiter-call-phrases.index',
             'settings.preparation-statuses.index',
             'settings.attendance-channels.index',
-            'settings.service-locations.index',
+            'settings.tabs.index',
             'settings.users.index',
         ], $matches[1]);
         $this->assertStringContainsString('settings.attendance-channels.index', $page);
+        $this->assertStringContainsString('settings.tabs.index', $page);
         $this->assertStringContainsString(
             'Choose a section to manage subscription, venue, users, locations and how the operation works.',
             $page,
@@ -66,6 +68,12 @@ class SettingsIndexCardsTest extends TestCase
         );
         $this->assertSame('Informações do estabelecimento', $translations['Venue Info']);
         $this->assertSame('Modo de trabalho do estabelecimento', $translations['General']);
-        $this->assertSame("Locais de\natendimento", $translations['Service Locations']);
+        $this->assertSame('Canais de atendimento', $translations['Attendance Channels']);
+        $this->assertSame('Frases do chama garçom', $translations['Waiter call phrases']);
+        $this->assertSame('Comandas', $translations['Tabs']);
+        $this->assertSame(
+            'Cadastre os números de comanda compartilhados por todos os canais que exigem comanda.',
+            $translations['Register tab numbers shared by every channel that requires a tab.'],
+        );
     }
 }

@@ -32,6 +32,7 @@ class Attendance extends Model
         'attendance_channel_id',
         'tab_id',
         'customer_identifier',
+        'venue_customer_id',
         'code',
         'status',
         'party_size',
@@ -78,6 +79,16 @@ class Attendance extends Model
         return $this->belongsTo(ServiceLocation::class);
     }
 
+    public function venueCustomer(): BelongsTo
+    {
+        return $this->belongsTo(VenueCustomer::class);
+    }
+
+    public function deliveryAddress(): HasOne
+    {
+        return $this->hasOne(AttendanceDeliveryAddress::class);
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -111,5 +122,31 @@ class Attendance extends Model
     public function scopeClosed(Builder $query): Builder
     {
         return $query->where('status', AttendanceStatus::Closed);
+    }
+
+    public function hasTab(): bool
+    {
+        return $this->tab_id !== null || filled($this->code);
+    }
+
+    public function needsTabLink(): bool
+    {
+        return ! $this->hasTab();
+    }
+
+    public function tabLabel(): ?string
+    {
+        $code = $this->tab?->code ?? $this->code;
+
+        return filled($code) ? (string) $code : null;
+    }
+
+    public function scopeNeedingTabLink(Builder $query): Builder
+    {
+        return $query
+            ->whereNull('tab_id')
+            ->where(function (Builder $codeQuery): void {
+                $codeQuery->whereNull('code')->orWhere('code', '');
+            });
     }
 }
