@@ -73,6 +73,8 @@ class GuestTokenService
 
         abort_if($venue === null, 404);
 
+        $this->resolveOperationalConnectionForVenue($venue);
+
         $serviceLocation = isset($payload['l'])
             ? ServiceLocation::withoutGlobalScopes()->find($payload['l'])
             : null;
@@ -159,8 +161,13 @@ class GuestTokenService
     public function resolveOperationalConnection(GuestSession $session): string
     {
         $venue = $session->venue()->with('corporation')->firstOrFail();
-        $connection = $this->tenantConnectionResolver->resolve($venue);
 
+        return $this->resolveOperationalConnectionForVenue($venue);
+    }
+
+    private function resolveOperationalConnectionForVenue(Venue $venue): string
+    {
+        $connection = $this->tenantConnectionResolver->resolve($venue);
         app()->instance('operational_connection', $connection);
 
         return $connection;

@@ -169,6 +169,54 @@ class GuestOrderTabCodeTest extends TestCase
         ], 'operation_default_2');
     }
 
+    public function test_order_validation_uses_the_venue_operational_connection(): void
+    {
+        $this->venue->corporation()->update([
+            'is_dedicated' => true,
+            'self_connection' => 'operation_default_2',
+        ]);
+        $this->venue->unsetRelation('corporation');
+        app(TenantConnectionResolver::class)->invalidate($this->venue);
+        app()->instance('operational_connection', 'operation_default_2');
+
+        $menu = Menu::factory()->create(['venue_id' => $this->venue->id]);
+        $category = Category::factory()->create(['menu_id' => $menu->id]);
+        $this->product = Product::factory()->create([
+            'category_id' => $category->id,
+            'price' => 10,
+            'active' => true,
+        ]);
+        $session = $this->openGuestSession();
+
+        $response = $this->placeOrder($session)->assertCreated();
+
+        $this->assertDatabaseHas('orders', ['id' => $response->json('order_id')], 'operation_default_2');
+        $this->assertDatabaseMissing('orders', ['id' => $response->json('order_id')], 'operation_default_1');
+    }
+
+    public function test_cached_dedicated_connection_is_registered_on_cache_hits(): void
+    {
+        $connectionName = TenantConnectionResolver::dedicatedConnectionName((string) $this->venue->corporation_id);
+        $this->venue->corporation()->update([
+            'is_dedicated' => true,
+            'self_connection' => $connectionName,
+        ]);
+        $this->venue->unsetRelation('corporation');
+
+        $resolver = app(TenantConnectionResolver::class);
+        $resolver->invalidate($this->venue);
+
+        $this->assertSame($connectionName, $resolver->resolve($this->venue));
+        $this->assertArrayHasKey($connectionName, config('database.connections'));
+
+        $connections = config('database.connections');
+        unset($connections[$connectionName]);
+        config(['database.connections' => $connections]);
+
+        $this->assertSame($connectionName, $resolver->resolve($this->venue));
+        $this->assertSame('pgsql', config("database.connections.{$connectionName}.driver"));
+    }
+
     public function test_failed_attach_does_not_leave_an_orphan_attendance(): void
     {
         $session = $this->openGuestSession();
