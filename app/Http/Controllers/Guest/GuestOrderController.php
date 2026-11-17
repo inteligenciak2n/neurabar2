@@ -9,7 +9,9 @@ use App\Http\Requests\Guest\StoreGuestOrderRequest;
 use App\Services\GuestTokenService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Throwable;
 
 class GuestOrderController extends Controller
 {
@@ -25,16 +27,34 @@ class GuestOrderController extends Controller
 
         abort_if($session === null || ! $session->hasPin(), 403, 'No active session.');
 
-        $attendance = $this->tokenService->createAttendanceIfNeeded($session, $request->validated('tab_code'));
-        $session->refresh();
+        $connection = $this->tokenService->resolveOperationalConnection($session);
+        $previousAttendanceId = $session->attendance_id;
+        $attachedAttendanceId = null;
 
-        $order = $action->execute($session, $request->validated());
+        try {
+            return DB::connection($connection)->transaction(function () use ($session, $request, $action, &$attachedAttendanceId): JsonResponse {
+                $attendance = $this->tokenService->createAttendanceIfNeeded($session, $request->validated('tab_code'));
+                $attachedAttendanceId = $attendance->id;
+                $session->refresh();
 
-        return response()->json([
-            'order_id' => $order->id,
-            'order_number' => $order->order_number,
-            'tab_code' => $attendance->code,
-        ], 201);
+                $order = $action->execute($session, $request->validated());
+
+                return response()->json([
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'tab_code' => $attendance->code,
+                ], 201);
+            });
+        } catch (Throwable $exception) {
+            if ($previousAttendanceId === null && $attachedAttendanceId !== null) {
+                $session->newQuery()
+                    ->whereKey($session->getKey())
+                    ->where('attendance_id', $attachedAttendanceId)
+                    ->update(['attendance_id' => null]);
+            }
+
+            throw $exception;
+        }
     }
 
     public function index(string $token, Request $request): JsonResponse

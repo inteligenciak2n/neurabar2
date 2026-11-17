@@ -61,6 +61,12 @@ class ReleaseExpiredDeliveryOrderCodesJob implements ShouldQueue
             ->table('delivery_orders')
             ->whereNotNull('code')
             ->where('code_expires_at', '<=', now())
+            ->whereExists(function ($query): void {
+                $query->select(DB::raw(1))
+                    ->from('orders')
+                    ->whereColumn('orders.attendance_id', 'delivery_orders.attendance_id')
+                    ->where('orders.status', OrderStatus::Delivered->value);
+            })
             ->whereNotExists(function ($query): void {
                 $query->select(DB::raw(1))
                     ->from('orders')

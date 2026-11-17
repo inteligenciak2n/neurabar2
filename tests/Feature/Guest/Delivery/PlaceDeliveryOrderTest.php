@@ -2,12 +2,15 @@
 
 namespace Tests\Feature\Guest\Delivery;
 
+use App\Actions\Guest\PlaceDeliveryOrderAction;
+use App\Actions\Orders\ResolveOrderItemsAction;
 use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
 use App\Models\Menu\Category;
 use App\Models\Menu\Menu;
 use App\Models\Menu\Product;
 use App\Models\Orders\Attendance;
+use App\Models\Orders\DeliveryOrder;
 use App\Models\Settings\DeliveryFeeZone;
 use App\Models\Settings\VenueSettings;
 use App\Models\Tenant\Corporation;
@@ -205,6 +208,41 @@ class PlaceDeliveryOrderTest extends TestCase
         });
 
         $this->assertCount(4, $codes->unique());
+    }
+
+    public function test_it_retries_when_a_delivery_code_is_taken_concurrently(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        VenueSettings::factory()->create([
+            'venue_id' => $venue->id,
+            'service_fee_percent' => 0,
+            'accepted_delivery_payment_methods' => ['cash'],
+        ]);
+        $product = $this->makeDeliverableProduct($venue);
+        $existingAttendance = Attendance::factory()->create(['venue_id' => $venue->id]);
+        DeliveryOrder::factory()->create([
+            'venue_id' => $venue->id,
+            'attendance_id' => $existingAttendance->id,
+            'code' => 123456,
+            'code_expires_at' => now()->addHour(),
+        ]);
+        $action = new class(app(ResolveOrderItemsAction::class)) extends PlaceDeliveryOrderAction
+        {
+            private int $attempt = 0;
+
+            protected function generateDeliveryOrderCode(Venue $venue): int
+            {
+                return [123456, 123457][$this->attempt++];
+            }
+        };
+
+        $order = $action->execute($venue, $this->basePayload($product));
+
+        $this->assertSame(123457, $order->order_number);
+        $this->assertDatabaseHas('delivery_orders', [
+            'venue_id' => $venue->id,
+            'code' => 123457,
+        ]);
     }
 
     public function test_guest_can_place_a_delivery_order_within_a_fee_zone(): void

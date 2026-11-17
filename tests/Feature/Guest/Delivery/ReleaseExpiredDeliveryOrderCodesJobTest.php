@@ -24,6 +24,10 @@ class ReleaseExpiredDeliveryOrderCodesJobTest extends TestCase
             'code' => 123456,
             'code_expires_at' => now()->subMinute(),
         ]);
+        Order::factory()->create([
+            'attendance_id' => $expired->attendance_id,
+            'status' => OrderStatus::Delivered,
+        ]);
         $live = DeliveryOrder::factory()->create([
             'venue_id' => $venue->id,
             'code' => 654321,
@@ -47,10 +51,14 @@ class ReleaseExpiredDeliveryOrderCodesJobTest extends TestCase
     {
         $venue = Venue::factory()->create(['active' => true]);
 
-        DeliveryOrder::factory()->create([
+        $deliveryOrder = DeliveryOrder::factory()->create([
             'venue_id' => $venue->id,
             'code' => 111111,
             'code_expires_at' => now()->subMinute(),
+        ]);
+        Order::factory()->create([
+            'attendance_id' => $deliveryOrder->attendance_id,
+            'status' => OrderStatus::Delivered,
         ]);
 
         (new ReleaseExpiredDeliveryOrderCodesJob)->handle(app(TenantConnectionResolver::class));
@@ -62,6 +70,23 @@ class ReleaseExpiredDeliveryOrderCodesJobTest extends TestCase
         ]);
 
         $this->assertSame(1, DeliveryOrder::withoutGlobalScopes()->where('code', 111111)->count());
+    }
+
+    public function test_it_keeps_expired_codes_when_the_attendance_has_no_orders(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $orphaned = DeliveryOrder::factory()->create([
+            'venue_id' => $venue->id,
+            'code' => 444444,
+            'code_expires_at' => now()->subMinute(),
+        ]);
+
+        (new ReleaseExpiredDeliveryOrderCodesJob)->handle(app(TenantConnectionResolver::class));
+
+        $this->assertDatabaseHas('delivery_orders', [
+            'id' => $orphaned->id,
+            'code' => 444444,
+        ]);
     }
 
     public function test_it_keeps_the_code_of_an_expired_order_that_is_still_in_flight(): void

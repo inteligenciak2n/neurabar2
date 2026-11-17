@@ -13,6 +13,7 @@ use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueModule;
 use App\Services\GuestTokenService;
+use App\Services\TenantConnectionResolver;
 use Illuminate\Support\Facades\RateLimiter;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
@@ -141,19 +142,42 @@ class GuestOrderTabCodeTest extends TestCase
             RateLimiter::hit('guest-tab-code:'.$session->id, 900);
         }
 
-        $this->placeOrder($session, ['tab_code' => '123'])->assertJsonValidationErrors('tab_code');
+        $this->placeOrder($session, ['tab_code' => '123'])
+            ->assertJsonValidationErrors('tab_code')
+            ->assertJsonPath('errors.tab_code.0', 'Too many tab code attempts. Please try again later.');
 
         $this->assertSame(0, Attendance::withoutGlobalScopes()->where('code', '123')->count());
         $this->placeOrder($session)->assertCreated();
     }
 
+    public function test_guest_attendance_uses_the_venue_operational_connection(): void
+    {
+        $this->venue->corporation()->update([
+            'is_dedicated' => true,
+            'self_connection' => 'operation_default_2',
+        ]);
+        app(TenantConnectionResolver::class)->invalidate($this->venue);
+        $session = $this->openGuestSession();
+
+        $attendance = app(GuestTokenService::class)->createAttendanceIfNeeded($session, '456');
+
+        $this->assertSame('operation_default_2', $attendance->getConnectionName());
+        $this->assertDatabaseHas('attendances', [
+            'id' => $attendance->id,
+            'venue_id' => $this->venue->id,
+            'code' => '456',
+        ], 'operation_default_2');
+    }
+
     public function test_failed_attach_does_not_leave_an_orphan_attendance(): void
     {
         $session = $this->openGuestSession();
+        $this->product->category->menu()->update(['active' => false]);
 
-        $this->placeOrder($session, ['tab_code' => '321', 'items' => [['product_id' => 'not-a-uuid', 'quantity' => 1]]])
-            ->assertJsonValidationErrors('items.0.product_id');
+        $this->placeOrder($session, ['tab_code' => '321'])
+            ->assertJsonValidationErrors('items');
 
         $this->assertSame(0, Attendance::withoutGlobalScopes()->where('code', '321')->count());
+        $this->assertNull($session->fresh()->attendance_id);
     }
 }

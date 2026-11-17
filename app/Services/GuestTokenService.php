@@ -8,7 +8,6 @@ use App\Models\Orders\Attendance;
 use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\ServiceLocation;
 use App\Models\Tenant\Venue;
-use App\Support\OperationalConnection;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 class GuestTokenService
 {
+    public function __construct(private readonly TenantConnectionResolver $tenantConnectionResolver) {}
+
     private const TAB_CODE_MAX_ATTEMPTS = 5;
 
     private const TAB_CODE_DECAY_SECONDS = 900;
@@ -132,6 +133,8 @@ class GuestTokenService
      */
     public function createAttendanceIfNeeded(GuestSession $session, ?string $tabCode = null): Attendance
     {
+        $connection = $this->resolveOperationalConnection($session);
+
         if ($session->attendance_id) {
             return $session->attendance()->withoutGlobalScopes()->first();
         }
@@ -142,9 +145,7 @@ class GuestTokenService
             $this->throttleTabCodeAttempts($session);
         }
 
-        // Attendance lives on the operational connection (GuestSession doesn't), so the transaction
-        // must target it explicitly; the session link is written inside so a failure rolls back the attendance.
-        return DB::connection(OperationalConnection::current())->transaction(function () use ($session, $code): Attendance {
+        return DB::connection($connection)->transaction(function () use ($session, $code): Attendance {
             $attendance = $code !== null
                 ? $this->attendanceForTabCode($session, $code)
                 : $this->openAttendance($session, null);
@@ -155,18 +156,27 @@ class GuestTokenService
         });
     }
 
+    public function resolveOperationalConnection(GuestSession $session): string
+    {
+        $venue = $session->venue()->with('corporation')->firstOrFail();
+        $connection = $this->tenantConnectionResolver->resolve($venue);
+
+        app()->instance('operational_connection', $connection);
+
+        return $connection;
+    }
+
     /**
      * Tab codes are short, so attaching to an existing tab is rate limited per session to block guessing.
      */
     private function throttleTabCodeAttempts(GuestSession $session): void
     {
         $key = 'guest-tab-code:'.$session->id;
+        $attempts = RateLimiter::increment($key, self::TAB_CODE_DECAY_SECONDS);
 
-        if (RateLimiter::tooManyAttempts($key, self::TAB_CODE_MAX_ATTEMPTS)) {
-            throw ValidationException::withMessages(['tab_code' => 'This tab card is already in use.']);
+        if ($attempts > self::TAB_CODE_MAX_ATTEMPTS) {
+            throw ValidationException::withMessages(['tab_code' => 'Too many tab code attempts. Please try again later.']);
         }
-
-        RateLimiter::hit($key, self::TAB_CODE_DECAY_SECONDS);
     }
 
     private function attendanceForTabCode(GuestSession $session, string $code): Attendance

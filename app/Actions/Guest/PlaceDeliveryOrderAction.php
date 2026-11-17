@@ -33,8 +33,6 @@ class PlaceDeliveryOrderAction
 
     private const PLACE_ATTEMPTS = 3;
 
-    private const CODE_UNIQUE_INDEX = 'delivery_orders_venue_id_code_unique';
-
     public function __construct(private readonly ResolveOrderItemsAction $resolveOrderItemsAction) {}
 
     /**
@@ -61,16 +59,22 @@ class PlaceDeliveryOrderAction
         $connection = OperationalConnection::current();
 
         for ($attempt = 1; ; $attempt++) {
+            $code = $this->generateDeliveryOrderCode($venue);
+
             try {
                 $order = DB::connection($connection)->transaction(fn (): Order => $this->persistOrder(
-                    $venue, $validated, $fulfillmentType, $deliveryFeeZone, $deliveryFee, $resolvedItems
+                    $venue, $validated, $fulfillmentType, $deliveryFeeZone, $deliveryFee, $resolvedItems, $code
                 ));
 
                 break;
             } catch (UniqueConstraintViolationException $e) {
-                // Concurrent order took the same code; the transaction rolled back, so draw again.
-                // Any other unique violation is a real error and must surface untouched.
-                if (! str_contains($e->getMessage(), self::CODE_UNIQUE_INDEX) || $attempt >= self::PLACE_ATTEMPTS) {
+                // Check the candidate itself instead of relying on driver-specific constraint names.
+                $codeIsTaken = DeliveryOrder::withoutGlobalScopes()
+                    ->where('venue_id', $venue->id)
+                    ->where('code', $code)
+                    ->exists();
+
+                if (! $codeIsTaken || $attempt >= self::PLACE_ATTEMPTS) {
                     throw $e;
                 }
             }
@@ -92,6 +96,7 @@ class PlaceDeliveryOrderAction
         ?DeliveryFeeZone $deliveryFeeZone,
         float $deliveryFee,
         array $resolvedItems,
+        int $code,
     ): Order {
         $customer = $this->createCustomer($venue, $validated['customer']);
 
@@ -101,7 +106,6 @@ class PlaceDeliveryOrderAction
 
         $attendanceChannel = $this->createOrRetrieveAttendanceChannel($venue, $fulfillmentType);
         $attendance = $this->createAttendance($venue, $attendanceChannel, $validated['customer']['name']);
-        $code = $this->generateDeliveryOrderCode($venue);
         $order = $this->createOrderWithItems($venue, $attendance, $resolvedItems, $code);
 
         $this->createDeliveryOrderWithPaymentMethods(
@@ -178,7 +182,7 @@ class PlaceDeliveryOrderAction
      * Random 6-digit code, unique among the venue's live (not yet released) codes.
      * The unique index on (venue_id, code) is the final guard against races.
      */
-    private function generateDeliveryOrderCode(Venue $venue): int
+    protected function generateDeliveryOrderCode(Venue $venue): int
     {
         for ($attempt = 1; $attempt <= self::CODE_PICK_ATTEMPTS; $attempt++) {
             $code = random_int(self::CODE_MIN, self::CODE_MAX);
