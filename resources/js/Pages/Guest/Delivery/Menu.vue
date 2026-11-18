@@ -89,7 +89,7 @@ function handleOrderPlaced(orderId) {
         return;
     }
 
-    window.location.href = route('orders.track', orderId);
+    window.location.href = route('orders.track', { order: orderId, token: props.token });
 }
 </script>
 

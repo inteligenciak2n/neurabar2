@@ -13,6 +13,8 @@ use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueModule;
 use App\Services\GuestTokenService;
+use App\Services\TenantConnectionResolver;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
@@ -130,5 +132,100 @@ class GuestOrderTabCodeTest extends TestCase
         $session = $this->openGuestSession();
 
         $this->placeOrder($session, ['tab_code' => 'a b;--'])->assertJsonValidationErrors('tab_code');
+    }
+
+    public function test_tab_code_attempts_are_throttled_per_session(): void
+    {
+        $session = $this->openGuestSession();
+
+        for ($i = 0; $i < 5; $i++) {
+            RateLimiter::hit('guest-tab-code:'.$session->id, 900);
+        }
+
+        $this->placeOrder($session, ['tab_code' => '123'])
+            ->assertJsonValidationErrors('tab_code')
+            ->assertJsonPath('errors.tab_code.0', 'Too many tab code attempts. Please try again later.');
+
+        $this->assertSame(0, Attendance::withoutGlobalScopes()->where('code', '123')->count());
+        $this->placeOrder($session)->assertCreated();
+    }
+
+    public function test_guest_attendance_uses_the_venue_operational_connection(): void
+    {
+        $this->venue->corporation()->update([
+            'is_dedicated' => true,
+            'self_connection' => 'operation_default_2',
+        ]);
+        app(TenantConnectionResolver::class)->invalidate($this->venue);
+        $session = $this->openGuestSession();
+
+        $attendance = app(GuestTokenService::class)->createAttendanceIfNeeded($session, '456');
+
+        $this->assertSame('operation_default_2', $attendance->getConnectionName());
+        $this->assertDatabaseHas('attendances', [
+            'id' => $attendance->id,
+            'venue_id' => $this->venue->id,
+            'code' => '456',
+        ], 'operation_default_2');
+    }
+
+    public function test_order_validation_uses_the_venue_operational_connection(): void
+    {
+        $this->venue->corporation()->update([
+            'is_dedicated' => true,
+            'self_connection' => 'operation_default_2',
+        ]);
+        $this->venue->unsetRelation('corporation');
+        app(TenantConnectionResolver::class)->invalidate($this->venue);
+        app()->instance('operational_connection', 'operation_default_2');
+
+        $menu = Menu::factory()->create(['venue_id' => $this->venue->id]);
+        $category = Category::factory()->create(['menu_id' => $menu->id]);
+        $this->product = Product::factory()->create([
+            'category_id' => $category->id,
+            'price' => 10,
+            'active' => true,
+        ]);
+        $session = $this->openGuestSession();
+
+        $response = $this->placeOrder($session)->assertCreated();
+
+        $this->assertDatabaseHas('orders', ['id' => $response->json('order_id')], 'operation_default_2');
+        $this->assertDatabaseMissing('orders', ['id' => $response->json('order_id')], 'operation_default_1');
+    }
+
+    public function test_cached_dedicated_connection_is_registered_on_cache_hits(): void
+    {
+        $connectionName = TenantConnectionResolver::dedicatedConnectionName((string) $this->venue->corporation_id);
+        $this->venue->corporation()->update([
+            'is_dedicated' => true,
+            'self_connection' => $connectionName,
+        ]);
+        $this->venue->unsetRelation('corporation');
+
+        $resolver = app(TenantConnectionResolver::class);
+        $resolver->invalidate($this->venue);
+
+        $this->assertSame($connectionName, $resolver->resolve($this->venue));
+        $this->assertArrayHasKey($connectionName, config('database.connections'));
+
+        $connections = config('database.connections');
+        unset($connections[$connectionName]);
+        config(['database.connections' => $connections]);
+
+        $this->assertSame($connectionName, $resolver->resolve($this->venue));
+        $this->assertSame('pgsql', config("database.connections.{$connectionName}.driver"));
+    }
+
+    public function test_failed_attach_does_not_leave_an_orphan_attendance(): void
+    {
+        $session = $this->openGuestSession();
+        $this->product->category->menu()->update(['active' => false]);
+
+        $this->placeOrder($session, ['tab_code' => '321'])
+            ->assertJsonValidationErrors('items');
+
+        $this->assertSame(0, Attendance::withoutGlobalScopes()->where('code', '321')->count());
+        $this->assertNull($session->fresh()->attendance_id);
     }
 }

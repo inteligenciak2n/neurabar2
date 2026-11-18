@@ -31,18 +31,15 @@ class TenantConnectionResolver
     public function resolve(Venue $venue): string
     {
         $cacheKey = self::CACHE_PREFIX.$venue->id;
-
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($venue): string {
-            $corporation = $venue->corporation;
-
-            $connectionName = $corporation->self_connection ?? 'operation_default_1';
-
-            if ($corporation->is_dedicated) {
-                $this->registerDedicatedConnection($connectionName);
-            }
-
-            return $connectionName;
+        $connectionName = Cache::remember($cacheKey, self::CACHE_TTL, function () use ($venue): string {
+            return $venue->corporation->self_connection ?? 'operation_default_1';
         });
+
+        if (str_starts_with($connectionName, 'operation_tenant_')) {
+            $this->registerDedicatedConnection($connectionName);
+        }
+
+        return $connectionName;
     }
 
     /**

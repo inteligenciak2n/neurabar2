@@ -78,6 +78,17 @@ class VenueSettingsTest extends TestCase
         $this->assertEquals(-46.6333, (float) $venue->longitude);
     }
 
+    public function test_updating_only_venue_flags_does_not_create_venue_settings(): void
+    {
+        $venue = Venue::factory()->create(['active' => true, 'require_tab' => false]);
+        $this->loginAs(UserRole::Owner, $venue);
+
+        $this->put(route('settings.general.update'), ['require_tab' => true])->assertRedirect();
+
+        $this->assertTrue($venue->fresh()->require_tab);
+        $this->assertDatabaseMissing('venue_settings', ['venue_id' => $venue->id]);
+    }
+
     public function test_service_fee_percent_cannot_exceed_100(): void
     {
         $venue = Venue::factory()->create(['active' => true]);

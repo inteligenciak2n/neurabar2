@@ -13,6 +13,7 @@ return new class extends Migration
         });
     }
 
+    /** Destructive: the original per-location types are not recoverable; every location comes back as "table". */
     public function down(): void
     {
         Schema::table('service_locations', function (Blueprint $table): void {
