@@ -10,6 +10,9 @@ use App\Http\Requests\Guest\StoreGuestOrderRequest;
 use App\Services\GuestTokenService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Throwable;
 
 class GuestOrderController extends Controller
 {
@@ -29,31 +32,49 @@ class GuestOrderController extends Controller
 
         abort_if($session === null, 403, 'No active session.');
 
-        $resolved = $resolveAttendance->execute($session, [
-            'attendance_id' => $request->validated('attendance_id'),
-            'waiter_defines' => $request->boolean('waiter_defines'),
-            'tab_code' => $request->validated('tab_code'),
-        ]);
+        $connection = $this->tokenService->resolveOperationalConnection($session);
+        $previousAttendanceId = $session->attendance_id;
+        $attachedAttendanceId = null;
 
-        if ($resolved['needs_choice']) {
-            return response()->json([
-                'needs_tab_choice' => true,
-                'message' => 'Which tab?',
-                'tabs' => $resolved['tabs'],
-            ], 409);
+        try {
+            return DB::connection($connection)->transaction(function () use ($session, $request, $action, $resolveAttendance, &$attachedAttendanceId): JsonResponse {
+                $resolved = $resolveAttendance->execute($session, [
+                    'attendance_id' => $request->validated('attendance_id'),
+                    'waiter_defines' => $request->boolean('waiter_defines'),
+                    'tab_code' => $request->validated('tab_code'),
+                ]);
+
+                if ($resolved['needs_choice']) {
+                    return response()->json([
+                        'needs_tab_choice' => true,
+                        'message' => 'Which tab?',
+                        'tabs' => $resolved['tabs'],
+                    ], 409);
+                }
+
+                $attendance = $resolved['attendance']?->loadMissing('tab');
+                $attachedAttendanceId = $attendance?->id;
+                $session->refresh();
+
+                $order = $action->execute($session, $request->validated());
+
+                return response()->json([
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'tab_code' => $attendance?->tabLabel() ?? $attendance?->code,
+                    'needs_tab_link' => $attendance?->needsTabLink() ?? false,
+                ], 201);
+            });
+        } catch (Throwable $exception) {
+            if ($previousAttendanceId === null && $attachedAttendanceId !== null) {
+                $session->newQuery()
+                    ->whereKey($session->getKey())
+                    ->where('attendance_id', $attachedAttendanceId)
+                    ->update(['attendance_id' => null]);
+            }
+
+            throw $exception;
         }
-
-        $session->refresh();
-
-        $order = $action->execute($session, $request->validated());
-        $attendance = $resolved['attendance']?->loadMissing('tab');
-
-        return response()->json([
-            'order_id' => $order->id,
-            'order_number' => $order->order_number,
-            'tab_code' => $attendance?->tabLabel() ?? $attendance?->code,
-            'needs_tab_link' => $attendance?->needsTabLink() ?? false,
-        ], 201);
     }
 
     public function index(string $token, Request $request): JsonResponse
@@ -65,6 +86,11 @@ class GuestOrderController extends Controller
         $session = $this->tokenService->resolveSession($request, $venue);
 
         abort_if($session === null, 403, 'No active session.');
+
+        if ($session->hasPin()) {
+            $request->validate(['pin' => ['required', 'string', 'digits:4']]);
+            abort_if(! Hash::check($request->input('pin'), $session->pin), 403, 'Invalid PIN.');
+        }
 
         $attendance = $session->attendance()->withoutGlobalScopes()
             ->with(['orders.items.product:id,name', 'orders.items.variation:id,name', 'orders.items.preparationStatus:id,name,color,show_to_customer'])

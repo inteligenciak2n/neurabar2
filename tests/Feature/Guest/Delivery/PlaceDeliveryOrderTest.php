@@ -2,12 +2,15 @@
 
 namespace Tests\Feature\Guest\Delivery;
 
+use App\Actions\Guest\PlaceDeliveryOrderAction;
+use App\Actions\Orders\ResolveOrderItemsAction;
 use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
 use App\Models\Menu\Category;
 use App\Models\Menu\Menu;
 use App\Models\Menu\Product;
 use App\Models\Orders\Attendance;
+use App\Models\Orders\DeliveryOrder;
 use App\Models\Settings\DeliveryFeeZone;
 use App\Models\Settings\VenueSettings;
 use App\Models\Tenant\Corporation;
@@ -16,6 +19,8 @@ use App\Models\Tenant\Customer;
 use App\Models\Tenant\Venue;
 use App\Models\Tenant\VenueModule;
 use App\Services\GuestTokenService;
+use App\Services\TenantConnectionResolver;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
@@ -205,6 +210,122 @@ class PlaceDeliveryOrderTest extends TestCase
         });
 
         $this->assertCount(4, $codes->unique());
+    }
+
+    public function test_it_retries_when_a_delivery_code_is_taken_concurrently(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        VenueSettings::factory()->create([
+            'venue_id' => $venue->id,
+            'service_fee_percent' => 0,
+            'accepted_delivery_payment_methods' => ['cash'],
+        ]);
+        $product = $this->makeDeliverableProduct($venue);
+        $existingAttendance = Attendance::factory()->create(['venue_id' => $venue->id]);
+        DeliveryOrder::factory()->create([
+            'venue_id' => $venue->id,
+            'attendance_id' => $existingAttendance->id,
+            'code' => 123456,
+            'code_expires_at' => now()->addHour(),
+        ]);
+        $action = new class(app(ResolveOrderItemsAction::class), app(TenantConnectionResolver::class)) extends PlaceDeliveryOrderAction
+        {
+            private int $attempt = 0;
+
+            protected function generateDeliveryOrderCode(Venue $venue): int
+            {
+                return [123456, 123457][$this->attempt++];
+            }
+        };
+
+        $order = $action->execute($venue, $this->basePayload($product));
+
+        $this->assertSame(123457, $order->order_number);
+        $this->assertDatabaseHas('delivery_orders', [
+            'venue_id' => $venue->id,
+            'code' => 123457,
+        ]);
+    }
+
+    public function test_it_does_not_retry_for_unique_violations_outside_the_delivery_order_insert(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        VenueSettings::factory()->create([
+            'venue_id' => $venue->id,
+            'service_fee_percent' => 0,
+            'accepted_delivery_payment_methods' => ['cash'],
+        ]);
+        $product = $this->makeDeliverableProduct($venue);
+        $existingAttendance = Attendance::factory()->create(['venue_id' => $venue->id]);
+        DeliveryOrder::factory()->create([
+            'venue_id' => $venue->id,
+            'attendance_id' => $existingAttendance->id,
+            'code' => 123456,
+            'code_expires_at' => now()->addHour(),
+        ]);
+        $action = new class(app(ResolveOrderItemsAction::class), app(TenantConnectionResolver::class)) extends PlaceDeliveryOrderAction
+        {
+            public int $codeGenerationAttempts = 0;
+
+            protected function generateDeliveryOrderCode(Venue $venue): int
+            {
+                $this->codeGenerationAttempts++;
+
+                return 123456;
+            }
+        };
+
+        Customer::creating(function (Customer $customer): void {
+            if ($customer->phone !== '11999998888') {
+                return;
+            }
+
+            Customer::withoutEvents(fn () => Customer::create([
+                'corporation_id' => $customer->corporation_id,
+                'name' => $customer->name,
+                'phone' => $customer->phone,
+            ]));
+        });
+
+        try {
+            $action->execute($venue, $this->basePayload($product));
+            $this->fail('A customer unique constraint violation should be rethrown.');
+        } catch (UniqueConstraintViolationException) {
+            $this->assertSame(1, $action->codeGenerationAttempts);
+        }
+    }
+
+    public function test_guest_delivery_order_uses_the_venue_operational_connection(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $venue->corporation()->update([
+            'is_dedicated' => true,
+            'self_connection' => 'operation_default_2',
+        ]);
+        $venue->unsetRelation('corporation');
+        app(TenantConnectionResolver::class)->invalidate($venue);
+        app()->instance('operational_connection', 'operation_default_2');
+
+        $this->activateDelivery($venue);
+        VenueSettings::factory()->create([
+            'venue_id' => $venue->id,
+            'service_fee_percent' => 0,
+            'accepted_delivery_payment_methods' => ['cash'],
+        ]);
+        $product = $this->makeDeliverableProduct($venue);
+        $token = $this->makeToken($venue);
+
+        $response = $this->postJson("/delivery/{$token}/orders", $this->basePayload($product))
+            ->assertCreated();
+
+        $this->assertDatabaseHas('delivery_orders', [
+            'venue_id' => $venue->id,
+            'code' => $response->json('code'),
+        ], 'operation_default_2');
+        $this->assertDatabaseMissing('delivery_orders', [
+            'venue_id' => $venue->id,
+            'code' => $response->json('code'),
+        ], 'operation_default_1');
     }
 
     public function test_guest_can_place_a_delivery_order_within_a_fee_zone(): void

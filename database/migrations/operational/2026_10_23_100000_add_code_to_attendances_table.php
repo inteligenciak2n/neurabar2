@@ -13,9 +13,12 @@ return new class extends Migration
         });
 
         // A tab card returns to the pool once its attendance closes, so uniqueness only binds open ones.
-        Schema::getConnection()->statement(
-            "CREATE UNIQUE INDEX attendances_open_code_unique ON attendances (venue_id, code) WHERE status = 'open' AND code IS NOT NULL"
-        );
+        // Partial indexes are only available on PostgreSQL/SQLite; the project's operational databases are PostgreSQL.
+        if (in_array(Schema::getConnection()->getDriverName(), ['pgsql', 'sqlite'], true)) {
+            Schema::getConnection()->statement(
+                "CREATE UNIQUE INDEX attendances_open_code_unique ON attendances (venue_id, code) WHERE status = 'open' AND code IS NOT NULL"
+            );
+        }
     }
 
     public function down(): void

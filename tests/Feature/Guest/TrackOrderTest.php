@@ -9,6 +9,8 @@ use App\Models\Orders\OrderItem;
 use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\PreparationStatus;
 use App\Models\Tenant\Venue;
+use App\Services\GuestTokenService;
+use App\Services\TenantConnectionResolver;
 use Tests\RefreshAllDatabases;
 use Tests\TestCase;
 
@@ -23,6 +25,48 @@ class TrackOrderTest extends TestCase
         $order = Order::factory()->create(['attendance_id' => $attendance->id]);
 
         $this->get(route('orders.track', $order->id))->assertOk();
+    }
+
+    public function test_delivery_order_tracking_uses_the_venue_operational_connection(): void
+    {
+        $venue = Venue::factory()->create();
+        $venue->corporation()->update([
+            'is_dedicated' => true,
+            'self_connection' => 'operation_default_2',
+        ]);
+        $venue->unsetRelation('corporation');
+        app(TenantConnectionResolver::class)->invalidate($venue);
+        app()->instance('operational_connection', 'operation_default_2');
+
+        $attendance = Attendance::factory()->create(['venue_id' => $venue->id]);
+        $order = Order::factory()->create(['attendance_id' => $attendance->id]);
+        $token = app(GuestTokenService::class)->encodeVenueOnly($venue);
+        app()->instance('operational_connection', 'operation_default_1');
+
+        $response = $this->get(route('orders.track', [
+            'order' => $order->id,
+            'token' => $token,
+        ]));
+
+        $response->assertOk();
+        $this->assertSame(
+            $order->id,
+            $response->original->getData()['page']['props']['order']['id']
+        );
+    }
+
+    public function test_delivery_tracking_token_cannot_access_an_order_from_another_venue(): void
+    {
+        $venue = Venue::factory()->create();
+        $otherVenue = Venue::factory()->create();
+        $attendance = Attendance::factory()->create(['venue_id' => $otherVenue->id]);
+        $order = Order::factory()->create(['attendance_id' => $attendance->id]);
+        $token = app(GuestTokenService::class)->encodeVenueOnly($venue);
+
+        $this->get(route('orders.track', [
+            'order' => $order->id,
+            'token' => $token,
+        ]))->assertNotFound();
     }
 
     public function test_tracking_only_shows_items_with_show_to_customer_status(): void

@@ -37,7 +37,7 @@ class PlaceGuestOrderAction
 
         $resolvedItems = $this->resolveOrderItemsAction->execute($venue, $validated['items']);
 
-        $order = DB::transaction(function () use ($attendance, $venue, $resolvedItems): Order {
+        $order = DB::connection($attendance->getConnectionName())->transaction(function () use ($attendance, $venue, $resolvedItems): Order {
             $orderNumber = Order::where('attendance_id', $attendance->id)->max('order_number') + 1;
 
             $order = Order::create([
