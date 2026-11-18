@@ -15,5 +15,15 @@
     "Quantity:": "Quantity:",
     "Serves 1 person": "Serves 1 person",
     "Serves :count people": "Serves :count people",
-    "Send order": "Send order"
+    "Add to order": "Add to order",
+    "Change tab": "Change tab",
+    "Cancel item": "Cancel item",
+    "No free tabs.": "No free tabs.",
+    "New tab": "New tab",
+    "Initial tab:": "Initial tab:",
+    "Change to:": "Change to:",
+    "Deliver item where:": "Deliver item where:",
+    "Deliver item where: :locations, to choose": "Deliver item where: :locations, to choose",
+    "and": "and",
+    "another table": "another table"
 }

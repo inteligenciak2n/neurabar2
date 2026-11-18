@@ -83,10 +83,10 @@ class TranslationServiceTest extends TestCase
         $this->assertSame([
             'Dashboard' => 'Custom dashboard',
             'Welcome' => 'Welcome',
-        ], $service->getTranslateData('Dashboard'));
+        ], $service->getTranslateData('Dashboard', 'en'));
         $this->assertSame([
             'Settings' => 'Settings',
-        ], $service->getTranslateData('AppLayout'));
+        ], $service->getTranslateData('AppLayout', 'en'));
     }
 
     public function test_it_rejects_a_translation_path_outside_the_locale_directory(): void

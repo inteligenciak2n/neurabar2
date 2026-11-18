@@ -76,6 +76,10 @@ class MenuIndexHeaderTest extends TestCase
         $this->assertStringNotContainsString('category.products.slice(0, 5)', $page);
         $this->assertStringContainsString('mt-4 rounded-lg border-4 border-[#5c9a6c] p-4', $page);
         $this->assertStringContainsString('v-if="categories.length && !showForm" class="divide-y divide-muted"', $page);
+        $this->assertStringContainsString('v-model="form.color"', $page);
+        $this->assertStringContainsString('type="color"', $page);
+        $this->assertStringContainsString("__('Color')", $page);
+        $this->assertStringContainsString('categoryNameStyle(category.color)', $page);
     }
 
     public function test_overview_products_are_chunked_three_per_column(): void
@@ -109,5 +113,6 @@ class MenuIndexHeaderTest extends TestCase
         $this->assertSame('Excluir', $translations['Delete']);
         $this->assertSame('Categoria', $translations['Category']);
         $this->assertSame('Adicionar Categoria', $translations['Add Category']);
+        $this->assertSame('Cor', $translations['Color']);
     }
 }

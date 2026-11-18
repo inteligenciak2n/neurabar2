@@ -57,19 +57,26 @@ const showForm = ref(false);
 const editingCategory = ref(null);
 const categoryToDelete = ref(null);
 
+const DEFAULT_CATEGORY_COLOR = '#293b4f';
+
 const form = useForm({
     name: '',
+    color: DEFAULT_CATEGORY_COLOR,
 });
+
+const categoryNameStyle = (color) => (color ? { color } : undefined);
 
 const openCreate = () => {
     editingCategory.value = null;
     form.reset();
+    form.color = DEFAULT_CATEGORY_COLOR;
     showForm.value = true;
 };
 
 const openEdit = (category) => {
     editingCategory.value = category;
     form.name = category.name;
+    form.color = category.color ?? DEFAULT_CATEGORY_COLOR;
     showForm.value = true;
 };
 
@@ -77,6 +84,7 @@ const closeForm = () => {
     showForm.value = false;
     editingCategory.value = null;
     form.reset();
+    form.color = DEFAULT_CATEGORY_COLOR;
 };
 
 const submit = () => {
@@ -193,7 +201,11 @@ const productsInColumns = (products, size = PRODUCTS_PER_COLUMN) => {
                 >
                     <div class="flex flex-col gap-3 md:flex-row md:items-stretch">
                         <div class="flex w-full shrink-0 flex-col justify-center rounded-lg bg-warm-gold/20 px-4 py-3 dark:bg-warm-gold/10 md:w-52">
-                            <h3 class="font-heading text-sm font-semibold leading-tight text-ocean-deep dark:text-gray-100">{{ category.name }}</h3>
+                            <h3
+                                class="font-heading text-sm font-semibold leading-tight"
+                                :class="category.color ? '' : 'text-ocean-deep dark:text-gray-100'"
+                                :style="categoryNameStyle(category.color)"
+                            >{{ category.name }}</h3>
                             <p class="mt-1 text-xs text-muted-foreground">{{ category.products?.length ?? 0 }} {{ __('products') }}</p>
                         </div>
                         <div class="flex min-w-0 flex-1 items-start gap-3">
@@ -250,8 +262,23 @@ const productsInColumns = (products, size = PRODUCTS_PER_COLUMN) => {
                             v-model="form.name"
                             type="text"
                             class="w-full rounded-md border border-border dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-100"
+                            :style="categoryNameStyle(form.color)"
                         />
                         <p v-if="form.errors.name" class="mt-1 text-xs text-destructive">{{ form.errors.name }}</p>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-ocean-deep dark:text-gray-100">{{ __('Color') }}</label>
+                        <div class="flex items-center gap-3">
+                            <input
+                                v-model="form.color"
+                                type="color"
+                                class="h-9 w-14 cursor-pointer rounded border border-border dark:border-gray-700 p-1"
+                            />
+                            <span class="font-heading text-sm font-semibold" :style="categoryNameStyle(form.color)">
+                                {{ form.name || __('New Category') }}
+                            </span>
+                        </div>
+                        <p v-if="form.errors.color" class="mt-1 text-xs text-destructive">{{ form.errors.color }}</p>
                     </div>
                     <div class="flex gap-2 pt-1">
                         <AppButton type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>

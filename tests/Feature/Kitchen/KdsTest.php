@@ -55,6 +55,9 @@ class KdsTest extends TestCase
                 ->has('stations')
                 ->has('preparationStatuses')
                 ->has('openItems')
+                ->has('waiterCalls')
+                ->has('availableTabs')
+                ->has('openTabbedAttendances')
         );
     }
 

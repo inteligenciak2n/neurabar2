@@ -227,7 +227,8 @@ function formatCurrency(value) {
                     {{ __('The sum of payment methods must equal the grand total.') }} ({{ formatCurrency(grandTotal) }})
                 </p>
 
-                <p v-if="form.errors.methods" class="mt-2 text-xs text-destructive">{{ form.errors.methods }}</p>
+                <p v-if="form.errors.methods" class="mt-2 text-xs text-destructive">{{ __(form.errors.methods) }}</p>
+                <p v-if="form.errors.attendance" class="mt-2 text-xs text-destructive">{{ __(form.errors.attendance) }}</p>
             </AppCard>
 
             <!-- Submit -->

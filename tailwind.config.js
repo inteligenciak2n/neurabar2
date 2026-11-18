@@ -65,9 +65,14 @@ export default {
                     '0%': { transform: 'translateX(-120%)' },
                     '100%': { transform: 'translateX(220%)' },
                 },
+                nudge: {
+                    '0%, 100%': { transform: 'translateY(0)' },
+                    '50%': { transform: 'translateY(5px)' },
+                },
             },
             animation: {
                 shimmer: 'shimmer 1s ease-in-out',
+                nudge: 'nudge 1.6s ease-in-out infinite',
             },
         },
     },

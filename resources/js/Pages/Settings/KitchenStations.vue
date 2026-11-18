@@ -116,15 +116,15 @@ const deleteStation = () => {
                     <div class="flex items-center gap-3">
                         <span class="font-body text-sm font-medium text-ocean-deep dark:text-gray-100">{{ station.name }}</span>
                         <span
-                            :class="station.active ? 'bg-accent/10 text-accent' : 'bg-muted text-muted-foreground'"
+                            :class="station.active || station.code ? 'bg-accent/10 text-accent' : 'bg-muted text-muted-foreground'"
                             class="rounded-full px-2 py-0.5 text-xs font-semibold"
                         >
-                            {{ station.active ? __('Active') : __('Inactive') }}
+                            {{ station.code ? __('Always active') : (station.active ? __('Active') : __('Inactive')) }}
                         </span>
                     </div>
                     <div class="flex gap-2">
                         <AppButton size="sm" variant="secondary" data-enable-editing @click="openEdit(station)">{{ __('Edit') }}</AppButton>
-                        <AppButton size="sm" variant="destructive" @click="confirmDelete(station)">{{ __('Delete') }}</AppButton>
+                        <AppButton v-if="!station.code" size="sm" variant="destructive" @click="confirmDelete(station)">{{ __('Delete') }}</AppButton>
                     </div>
                 </div>
             </div>
@@ -154,10 +154,16 @@ const deleteStation = () => {
                         />
                     </div>
 
-                    <label class="flex cursor-pointer items-center gap-3">
-                        <input v-model="form.active" type="checkbox" class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary focus:ring-primary" />
-                        <span class="text-sm text-ocean-deep dark:text-gray-100">{{ __('Active') }}</span>
+                    <label class="flex items-center gap-3" :class="editingStation?.code ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'">
+                        <input
+                            v-model="form.active"
+                            type="checkbox"
+                            class="h-4 w-4 rounded border-border dark:border-gray-700 text-primary focus:ring-primary"
+                            :disabled="Boolean(editingStation?.code)"
+                        />
+                        <span class="text-sm text-ocean-deep dark:text-gray-100">{{ editingStation?.code ? __('Always active') : __('Active') }}</span>
                     </label>
+                    <p v-if="editingStation?.code" class="text-xs text-muted-foreground">{{ __('This station is always active') }}</p>
 
                     <div class="flex gap-2 pt-1">
                         <AppButton v-if="!editingStation" type="submit" :loading="form.processing">{{ __('Save') }}</AppButton>

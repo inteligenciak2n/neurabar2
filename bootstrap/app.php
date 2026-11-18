@@ -12,6 +12,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\TokenMismatchException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -47,6 +48,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'platform_profile' => RequirePlatformProfile::class,
             'platform_role' => RequirePlatformRole::class,
         ]);
+
+        // Operational models resolve their DB connection from the tenant
+        // container binding. Route-model binding must run after that.
+        $middleware->prependToPriorityList(
+            SubstituteBindings::class,
+            SetVenueContext::class,
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Sem isso o Laravel devolve os dados do cartão para a sessão (old input)

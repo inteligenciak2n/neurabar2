@@ -93,7 +93,7 @@ onUnmounted(() => {
                 <!-- Quick actions -->
                 <AppCard :title="__('Quick Actions')">
                     <div class="flex flex-col gap-2">
-                        <Link :href="route('attendances.index')">
+                        <Link :href="route('attendances.create')">
                             <AppButton variant="primary" class="w-full">{{ __('New Attendance') }}</AppButton>
                         </Link>
                         <Link :href="route('kitchen.kds')">
@@ -133,7 +133,7 @@ onUnmounted(() => {
                     :title="__('No open attendances')"
                     :description="__('Open a new attendance to start taking orders.')"
                     :action-label="__('New Attendance')"
-                    @action="router.visit(route('attendances.index'))"
+                    @action="router.visit(route('attendances.create'))"
                 />
 
                 <div v-else class="overflow-x-auto">

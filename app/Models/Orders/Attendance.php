@@ -8,6 +8,7 @@ use App\Models\Concerns\HasOperationalConnection;
 use App\Models\Payment\Payment;
 use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\ServiceLocation;
+use App\Models\Settings\Tab;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -29,7 +30,9 @@ class Attendance extends Model
         'venue_id',
         'service_location_id',
         'attendance_channel_id',
+        'tab_id',
         'customer_identifier',
+        'venue_customer_id',
         'code',
         'status',
         'party_size',
@@ -66,9 +69,24 @@ class Attendance extends Model
         return $this->belongsTo(AttendanceChannel::class);
     }
 
+    public function tab(): BelongsTo
+    {
+        return $this->belongsTo(Tab::class);
+    }
+
     public function serviceLocation(): BelongsTo
     {
         return $this->belongsTo(ServiceLocation::class);
+    }
+
+    public function venueCustomer(): BelongsTo
+    {
+        return $this->belongsTo(VenueCustomer::class);
+    }
+
+    public function deliveryAddress(): HasOne
+    {
+        return $this->hasOne(AttendanceDeliveryAddress::class);
     }
 
     public function createdBy(): BelongsTo
@@ -104,5 +122,31 @@ class Attendance extends Model
     public function scopeClosed(Builder $query): Builder
     {
         return $query->where('status', AttendanceStatus::Closed);
+    }
+
+    public function hasTab(): bool
+    {
+        return $this->tab_id !== null || filled($this->code);
+    }
+
+    public function needsTabLink(): bool
+    {
+        return ! $this->hasTab();
+    }
+
+    public function tabLabel(): ?string
+    {
+        $code = $this->tab?->code ?? $this->code;
+
+        return filled($code) ? (string) $code : null;
+    }
+
+    public function scopeNeedingTabLink(Builder $query): Builder
+    {
+        return $query
+            ->whereNull('tab_id')
+            ->where(function (Builder $codeQuery): void {
+                $codeQuery->whereNull('code')->orWhere('code', '');
+            });
     }
 }

@@ -6,6 +6,7 @@ use App\Enums\AttendanceStatus;
 use App\Http\Requests\Orders\StoreAttendanceRequest;
 use App\Models\Orders\Attendance;
 use App\Models\Settings\AttendanceChannel;
+use App\Models\Settings\Tab;
 use App\Models\Tenant\Venue;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Validation\ValidationException;
@@ -24,10 +25,13 @@ class OpenAttendanceAction
             ]);
         }
 
+        $tabId = $this->resolvedTabId($channel, $data['tab_id'] ?? null);
+
         try {
             return Attendance::create([
                 'venue_id' => $venue->id,
                 'attendance_channel_id' => $data['attendance_channel_id'],
+                'tab_id' => $tabId,
                 'customer_identifier' => $data['customer_identifier'] ?? null,
                 'code' => $data['code'] ?? null,
                 'service_location_id' => $data['service_location_id'] ?? null,
@@ -39,5 +43,42 @@ class OpenAttendanceAction
         } catch (UniqueConstraintViolationException) {
             throw ValidationException::withMessages(['code' => 'This tab card is already in use.']);
         }
+    }
+
+    private function resolvedTabId(?AttendanceChannel $channel, ?string $tabId): ?string
+    {
+        if (! $channel?->requires_tab) {
+            return null;
+        }
+
+        if ($tabId === null || $tabId === '') {
+            throw ValidationException::withMessages([
+                'tab_id' => 'A tab is required for this channel.',
+            ]);
+        }
+
+        $tab = Tab::query()
+            ->whereKey($tabId)
+            ->where('active', true)
+            ->first();
+
+        if ($tab === null) {
+            throw ValidationException::withMessages([
+                'tab_id' => 'This tab is not available.',
+            ]);
+        }
+
+        $inUse = Attendance::query()
+            ->open()
+            ->where('tab_id', $tab->id)
+            ->exists();
+
+        if ($inUse) {
+            throw ValidationException::withMessages([
+                'tab_id' => 'This tab is already in use.',
+            ]);
+        }
+
+        return $tab->id;
     }
 }

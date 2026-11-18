@@ -22,6 +22,8 @@ class CloseAttendanceAction
             ]);
         }
 
+        $this->assertTableHasNoUnlinkedItems($attendance);
+
         $attendance->update([
             'status' => AttendanceStatus::Closed,
             'closed_at' => now(),
@@ -30,5 +32,26 @@ class CloseAttendanceAction
         ]);
 
         return $attendance->fresh();
+    }
+
+    public function assertTableHasNoUnlinkedItems(Attendance $attendance): void
+    {
+        if ($attendance->service_location_id === null) {
+            return;
+        }
+
+        $hasUnlinkedItems = Attendance::query()
+            ->open()
+            ->where('venue_id', $attendance->venue_id)
+            ->where('service_location_id', $attendance->service_location_id)
+            ->needingTabLink()
+            ->whereHas('orders.items')
+            ->exists();
+
+        if ($hasUnlinkedItems) {
+            throw ValidationException::withMessages([
+                'attendance' => 'Link a tab before closing this table.',
+            ]);
+        }
     }
 }

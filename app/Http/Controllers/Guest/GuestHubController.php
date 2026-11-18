@@ -2,43 +2,31 @@
 
 namespace App\Http\Controllers\Guest;
 
+use App\Actions\Guest\CancelGuestServiceRequestAction;
 use App\Actions\Orders\CreateServiceRequestAction;
 use App\Enums\ModuleCode;
 use App\Enums\ServiceRequestType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Guest\StoreGuestSignalRequest;
 use App\Models\Orders\Attendance;
+use App\Models\Orders\ServiceRequest;
 use App\Models\Settings\ServiceLocation;
 use App\Models\Tenant\Venue;
 use App\Services\GeolocationService;
 use App\Services\GuestTokenService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class GuestHubController extends Controller
 {
     public function __construct(private readonly GuestTokenService $tokenService) {}
 
-    public function show(string $token, Request $request): Response
+    public function show(string $token): RedirectResponse
     {
-        ['venue' => $venue, 'serviceLocation' => $serviceLocation, 'attendanceChannel' => $attendanceChannel] = $this->tokenService->decode($token);
+        $this->tokenService->decode($token);
 
-        $session = $this->tokenService->resolveSession($request, $venue);
-        $activeModules = $venue->activeModules();
-
-        return Inertia::render('Guest/Hub', [
-            'token' => $token,
-            'venue' => $venue->only('id', 'name', 'logo_url', 'require_geolocation'),
-            'serviceLocation' => $serviceLocation?->only('id', 'name'),
-            'attendanceChannel' => $attendanceChannel?->only('id', 'name'),
-            'hasSession' => $session !== null && $session->hasPin(),
-            'geolocationVerified' => $session?->geolocation_verified ?? false,
-            'hasSelfOrder' => in_array(ModuleCode::SelfOrder->value, $activeModules, true),
-            'hasDirectWaiter' => in_array(ModuleCode::DirectWaiter->value, $activeModules, true),
-            'hasTaker' => in_array(ModuleCode::Taker->value, $activeModules, true),
-        ]);
+        return redirect()->route('guest.menu', ['token' => $token]);
     }
 
     public function signal(string $token, StoreGuestSignalRequest $request, CreateServiceRequestAction $action): JsonResponse
@@ -53,13 +41,47 @@ class GuestHubController extends Controller
 
         $validated = $request->validated();
 
-        $action->execute(
+        $serviceRequest = $action->execute(
             $venue,
             $serviceLocation,
             $this->resolveOpenAttendance($venue, $serviceLocation),
             ServiceRequestType::Message,
             $validated['message'] ?? null,
         );
+
+        return response()->json([
+            'ok' => true,
+            'id' => $serviceRequest->id,
+            'message' => $serviceRequest->message,
+            'created_at' => $serviceRequest->created_at?->toIso8601String(),
+        ]);
+    }
+
+    public function cancelSignal(
+        string $token,
+        string $serviceRequest,
+        Request $request,
+        CancelGuestServiceRequestAction $action
+    ): JsonResponse {
+        ['venue' => $venue, 'serviceLocation' => $serviceLocation] = $this->tokenService->decode($token);
+
+        abort_unless(in_array(ModuleCode::DirectWaiter->value, $venue->activeModules(), true), 404);
+
+        $session = $this->tokenService->resolveSession($request, $venue);
+
+        abort_if($session === null, 403, 'No active session.');
+
+        $openRequest = ServiceRequest::withoutGlobalScopes()
+            ->open()
+            ->ofType(ServiceRequestType::Message)
+            ->where('id', $serviceRequest)
+            ->where('venue_id', $venue->id)
+            ->where('service_location_id', $serviceLocation?->id)
+            ->first();
+
+        abort_if($openRequest === null, 404);
+
+        $action->execute($openRequest);
 
         return response()->json(['ok' => true]);
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Guest;
 
 use App\Actions\Guest\PlaceGuestOrderAction;
+use App\Actions\Guest\ResolveGuestTableOrderAttendanceAction;
 use App\Enums\ModuleCode;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Guest\StoreGuestOrderRequest;
@@ -17,24 +18,42 @@ class GuestOrderController extends Controller
 {
     public function __construct(private readonly GuestTokenService $tokenService) {}
 
-    public function store(string $token, StoreGuestOrderRequest $request, PlaceGuestOrderAction $action): JsonResponse
-    {
+    public function store(
+        string $token,
+        StoreGuestOrderRequest $request,
+        PlaceGuestOrderAction $action,
+        ResolveGuestTableOrderAttendanceAction $resolveAttendance,
+    ): JsonResponse {
         ['venue' => $venue] = $this->tokenService->decode($token);
 
         abort_unless(in_array(ModuleCode::SelfOrder->value, $venue->activeModules(), true), 404);
 
         $session = $this->tokenService->resolveSession($request, $venue);
 
-        abort_if($session === null || ! $session->hasPin(), 403, 'No active session.');
+        abort_if($session === null, 403, 'No active session.');
 
         $connection = $this->tokenService->resolveOperationalConnection($session);
         $previousAttendanceId = $session->attendance_id;
         $attachedAttendanceId = null;
 
         try {
-            return DB::connection($connection)->transaction(function () use ($session, $request, $action, &$attachedAttendanceId): JsonResponse {
-                $attendance = $this->tokenService->createAttendanceIfNeeded($session, $request->validated('tab_code'));
-                $attachedAttendanceId = $attendance->id;
+            return DB::connection($connection)->transaction(function () use ($session, $request, $action, $resolveAttendance, &$attachedAttendanceId): JsonResponse {
+                $resolved = $resolveAttendance->execute($session, [
+                    'attendance_id' => $request->validated('attendance_id'),
+                    'waiter_defines' => $request->boolean('waiter_defines'),
+                    'tab_code' => $request->validated('tab_code'),
+                ]);
+
+                if ($resolved['needs_choice']) {
+                    return response()->json([
+                        'needs_tab_choice' => true,
+                        'message' => 'Which tab?',
+                        'tabs' => $resolved['tabs'],
+                    ], 409);
+                }
+
+                $attendance = $resolved['attendance']?->loadMissing('tab');
+                $attachedAttendanceId = $attendance?->id;
                 $session->refresh();
 
                 $order = $action->execute($session, $request->validated());
@@ -42,7 +61,8 @@ class GuestOrderController extends Controller
                 return response()->json([
                     'order_id' => $order->id,
                     'order_number' => $order->order_number,
-                    'tab_code' => $attendance->code,
+                    'tab_code' => $attendance?->tabLabel() ?? $attendance?->code,
+                    'needs_tab_link' => $attendance?->needsTabLink() ?? false,
                 ], 201);
             });
         } catch (Throwable $exception) {
@@ -59,8 +79,6 @@ class GuestOrderController extends Controller
 
     public function index(string $token, Request $request): JsonResponse
     {
-        $request->validate(['pin' => ['required', 'string', 'digits:4']]);
-
         ['venue' => $venue] = $this->tokenService->decode($token);
 
         abort_unless(in_array(ModuleCode::SelfOrder->value, $venue->activeModules(), true), 404);
@@ -68,7 +86,11 @@ class GuestOrderController extends Controller
         $session = $this->tokenService->resolveSession($request, $venue);
 
         abort_if($session === null, 403, 'No active session.');
-        abort_if(! Hash::check($request->input('pin'), $session->pin), 403, 'Invalid PIN.');
+
+        if ($session->hasPin()) {
+            $request->validate(['pin' => ['required', 'string', 'digits:4']]);
+            abort_if(! Hash::check($request->input('pin'), $session->pin), 403, 'Invalid PIN.');
+        }
 
         $attendance = $session->attendance()->withoutGlobalScopes()
             ->with(['orders.items.product:id,name', 'orders.items.variation:id,name', 'orders.items.preparationStatus:id,name,color,show_to_customer'])

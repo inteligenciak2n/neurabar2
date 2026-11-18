@@ -17,9 +17,9 @@ class SettingsSectionHeadersTest extends TestCase
 
         $pages = [
             'resources/js/Pages/Settings/AttendanceChannels.vue' => 'Choose how the customer is served',
+            'resources/js/Pages/Settings/Tabs.vue' => 'All channels that require a tab share this list.',
             'resources/js/Pages/Settings/KitchenStations.vue' => 'Manage the prep stations',
             'resources/js/Pages/Settings/PreparationStatuses.vue' => 'Define the stages of preparation',
-            'resources/js/Pages/Settings/ServiceLocations.vue' => 'Tables, counters and areas',
             'resources/js/Pages/Settings/Users.vue' => 'Staff accounts for this venue',
             'resources/js/Pages/Settings/General.vue' => 'Cover charge and service fee',
             'resources/js/Pages/Settings/Venue.vue' => 'Name, address and contact',

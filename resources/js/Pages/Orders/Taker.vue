@@ -15,6 +15,7 @@ const props = defineProps({
 
 // Cart item: { key, product, variationId, variation, quantity, notes, modifiers: [{modifier_option_id}], comboId }
 const cart = ref([]);
+const cartOpen = ref(false);
 const selectedCategoryId = ref(props.categories?.[0]?.id ?? null);
 const activeTab = ref('menu'); // 'menu' | 'combos'
 const showConfirm = ref(false);
@@ -232,13 +233,13 @@ const placeOrder = () => {
                 <Link :href="route('attendances.show', attendance.id)" class="text-sm font-medium text-primary hover:underline">
                     ← {{ attendance.customer_identifier ?? attendance.channel }}
                 </Link>
-                <h1 class="font-heading text-2xl font-bold text-ocean-deep dark:text-gray-100">{{ __('Take Order') }}</h1>
+                <h1 class="font-heading text-lg font-bold text-ocean-deep sm:text-2xl dark:text-gray-100">{{ __('Take Order') }}</h1>
             </div>
         </template>
 
-        <div class="flex h-[calc(100vh-10rem)] gap-4 overflow-hidden">
+        <div class="flex flex-col gap-4 pb-28 lg:h-[calc(100vh-10rem)] lg:flex-row lg:overflow-hidden lg:pb-0">
             <!-- Left: Menu / Combos -->
-            <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
+            <div class="flex min-w-0 flex-1 flex-col lg:overflow-hidden">
                 <!-- Tab bar -->
                 <div class="mb-3 flex gap-2">
                     <button
@@ -261,18 +262,19 @@ const placeOrder = () => {
                         <button
                             v-for="category in categories"
                             :key="category.id"
-                            class="whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
+                            class="shrink-0 whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-colors"
                             :class="selectedCategoryId === category.id ? 'bg-ocean-deep text-white' : 'bg-white text-ocean-deep shadow-card hover:bg-ocean-light dark:bg-gray-700 dark:text-gray-100'"
+                            :style="selectedCategoryId === category.id ? {} : (category.color ? { color: category.color } : {})"
                             @click="selectedCategoryId = category.id"
                         >
                             {{ category.name }}
                         </button>
                     </div>
 
-                    <div class="flex-1 overflow-y-auto">
+                    <div class="lg:flex-1 lg:overflow-y-auto">
                         <AppEmptyState v-if="!categories.length" :title="__('No menu available')" :description="__('There are no active products in the menu.')" />
                         <AppEmptyState v-else-if="!selectedCategory?.products?.length" :title="__('No products in this category')" :description="__('Select another category.')" />
-                        <div v-else class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        <div v-else class="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
                             <button
                                 v-for="product in selectedCategory.products"
                                 :key="product.id"
@@ -290,7 +292,7 @@ const placeOrder = () => {
 
                 <!-- Combos tab -->
                 <template v-if="activeTab === 'combos'">
-                    <div class="flex-1 overflow-y-auto">
+                    <div class="lg:flex-1 lg:overflow-y-auto">
                         <AppEmptyState v-if="!combos?.length" :title="__('No combos available')" :description="__('No active combos configured.')" />
                         <div v-else class="space-y-3">
                             <div
@@ -317,12 +319,20 @@ const placeOrder = () => {
             </div>
 
             <!-- Right: Cart -->
-            <div class="flex w-72 flex-shrink-0 flex-col rounded-lg bg-white shadow-card dark:bg-gray-800">
-                <div class="border-b border-border p-4">
+            <div class="fixed inset-x-0 bottom-0 z-30 flex max-h-[75vh] flex-col border-t border-border bg-white shadow-card dark:border-gray-700 dark:bg-gray-800 lg:static lg:z-auto lg:h-full lg:w-72 lg:max-h-none lg:shrink-0 lg:rounded-lg lg:border-t-0">
+                <button
+                    type="button"
+                    class="flex items-center justify-between gap-3 border-b border-border px-4 py-3 text-left lg:hidden"
+                    @click="cartOpen = !cartOpen"
+                >
+                    <span class="font-heading text-sm font-bold text-ocean-deep dark:text-gray-100">{{ __('Cart') }}</span>
+                    <span class="text-sm font-semibold text-ocean-deep dark:text-gray-100">{{ cart.length }} {{ __('items') }} · R$ {{ cartTotal }}</span>
+                </button>
+                <div class="hidden border-b border-border p-4 lg:block">
                     <h2 class="font-heading text-sm font-bold text-ocean-deep dark:text-gray-100">{{ __('Cart') }}</h2>
                 </div>
 
-                <div class="flex-1 overflow-y-auto p-4">
+                <div class="flex-1 overflow-y-auto p-4" :class="cartOpen ? 'block' : 'hidden lg:block'">
                     <AppEmptyState v-if="!cart.length" :title="__('Cart is empty')" :description="__('Tap a product to add it.')" />
 
                     <div v-else class="space-y-3">
@@ -379,13 +389,13 @@ const placeOrder = () => {
                     </div>
                 </div>
 
-                <div class="border-t border-border p-4">
-                    <div class="mb-3 flex justify-between text-sm font-semibold text-ocean-deep dark:text-gray-100">
+                <div class="border-t border-border p-3 lg:p-4">
+                    <div class="mb-2 hidden justify-between text-sm font-semibold text-ocean-deep lg:flex dark:text-gray-100">
                         <span>{{ __('Total') }}</span>
                         <span>R$ {{ cartTotal }}</span>
                     </div>
                     <AppButton
-                        class="w-full"
+                        class="w-full min-h-12"
                         :disabled="!cart.length || form.processing"
                         :loading="form.processing"
                         @click="showConfirm = true"

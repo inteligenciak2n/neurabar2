@@ -40,13 +40,14 @@ class CategoryController extends Controller
             'menuId' => $menu->id,
             'products' => Inertia::defer(fn () => Product::query()
                 ->whereHas('category', fn ($q) => $q->where('menu_id', $menu->id))
-                ->with('category:id,name', 'kitchenStation:id,name', 'variations', 'modifierGroups:id,name,required,multiple_selection')
+                ->with('category:id,name,color', 'kitchenStation:id,name', 'variations', 'modifierGroups:id,name,required,multiple_selection')
                 ->orderBy('sort_order')
                 ->orderBy('name')
                 ->get(), 'catalog'),
             'stations' => Inertia::defer(fn () => KitchenStation::withoutGlobalScopes()
                 ->where('venue_id', $venue->id)
                 ->where('active', true)
+                ->assignableToProducts()
                 ->orderBy('name')
                 ->get(['id', 'name']), 'catalog'),
             'modifierGroups' => Inertia::defer(fn () => ModifierGroup::query()

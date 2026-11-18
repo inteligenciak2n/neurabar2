@@ -5,7 +5,7 @@ import AppBadge from '@/Components/AppBadge.vue';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import AppEmptyState from '@/Components/AppEmptyState.vue';
 import { useForm, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 const props = defineProps({
     modifierGroups: {
@@ -31,6 +31,19 @@ const openCreateGroup = () => {
     createGroupForm.options = [emptyOption()];
     showCreateGroup.value = true;
 };
+
+const openCreateGroupFromProduct = () => {
+    document.getElementById('menu-modifiers')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    openCreateGroup();
+};
+
+onMounted(() => {
+    window.addEventListener('menu:create-modifier', openCreateGroupFromProduct);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('menu:create-modifier', openCreateGroupFromProduct);
+});
 
 const closeCreateGroup = () => {
     showCreateGroup.value = false;

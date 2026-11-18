@@ -12,6 +12,14 @@ class LoginTest extends TestCase
 {
     use RefreshAllDatabases;
 
+    public function test_login_page_defaults_to_portuguese(): void
+    {
+        $this->withHeaders(['Accept-Language' => 'en-US,en;q=0.9'])
+            ->get('/login')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('language.locale', 'pt'));
+    }
+
     public function test_user_can_login_with_valid_credentials(): void
     {
         $venue = Venue::factory()->create();

@@ -42,6 +42,27 @@ class GuestCheckoutTest extends TestCase
         Event::assertDispatched(ServiceRequestCreated::class, fn ($event) => $event->serviceRequest->type === ServiceRequestType::Checkout);
     }
 
+    public function test_checkout_works_for_a_session_without_a_pin(): void
+    {
+        Event::fake([ServiceRequestCreated::class]);
+
+        $venue = Venue::factory()->create(['active' => true]);
+        $token = $this->makeToken($venue);
+
+        $this->postJson("/g/{$token}/session", [])->assertOk();
+        $session = GuestSession::withoutGlobalScopes()->where('venue_id', $venue->id)->latest()->first();
+
+        $this->withCredentials()
+            ->withUnencryptedCookie('guest_token', $session->guest_token)
+            ->postJson("/g/{$token}/checkout")
+            ->assertOk();
+
+        $this->assertDatabaseHas('service_requests', [
+            'venue_id' => $venue->id,
+            'type' => ServiceRequestType::Checkout->value,
+        ]);
+    }
+
     public function test_checkout_without_session_returns_forbidden(): void
     {
         $venue = Venue::factory()->create(['active' => true]);

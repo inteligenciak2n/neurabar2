@@ -3,6 +3,8 @@ import GuestLayout from '@/Layouts/GuestLayout.vue';
 import AppButton from '@/Components/AppButton.vue';
 import ProductDetailDrawer from '@/Components/Guest/ProductDetailDrawer.vue';
 import CartPanel from '@/Components/Guest/CartPanel.vue';
+import GuestCallWaiter from '@/Components/Guest/GuestCallWaiter.vue';
+import GuestCatalogDivider from '@/Components/Guest/GuestCatalogDivider.vue';
 import GuestMenuCatalog from '@/Components/Guest/GuestMenuCatalog.vue';
 import { mergeGuestCartItem } from '@/Utils/guestCart';
 import { ref, computed } from 'vue';
@@ -20,6 +22,26 @@ const props = defineProps({
     venue: Object,
     serviceLocation: Object,
     categories: Array,
+    hasMenu: {
+        type: Boolean,
+        default: true,
+    },
+    hasDirectWaiter: {
+        type: Boolean,
+        default: false,
+    },
+    hasSelfOrder: {
+        type: Boolean,
+        default: false,
+    },
+    pendingWaiterCall: {
+        type: Object,
+        default: null,
+    },
+    waiterCallPhrases: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const __ = useTranslate();
@@ -102,10 +124,10 @@ function handleOrderPlaced() {
     <GuestLayout
         :title="venue.name + ' — Cardápio'"
         :venue="venue"
-        :preview-watermark="preview ? __('Table version') : null"
+        :preview-watermark="__('Table version')"
     >
-        <template v-if="preview" #headerTitle>{{ __('Customer version - Table') }}</template>
-        <template v-if="preview" #headerSubtitle>{{ __('Adaptive screen for phone, tablet or computer') }}</template>
+        <template #headerTitle>{{ __('Customer version - Table') }}</template>
+        <template #headerSubtitle>{{ __('Adaptive screen for phone, tablet or computer') }}</template>
         <template v-if="preview" #header>
             <div class="flex flex-wrap items-center justify-end gap-2">
                 <AppButton size="sm" variant="accent" :href="route('menu.preview.customer.delivery')">{{ __('Customer version - Delivery') }}</AppButton>
@@ -118,14 +140,6 @@ function handleOrderPlaced() {
             </span>
         </template>
 
-        <!-- Back link -->
-        <a v-if="!preview" :href="`/g/${token}`" class="mb-4 flex items-center gap-1 text-sm text-primary hover:underline">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            {{ __('Back') }}
-        </a>
-
         <!-- Order placed toast -->
         <div v-if="orderPlaced" class="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 font-medium">
             {{ __('Order placed! We are preparing it for you.') }}
@@ -136,16 +150,29 @@ function handleOrderPlaced() {
 
         <GuestMenuCatalog
             :venue="venue"
-            :categories="categories"
-            :preview="preview"
+            :categories="hasMenu ? categories : []"
+            :preview="true"
+            :catalog-enabled="hasMenu"
+            :show-category-chips="hasMenu"
             :empty-description="__('This venue has no menu items yet.')"
             @open-product="openProduct"
-        />
+        >
+            <template v-if="hasDirectWaiter || hasMenu" #above-categories>
+                <GuestCallWaiter
+                    v-if="hasDirectWaiter"
+                    :token="token"
+                    :preview="preview"
+                    :pending-call="pendingWaiterCall"
+                    :phrases="waiterCallPhrases"
+                />
+                <GuestCatalogDivider v-if="hasMenu" />
+            </template>
+        </GuestMenuCatalog>
 
         <!-- Cart FAB -->
         <Teleport to="body">
             <button
-                v-if="cartCount > 0"
+                v-if="(preview || hasSelfOrder) && cartCount > 0"
                 class="fixed bottom-24 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border-4 border-warm-gold bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg active:opacity-80"
                 @click="cartOpen = true"
             >
@@ -169,7 +196,8 @@ function handleOrderPlaced() {
             v-model="cartOpen"
             :token="token"
             :items="cartItems"
-            :preview="preview"
+            :preview="preview || !hasSelfOrder"
+            :has-table="Boolean(serviceLocation)"
             @remove="removeFromCart"
             @select-item="openCartItem"
             @order-placed="handleOrderPlaced"

@@ -98,6 +98,8 @@ class MenuBackLinkLabelTest extends TestCase
 
         $this->assertNotFalse($page);
         $this->assertStringContainsString("__('Modifiers')", $page);
+        $this->assertStringContainsString('menu:create-modifier', $page);
+        $this->assertStringContainsString('openCreateGroupFromProduct', $page);
         $this->assertStringContainsString("__('Register extras and options for the customer to choose.')", $page);
         $this->assertStringContainsString("__('The customer customizes the order their way.')", $page);
         $this->assertStringContainsString('flex min-w-0 items-center gap-3', $page);

@@ -25,19 +25,25 @@ class PublicMenuTest extends TestCase
         return rtrim(base64_encode(json_encode(['v' => $venue->id])), '=');
     }
 
-    private function activateSelfOrder(Venue $venue): void
+    private function activateModule(Venue $venue, ModuleCode $module): void
     {
         CorporationModule::factory()->create([
             'corporation_id' => $venue->corporation_id,
-            'module_code' => ModuleCode::SelfOrder->value,
+            'module_code' => $module->value,
             'status' => ModuleStatus::Active,
         ]);
 
         VenueModule::factory()->create([
             'venue_id' => $venue->id,
-            'module_code' => ModuleCode::SelfOrder->value,
+            'module_code' => $module->value,
             'status' => ModuleStatus::Active,
         ]);
+    }
+
+    private function activateSelfOrder(Venue $venue): void
+    {
+        $this->activateModule($venue, ModuleCode::Menu);
+        $this->activateModule($venue, ModuleCode::SelfOrder);
     }
 
     public function test_suspended_venue_cannot_serve_the_public_menu(): void

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Actions\Settings\CreateUserAction;
 use App\Actions\Settings\DeleteUserAction;
 use App\Actions\Settings\UpdateUserAction;
+use App\Enums\PreferredPhoneHand;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\StoreUserRequest;
 use App\Http\Requests\Settings\UpdateUserRequest;
@@ -21,12 +22,13 @@ class UserController extends Controller
 
         $users = $venue->users()
             ->orderBy('name')
-            ->get(['users.id', 'users.name', 'users.email', 'users.active'])
+            ->get(['users.id', 'users.name', 'users.email', 'users.active', 'users.preferred_phone_hand'])
             ->map(fn ($user) => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'active' => $user->active,
+                'preferred_phone_hand' => $user->preferred_phone_hand?->value ?? PreferredPhoneHand::default()->value,
                 'role' => $user->pivot->role,
             ]);
 

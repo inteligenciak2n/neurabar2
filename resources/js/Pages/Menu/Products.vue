@@ -39,6 +39,7 @@ const form = useForm({
     name: '',
     price: '',
     description: '',
+    removable_ingredients: [],
     servings: 1,
     category_id: props.filters?.category_id ?? '',
     kitchen_station_id: '',
@@ -46,6 +47,47 @@ const form = useForm({
     photo: null,
     remove_photo: false,
 });
+
+const newRemovableIngredient = ref('');
+
+const normalizeIngredientList = (value) => {
+    const items = Array.isArray(value) ? value : String(value ?? '').split(/[\n,]+/);
+    const seen = new Set();
+    const result = [];
+
+    for (const raw of items) {
+        const name = String(raw ?? '').trim();
+        if (!name) {
+            continue;
+        }
+
+        const key = name.toLowerCase();
+        if (seen.has(key)) {
+            continue;
+        }
+
+        seen.add(key);
+        result.push(name.slice(0, 80));
+
+        if (result.length >= 40) {
+            break;
+        }
+    }
+
+    return result;
+};
+
+const addRemovableIngredients = () => {
+    form.removable_ingredients = normalizeIngredientList([
+        ...(form.removable_ingredients ?? []),
+        newRemovableIngredient.value,
+    ]);
+    newRemovableIngredient.value = '';
+};
+
+const removeRemovableIngredient = (index) => {
+    form.removable_ingredients = (form.removable_ingredients ?? []).filter((_, itemIndex) => itemIndex !== index);
+};
 
 const photoInput = ref(null);
 const photoPreview = ref(null);
@@ -137,6 +179,11 @@ const closeModifierPicker = () => {
     if (editingProduct.value) {
         submitSync(editingProduct.value);
     }
+};
+
+const goCreateModifier = () => {
+    closeModifierPicker();
+    window.dispatchEvent(new CustomEvent('menu:create-modifier'));
 };
 
 const submitSync = (product) => {
@@ -269,11 +316,15 @@ const categoryTabClass = (categoryId) => [
         : 'border-border/70 bg-muted text-muted-foreground hover:bg-sand hover:text-ocean-deep dark:border-gray-600 dark:bg-gray-700/70 dark:hover:text-gray-100',
 ];
 
+const categoryNameStyle = (color) => (color ? { color } : undefined);
+
 const openCreate = () => {
     requestLeave(() => {
         editingProduct.value = null;
         form.reset();
         form.active = true;
+        form.removable_ingredients = [];
+        newRemovableIngredient.value = '';
         form.category_id = selectedCategoryId.value ?? '';
         form.photo = null;
         form.remove_photo = false;
@@ -290,6 +341,8 @@ const openEdit = (product) => {
         form.name = product.name;
         form.price = product.price;
         form.description = product.description ?? '';
+        form.removable_ingredients = [...(product.removable_ingredients ?? [])];
+        newRemovableIngredient.value = '';
         form.servings = Number(product.servings) || 1;
         form.category_id = product.category_id;
         form.kitchen_station_id = product.kitchen_station_id ?? '';
@@ -350,6 +403,7 @@ const submit = (onAfterSave = null) => {
         form.transform((data) => ({
             ...data,
             servings: Number(data.servings) || 1,
+            removable_ingredients: normalizeIngredientList(data.removable_ingredients),
             active: data.active ? 1 : 0,
             photo: data.photo || null,
             remove_photo: data.remove_photo ? 1 : 0,
@@ -362,6 +416,7 @@ const submit = (onAfterSave = null) => {
     form.transform((data) => ({
         ...data,
         servings: Number(data.servings) || 1,
+        removable_ingredients: normalizeIngredientList(data.removable_ingredients),
         active: data.active ? 1 : 0,
         photo: data.photo || null,
         remove_photo: data.remove_photo ? 1 : 0,
@@ -524,6 +579,7 @@ const deleteProduct = () => {
                             role="tab"
                             :aria-selected="isCategoryTabActive(category.id)"
                             :class="categoryTabClass(category.id)"
+                            :style="categoryNameStyle(category.color)"
                             @click="filterByCategory(category.id)"
                         >
                             {{ category.name }}
@@ -582,7 +638,7 @@ const deleteProduct = () => {
                             <span>R$ {{ Number(product.price).toFixed(2) }}</span>
                             <span v-if="product.category">
                                 <span class="text-warm-gold">{{ __('Cat.:') }}</span>
-                                {{ product.category.name }}
+                                <span :style="categoryNameStyle(product.category.color)">{{ product.category.name }}</span>
                             </span>
                             <span v-if="product.kitchen_station">
                                 <span class="text-warm-gold">{{ __('Sector:') }}</span>
@@ -786,7 +842,7 @@ const deleteProduct = () => {
                                     class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100"
                                 >
                                     <option value="">{{ __('Select a category') }}</option>
-                                    <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                                    <option v-for="cat in categories" :key="cat.id" :value="cat.id" :style="categoryNameStyle(cat.color)">{{ cat.name }}</option>
                                 </select>
                                 <p v-if="form.errors.category_id" class="mt-1 text-xs text-destructive">{{ form.errors.category_id }}</p>
                             </div>
@@ -879,7 +935,8 @@ const deleteProduct = () => {
                                     <span class="mt-1 block h-0.5 w-10 rounded-full bg-warm-gold" aria-hidden="true" />
                                 </h4>
                                 <p class="min-w-0 flex-1 text-sm leading-snug text-muted-foreground dark:text-gray-400">
-                                    {{ __('Select which modifier groups apply to this product.') }}
+                                    <span class="block">{{ __('Select which modifier groups apply to this product.') }}</span>
+                                    <span class="block">{{ __('For example: Extra Cheese, extra fries, swap water for milk in juices') }}</span>
                                 </p>
                             </div>
                             <AppButton size="sm" variant="secondary" class="mb-3" @click="openModifierPicker">
@@ -1014,6 +1071,51 @@ const deleteProduct = () => {
                                 </div>
                             </form>
                         </div>
+
+                        <div>
+                            <div class="mb-2 flex items-start justify-between gap-3">
+                                <h4 class="shrink-0 font-heading text-lg font-bold tracking-tight text-ocean-deep dark:text-gray-100">
+                                    {{ __('Can be removed') }}
+                                    <span class="mt-1 block h-0.5 w-10 rounded-full bg-warm-gold" aria-hidden="true" />
+                                </h4>
+                                <p class="min-w-0 flex-1 text-sm leading-snug text-muted-foreground dark:text-gray-400">
+                                    {{ __('List ingredients the customer can ask to leave out.') }}
+                                </p>
+                            </div>
+                            <div class="mb-3 flex gap-2">
+                                <input
+                                    v-model="newRemovableIngredient"
+                                    type="text"
+                                    :placeholder="__('e.g. tomato, lettuce, ketchup')"
+                                    class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100"
+                                    @keydown.enter.prevent="addRemovableIngredients"
+                                />
+                                <AppButton type="button" size="sm" variant="secondary" class="shrink-0" @click="addRemovableIngredients">
+                                    {{ __('Add') }}
+                                </AppButton>
+                            </div>
+                            <div v-if="form.removable_ingredients?.length" class="flex flex-wrap gap-2">
+                                <span
+                                    v-for="(ingredient, index) in form.removable_ingredients"
+                                    :key="`${ingredient}-${index}`"
+                                    class="inline-flex items-center gap-1 rounded-md bg-ocean-light px-3 py-1.5 text-sm text-ocean-deep dark:bg-gray-700 dark:text-gray-100"
+                                >
+                                    {{ ingredient }}
+                                    <button
+                                        type="button"
+                                        class="text-sm font-semibold text-muted-foreground hover:text-destructive"
+                                        :aria-label="__('Remove ingredient')"
+                                        @click="removeRemovableIngredient(index)"
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            </div>
+                            <p v-else class="text-xs italic text-muted-foreground">
+                                {{ __('No removable ingredients yet. Add items such as burger, tomato, lettuce, bun, ketchup or mustard.') }}
+                            </p>
+                            <p v-if="form.errors.removable_ingredients" class="mt-1 text-xs text-destructive">{{ form.errors.removable_ingredients }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1021,9 +1123,15 @@ const deleteProduct = () => {
 
         <Modal :show="showModifierPicker" max-width="md" @close="closeModifierPicker">
             <div class="p-6">
-                <h2 class="font-heading text-lg font-semibold text-ocean-deep dark:text-gray-100">{{ __('Modifier Groups') }}</h2>
+                <div class="flex items-start justify-between gap-3">
+                    <h2 class="font-heading text-lg font-semibold text-ocean-deep dark:text-gray-100">{{ __('Modifier Groups') }}</h2>
+                    <AppButton size="sm" variant="secondary" class="shrink-0" @click="goCreateModifier">
+                        {{ __('Register new modifier') }}
+                    </AppButton>
+                </div>
                 <p class="mt-2 text-sm text-muted-foreground dark:text-gray-400">
-                    {{ __('Select which modifier groups apply to this product.') }}
+                    <span class="block">{{ __('Select which modifier groups apply to this product.') }}</span>
+                    <span class="block">{{ __('For example: Extra Cheese, extra fries, swap water for milk in juices') }}</span>
                 </p>
                 <div class="mt-4 max-h-80 space-y-1 overflow-y-auto">
                     <button

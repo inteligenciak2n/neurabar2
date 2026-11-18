@@ -48,6 +48,7 @@ class DashboardController
             ->pluck('pending_count', 'kitchen_station_id');
 
         $stationsSummary = KitchenStation::active()
+            ->assignableToProducts()
             ->get()
             ->map(fn (KitchenStation $station) => array_merge(
                 $station->toArray(),

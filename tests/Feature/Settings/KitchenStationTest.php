@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Settings;
 
+use App\Actions\Kitchen\EnsureWaiterCallerKitchenStationAction;
+use App\Enums\KitchenStationCode;
 use App\Enums\UserRole;
 use App\Models\Settings\KitchenStation;
 use App\Models\Tenant\Venue;
@@ -76,5 +78,38 @@ class KitchenStationTest extends TestCase
         $this->loginAs(UserRole::Attendant);
 
         $this->get(route('settings.kitchen-stations.index'))->assertForbidden();
+    }
+
+    public function test_owner_cannot_deactivate_the_waiter_caller_station(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+        $station = app(EnsureWaiterCallerKitchenStationAction::class)->execute($venue);
+
+        $this->put(route('settings.kitchen-stations.update', $station->id), [
+            'name' => KitchenStationCode::WaiterCaller->defaultName(),
+            'active' => false,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('kitchen_stations', [
+            'id' => $station->id,
+            'code' => KitchenStationCode::WaiterCaller->value,
+            'active' => true,
+        ]);
+    }
+
+    public function test_owner_cannot_delete_the_waiter_caller_station(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $this->loginAs(UserRole::Owner, $venue);
+        $station = app(EnsureWaiterCallerKitchenStationAction::class)->execute($venue);
+
+        $this->delete(route('settings.kitchen-stations.destroy', $station->id))
+            ->assertSessionHasErrors('station');
+
+        $this->assertDatabaseHas('kitchen_stations', [
+            'id' => $station->id,
+            'code' => KitchenStationCode::WaiterCaller->value,
+        ]);
     }
 }

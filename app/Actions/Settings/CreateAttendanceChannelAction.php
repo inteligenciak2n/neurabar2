@@ -10,9 +10,12 @@ class CreateAttendanceChannelAction
 {
     public function execute(Venue $venue, StoreAttendanceChannelRequest $request): AttendanceChannel
     {
+        $data = $request->validated();
+        $data['sort_order'] = (AttendanceChannel::query()->where('venue_id', $venue->id)->max('sort_order') ?? 0) + 1;
+
         return AttendanceChannel::create([
             'venue_id' => $venue->id,
-            ...$request->validated(),
+            ...$data,
         ]);
     }
 }

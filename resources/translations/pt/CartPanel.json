@@ -7,5 +7,9 @@
     "Tab card code": "Código da comanda",
     "optional": "opcional",
     "Code printed on your tab card": "Código impresso na sua comanda",
-    "This tab card is already in use.": "Esta comanda já está em uso."
+    "This tab card is already in use.": "Esta comanda já está em uso.",
+    "Which tab?": "Para qual comanda?",
+    "Tab :code": "Comanda :code",
+    "I don't know / waiter decides": "Não sei / garçom define",
+    "Choose a tab from this table.": "Escolha uma comanda desta mesa."
 }

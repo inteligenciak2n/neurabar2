@@ -15,5 +15,15 @@
     "Quantity:": "Quantidade:",
     "Serves 1 person": "Serve 1 pessoa",
     "Serves :count people": "Serve :count pessoas",
-    "Send order": "Enviar pedido"
+    "Add to order": "Adicionar ao pedido",
+    "Change tab": "Trocar a comanda",
+    "Cancel item": "Cancelar item",
+    "No free tabs.": "Não há comandas livres.",
+    "New tab": "Nova comanda",
+    "Initial tab:": "Comanda inicial:",
+    "Change to:": "Trocar para:",
+    "Deliver item where:": "Entregar item onde:",
+    "Deliver item where: :locations, to choose": "Entregar item onde: :locations, para escolher",
+    "and": "e",
+    "another table": "outra mesa"
 }

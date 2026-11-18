@@ -13,11 +13,11 @@ class GuestMenuPreviewHeaderTest extends TestCase
 
         $this->assertNotFalse($page);
         $this->assertNotFalse($layout);
-        $this->assertStringContainsString('<template v-if="preview" #headerTitle>', $page);
+        $this->assertStringContainsString('<template #headerTitle>{{ __(\'Customer version - Table\') }}</template>', $page);
         $this->assertStringContainsString("__('Customer version - Table')", $page);
         $this->assertStringContainsString("__('Customer version - Delivery')", $page);
         $this->assertStringContainsString("route('menu.preview.customer.delivery')", $page);
-        $this->assertStringContainsString('<template v-if="preview" #headerSubtitle>', $page);
+        $this->assertStringContainsString('<template #headerSubtitle>{{ __(\'Adaptive screen for phone, tablet or computer\') }}</template>', $page);
         $this->assertStringContainsString("__('Adaptive screen for phone, tablet or computer')", $page);
         $this->assertStringContainsString('<template v-if="preview" #header>', $page);
         $this->assertStringContainsString(':href="route(\'menu.index\')"', $page);
@@ -29,7 +29,7 @@ class GuestMenuPreviewHeaderTest extends TestCase
         $this->assertStringContainsString('previewWatermark', $layout);
         $this->assertStringContainsString('pointer-events-none absolute inset-0 z-0 overflow-hidden', $layout);
         $this->assertStringContainsString("previewWatermark ? 'z-10 rounded-2xl border-2 border-white/40 bg-muted p-3' : ''", $layout);
-        $this->assertStringContainsString(':preview-watermark="preview ? __(\'Table version\') : null"', $page);
+        $this->assertStringContainsString(':preview-watermark="__(\'Table version\')"', $page);
         $this->assertStringContainsString('#frameLabel', $page);
         $this->assertStringContainsString('const tableLabel = computed', $page);
         $this->assertStringContainsString("__('Table no. :number'", $page);
@@ -46,6 +46,9 @@ class GuestMenuPreviewHeaderTest extends TestCase
         $this->assertStringNotContainsString('font-heading text-sm font-bold leading-tight text-ocean-deep">-</span>', $layout);
         $this->assertStringNotContainsString('Preview — customer view', $page);
         $this->assertStringNotContainsString('Back to menu', $page);
+        $this->assertStringNotContainsString('<template v-if="!preview && tableLabel" #header>', $page);
+        $this->assertStringNotContainsString('`/g/${token}`', $page);
+        $this->assertStringContainsString(':preview="true"', $page);
     }
 
     public function test_customer_preview_moves_the_venue_brand_above_the_menu(): void
@@ -53,6 +56,8 @@ class GuestMenuPreviewHeaderTest extends TestCase
         $catalog = file_get_contents(dirname(__DIR__, 3).'/resources/js/Components/Guest/GuestMenuCatalog.vue');
 
         $this->assertNotFalse($catalog);
+        $this->assertStringContainsString('data-venue-brand', $catalog);
+        $this->assertStringContainsString('data-catalog-sticky', $catalog);
         $this->assertStringContainsString('v-if="preview" class="mb-4 grid grid-cols-[minmax(0,1fr)_7rem] items-start gap-3"', $catalog);
         $this->assertStringContainsString('{{ venue.name }}', $catalog);
         $this->assertStringContainsString('{{ venue.description }}', $catalog);
@@ -60,6 +65,16 @@ class GuestMenuPreviewHeaderTest extends TestCase
         $this->assertStringContainsString('aspect-square overflow-hidden rounded-lg bg-muted shadow-card', $catalog);
         $this->assertStringContainsString('h-full w-full object-cover', $catalog);
         $this->assertStringContainsString('sticky top-0 z-20 bg-muted', $catalog);
+        $this->assertStringContainsString('stickyTop', $catalog);
+        $this->assertStringContainsString('stickyTopPx', $catalog);
+        $this->assertLessThan(
+            strpos($catalog, 'data-catalog-sticky'),
+            strpos($catalog, 'data-venue-brand'),
+        );
+        $this->assertLessThan(
+            strpos($catalog, 'data-catalog-sticky'),
+            strpos($catalog, '{{ venue.name }}'),
+        );
         $this->assertStringNotContainsString('mb-4 grid grid-cols-3 items-center gap-3', $catalog);
     }
 
@@ -112,9 +127,29 @@ class GuestMenuPreviewHeaderTest extends TestCase
         $this->assertNotFalse($delivery);
         $this->assertNotFalse($catalog);
         $this->assertNotFalse($component);
+        $attendant = file_get_contents(dirname(__DIR__, 3).'/resources/js/Pages/Menu/PreviewAttendant.vue');
+
         $this->assertStringContainsString('<GuestMenuCatalog', $page);
+        $this->assertStringContainsString('<GuestCallWaiter', $page);
+        $this->assertStringContainsString('#above-categories', $page);
+        $this->assertStringContainsString(':catalog-enabled="hasMenu"', $page);
         $this->assertStringContainsString('<GuestMenuCatalog', $delivery);
-        $this->assertStringContainsString('<CategoryChipRow v-else :active-id="selectedCategoryId">', $catalog);
+        $this->assertNotFalse($attendant);
+        $this->assertStringContainsString('<GuestMenuCatalog', $attendant);
+        $this->assertStringContainsString('<CategoryChipRow v-if="showCategoryChips" :active-id="selectedCategoryId">', $catalog);
+        $this->assertStringContainsString('data-above-categories', $catalog);
+        $this->assertLessThan(
+            strpos($catalog, 'data-catalog-sticky'),
+            strpos($catalog, 'data-above-categories'),
+        );
+        $this->assertStringContainsString('data-channel-panel', $catalog);
+        $this->assertStringContainsString('data-channel-catalog', $catalog);
+        $this->assertStringContainsString('border-x-2 border-b-2 rounded-b-xl', $catalog);
+        $this->assertStringContainsString('data-panel-fields', $catalog);
+        $this->assertStringContainsString('showCategoryChips', $catalog);
+        $this->assertStringContainsString('#after-catalog', $attendant);
+        $this->assertStringContainsString('stickyPanelStyle', $catalog);
+        $this->assertStringContainsString('#above-categories', $attendant);
         $this->assertStringContainsString('data-category-chip', $catalog);
         $this->assertStringContainsString(':data-category-id="category.id"', $catalog);
         $this->assertStringNotContainsString('overflow-x-auto pb-1 border-b border-muted', $page);
@@ -174,7 +209,7 @@ class GuestMenuPreviewHeaderTest extends TestCase
         $this->assertNotFalse($cart);
         $this->assertStringContainsString('<CartPanel', $page);
         $this->assertStringContainsString(':preview="preview"', $page);
-        $this->assertStringContainsString('v-if="cartCount > 0"', $page);
+        $this->assertStringContainsString('v-if="(preview || hasSelfOrder) && cartCount > 0"', $page);
         $this->assertStringContainsString('<Teleport to="body">', $page);
         $this->assertStringContainsString('fixed bottom-24 left-1/2 z-50', $page);
         $this->assertStringContainsString('border-4 border-warm-gold', $page);

@@ -25,6 +25,7 @@ Route::prefix('g/{token}')->name('guest.')->middleware('billing.active')->group(
         ->name('orders.store')
         ->middleware([SetGuestOperationalConnection::class, 'throttle:30,1']);
     Route::post('/signal', [GuestHubController::class, 'signal'])->name('signal')->middleware('throttle:10,1');
+    Route::post('/signal/{serviceRequest}/cancel', [GuestHubController::class, 'cancelSignal'])->name('signal.cancel')->middleware('throttle:10,1');
     Route::post('/request-order', [GuestHubController::class, 'requestOrderAssistance'])->name('request-order')->middleware('throttle:10,1');
     Route::post('/checkout', [GuestCheckoutController::class, 'store'])->name('checkout')->middleware('throttle:5,1');
     Route::post('/verify-location', [GuestHubController::class, 'verifyLocation'])->name('verify-location')->middleware('throttle:10,1');

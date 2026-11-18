@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Menu;
 
 use App\Models\Menu\Menu;
+use App\Models\Menu\Product;
 use App\Models\Settings\KitchenStation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -12,6 +13,13 @@ class StoreProductRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'removable_ingredients' => Product::normalizeRemovableIngredients($this->input('removable_ingredients')),
+        ]);
     }
 
     /** @return array<string, mixed> */
@@ -26,6 +34,7 @@ class StoreProductRequest extends FormRequest
 
         $stationIds = KitchenStation::withoutGlobalScopes()
             ->where('venue_id', $venue->id)
+            ->assignableToProducts()
             ->pluck('id')
             ->all();
 
@@ -37,6 +46,8 @@ class StoreProductRequest extends FormRequest
             'category_id' => ['required', 'uuid', Rule::exists("{$operationalConnection}.menu_categories", 'id')->whereIn('menu_id', $menuIds)],
             'kitchen_station_id' => ['nullable', 'uuid', Rule::in($stationIds)],
             'description' => ['nullable', 'string', 'max:1000'],
+            'removable_ingredients' => ['sometimes', 'array', 'max:40'],
+            'removable_ingredients.*' => ['string', 'max:80'],
             'servings' => ['sometimes', 'integer', 'min:1', 'max:20'],
             'photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
             'active' => ['boolean'],

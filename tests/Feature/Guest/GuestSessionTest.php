@@ -30,6 +30,20 @@ class GuestSessionTest extends TestCase
         $this->assertNotNull($response->headers->getCookies());
     }
 
+    public function test_store_creates_a_session_without_a_pin(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $token = $this->makeToken($venue);
+
+        $this->postJson("/g/{$token}/session", [])
+            ->assertOk();
+
+        $this->assertDatabaseHas('guest_sessions', [
+            'venue_id' => $venue->id,
+            'pin' => null,
+        ]);
+    }
+
     /**
      * Create a session and return a properly-encrypted cookie value for subsequent requests.
      */

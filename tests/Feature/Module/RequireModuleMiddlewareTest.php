@@ -6,7 +6,6 @@ use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
-use App\Models\Orders\Attendance;
 use App\Models\Tenant\CorporationModule;
 use App\Models\Tenant\CorporationSubscription;
 use App\Models\Tenant\Venue;
@@ -59,11 +58,9 @@ class RequireModuleMiddlewareTest extends TestCase
         $venue = Venue::factory()->create();
         $this->setupVenueWithMenu($venue);
 
-        $attendance = Attendance::factory()->create(['venue_id' => $venue->id]);
-
         $this->loginAs(UserRole::Attendant, $venue);
 
-        $this->get(route('orders.take', ['attendance' => $attendance->id]))->assertForbidden();
+        $this->get(route('kitchen.kds'))->assertForbidden();
     }
 
     public function test_blocks_access_when_subscription_is_suspended(): void

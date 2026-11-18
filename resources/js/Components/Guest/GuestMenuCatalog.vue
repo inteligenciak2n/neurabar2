@@ -1,7 +1,7 @@
 <script setup>
 import AppEmptyState from '@/Components/AppEmptyState.vue';
 import CategoryChipRow from '@/Components/Guest/CategoryChipRow.vue';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useTranslate } from '@/Composables/useTranslate';
 
 const props = defineProps({
@@ -18,11 +18,35 @@ const props = defineProps({
         type: String,
         required: true,
     },
+    stickyPanelStyle: {
+        type: Object,
+        default: null,
+    },
+    showCategoryChips: {
+        type: Boolean,
+        default: true,
+    },
+    stickyTop: {
+        type: String,
+        default: null,
+    },
+    catalogEnabled: {
+        type: Boolean,
+        default: true,
+    },
 });
 
 const emit = defineEmits(['open-product']);
 
 const __ = useTranslate();
+
+const hasCatalogFrame = computed(() => Boolean(props.stickyPanelStyle));
+
+const stickyTopPx = computed(() => {
+    const parsed = Number.parseFloat(props.stickyTop ?? '');
+
+    return Number.isFinite(parsed) ? parsed : 0;
+});
 
 const selectedCategoryId = ref(props.categories?.[0]?.id ?? null);
 const logoFailed = ref(false);
@@ -60,7 +84,7 @@ function scrollToCategory(categoryId) {
         return;
     }
 
-    const top = window.scrollY + target.getBoundingClientRect().top - stickyHeight.value - 8;
+    const top = window.scrollY + target.getBoundingClientRect().top - stickyHeight.value - stickyTopPx.value - 8;
     window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
 }
 
@@ -114,8 +138,7 @@ onUnmounted(() => {
 <template>
     <div ref="catalogRoot">
         <div
-            ref="stickyBar"
-            class="sticky top-0 z-20 bg-muted"
+            data-venue-brand
             :class="preview ? '-mx-3 px-3 pt-0' : ''"
         >
             <div v-if="preview" class="mb-4 grid grid-cols-[minmax(0,1fr)_7rem] items-start gap-3">
@@ -139,12 +162,39 @@ onUnmounted(() => {
             >{{ venue.description }}</p>
 
             <AppEmptyState
-                v-if="!categories.length"
+                v-if="catalogEnabled && !categories.length"
                 :title="__('Menu not available')"
                 :description="emptyDescription"
             />
+        </div>
 
-            <CategoryChipRow v-else :active-id="selectedCategoryId">
+        <div
+            v-if="$slots['above-categories']"
+            data-above-categories
+            :class="preview ? '-mx-3 px-3' : ''"
+        >
+            <slot name="above-categories" />
+        </div>
+
+        <div
+            v-if="categories.length || $slots['panel-fields']"
+            ref="stickyBar"
+            data-catalog-sticky
+            class="sticky top-0 z-20 bg-muted [overflow-anchor:none]"
+            :class="[preview ? '-mx-3 px-3' : '', hasCatalogFrame ? 'pb-0' : 'pb-2']"
+            :style="stickyTop ? { top: stickyTop } : undefined"
+        >
+            <div
+                v-if="showCategoryChips || $slots['panel-fields']"
+                data-channel-panel
+                role="tabpanel"
+                :class="hasCatalogFrame ? 'border-x-2 border-t-2 px-2 pt-2 pb-2' : ''"
+                :style="stickyPanelStyle || undefined"
+            >
+            <div v-if="$slots['panel-fields']" data-panel-fields :class="showCategoryChips ? 'mb-3' : ''">
+                <slot name="panel-fields" />
+            </div>
+            <CategoryChipRow v-if="showCategoryChips" :active-id="selectedCategoryId">
                 <button
                     v-for="category in categories"
                     :key="category.id"
@@ -153,14 +203,24 @@ onUnmounted(() => {
                     :data-category-id="category.id"
                     class="whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors"
                     :class="String(selectedCategoryId) === String(category.id) ? 'bg-primary text-white' : 'bg-white text-ocean-deep shadow-card hover:bg-ocean-light'"
+                    :style="String(selectedCategoryId) === String(category.id) ? {} : (category.color ? { color: category.color } : {})"
                     @click="scrollToCategory(category.id)"
                 >
                     {{ category.name }}
                 </button>
             </CategoryChipRow>
+            </div>
         </div>
 
-        <template v-if="categories.length">
+        <div
+            v-if="hasCatalogFrame || $slots['after-catalog'] || (showCategoryChips && categories.length)"
+            data-channel-catalog
+            :class="hasCatalogFrame ? 'border-x-2 border-b-2 rounded-b-xl px-2 pt-2' : ''"
+            :style="hasCatalogFrame ? stickyPanelStyle : undefined"
+        >
+        <slot name="after-catalog" />
+
+        <template v-if="showCategoryChips && categories.length">
             <section
                 v-for="category in categories"
                 :id="categoryAnchorId(category.id)"
@@ -168,9 +228,13 @@ onUnmounted(() => {
                 data-menu-category
                 :data-category-id="category.id"
                 class="mb-6"
-                :style="{ scrollMarginTop: `${stickyHeight + 8}px` }"
+                :style="{ scrollMarginTop: `${stickyHeight + stickyTopPx + 8}px` }"
             >
-                <h3 class="mb-2 font-heading text-sm font-bold text-ocean-deep">{{ category.name }}</h3>
+                <h3
+                    class="mb-2 font-heading text-sm font-bold"
+                    :class="category.color ? '' : 'text-ocean-deep'"
+                    :style="category.color ? { color: category.color } : {}"
+                >{{ category.name }}</h3>
                 <AppEmptyState
                     v-if="!category.products?.length"
                     :title="__('No items in this category')"
@@ -229,5 +293,6 @@ onUnmounted(() => {
             </section>
             <div class="pb-24" />
         </template>
+        </div>
     </div>
 </template>

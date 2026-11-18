@@ -9,7 +9,7 @@ class UpdateAttendanceChannelAction
 {
     public function execute(AttendanceChannel $channel, UpdateAttendanceChannelRequest $request): AttendanceChannel
     {
-        $channel->update($request->validated());
+        $channel->update($request->safe()->except('name'));
 
         return $channel->fresh();
     }
