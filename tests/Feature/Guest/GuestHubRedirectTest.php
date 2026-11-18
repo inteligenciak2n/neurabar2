@@ -65,6 +65,64 @@ class GuestHubRedirectTest extends TestCase
         ]);
     }
 
+    public function test_reopening_the_same_table_qr_reuses_the_existing_session(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $location = ServiceLocation::factory()->create([
+            'venue_id' => $venue->id,
+            'name' => 'Mesa 4',
+        ]);
+        $token = $this->makeToken($venue, $location);
+
+        $first = $this->get("/g/{$token}/menu")->assertOk()->assertCookie('guest_token');
+        $cookie = $first->getCookie('guest_token', false)->getValue();
+
+        $this->withCredentials()
+            ->withUnencryptedCookie('guest_token', $cookie)
+            ->get("/g/{$token}/menu")
+            ->assertOk();
+
+        $this->assertSame(1, GuestSession::withoutGlobalScopes()->where('venue_id', $venue->id)->count());
+    }
+
+    public function test_scanning_a_second_table_qr_creates_a_new_session_bound_to_the_new_table(): void
+    {
+        $venue = Venue::factory()->create(['active' => true]);
+        $firstLocation = ServiceLocation::factory()->create([
+            'venue_id' => $venue->id,
+            'name' => 'Mesa 4',
+        ]);
+        $secondLocation = ServiceLocation::factory()->create([
+            'venue_id' => $venue->id,
+            'name' => 'Mesa 8',
+        ]);
+
+        $first = $this->get('/g/'.$this->makeToken($venue, $firstLocation).'/menu')
+            ->assertOk()
+            ->assertCookie('guest_token');
+        $firstCookie = $first->getCookie('guest_token', false)->getValue();
+
+        $second = $this->withCredentials()
+            ->withUnencryptedCookie('guest_token', $firstCookie)
+            ->get('/g/'.$this->makeToken($venue, $secondLocation).'/menu')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('serviceLocation.id', $secondLocation->id));
+        $secondCookie = $second->getCookie('guest_token', false)->getValue();
+
+        $this->assertNotSame($firstCookie, $secondCookie);
+
+        $this->assertDatabaseHas('guest_sessions', [
+            'venue_id' => $venue->id,
+            'service_location_id' => $firstLocation->id,
+            'guest_token' => $firstCookie,
+        ]);
+        $this->assertDatabaseHas('guest_sessions', [
+            'venue_id' => $venue->id,
+            'service_location_id' => $secondLocation->id,
+            'guest_token' => $secondCookie,
+        ]);
+    }
+
     public function test_guest_orders_index_returns_orders_without_a_pin(): void
     {
         $venue = Venue::factory()->create(['active' => true]);

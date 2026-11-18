@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Guest;
 
+use App\Enums\AttendanceStatus;
 use App\Enums\ModuleCode;
 use App\Enums\ModuleStatus;
 use App\Models\GuestSession;
@@ -9,6 +10,7 @@ use App\Models\Menu\Category;
 use App\Models\Menu\Menu;
 use App\Models\Menu\Product;
 use App\Models\Orders\Attendance;
+use App\Models\Orders\Order;
 use App\Models\Settings\AttendanceChannel;
 use App\Models\Settings\ServiceLocation;
 use App\Models\Settings\Tab;
@@ -217,5 +219,122 @@ class GuestTableOrderTabTest extends TestCase
 
         $this->assertDatabaseHas('orders', ['attendance_id' => $existing->id]);
         $this->assertDatabaseMissing('attendances', ['code' => '999']);
+    }
+
+    public function test_a_second_order_keeps_the_chosen_tab_when_another_tab_opens_on_the_table(): void
+    {
+        $tabThree = Tab::factory()->create(['venue_id' => $this->venue->id, 'code' => '3']);
+        $comandaThree = Attendance::factory()->open()->create([
+            'venue_id' => $this->venue->id,
+            'service_location_id' => $this->location->id,
+            'tab_id' => $tabThree->id,
+        ]);
+        $session = $this->openGuestSession();
+
+        $this->placeOrder($session)->assertCreated()->assertJsonPath('tab_code', '3');
+
+        $tabFive = Tab::factory()->create(['venue_id' => $this->venue->id, 'code' => '5']);
+        $comandaFive = Attendance::factory()->open()->create([
+            'venue_id' => $this->venue->id,
+            'service_location_id' => $this->location->id,
+            'tab_id' => $tabFive->id,
+        ]);
+
+        $this->placeOrder($session, ['attendance_id' => $comandaFive->id])
+            ->assertCreated()
+            ->assertJsonPath('tab_code', '3');
+
+        $this->assertSame(2, Order::withoutGlobalScopes()->where('attendance_id', $comandaThree->id)->count());
+        $this->assertSame(0, Order::withoutGlobalScopes()->where('attendance_id', $comandaFive->id)->count());
+        $this->assertSame($comandaThree->id, $session->fresh()->attendance_id);
+    }
+
+    public function test_order_fails_explicitly_when_the_chosen_tab_was_closed_instead_of_moving_to_another_tab(): void
+    {
+        $tabThree = Tab::factory()->create(['venue_id' => $this->venue->id, 'code' => '3']);
+        $comandaThree = Attendance::factory()->open()->create([
+            'venue_id' => $this->venue->id,
+            'service_location_id' => $this->location->id,
+            'tab_id' => $tabThree->id,
+        ]);
+        $session = $this->openGuestSession();
+
+        $this->placeOrder($session)->assertCreated()->assertJsonPath('tab_code', '3');
+
+        $comandaThree->update(['status' => AttendanceStatus::Closed, 'closed_at' => now()]);
+
+        $tabFive = Tab::factory()->create(['venue_id' => $this->venue->id, 'code' => '5']);
+        $comandaFive = Attendance::factory()->open()->create([
+            'venue_id' => $this->venue->id,
+            'service_location_id' => $this->location->id,
+            'tab_id' => $tabFive->id,
+        ]);
+
+        $this->placeOrder($session)
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'This tab is closed. Please ask the staff to reopen it.');
+
+        $this->assertSame(1, Order::withoutGlobalScopes()->where('attendance_id', $comandaThree->id)->count());
+        $this->assertSame(0, Order::withoutGlobalScopes()->where('attendance_id', $comandaFive->id)->count());
+        $this->assertSame($comandaThree->id, $session->fresh()->attendance_id);
+    }
+
+    public function test_scanning_a_second_table_qr_creates_a_new_session_and_orders_land_on_the_new_table(): void
+    {
+        $channel = AttendanceChannel::withoutGlobalScopes()
+            ->where('venue_id', $this->venue->id)
+            ->first();
+        $otherLocation = ServiceLocation::factory()->create([
+            'venue_id' => $this->venue->id,
+            'name' => 'Mesa 8',
+            'default_attendance_channel_id' => $channel->id,
+        ]);
+        $otherToken = rtrim(base64_encode(json_encode([
+            'v' => $this->venue->id,
+            'l' => $otherLocation->id,
+            'c' => $channel->id,
+        ])), '=');
+
+        $firstMenu = $this->get("/g/{$this->token}/menu")
+            ->assertOk()
+            ->assertCookie('guest_token');
+        $firstCookie = $firstMenu->getCookie('guest_token', false)->getValue();
+
+        $secondMenu = $this->withCredentials()
+            ->withUnencryptedCookie('guest_token', $firstCookie)
+            ->get("/g/{$otherToken}/menu")
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Guest/Menu')
+                ->where('serviceLocation.id', $otherLocation->id)
+            );
+        $secondCookie = $secondMenu->getCookie('guest_token', false)->getValue();
+
+        $this->assertNotSame($firstCookie, $secondCookie);
+
+        $this->assertDatabaseHas('guest_sessions', [
+            'venue_id' => $this->venue->id,
+            'service_location_id' => $this->location->id,
+            'guest_token' => $firstCookie,
+        ]);
+        $this->assertDatabaseHas('guest_sessions', [
+            'venue_id' => $this->venue->id,
+            'service_location_id' => $otherLocation->id,
+            'guest_token' => $secondCookie,
+        ]);
+
+        $this->withCredentials()
+            ->withUnencryptedCookie('guest_token', $secondCookie)
+            ->postJson("/g/{$otherToken}/orders", [
+                'items' => [['product_id' => $this->product->id, 'quantity' => 1]],
+            ])
+            ->assertCreated();
+
+        $this->assertSame(1, Attendance::withoutGlobalScopes()
+            ->where('service_location_id', $otherLocation->id)
+            ->count());
+        $this->assertSame(0, Attendance::withoutGlobalScopes()
+            ->where('service_location_id', $this->location->id)
+            ->count());
     }
 }

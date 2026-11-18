@@ -25,7 +25,13 @@ class TabCardCodeTest extends TestCase
 
     public function test_kitchen_screens_show_the_tab_card_code(): void
     {
-        $this->assertStringContainsString('item.order.attendance.code', $this->read('resources/js/Pages/Kitchen/Kds.vue'));
+        // O KDS exibe a etiqueta da comanda via o helper `attendanceTabLabel`,
+        // que considera tanto o código impresso no cartão (`attendance.code`)
+        // quanto o vínculo com a comanda (`tab.code`).
+        $kds = $this->read('resources/js/Pages/Kitchen/Kds.vue');
+        $this->assertStringContainsString('attendanceTabLabel', $kds);
+        $this->assertStringContainsString('attendance?.code', $kds);
+
         $this->assertStringContainsString('item.order.attendance.code', $this->read('resources/js/Pages/Kitchen/Monitor.vue'));
     }
 
@@ -33,7 +39,7 @@ class TabCardCodeTest extends TestCase
     {
         $cart = $this->read('resources/js/Components/Guest/CartPanel.vue');
 
-        $this->assertStringContainsString('tab_code:', $cart);
+        $this->assertStringContainsString('payload.tab_code', $cart);
         $this->assertStringContainsString('tabCodeLocked', $cart);
         $this->assertStringContainsString('maxlength="32"', $cart);
     }

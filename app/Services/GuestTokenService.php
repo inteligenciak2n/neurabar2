@@ -123,6 +123,11 @@ class GuestTokenService
 
     /**
      * Reuse the cookie session, or open a new one without a PIN and queue the cookie.
+     *
+     * The cookie is venue-wide (path `/`), so a session is only reused when it was
+     * opened for the same service location and channel the QR points to. Scanning
+     * another table's QR replaces the cookie with a fresh session bound to the new
+     * context instead of silently keeping orders on the previous table.
      */
     public function ensureSession(
         Request $request,
@@ -132,7 +137,7 @@ class GuestTokenService
     ): GuestSession {
         $existing = $this->resolveSession($request, $venue);
 
-        if ($existing !== null) {
+        if ($existing !== null && $this->sessionMatchesContext($existing, $serviceLocation, $attendanceChannel)) {
             return $existing;
         }
 
@@ -140,6 +145,18 @@ class GuestTokenService
         cookie()->queue($this->sessionCookie($session->guest_token));
 
         return $session;
+    }
+
+    /**
+     * Whether the session was opened for the same location/channel the QR points to.
+     */
+    private function sessionMatchesContext(
+        GuestSession $session,
+        ?ServiceLocation $serviceLocation,
+        ?AttendanceChannel $attendanceChannel
+    ): bool {
+        return $session->service_location_id === $serviceLocation?->id
+            && $session->attendance_channel_id === $attendanceChannel?->id;
     }
 
     /**

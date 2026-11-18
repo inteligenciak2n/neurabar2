@@ -60,9 +60,11 @@ class RegistrationTest extends TestCase
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
 
-        // Como o email ainda não foi verificado, o acesso às rotas protegidas
-        // deve ser redirecionado para a tela de verificação de email.
-        $this->get(route('dashboard'))->assertRedirect(route('verification.notice'));
+        // O usuário ainda não concluiu o onboarding: as rotas protegidas levam
+        // primeiro ao wizard de assinatura, que por sua vez exige e-mail
+        // verificado e redireciona para a tela de verificação de email.
+        $this->get(route('dashboard'))->assertRedirect(route('onboarding.subscription.create'));
+        $this->get(route('onboarding.subscription.create'))->assertRedirect(route('verification.notice'));
 
         $user = User::firstWhere('email', 'test@example.com');
         $this->assertNotNull($user);

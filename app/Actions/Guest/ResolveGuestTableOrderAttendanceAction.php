@@ -32,6 +32,10 @@ class ResolveGuestTableOrderAttendanceAction
             ];
         }
 
+        if ($session->attendance_id !== null) {
+            return $this->resolveBoundAttendance($session);
+        }
+
         $open = $this->openAttendancesAtTable($session);
         $comandas = $open->filter(fn (Attendance $attendance): bool => $attendance->hasTab())->values();
 
@@ -94,6 +98,30 @@ class ResolveGuestTableOrderAttendanceAction
             'attendance' => null,
             'needs_choice' => true,
             'tabs' => $tabs,
+        ];
+    }
+
+    /**
+     * A session that already picked a tab keeps ordering against it while it stays
+     * open. A closed (or missing) tab fails explicitly instead of silently moving
+     * the guest to another open tab on the same table.
+     *
+     * @return array{attendance: Attendance, needs_choice: false, tabs: array{}}
+     */
+    private function resolveBoundAttendance(GuestSession $session): array
+    {
+        $attendance = $session->attendance()->withoutGlobalScopes()->first();
+
+        if ($attendance === null || $attendance->status !== AttendanceStatus::Open) {
+            throw ValidationException::withMessages([
+                'attendance' => 'This tab is closed. Please ask the staff to reopen it.',
+            ]);
+        }
+
+        return [
+            'attendance' => $attendance,
+            'needs_choice' => false,
+            'tabs' => [],
         ];
     }
 
